@@ -14,10 +14,6 @@ edition = "2024"
 license = "MIT"
 repository = "https://github.com/paft-rs/paft"
 
-[workspace.metadata.workspaces]
-# Configure cargo-workspaces behavior
-allow_branch = "main"
-
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
 polars = "0.50"
