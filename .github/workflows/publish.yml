@@ -32,7 +32,7 @@ jobs:
         run: |
           cargo install cargo-workspaces
 
-      - name: Verify package
+      - name: Publish to crates.io (dry run)
         run: |
           cargo ws publish --dry-run
 
