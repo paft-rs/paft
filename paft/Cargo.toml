@@ -9,7 +9,7 @@ readme = "README.md"
 repository.workspace = true
 homepage = "https://github.com/paft-rs/paft"
 documentation = "https://docs.rs/paft"
-keywords = ["finance", "types", "dataframe", "polars", "financial-data", "stocks", "trading"]
+keywords = ["finance", "types", "stocks", "trading", "polars"]
 categories = ["finance", "data-structures", "api-bindings"]
 
 [dependencies]
