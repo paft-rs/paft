@@ -15,7 +15,7 @@ categories = ["data-structures", "finance"]
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 chrono = { workspace = true }
-paft-core = { path = "../paft-core", default-features = false, features = [] }
+paft-core = { path = "../paft-core", version.workspace = true, default-features = false, features = [] }
 df-derive = { workspace = true, optional = true }
 polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde", "regex", "timezones", "diagonal_concat", "json", "rolling_window", "temporal"], optional = true }
 strum = { workspace = true }
