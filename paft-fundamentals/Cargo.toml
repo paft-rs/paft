@@ -1,0 +1,30 @@
+[package]
+name = "paft-fundamentals"
+version.workspace = true
+edition = "2024"
+license.workspace = true
+authors.workspace = true
+description = "Fundamentals types for financial statements, analysis, holders, and ESG."
+repository.workspace = true
+homepage = "https://github.com/paft-rs/paft"
+documentation = "https://docs.rs/paft-fundamentals"
+readme = "../README.md"
+keywords = ["finance", "fundamentals", "esg", "holders", "serde"]
+categories = ["data-structures", "finance"]
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+chrono = { workspace = true }
+paft-core = { path = "../paft-core", default-features = false, features = [] }
+df-derive = { workspace = true, optional = true }
+polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde", "regex", "timezones", "diagonal_concat", "json", "rolling_window", "temporal"], optional = true }
+strum = { workspace = true }
+
+[features]
+default = []
+dataframe = ["paft-core/dataframe", "polars", "df-derive"]
+
+[dev-dependencies]
+rust_decimal = { workspace = true }
+serde_json = { workspace = true }
+

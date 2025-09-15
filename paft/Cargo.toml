@@ -1,0 +1,38 @@
+[package]
+name = "paft"
+version.workspace = true
+edition = "2024"
+license.workspace = true
+authors.workspace = true
+description = "Facade crate for paft: unified public API over paft-core, paft-market, paft-fundamentals."
+readme = "README.md"
+repository.workspace = true
+homepage = "https://github.com/paft-rs/paft"
+documentation = "https://docs.rs/paft"
+keywords = ["finance", "types", "dataframe", "polars", "financial-data", "stocks", "trading"]
+categories = ["finance", "data-structures", "api-bindings"]
+
+[dependencies]
+paft-core = { path = "../paft-core", default-features = false }
+paft-market = { path = "../paft-market", optional = true, default-features = false }
+paft-fundamentals = { path = "../paft-fundamentals", optional = true, default-features = false }
+
+[features]
+# Provide a useful default set. `core` and `market` are common.
+default = ["core", "market"]
+# Individual features for granularity.
+core = []
+market = ["paft-market"]
+fundamentals = ["paft-fundamentals"]
+# A 'full' feature for convenience.
+full = ["core", "market", "fundamentals", "dataframe"]
+dataframe = ["paft-core/dataframe", "paft-market?/dataframe", "paft-fundamentals?/dataframe"]
+
+[dev-dependencies]
+serde_json = { workspace = true }
+chrono = { workspace = true }
+chrono-tz = { workspace = true }
+rust_decimal = { workspace = true }
+polars = { workspace = true, features = ["timezones"] }
+
+
