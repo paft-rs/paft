@@ -29,6 +29,6 @@ rust_decimal = { version = "1.36", features = ["serde"] }
 strum = { version = "0.27", features = ["derive"] }
 
 # Local crates
-paft-core = { path = "paft-core", default-features = false }
-paft-market = { path = "paft-market", default-features = false }
-paft-fundamentals = { path = "paft-fundamentals", default-features = false }
+paft-core = { path = "paft-core", version = "0.1.0", default-features = false }
+paft-market = { path = "paft-market", version = "0.1.0", default-features = false }
+paft-fundamentals = { path = "paft-fundamentals", version = "0.1.0", default-features = false }
