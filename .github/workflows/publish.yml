@@ -26,7 +26,7 @@ jobs:
 
       - name: Run tests
         run: |
-          cargo test --workspace --all-features --locked --verbose
+          cargo test --workspace --all-features --locked
 
       - name: Install cargo-workspaces
         run: |
