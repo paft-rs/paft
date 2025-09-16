@@ -4,7 +4,9 @@
 
 [![Crates.io](https://img.shields.io/crates/v/paft)](https://crates.io/crates/paft)
 [![Docs.rs](https://docs.rs/paft/badge.svg)](https://docs.rs/paft)
-[![License](https://img.shields.io/crates/l/paft)](https://crates.io/crates/paft)
+[![CI](https://github.com/paft-rs/paft/actions/workflows/ci.yml/badge.svg)](https://github.com/paft-rs/paft/actions/workflows/ci.yml)
+[![Downloads](https://img.shields.io/crates/d/paft)](https://crates.io/crates/paft)
+[![License](https://img.shields.io/crates/l/paft)](LICENSE)
 
 Standardized Rust types for financial data that work with any provider—Yahoo Finance, Bloomberg, Alpha Vantage, and more.
 
