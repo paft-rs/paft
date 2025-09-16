@@ -46,6 +46,7 @@ paft = { version = "0.1.0", default-features = false, features = ["core", "funda
 
 ### Basic Usage
 
+```rust
 // Create instruments with different levels of identification
 let apple = Instrument::new(
     "AAPL",

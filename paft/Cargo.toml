@@ -24,6 +24,7 @@ default = ["core", "market"]
 core = []
 market = ["paft-market"]
 fundamentals = ["paft-fundamentals"]
+
 # A 'full' feature for convenience.
 full = ["core", "market", "fundamentals", "dataframe"]
 dataframe = ["paft-core/dataframe", "paft-market?/dataframe", "paft-fundamentals?/dataframe"]
