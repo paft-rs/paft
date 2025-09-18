@@ -16,14 +16,15 @@ Standardized Rust types for financial data that work with any provider—Yahoo F
 
 ```toml
 [dependencies]
-# Basic installation with default market data types
-paft = "0.1.0"
+# Basic installation with all supported data types
+# default = ["market", "fundamentals"]
+paft = "0.1.1"
 
 # Or, install with all features enabled
-paft = { version = "0.1.0", features = ["full"] }
+paft = { version = "0.1.1", features = ["dataframe"] }
 
 # Or, customize your installation
-paft = { version = "0.1.0", default-features = false, features = ["core", "fundamentals"] }
+paft = { version = "0.1.1", default-features = false, features = ["fundamentals", "dataframe"] }
 ```
 
 ## What's Included
@@ -106,7 +107,7 @@ Enable DataFrame support for analysis:
 
 ```toml
 [dependencies]
-paft = { version = "0.1.0", features = ["dataframe"] }
+paft = { version = "0.1.1", features = ["dataframe"] }
 ```
 
 ```rust
