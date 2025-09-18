@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use strum::{AsRefStr, Display, EnumString};
 
+use super::currency_utils::currency_minor_units;
+
 /// Currency enumeration with major currencies and extensible fallback.
 ///
 /// This enum provides type-safe handling of currency codes while gracefully
@@ -124,39 +126,6 @@ pub enum Currency {
     /// Ethereum
     #[strum(serialize = "ETH")]
     ETH,
-    /// Binance Coin
-    #[strum(serialize = "BNB")]
-    BNB,
-    /// Cardano
-    #[strum(serialize = "ADA")]
-    ADA,
-    /// Solana
-    #[strum(serialize = "SOL")]
-    SOL,
-    /// XRP
-    #[strum(serialize = "XRP")]
-    XRP,
-    /// Polkadot
-    #[strum(serialize = "DOT")]
-    DOT,
-    /// Dogecoin
-    #[strum(serialize = "DOGE")]
-    DOGE,
-    /// Avalanche
-    #[strum(serialize = "AVAX")]
-    AVAX,
-    /// Chainlink
-    #[strum(serialize = "LINK")]
-    LINK,
-    /// Litecoin
-    #[strum(serialize = "LTC")]
-    LTC,
-    /// Polygon
-    #[strum(serialize = "MATIC")]
-    MATIC,
-    /// Uniswap
-    #[strum(serialize = "UNI")]
-    UNI,
     /// Monero
     #[strum(serialize = "XMR")]
     XMR,
@@ -166,8 +135,26 @@ pub enum Currency {
 
 impl From<String> for Currency {
     fn from(s: String) -> Self {
-        // Try to parse as a known variant first
-        Self::from_str(&s).unwrap_or_else(|_| Self::Other(s.to_uppercase()))
+        // Trim and uppercase once to handle noisy provider strings.
+        let trimmed = s.trim();
+        if trimmed.is_empty() {
+            return Self::Other(trimmed.to_string());
+        }
+
+        // Try to parse the trimmed string as-is (this retains canonical casing
+        // such as "usd" -> USD via `strum`'s ascii_case_insensitive option).
+        if let Ok(parsed) = Self::from_str(trimmed) {
+            return parsed;
+        }
+
+        // Apply additional alias normalization for common provider spellings
+        // before falling back to `Other`.
+        match trimmed.to_uppercase().as_str() {
+            "US_DOLLAR" | "US DOLLAR" | "USDOLLAR" | "DOLLAR" => Self::USD,
+            "EURO" => Self::EUR,
+            "POUND" | "POUND STERLING" => Self::GBP,
+            code => Self::Other(code.to_string()),
+        }
     }
 }
 
@@ -204,15 +191,19 @@ impl Currency {
     /// Most fiat currencies have 2 decimal places, but some notable exceptions include:
     /// - Japanese Yen (JPY): 0 decimal places
     /// - Korean Won (KRW): 0 decimal places  
+    /// - Vietnamese Dong (VND): 0 decimal places  
     /// - Bahraini Dinar (BHD): 3 decimal places (not implemented yet)
     /// - Jordanian Dinar (JOD): 3 decimal places (not implemented yet)
     ///
     /// Most cryptocurrencies use 8 decimal places, but some have different precision:
     /// - Bitcoin (BTC): 8 decimal places (satoshis)
     /// - Ethereum (ETH): 18 decimal places (wei)
-    /// - XRP: 6 decimal places (drops)
     /// - Monero (XMR): 12 decimal places
-    /// - Dogecoin (DOGE): 8 decimal places
+    ///
+    /// Other cryptocurrencies will default to 2 decimal places unless the
+    /// variant encodes a specific precision.
+    /// Precision for `Currency::Other` values can be overridden at runtime via
+    /// `currency_utils::set_currency_minor_units`.
     ///
     /// For `Currency::Other(s)`, this method defaults to 2 decimal places.
     ///
@@ -227,10 +218,19 @@ impl Currency {
     /// assert_eq!(Currency::Other("XYZ".to_string()).decimal_places(), 2);
     /// ```
     #[must_use]
-    pub const fn decimal_places(&self) -> u32 {
+    pub fn decimal_places(&self) -> u32 {
+        if let Self::Other(code) = self {
+            if let Some(decimals) = currency_minor_units(code) {
+                return decimals;
+            }
+        }
+        self.base_decimal_places()
+    }
+
+    const fn base_decimal_places(&self) -> u32 {
         match self {
             // Fiat currencies with 0 decimal places
-            Self::JPY | Self::KRW | Self::VND | Self::IDR | Self::HUF => 0,
+            Self::JPY | Self::KRW | Self::VND => 0,
 
             // Most fiat currencies have 2 decimal places
             Self::USD
@@ -258,25 +258,13 @@ impl Currency {
             | Self::THB
             | Self::MYR
             | Self::PHP
+            | Self::IDR
+            | Self::HUF
             | Self::Other(_) => 2,
-
             // Cryptocurrencies with specific decimal places
             Self::ETH => 18, // Ethereum uses 18 decimal places (wei)
-            Self::XRP => 6,  // XRP uses 6 decimal places (drops)
             Self::XMR => 12, // Monero uses 12 decimal places
-            Self::BTC
-            | Self::BNB
-            | Self::ADA
-            | Self::SOL
-            | Self::DOT
-            | Self::DOGE
-            | Self::AVAX
-            | Self::LINK
-            | Self::LTC
-            | Self::MATIC
-            | Self::UNI => 8, // Most cryptocurrencies use 8 decimal places
-
-                              // Handled above with the fiat currencies
+            Self::BTC => 8,  // Most cryptocurrencies use 8 decimal places
         }
     }
 
@@ -291,7 +279,7 @@ impl Currency {
     /// assert_eq!(Currency::JPY.minor_unit_scale(), 1);    // 10^0
     /// ```
     #[must_use]
-    pub const fn minor_unit_scale(&self) -> i64 {
+    pub fn minor_unit_scale(&self) -> i64 {
         10_i64.pow(self.decimal_places())
     }
 }

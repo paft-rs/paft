@@ -10,6 +10,19 @@ fn test_currency_from_string() {
     assert_eq!(Currency::from("JPY".to_string()), Currency::JPY);
     assert_eq!(Currency::from("CAD".to_string()), Currency::CAD);
     assert_eq!(Currency::from("BTC".to_string()), Currency::BTC);
+
+    // Whitespace is trimmed before parsing
+    assert_eq!(Currency::from("  usd  ".to_string()), Currency::USD);
+
+    // Common aliases map to canonical variants
+    assert_eq!(Currency::from("US_DOLLAR".to_string()), Currency::USD);
+    assert_eq!(Currency::from("Pound Sterling".to_string()), Currency::GBP);
+
+    // Unknown strings default to uppercase Other variant
+    assert_eq!(
+        Currency::from("custom coin".to_string()),
+        Currency::Other("CUSTOM COIN".to_string())
+    );
 }
 
 #[test]
@@ -80,12 +93,18 @@ fn test_cryptocurrency_decimal_places() {
     // Test that cryptocurrencies have correct decimal places
     assert_eq!(Currency::BTC.decimal_places(), 8);
     assert_eq!(Currency::ETH.decimal_places(), 18);
-    assert_eq!(Currency::XRP.decimal_places(), 6);
     assert_eq!(Currency::XMR.decimal_places(), 12);
-    assert_eq!(Currency::DOGE.decimal_places(), 8);
 
     // Test minor unit scale
     assert_eq!(Currency::BTC.minor_unit_scale(), 100_000_000); // 10^8
     assert_eq!(Currency::ETH.minor_unit_scale(), 1_000_000_000_000_000_000); // 10^18
     assert_eq!(Currency::XMR.minor_unit_scale(), 1_000_000_000_000); // 10^12
+}
+
+#[test]
+fn test_decimal_places_for_fiat_outliers() {
+    assert_eq!(Currency::JPY.decimal_places(), 0);
+    assert_eq!(Currency::KRW.decimal_places(), 0);
+    assert_eq!(Currency::IDR.decimal_places(), 2);
+    assert_eq!(Currency::HUF.decimal_places(), 2);
 }
