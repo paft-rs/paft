@@ -4,7 +4,7 @@ version.workspace = true
 edition = "2024"
 license.workspace = true
 authors.workspace = true
-description = "Facade crate for paft: unified public API over paft-core, paft-market, paft-fundamentals."
+description = "Facade crate for paft: unified public API over the paft ecosystem."
 readme = "README.md"
 repository.workspace = true
 homepage = "https://github.com/paft-rs/paft"
@@ -18,16 +18,13 @@ paft-market = { workspace = true, optional = true }
 paft-fundamentals = { workspace = true, optional = true }
 
 [features]
-# Provide a useful default set. `core` and `market` are common.
-default = ["core", "market"]
-# Individual features for granularity.
-core = []
+default = ["market", "fundamentals"]
+
 market = ["paft-market"]
 fundamentals = ["paft-fundamentals"]
 
-# A 'full' feature for convenience.
-full = ["core", "market", "fundamentals", "dataframe"]
 dataframe = ["paft-core/dataframe", "paft-market?/dataframe", "paft-fundamentals?/dataframe"]
+full = ["market", "fundamentals", "dataframe"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

@@ -1,28 +1,28 @@
 //! Unified public API for the paft workspace.
 #![warn(missing_docs)]
 
-// Re-export core types unconditionally if the `core` feature is enabled.
-// Since `core` is part of the new default, these will usually be available.
-#[cfg(feature = "core")]
-pub use paft_core::{
-    domain::{
-        AssetKind, Currency, Exchange, ExchangeRate, Instrument, MarketState, Money, MoneyError,
-        Period,
-    },
-    error::PaftError,
-};
+/// Namespaced access to `paft-core`.
+pub mod core {
+    pub use paft_core::PaftError;
+    #[cfg(feature = "dataframe")]
+    pub use paft_core::dataframe;
+    pub use paft_core::domain;
+    pub use paft_core::error;
+}
 
-// Re-export dataframe traits if the `dataframe` feature is enabled.
-#[cfg(feature = "dataframe")]
-pub use paft_core::dataframe::{ToDataFrame, ToDataFrameVec};
-
-// Conditionally re-export the entire market crate as a module.
+/// Namespaced access to `paft-market` (feature-gated).
 #[cfg(feature = "market")]
-pub use paft_market as market;
+pub mod market {
+    pub use paft_market::market::{action, news, options, quote};
+    pub use paft_market::requests;
+    pub use paft_market::responses;
+}
 
-// Conditionally re-export the entire fundamentals crate as a module.
+/// Namespaced access to `paft-fundamentals` (feature-gated).
 #[cfg(feature = "fundamentals")]
-pub use paft_fundamentals as fundamentals;
+pub mod fundamentals {
+    pub use paft_fundamentals::{analysis, esg, holders, profile, statements};
+}
 
 /// Frequently used types for convenient imports.
 pub mod prelude;

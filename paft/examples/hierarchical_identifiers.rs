@@ -4,7 +4,8 @@
 //! types of identifiers, allowing providers to populate the identifiers they have
 //! access to while encouraging the use of better identifiers when available.
 
-use paft::{AssetKind, Exchange, Instrument};
+use paft::prelude::{AssetKind, Exchange, Instrument};
+use std::collections::HashMap;
 
 fn main() {
     println!("=== Hierarchical Identifier Examples ===\n");
@@ -98,7 +99,6 @@ fn main() {
 
     // Example 6: Using instruments in collections
     println!("6. Using Instruments in Collections:");
-    use std::collections::HashMap;
 
     let mut instrument_map = HashMap::new();
     instrument_map.insert(professional_instrument.unique_key(), "Apple Inc.");
@@ -107,7 +107,7 @@ fn main() {
     instrument_map.insert(minimal_instrument.unique_key(), "Bitcoin USD");
 
     for (key, name) in &instrument_map {
-        println!("   {} -> {}", key, name);
+        println!("   {key} -> {name}");
     }
     println!();
 }

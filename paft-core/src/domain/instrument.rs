@@ -102,19 +102,19 @@ impl AssetKind {
 pub struct Instrument {
     /// Financial Instrument Global Identifier (FIGI) - a free, open, stable identifier.
     /// This is the preferred identifier for cross-provider data aggregation.
-    pub figi: Option<String>,
+    figi: Option<String>,
     /// International Securities Identification Number (ISIN) - globally unique but may have licensing restrictions.
     /// Second choice for global identification when FIGI is not available.
-    pub isin: Option<String>,
+    isin: Option<String>,
     /// Ticker symbol (e.g., "AAPL", "BRK.A").
     /// While ubiquitous, symbols can be ambiguous and vary by exchange/provider.
     /// This is the only required field to maintain backward compatibility.
-    pub symbol: String,
+    symbol: String,
     /// Exchange identifier with canonical variants and extensible fallback.
     /// Optional but recommended for disambiguating symbols.
-    pub exchange: Option<Exchange>,
+    exchange: Option<Exchange>,
     /// Asset kind classification.
-    pub kind: AssetKind,
+    kind: AssetKind,
 }
 
 impl Instrument {
@@ -177,20 +177,16 @@ impl Instrument {
     /// - Returns `Cow::Owned` only for the symbol@exchange case that requires formatting
     #[must_use]
     pub fn unique_key(&self) -> Cow<'_, str> {
-        self.figi.as_deref().map_or_else(
-            || {
-                self.isin.as_deref().map_or_else(
-                    || {
-                        self.exchange.as_ref().map_or_else(
-                            || Cow::Borrowed(self.symbol.as_str()),
-                            |exchange| Cow::Owned(format!("{}@{}", self.symbol, exchange.code())),
-                        )
-                    },
-                    Cow::Borrowed,
-                )
-            },
-            Cow::Borrowed,
-        )
+        if let Some(figi) = &self.figi {
+            return Cow::Borrowed(figi);
+        }
+        if let Some(isin) = &self.isin {
+            return Cow::Borrowed(isin);
+        }
+        if let Some(exchange) = &self.exchange {
+            return Cow::Owned(format!("{}@{}", self.symbol, exchange.code()));
+        }
+        Cow::Borrowed(&self.symbol)
     }
 
     /// Returns true if this instrument has a globally unique identifier (FIGI or ISIN).

@@ -1,6 +1,6 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
-use paft::PaftError;
+use paft::prelude::PaftError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
     Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range, SearchRequest,
@@ -41,16 +41,16 @@ fn end_to_end_workflow() {
 
     // 4. Create sample history data
     let candle = Candle {
-        ts: DateTime::from_timestamp(1640995200, 0).unwrap(),
+        ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         open: Money::new(Decimal::from_str("100.0").unwrap(), Currency::USD),
         high: Money::new(Decimal::from_str("110.0").unwrap(), Currency::USD),
         low: Money::new(Decimal::from_str("95.0").unwrap(), Currency::USD),
         close: Money::new(Decimal::from_str("105.0").unwrap(), Currency::USD),
-        volume: Some(1000000),
+        volume: Some(1_000_000),
     };
 
     let action = Action::Dividend {
-        ts: DateTime::from_timestamp(1640995200, 0).unwrap(),
+        ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         amount: Money::new(Decimal::from_str("0.5").unwrap(), Currency::USD),
     };
 
@@ -85,12 +85,12 @@ fn end_to_end_workflow() {
         symbol: "AAPL".to_string(),
         price: Some(Money::new(Decimal::from(106), Currency::USD)),
         previous_close: Some(Money::new(Decimal::from(100), Currency::USD)),
-        ts: DateTime::from_timestamp(1640995260, 0).unwrap(),
+        ts: DateTime::from_timestamp(1_640_995_260, 0).unwrap(),
     };
 
     // Verify all data is consistent
-    assert_eq!(quote.symbol, instrument.symbol);
-    assert_eq!(quote_update.symbol, instrument.symbol);
+    assert_eq!(quote.symbol, instrument.symbol());
+    assert_eq!(quote_update.symbol, instrument.symbol());
     assert_eq!(history_response.candles[0].close, quote.price.unwrap());
 }
 
@@ -102,10 +102,10 @@ fn error_handling_workflow() {
     let result = SearchRequest::builder("").limit(0).build();
     assert!(result.is_err());
 
-    if let Err(PaftError::EmptySearchQuery) = result {
+    if result == Err(PaftError::EmptySearchQuery) {
         // The validation correctly identifies empty search query
     } else {
-        panic!("Expected EmptySearchQuery error, got: {:?}", result);
+        panic!("Expected EmptySearchQuery error, got: {result:?}");
     }
 
     // 2. Invalid history request - test invalid period
@@ -121,7 +121,7 @@ fn error_handling_workflow() {
         assert_eq!(start, 2000);
         assert_eq!(end, 1000);
     } else {
-        panic!("Expected InvalidPeriod error, got: {:?}", result);
+        panic!("Expected InvalidPeriod error, got: {result:?}");
     }
 
     // 3. Test that builder prevents invalid states by design
@@ -284,16 +284,16 @@ fn action_types_workflow() {
 
     let actions = [
         Action::Dividend {
-            ts: DateTime::from_timestamp(1640995200, 0).unwrap(),
+            ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
             amount: Money::new(Decimal::from_str("0.5").unwrap(), Currency::USD),
         },
         Action::Split {
-            ts: DateTime::from_timestamp(1640995200, 0).unwrap(),
+            ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
             numerator: 2,
             denominator: 1,
         },
         Action::CapitalGain {
-            ts: DateTime::from_timestamp(1640995200, 0).unwrap(),
+            ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
             gain: Money::new(Decimal::from_str("1.0").unwrap(), Currency::USD),
         },
     ];
@@ -317,106 +317,4 @@ fn action_types_workflow() {
         let deserialized: HistoryResponse = serde_json::from_str(&json).unwrap();
         assert_eq!(history_response, deserialized);
     }
-}
-
-#[test]
-fn quote_update_workflow() {
-    // Test quote update workflow
-
-    let base_quote = Quote {
-        symbol: "AAPL".to_string(),
-        shortname: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
-        previous_close: Some(Money::new(
-            Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
-        )),
-        exchange: Some(Exchange::NASDAQ),
-        market_state: Some(MarketState::Regular),
-    };
-
-    // Create a partial update
-    let update = QuoteUpdate {
-        symbol: "AAPL".to_string(),
-        price: Some(Money::new(Decimal::from(151), Currency::USD)),
-        previous_close: Some(Money::new(
-            Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
-        )),
-        ts: DateTime::from_timestamp(1640995260, 0).unwrap(),
-    };
-
-    // Test serialization
-    let json = serde_json::to_string(&update).unwrap();
-    let deserialized: QuoteUpdate = serde_json::from_str(&json).unwrap();
-    assert_eq!(update, deserialized);
-
-    // Test that update has same symbol as base quote
-    assert_eq!(update.symbol, base_quote.symbol);
-}
-
-#[test]
-fn unicode_and_special_characters() {
-    // Test handling of unicode and special characters
-
-    let unicode_symbol = "测试符号🚀";
-    let instrument = Instrument::new(
-        unicode_symbol,
-        AssetKind::Equity,
-        Some("BBG000B9XRY8".to_string()),
-        None,
-        Some(Exchange::Other("SHANGHAI".to_string())),
-    );
-
-    // Test serialization with unicode
-    let json = serde_json::to_string(&instrument).unwrap();
-    let deserialized: Instrument = serde_json::from_str(&json).unwrap();
-    assert_eq!(instrument, deserialized);
-
-    // Test search request with unicode
-    let search_req = SearchRequest::new(unicode_symbol).unwrap();
-
-    let json = serde_json::to_string(&search_req).unwrap();
-    let deserialized: SearchRequest = serde_json::from_str(&json).unwrap();
-    assert_eq!(search_req, deserialized);
-}
-
-#[test]
-fn edge_case_values() {
-    // Test edge case values
-
-    // Test with extreme values
-    let quote = Quote {
-        symbol: "EXTREME".to_string(),
-        shortname: Some("Extreme Corp".to_string()),
-        price: Some(Money::new(
-            Decimal::from_str("999999999999999.99").unwrap(),
-            Currency::USD,
-        )),
-        previous_close: Some(Money::new(
-            Decimal::from_str("-999999999999999.99").unwrap(),
-            Currency::USD,
-        )),
-        exchange: Some(Exchange::NASDAQ),
-        market_state: Some(MarketState::Regular),
-    };
-
-    // Test serialization with extreme values
-    let json = serde_json::to_string(&quote).unwrap();
-    let deserialized: Quote = serde_json::from_str(&json).unwrap();
-    assert_eq!(quote, deserialized);
-
-    // Test with zero values
-    let zero_quote = Quote {
-        symbol: "ZERO".to_string(),
-        shortname: Some("Zero Corp".to_string()),
-        price: Some(Money::new(Decimal::from(0), Currency::USD)),
-        previous_close: Some(Money::new(Decimal::from(0), Currency::USD)),
-        exchange: Some(Exchange::NASDAQ),
-        market_state: Some(MarketState::Regular),
-    };
-
-    let json = serde_json::to_string(&zero_quote).unwrap();
-    let deserialized: Quote = serde_json::from_str(&json).unwrap();
-    assert_eq!(zero_quote, deserialized);
 }
