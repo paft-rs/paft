@@ -18,7 +18,7 @@ fn money_dataframe_roundtrip() {
 
 #[test]
 fn vec_money_to_dataframe() {
-    let v = vec![
+    let v = [
         Money::new(Decimal::new(100, 0), Currency::USD),
         Money::new(Decimal::new(200, 0), Currency::EUR),
     ];

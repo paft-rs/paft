@@ -1,4 +1,4 @@
-use paft_core::domain::{Currency, ExchangeRate, Money, MoneyError};
+use paft_core::domain::{Currency, ExchangeRate, Money};
 use rust_decimal::Decimal;
 use std::str::FromStr;
 
@@ -8,31 +8,24 @@ fn test_same_currency_arithmetic() {
     let usd_50 = Money::new(Decimal::from(50), Currency::USD);
 
     // Addition should work
-    let total = usd_100.add(&usd_50).unwrap();
+    let total = &usd_100 + &usd_50;
     assert_eq!(total.amount(), Decimal::from(150));
     assert_eq!(total.currency(), &Currency::USD);
 
     // Subtraction should work
-    let diff = usd_100.sub(&usd_50).unwrap();
+    let diff = &usd_100 - &usd_50;
     assert_eq!(diff.amount(), Decimal::from(50));
     assert_eq!(diff.currency(), &Currency::USD);
 }
 
 #[test]
-fn test_different_currency_addition_returns_error() {
+#[should_panic(expected = "currency mismatch")]
+fn test_different_currency_addition_panics() {
     let usd_100 = Money::new(Decimal::from(100), Currency::USD);
     let eur_100 = Money::new(Decimal::from(100), Currency::EUR);
 
-    // Addition should return error
-    let result = usd_100.add(&eur_100);
-    assert!(result.is_err());
-    match result {
-        Err(MoneyError::CurrencyMismatch { expected, found }) => {
-            assert_eq!(expected, Currency::USD);
-            assert_eq!(found, Currency::EUR);
-        }
-        _ => panic!("Expected CurrencyMismatch error"),
-    }
+    // Addition should panic on currency mismatch
+    let _ = &usd_100 + &eur_100;
 }
 
 #[test]
@@ -45,15 +38,58 @@ fn test_money_scalar_operations() {
     assert_eq!(doubled.currency(), &Currency::USD);
 
     // Division
-    let halved = usd_100.div(Decimal::from(2)).unwrap();
+    let halved = &usd_100 / Decimal::from(2);
     assert_eq!(halved.amount(), Decimal::from(50));
     assert_eq!(halved.currency(), &Currency::USD);
 }
 
 #[test]
+fn test_money_reference_arithmetic_is_ergonomic() {
+    let lhs = Money::new(Decimal::from(125), Currency::USD);
+    let rhs = Money::new(Decimal::from(75), Currency::USD);
+
+    // Addition and subtraction should work on references without cloning
+    let sum = &lhs + &rhs;
+    assert_eq!(sum.amount(), Decimal::from(200));
+    assert_eq!(sum.currency(), &Currency::USD);
+
+    let diff = &lhs - &rhs;
+    assert_eq!(diff.amount(), Decimal::from(50));
+    assert_eq!(diff.currency(), &Currency::USD);
+
+    // The original values should remain accessible afterwards (not moved)
+    assert_eq!(lhs.amount(), Decimal::from(125));
+    assert_eq!(rhs.amount(), Decimal::from(75));
+}
+
+#[test]
+fn test_money_owned_arithmetic_is_ergonomic() {
+    let a = Money::new(Decimal::from(125), Currency::USD);
+    let b = Money::new(Decimal::from(75), Currency::USD);
+
+    let sum = a + b;
+    assert_eq!(sum.amount(), Decimal::from(200));
+    assert_eq!(sum.currency(), &Currency::USD);
+
+    let c = Money::new(Decimal::from(125), Currency::USD);
+    let d = Money::new(Decimal::from(75), Currency::USD);
+
+    let diff = c - d;
+    assert_eq!(diff.amount(), Decimal::from(50));
+    assert_eq!(diff.currency(), &Currency::USD);
+}
+
+#[test]
+#[should_panic(expected = "division by zero")]
+fn test_division_by_zero_panics() {
+    let usd_100 = Money::new(Decimal::from(100), Currency::USD);
+    let _ = &usd_100 / Decimal::from(0);
+}
+
+#[test]
 fn test_as_minor_units_basic() {
     let usd_123_45 = Money::new(Decimal::from_str("123.45").unwrap(), Currency::USD);
-    assert_eq!(usd_123_45.as_minor_units(), Some(12345));
+    assert_eq!(usd_123_45.as_minor_units(), Some(12345i128));
 }
 
 #[test]
@@ -63,4 +99,35 @@ fn test_exchange_rate_creation() {
     assert_eq!(rate.from(), &Currency::USD);
     assert_eq!(rate.to(), &Currency::EUR);
     assert_eq!(rate.rate(), Decimal::new(85, 2));
+}
+
+#[test]
+fn test_try_convert_respects_target_precision() {
+    let jpy = Money::new(Decimal::from(1000), Currency::JPY);
+    let rate = ExchangeRate::new(Currency::JPY, Currency::USD, Decimal::new(89, 4)).unwrap();
+
+    let usd = jpy.try_convert(&rate).unwrap();
+
+    assert_eq!(usd.currency(), &Currency::USD);
+    assert_eq!(usd.amount(), Decimal::new(890, 2));
+    assert_eq!(usd.as_minor_units(), Some(890i128));
+
+    let eth_ten = Money::new(Decimal::from(10), Currency::ETH);
+    assert_eq!(
+        eth_ten.as_minor_units(),
+        Some(10_000_000_000_000_000_000i128)
+    );
+}
+
+#[test]
+fn test_from_minor_units_large_precision() {
+    let wei: i128 = 1_234_567_890_123_456_789;
+    let eth = Money::from_minor_units(wei, Currency::ETH);
+
+    assert_eq!(eth.currency(), &Currency::ETH);
+    assert_eq!(eth.as_minor_units(), Some(wei));
+    assert_eq!(
+        eth.amount(),
+        Decimal::from_str("1.234567890123456789").unwrap()
+    );
 }

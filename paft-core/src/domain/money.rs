@@ -1,9 +1,10 @@
 //! Money type for representing financial values with currency.
 
 use crate::domain::currency::Currency;
-use rust_decimal::Decimal;
 use rust_decimal::prelude::ToPrimitive;
+use rust_decimal::{Decimal, RoundingStrategy};
 use serde::{Deserialize, Serialize};
+use std::ops::{Add, Div, Mul, Sub};
 use thiserror::Error;
 
 #[cfg(feature = "dataframe")]
@@ -205,15 +206,15 @@ impl Money {
     /// use rust_decimal::Decimal;
     ///
     /// let usd = Money::new(Decimal::new(12345, 2), Currency::USD); // $123.45
-    /// assert_eq!(usd.as_minor_units(), Some(12345));
+    /// assert_eq!(usd.as_minor_units(), Some(12345i128));
     ///
     /// let jpy = Money::new(Decimal::new(123, 0), Currency::JPY); // ¥123
-    /// assert_eq!(jpy.as_minor_units(), Some(123));
+    /// assert_eq!(jpy.as_minor_units(), Some(123i128));
     /// ```
     #[must_use]
-    pub fn as_minor_units(&self) -> Option<i64> {
+    pub fn as_minor_units(&self) -> Option<i128> {
         let scale = self.currency.minor_unit_scale();
-        (self.amount * Decimal::from(scale)).to_i64()
+        (self.amount * Decimal::from(scale)).to_i128()
     }
 
     /// Creates a new Money instance from a string amount and currency.
@@ -246,9 +247,9 @@ impl Money {
     /// let jpy = Money::from_minor_units(123, Currency::JPY);   // ¥123
     /// ```
     #[must_use]
-    pub fn from_minor_units(minor_units: i64, currency: Currency) -> Self {
+    pub fn from_minor_units(minor_units: i128, currency: Currency) -> Self {
         let decimal_places = currency.decimal_places();
-        let amount = Decimal::new(minor_units, decimal_places);
+        let amount = Decimal::from_i128_with_scale(minor_units, decimal_places);
         Self::new(amount, currency)
     }
 
@@ -269,16 +270,18 @@ impl Money {
     /// let eur = Money::new(Decimal::new(100, 0), Currency::EUR);
     ///
     /// // This will return an error
-    /// assert!(usd.add(&eur).is_err());
+    /// assert!(usd.try_add(&eur).is_err());
     ///
     /// let usd2 = Money::new(Decimal::new(50, 0), Currency::USD);
     /// // This will succeed
-    /// assert!(usd.add(&usd2).is_ok());
+    /// assert!(usd.try_add(&usd2).is_ok());
     /// ```
     /// # Errors
     /// Returns `MoneyError::CurrencyMismatch` if `rhs.currency` differs
     /// from `self.currency`.
-    pub fn add(&self, rhs: &Self) -> Result<Self, MoneyError> {
+    /// Note: Using the `+` operator will panic on currency mismatch. Use this
+    /// method to handle errors explicitly.
+    pub fn try_add(&self, rhs: &Self) -> Result<Self, MoneyError> {
         if self.currency != rhs.currency {
             return Err(MoneyError::CurrencyMismatch {
                 expected: self.currency.clone(),
@@ -299,16 +302,18 @@ impl Money {
     /// let eur = Money::new(Decimal::new(100, 0), Currency::EUR);
     ///
     /// // This will return an error
-    /// assert!(usd.sub(&eur).is_err());
+    /// assert!(usd.try_sub(&eur).is_err());
     ///
     /// let usd2 = Money::new(Decimal::new(50, 0), Currency::USD);
     /// // This will succeed
-    /// assert!(usd.sub(&usd2).is_ok());
+    /// assert!(usd.try_sub(&usd2).is_ok());
     /// ```
     /// # Errors
     /// Returns `MoneyError::CurrencyMismatch` if `rhs.currency` differs
     /// from `self.currency`.
-    pub fn sub(&self, rhs: &Self) -> Result<Self, MoneyError> {
+    /// Note: Using the `-` operator will panic on currency mismatch. Use this
+    /// method to handle errors explicitly.
+    pub fn try_sub(&self, rhs: &Self) -> Result<Self, MoneyError> {
         if self.currency != rhs.currency {
             return Err(MoneyError::CurrencyMismatch {
                 expected: self.currency.clone(),
@@ -345,14 +350,16 @@ impl Money {
     /// let usd = Money::new(Decimal::new(100, 0), Currency::USD);
     ///
     /// // This will return an error
-    /// assert!(usd.div(Decimal::ZERO).is_err());
+    /// assert!(usd.try_div(Decimal::ZERO).is_err());
     ///
     /// // This will succeed
-    /// assert!(usd.div(Decimal::new(2, 0)).is_ok());
+    /// assert!(usd.try_div(Decimal::new(2, 0)).is_ok());
     /// ```
     /// # Errors
     /// Returns `MoneyError::DivisionByZero` when `rhs` equals zero.
-    pub fn div(&self, rhs: Decimal) -> Result<Self, MoneyError> {
+    /// Note: Using the `/` operator will panic on division by zero. Use this
+    /// method to handle errors explicitly.
+    pub fn try_div(&self, rhs: Decimal) -> Result<Self, MoneyError> {
         if rhs.is_zero() {
             return Err(MoneyError::DivisionByZero);
         }
@@ -392,7 +399,111 @@ impl Money {
             });
         }
 
-        let converted_amount = self.amount * rate.rate();
+        let decimal_places = rate.to.decimal_places();
+        let converted_amount = (self.amount * rate.rate())
+            .round_dp_with_strategy(decimal_places, RoundingStrategy::MidpointAwayFromZero);
         Ok(Self::new(converted_amount, rate.to.clone()))
+    }
+}
+
+// Operator overloading for Money with panicking safety checks for ergonomics
+
+impl Add for Money {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let Self {
+            amount: lhs_amount,
+            currency: lhs_currency,
+        } = self;
+        let Self {
+            amount: rhs_amount,
+            currency: rhs_currency,
+        } = rhs;
+
+        assert!(
+            lhs_currency == rhs_currency,
+            "currency mismatch: expected {lhs_currency}, found {rhs_currency}"
+        );
+
+        Self::new(lhs_amount + rhs_amount, lhs_currency)
+    }
+}
+
+impl<'b> Add<&'b Money> for &Money {
+    type Output = Money;
+
+    fn add(self, rhs: &'b Money) -> Self::Output {
+        assert!(
+            self.currency == rhs.currency,
+            "currency mismatch: expected {expected}, found {found}",
+            expected = self.currency,
+            found = rhs.currency
+        );
+
+        Money::new(self.amount + rhs.amount, self.currency.clone())
+    }
+}
+
+impl Sub for Money {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        let Self {
+            amount: lhs_amount,
+            currency: lhs_currency,
+        } = self;
+        let Self {
+            amount: rhs_amount,
+            currency: rhs_currency,
+        } = rhs;
+
+        assert!(
+            lhs_currency == rhs_currency,
+            "currency mismatch: expected {lhs_currency}, found {rhs_currency}"
+        );
+
+        Self::new(lhs_amount - rhs_amount, lhs_currency)
+    }
+}
+
+impl<'b> Sub<&'b Money> for &Money {
+    type Output = Money;
+
+    fn sub(self, rhs: &'b Money) -> Self::Output {
+        assert!(
+            self.currency == rhs.currency,
+            "currency mismatch: expected {expected}, found {found}",
+            expected = self.currency,
+            found = rhs.currency
+        );
+
+        Money::new(self.amount - rhs.amount, self.currency.clone())
+    }
+}
+
+impl Mul<Decimal> for Money {
+    type Output = Self;
+
+    fn mul(self, rhs: Decimal) -> Self::Output {
+        Self::new(self.amount * rhs, self.currency)
+    }
+}
+
+impl Div<Decimal> for Money {
+    type Output = Self;
+
+    fn div(self, rhs: Decimal) -> Self::Output {
+        assert!(!rhs.is_zero(), "division by zero");
+        Self::new(self.amount / rhs, self.currency)
+    }
+}
+
+impl Div<Decimal> for &Money {
+    type Output = Money;
+
+    fn div(self, rhs: Decimal) -> Self::Output {
+        assert!(!rhs.is_zero(), "division by zero");
+        Money::new(self.amount / rhs, self.currency.clone())
     }
 }
