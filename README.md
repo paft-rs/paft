@@ -80,6 +80,24 @@ fn analyze_data(quote: paft::Quote, history: paft::HistoryResponse) {
 - **Flexible Enums**: Type-safe enums with fallback variants for unknown values
 - **Comprehensive Validation**: Built-in request validation and error handling
 - **Serialization**: Full serde support for JSON, CSV, and other formats
+- **Feature Flags**:
+  - `paft/dataframe`: Enables DataFrame helpers and derives through the facade
+  - `paft/panicking-money-ops` (opt-in): Enables ergonomic arithmetic operators on `Money` that panic on currency mismatch or division by zero. By default, operator overloads are disabled and you should use the safe `try_add`, `try_sub`, and `try_div` methods instead.
+
+  To enable panicking operators via the `paft` facade:
+
+  ```toml
+  [dependencies]
+  paft = { version = "0.1.1", features = ["panicking-money-ops"] }
+  ```
+
+  Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic
+  on currency mismatch or division by zero. Prefer `try_*` methods in most apps.
+
+  For ergonomics in math-heavy code, enable this only when you control the
+  data end to end (e.g., internal pipelines with strict invariants) and are
+  absolutely sure all arithmetic uses matching currencies. For external or
+  untrusted data, keep this feature disabled and use the `try_*` APIs.
 
 ## What's NOT Included (Yet)
 

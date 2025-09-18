@@ -118,6 +118,33 @@ let df = quotes.to_dataframe()?;
 println!("Average price: {:.2}", df.column("price")?.mean()?);
 ```
 
+### Money operators and safety
+
+By default, `Money` arithmetic operators (`+`, `-`, `/`, `*`) that would
+panic on invalid input are disabled. Use the safe methods instead:
+
+```rust
+let sum = a.try_add(&b)?;
+let diff = a.try_sub(&b)?;
+let half = a.try_div(Decimal::from(2))?;
+```
+
+If you explicitly want the ergonomic panicking operators, enable the
+`panicking-money-ops` feature via the `paft` facade (it forwards to `paft-core`):
+
+```toml
+[dependencies]
+paft = { version = "0.1.1", features = ["panicking-money-ops"] }
+```
+
+Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic
+on currency mismatch or division by zero. Prefer `try_*` methods in most apps.
+
+For ergonomics in math-heavy code, you may enable this only when you control
+the data end to end (e.g., internal pipelines with strict invariants) and are
+absolutely sure all arithmetic uses matching currencies. For external or
+untrusted data, keep this feature disabled and use the `try_*` APIs.
+
 ## Handling Unknown Values
 
 paft uses extensible enums with `Other(String)` variants to gracefully handle unknown provider values:
