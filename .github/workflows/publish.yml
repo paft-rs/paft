@@ -34,12 +34,10 @@ jobs:
 
       - name: Publish to crates.io (dry run)
         run: |
-          cargo ws publish --dry-run --from-git
+          cargo publish --workspace --dry-run
 
       - name: Publish to crates.io
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          cargo --workspace publish
-
-
+          cargo publish --workspace
