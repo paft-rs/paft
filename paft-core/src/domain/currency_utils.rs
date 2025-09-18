@@ -105,17 +105,15 @@ pub fn currency_minor_units(code: &str) -> Option<u32> {
 /// Returns the previously configured precision, if one existed.
 pub fn set_currency_minor_units(code: &str, decimals: u32) -> Option<u32> {
     let canonical = canonicalize(code);
-    match MINOR_UNIT_OVERRIDES.write() {
-        Ok(mut map) => map.insert(canonical, decimals),
-        Err(_) => None,
-    }
+    MINOR_UNIT_OVERRIDES
+        .write()
+        .map_or(None, |mut map| map.insert(canonical, decimals))
 }
 
 /// Removes any configured precision override for a currency code.
 pub fn clear_currency_minor_units(code: &str) -> Option<u32> {
     let canonical = canonicalize(code);
-    match MINOR_UNIT_OVERRIDES.write() {
-        Ok(mut map) => map.remove(&canonical),
-        Err(_) => None,
-    }
+    MINOR_UNIT_OVERRIDES
+        .write()
+        .map_or(None, |mut map| map.remove(&canonical))
 }

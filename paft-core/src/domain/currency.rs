@@ -219,10 +219,10 @@ impl Currency {
     /// ```
     #[must_use]
     pub fn decimal_places(&self) -> u32 {
-        if let Self::Other(code) = self {
-            if let Some(decimals) = currency_minor_units(code) {
-                return decimals;
-            }
+        if let Self::Other(code) = self
+            && let Some(decimals) = currency_minor_units(code)
+        {
+            return decimals;
         }
         self.base_decimal_places()
     }
