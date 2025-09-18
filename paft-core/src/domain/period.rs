@@ -12,11 +12,11 @@ use chrono::{DateTime, Utc};
 
 // Compile-time compiled regex patterns for Period parsing
 static QUARTERLY_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
-    Regex::new(r"^(\d{4})[-\s]?Q(\d+)$").expect("Invalid quarterly regex pattern")
+    Regex::new(r"(?i)^(\d{4})[-\s]?Q(\d+)$").expect("Invalid quarterly regex pattern")
 });
 
 static YEAR_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
-    Regex::new(r"^(?:FY|Fiscal\s+)?(\d{4})$").expect("Invalid year regex pattern")
+    Regex::new(r"(?i)^(?:FY|FISCAL\s+)?(\d{4})$").expect("Invalid year regex pattern")
 });
 
 static DATE_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
@@ -25,6 +25,10 @@ static DATE_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
 
 static US_DATE_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r"^(\d{1,2})/(\d{1,2})/(\d{4})$").expect("Invalid US date regex pattern")
+});
+
+static DAY_FIRST_DATE_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r"^(\d{1,2})-(\d{1,2})-(\d{4})$").expect("Invalid day-first date regex pattern")
 });
 
 /// Financial period enumeration with structured variants and extensible fallback.
@@ -156,6 +160,23 @@ impl Period {
             }
         }
 
+        // Try day-first format: "31-12-2023"
+        if let Some(captures) = DAY_FIRST_DATE_REGEX.captures(s) {
+            let day_str = &captures[1];
+            let month_str = &captures[2];
+            let year_str = &captures[3];
+
+            let day = day_str.parse::<u32>().ok()?;
+            let month = month_str.parse::<u32>().ok()?;
+            let year = year_str.parse::<i32>().ok()?;
+
+            if let Some(date) = chrono::NaiveDate::from_ymd_opt(year, month, day)
+                && let Some(datetime) = date.and_hms_opt(0, 0, 0)
+            {
+                return Some(Self::Date(datetime.and_utc()));
+            }
+        }
+
         None
     }
 }
@@ -187,6 +208,7 @@ impl TryFrom<String> for Period {
             || YEAR_REGEX.is_match(trimmed)
             || DATE_REGEX.is_match(trimmed)
             || US_DATE_REGEX.is_match(trimmed)
+            || DAY_FIRST_DATE_REGEX.is_match(trimmed)
         {
             return Err(PaftError::InvalidPeriodFormat { format: s });
         }

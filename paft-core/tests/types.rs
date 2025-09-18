@@ -1,5 +1,6 @@
 //! Tests for canonical types module
 
+use chrono::NaiveDate;
 use paft_core::domain::{MarketState, Period};
 
 #[test]
@@ -37,6 +38,31 @@ fn test_period_from_string() {
             quarter: 4
         }
     );
+
+    assert_eq!(
+        Period::try_from("2023q1".to_string()).unwrap(),
+        Period::Quarter {
+            year: 2023,
+            quarter: 1
+        }
+    );
+
+    assert_eq!(
+        Period::try_from("fy2023".to_string()).unwrap(),
+        Period::Year { year: 2023 }
+    );
+}
+
+#[test]
+fn test_period_day_first_date_parsing() {
+    let period = Period::try_from("31-12-2023".to_string()).unwrap();
+    match period {
+        Period::Date(dt) => {
+            let expected = NaiveDate::from_ymd_opt(2023, 12, 31).unwrap();
+            assert_eq!(dt.date_naive(), expected);
+        }
+        other => panic!("Expected Period::Date variant, got {other:?}"),
+    }
 }
 
 #[test]
