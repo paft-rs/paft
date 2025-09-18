@@ -27,6 +27,7 @@ polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde",
 [features]
 default = []
 dataframe = ["polars", "df-derive"]
+panicking-money-ops = []
 
 [dev-dependencies]
 serde_json = { workspace = true }

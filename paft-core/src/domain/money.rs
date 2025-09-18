@@ -4,6 +4,7 @@ use crate::domain::currency::Currency;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::{Decimal, RoundingStrategy};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "panicking-money-ops")]
 use std::ops::{Add, Div, Mul, Sub};
 use thiserror::Error;
 
@@ -407,7 +408,7 @@ impl Money {
 }
 
 // Operator overloading for Money with panicking safety checks for ergonomics
-
+#[cfg(feature = "panicking-money-ops")]
 impl Add for Money {
     type Output = Self;
 
@@ -430,6 +431,7 @@ impl Add for Money {
     }
 }
 
+#[cfg(feature = "panicking-money-ops")]
 impl<'b> Add<&'b Money> for &Money {
     type Output = Money;
 
@@ -445,6 +447,7 @@ impl<'b> Add<&'b Money> for &Money {
     }
 }
 
+#[cfg(feature = "panicking-money-ops")]
 impl Sub for Money {
     type Output = Self;
 
@@ -467,6 +470,7 @@ impl Sub for Money {
     }
 }
 
+#[cfg(feature = "panicking-money-ops")]
 impl<'b> Sub<&'b Money> for &Money {
     type Output = Money;
 
@@ -482,6 +486,7 @@ impl<'b> Sub<&'b Money> for &Money {
     }
 }
 
+#[cfg(feature = "panicking-money-ops")]
 impl Mul<Decimal> for Money {
     type Output = Self;
 
@@ -490,6 +495,7 @@ impl Mul<Decimal> for Money {
     }
 }
 
+#[cfg(feature = "panicking-money-ops")]
 impl Div<Decimal> for Money {
     type Output = Self;
 
@@ -499,6 +505,7 @@ impl Div<Decimal> for Money {
     }
 }
 
+#[cfg(feature = "panicking-money-ops")]
 impl Div<Decimal> for &Money {
     type Output = Money;
 

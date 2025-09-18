@@ -25,6 +25,7 @@ fundamentals = ["paft-fundamentals"]
 
 dataframe = ["paft-core/dataframe", "paft-market?/dataframe", "paft-fundamentals?/dataframe"]
 full = ["market", "fundamentals", "dataframe"]
+panicking-money-ops = ["paft-core/panicking-money-ops"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

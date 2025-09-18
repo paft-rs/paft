@@ -2,88 +2,121 @@ use paft_core::domain::{Currency, ExchangeRate, Money};
 use rust_decimal::Decimal;
 use std::str::FromStr;
 
-#[test]
-fn test_same_currency_arithmetic() {
-    let usd_100 = Money::new(Decimal::from(100), Currency::USD);
-    let usd_50 = Money::new(Decimal::from(50), Currency::USD);
+#[cfg(feature = "panicking-money-ops")]
+mod panicking_ops_tests {
+    use super::*;
 
-    // Addition should work
-    let total = &usd_100 + &usd_50;
-    assert_eq!(total.amount(), Decimal::from(150));
-    assert_eq!(total.currency(), &Currency::USD);
+    #[test]
+    fn test_same_currency_arithmetic() {
+        let usd_100 = Money::new(Decimal::from(100), Currency::USD);
+        let usd_50 = Money::new(Decimal::from(50), Currency::USD);
 
-    // Subtraction should work
-    let diff = &usd_100 - &usd_50;
-    assert_eq!(diff.amount(), Decimal::from(50));
-    assert_eq!(diff.currency(), &Currency::USD);
+        // Addition should work
+        let total = &usd_100 + &usd_50;
+        assert_eq!(total.amount(), Decimal::from(150));
+        assert_eq!(total.currency(), &Currency::USD);
+
+        // Subtraction should work
+        let diff = &usd_100 - &usd_50;
+        assert_eq!(diff.amount(), Decimal::from(50));
+        assert_eq!(diff.currency(), &Currency::USD);
+    }
+
+    #[test]
+    #[should_panic(expected = "currency mismatch")]
+    fn test_different_currency_addition_panics() {
+        let usd_100 = Money::new(Decimal::from(100), Currency::USD);
+        let eur_100 = Money::new(Decimal::from(100), Currency::EUR);
+
+        // Addition should panic on currency mismatch
+        let _ = &usd_100 + &eur_100;
+    }
+
+    #[test]
+    fn test_money_scalar_operations() {
+        let usd_100 = Money::new(Decimal::from(100), Currency::USD);
+
+        // Multiplication
+        let doubled = usd_100.mul(Decimal::from(2));
+        assert_eq!(doubled.amount(), Decimal::from(200));
+        assert_eq!(doubled.currency(), &Currency::USD);
+
+        // Division
+        let halved = &usd_100 / Decimal::from(2);
+        assert_eq!(halved.amount(), Decimal::from(50));
+        assert_eq!(halved.currency(), &Currency::USD);
+    }
+
+    #[test]
+    fn test_money_reference_arithmetic_is_ergonomic() {
+        let lhs = Money::new(Decimal::from(125), Currency::USD);
+        let rhs = Money::new(Decimal::from(75), Currency::USD);
+
+        // Addition and subtraction should work on references without cloning
+        let sum = &lhs + &rhs;
+        assert_eq!(sum.amount(), Decimal::from(200));
+        assert_eq!(sum.currency(), &Currency::USD);
+
+        let diff = &lhs - &rhs;
+        assert_eq!(diff.amount(), Decimal::from(50));
+        assert_eq!(diff.currency(), &Currency::USD);
+
+        // The original values should remain accessible afterwards (not moved)
+        assert_eq!(lhs.amount(), Decimal::from(125));
+        assert_eq!(rhs.amount(), Decimal::from(75));
+    }
+
+    #[test]
+    fn test_money_owned_arithmetic_is_ergonomic() {
+        let a = Money::new(Decimal::from(125), Currency::USD);
+        let b = Money::new(Decimal::from(75), Currency::USD);
+
+        let sum = a + b;
+        assert_eq!(sum.amount(), Decimal::from(200));
+        assert_eq!(sum.currency(), &Currency::USD);
+
+        let c = Money::new(Decimal::from(125), Currency::USD);
+        let d = Money::new(Decimal::from(75), Currency::USD);
+
+        let diff = c - d;
+        assert_eq!(diff.amount(), Decimal::from(50));
+        assert_eq!(diff.currency(), &Currency::USD);
+    }
+
+    #[test]
+    #[should_panic(expected = "division by zero")]
+    fn test_division_by_zero_panics() {
+        let usd_100 = Money::new(Decimal::from(100), Currency::USD);
+        let _ = &usd_100 / Decimal::from(0);
+    }
 }
 
-#[test]
-#[should_panic(expected = "currency mismatch")]
-fn test_different_currency_addition_panics() {
-    let usd_100 = Money::new(Decimal::from(100), Currency::USD);
-    let eur_100 = Money::new(Decimal::from(100), Currency::EUR);
+#[cfg(not(feature = "panicking-money-ops"))]
+mod non_panicking_default_tests {
+    use super::*;
 
-    // Addition should panic on currency mismatch
-    let _ = &usd_100 + &eur_100;
-}
+    #[test]
+    fn test_non_panicking_division_uses_try_div() {
+        let usd_100 = Money::new(Decimal::from(100), Currency::USD);
+        assert!(usd_100.try_div(Decimal::ZERO).is_err());
+        let ok = usd_100.try_div(Decimal::from(2)).unwrap();
+        assert_eq!(ok.amount(), Decimal::from(50));
+        assert_eq!(ok.currency(), &Currency::USD);
+    }
 
-#[test]
-fn test_money_scalar_operations() {
-    let usd_100 = Money::new(Decimal::from(100), Currency::USD);
-
-    // Multiplication
-    let doubled = usd_100.mul(Decimal::from(2));
-    assert_eq!(doubled.amount(), Decimal::from(200));
-    assert_eq!(doubled.currency(), &Currency::USD);
-
-    // Division
-    let halved = &usd_100 / Decimal::from(2);
-    assert_eq!(halved.amount(), Decimal::from(50));
-    assert_eq!(halved.currency(), &Currency::USD);
-}
-
-#[test]
-fn test_money_reference_arithmetic_is_ergonomic() {
-    let lhs = Money::new(Decimal::from(125), Currency::USD);
-    let rhs = Money::new(Decimal::from(75), Currency::USD);
-
-    // Addition and subtraction should work on references without cloning
-    let sum = &lhs + &rhs;
-    assert_eq!(sum.amount(), Decimal::from(200));
-    assert_eq!(sum.currency(), &Currency::USD);
-
-    let diff = &lhs - &rhs;
-    assert_eq!(diff.amount(), Decimal::from(50));
-    assert_eq!(diff.currency(), &Currency::USD);
-
-    // The original values should remain accessible afterwards (not moved)
-    assert_eq!(lhs.amount(), Decimal::from(125));
-    assert_eq!(rhs.amount(), Decimal::from(75));
-}
-
-#[test]
-fn test_money_owned_arithmetic_is_ergonomic() {
-    let a = Money::new(Decimal::from(125), Currency::USD);
-    let b = Money::new(Decimal::from(75), Currency::USD);
-
-    let sum = a + b;
-    assert_eq!(sum.amount(), Decimal::from(200));
-    assert_eq!(sum.currency(), &Currency::USD);
-
-    let c = Money::new(Decimal::from(125), Currency::USD);
-    let d = Money::new(Decimal::from(75), Currency::USD);
-
-    let diff = c - d;
-    assert_eq!(diff.amount(), Decimal::from(50));
-    assert_eq!(diff.currency(), &Currency::USD);
-}
-
-#[test]
-#[should_panic(expected = "division by zero")]
-fn test_division_by_zero_panics() {
-    let usd_100 = Money::new(Decimal::from(100), Currency::USD);
-    let _ = &usd_100 / Decimal::from(0);
+    #[test]
+    fn test_try_add_try_sub_work_without_ops() {
+        let usd_100 = Money::new(Decimal::from(100), Currency::USD);
+        let usd_50 = Money::new(Decimal::from(50), Currency::USD);
+        assert_eq!(
+            usd_100.try_add(&usd_50).unwrap().amount(),
+            Decimal::from(150)
+        );
+        assert_eq!(
+            usd_100.try_sub(&usd_50).unwrap().amount(),
+            Decimal::from(50)
+        );
+    }
 }
 
 #[test]
