@@ -28,10 +28,6 @@ jobs:
         run: |
           cargo test --workspace --all-features --locked
 
-      - name: Install cargo-workspaces
-        run: |
-          cargo install cargo-workspaces
-
       - name: Publish to crates.io (dry run)
         run: |
           cargo publish --workspace --dry-run
