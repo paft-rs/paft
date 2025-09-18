@@ -7,3 +7,6 @@ test crate='':
 
 bench crate='':
   cargo bench {{ if crate != "" { "-p " + crate } else { "" } }}
+
+fmt:
+  cargo fmt --all
