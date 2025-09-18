@@ -15,8 +15,8 @@ fn calendar_ts_seconds_serde() {
 
     let s = to_string(&c).unwrap();
     let v: serde_json::Value = from_str(&s).unwrap();
-    assert_eq!(v["earnings_dates"], json!([1704067200, 1711929600]));
-    assert_eq!(v["ex_dividend_date"], json!(1707955200));
+    assert_eq!(v["earnings_dates"], json!([1_704_067_200, 1_711_929_600]));
+    assert_eq!(v["ex_dividend_date"], json!(1_707_955_200));
     assert!(v["dividend_payment_date"].is_null());
 
     let back: Calendar = from_str(&s).unwrap();

@@ -58,7 +58,7 @@ fn insider_transaction_serde_with_enums_and_timestamps() {
     let v: serde_json::Value = from_str(&s).unwrap();
     assert_eq!(v["position"], json!("CFO"));
     assert_eq!(v["transaction_type"], json!("BUY"));
-    assert_eq!(v["transaction_date"], json!(1725148800));
+    assert_eq!(v["transaction_date"], json!(1_725_148_800));
 
     let back: InsiderTransaction = from_str(&s).unwrap();
     assert_eq!(back, tx);

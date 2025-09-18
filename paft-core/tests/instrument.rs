@@ -49,11 +49,11 @@ fn asset_kind_case_normalization() {
 #[test]
 fn asset_kind_debug_formatting() {
     let equity = AssetKind::Equity;
-    let debug_str = format!("{:?}", equity);
+    let debug_str = format!("{equity:?}");
     assert_eq!(debug_str, "Equity");
 
     let crypto = AssetKind::Crypto;
-    let debug_str = format!("{:?}", crypto);
+    let debug_str = format!("{crypto:?}");
     assert_eq!(debug_str, "Crypto");
 }
 
@@ -240,7 +240,7 @@ fn instrument_debug_formatting() {
         None,
         Some(Exchange::NASDAQ),
     );
-    let debug_str = format!("{:?}", instrument);
+    let debug_str = format!("{instrument:?}");
     assert!(debug_str.contains("BBG000B9XRY4"));
     assert!(debug_str.contains("AAPL"));
     assert!(debug_str.contains("NASDAQ"));
