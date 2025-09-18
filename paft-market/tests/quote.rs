@@ -42,7 +42,7 @@ fn quote_construction() {
 #[test]
 fn quote_empty_construction() {
     let quote = Quote {
-        symbol: "".to_string(),
+        symbol: String::new(),
         shortname: None,
         price: None,
         previous_close: None,
@@ -89,7 +89,7 @@ fn quote_debug_formatting() {
         market_state: Some(MarketState::Regular),
     };
 
-    let debug_str = format!("{:?}", quote);
+    let debug_str = format!("{quote:?}");
     assert!(debug_str.contains("AAPL"));
     assert!(debug_str.contains("150"));
 }
@@ -248,7 +248,7 @@ fn quote_update_debug_formatting() {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
 
-    let debug_str = format!("{:?}", update);
+    let debug_str = format!("{update:?}");
     assert!(debug_str.contains("AAPL"));
     assert!(debug_str.contains("150"));
 }

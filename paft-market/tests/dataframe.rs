@@ -21,7 +21,7 @@ fn quote_to_dataframe_smoke() {
 
 #[test]
 fn vec_quote_to_dataframe_smoke() {
-    let v = vec![Quote {
+    let v = [Quote {
         symbol: "AAPL".to_string(),
         shortname: None,
         price: None,

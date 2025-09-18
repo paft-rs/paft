@@ -1,5 +1,6 @@
 //! Historical data request types and helpers.
 
+use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
@@ -88,27 +89,19 @@ impl Interval {
     }
 }
 
-/// Two-variant switch used instead of multiple independent bools.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum Switch {
-    /// Feature disabled
-    #[default]
-    Off,
-    /// Feature enabled
-    On,
-}
-
-impl From<bool> for Switch {
-    fn from(b: bool) -> Self {
-        if b { Self::On } else { Self::Off }
-    }
-}
-
-impl Switch {
-    /// Returns true if the switch is On.
-    #[must_use]
-    pub const fn is_on(self) -> bool {
-        matches!(self, Self::On)
+bitflags! {
+    /// Flags to control additional behaviors in history requests.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    #[serde(transparent)]
+    pub struct HistoryFlags: u8 {
+        /// Include pre/post market sessions if supported.
+        const INCLUDE_PREPOST = 0b0001;
+        /// Include corporate actions (dividends/splits) in the response if supported.
+        const INCLUDE_ACTIONS = 0b0010;
+        /// Prefer adjusted close for equities when provider supports it.
+        const AUTO_ADJUST = 0b0100;
+        /// Keep missing candle slots as placeholders depending on consumer.
+        const KEEPNA = 0b1000;
     }
 }
 
@@ -144,14 +137,8 @@ pub struct HistoryRequest {
     time_spec: TimeSpec,
     /// Desired aggregation interval.
     interval: Interval,
-    /// Include pre/post market sessions if supported.
-    include_prepost: Switch,
-    /// Include corporate actions (dividends/splits) in the response if supported.
-    include_actions: Switch,
-    /// Prefer adjusted close for equities when provider supports it.
-    auto_adjust: Switch,
-    /// Keep missing candle slots as `NaN`/placeholder depending on consumer.
-    keepna: Switch,
+    /// Additional behavior flags.
+    flags: HistoryFlags,
 }
 
 /// Builder for creating validated `HistoryRequest` instances.
@@ -159,23 +146,17 @@ pub struct HistoryRequest {
 pub struct HistoryRequestBuilder {
     time_spec: TimeSpec,
     interval: Interval,
-    include_prepost: Switch,
-    include_actions: Switch,
-    auto_adjust: Switch,
-    keepna: Switch,
+    flags: HistoryFlags,
 }
 
 impl HistoryRequestBuilder {
     /// Create a new builder with default values.
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             time_spec: TimeSpec::Range(Range::M6),
             interval: Interval::D1,
-            include_prepost: Switch::Off,
-            include_actions: Switch::On,
-            auto_adjust: Switch::On,
-            keepna: Switch::Off,
+            flags: HistoryFlags::INCLUDE_ACTIONS | HistoryFlags::AUTO_ADJUST,
         }
     }
 
@@ -202,29 +183,45 @@ impl HistoryRequestBuilder {
 
     /// Set whether to include pre/post market sessions.
     #[must_use]
-    pub const fn include_prepost(mut self, include: bool) -> Self {
-        self.include_prepost = if include { Switch::On } else { Switch::Off };
+    pub fn include_prepost(mut self, include: bool) -> Self {
+        if include {
+            self.flags.insert(HistoryFlags::INCLUDE_PREPOST);
+        } else {
+            self.flags.remove(HistoryFlags::INCLUDE_PREPOST);
+        }
         self
     }
 
     /// Set whether to include corporate actions.
     #[must_use]
-    pub const fn include_actions(mut self, include: bool) -> Self {
-        self.include_actions = if include { Switch::On } else { Switch::Off };
+    pub fn include_actions(mut self, include: bool) -> Self {
+        if include {
+            self.flags.insert(HistoryFlags::INCLUDE_ACTIONS);
+        } else {
+            self.flags.remove(HistoryFlags::INCLUDE_ACTIONS);
+        }
         self
     }
 
     /// Set whether to prefer adjusted close prices.
     #[must_use]
-    pub const fn auto_adjust(mut self, adjust: bool) -> Self {
-        self.auto_adjust = if adjust { Switch::On } else { Switch::Off };
+    pub fn auto_adjust(mut self, adjust: bool) -> Self {
+        if adjust {
+            self.flags.insert(HistoryFlags::AUTO_ADJUST);
+        } else {
+            self.flags.remove(HistoryFlags::AUTO_ADJUST);
+        }
         self
     }
 
     /// Set whether to keep missing candle slots.
     #[must_use]
-    pub const fn keepna(mut self, keep: bool) -> Self {
-        self.keepna = if keep { Switch::On } else { Switch::Off };
+    pub fn keepna(mut self, keep: bool) -> Self {
+        if keep {
+            self.flags.insert(HistoryFlags::KEEPNA);
+        } else {
+            self.flags.remove(HistoryFlags::KEEPNA);
+        }
         self
     }
 
@@ -249,10 +246,7 @@ impl HistoryRequestBuilder {
         Ok(HistoryRequest {
             time_spec: self.time_spec,
             interval: self.interval,
-            include_prepost: self.include_prepost,
-            include_actions: self.include_actions,
-            auto_adjust: self.auto_adjust,
-            keepna: self.keepna,
+            flags: self.flags,
         })
     }
 }
@@ -266,7 +260,7 @@ impl Default for HistoryRequestBuilder {
 impl HistoryRequest {
     /// Create a new builder for constructing a `HistoryRequest`.
     #[must_use]
-    pub const fn builder() -> HistoryRequestBuilder {
+    pub fn builder() -> HistoryRequestBuilder {
         HistoryRequestBuilder::new()
     }
 
@@ -330,24 +324,24 @@ impl HistoryRequest {
     /// Get whether pre/post market sessions are included.
     #[must_use]
     pub const fn include_prepost(&self) -> bool {
-        self.include_prepost.is_on()
+        self.flags.contains(HistoryFlags::INCLUDE_PREPOST)
     }
 
     /// Get whether corporate actions are included.
     #[must_use]
     pub const fn include_actions(&self) -> bool {
-        self.include_actions.is_on()
+        self.flags.contains(HistoryFlags::INCLUDE_ACTIONS)
     }
 
     /// Get whether auto-adjust is enabled.
     #[must_use]
     pub const fn auto_adjust(&self) -> bool {
-        self.auto_adjust.is_on()
+        self.flags.contains(HistoryFlags::AUTO_ADJUST)
     }
 
     /// Get whether missing values are kept.
     #[must_use]
     pub const fn keepna(&self) -> bool {
-        self.keepna.is_on()
+        self.flags.contains(HistoryFlags::KEEPNA)
     }
 }

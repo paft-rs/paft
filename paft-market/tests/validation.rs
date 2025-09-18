@@ -8,7 +8,7 @@ fn search_request_validation_empty_query_rejected() {
     let result = SearchRequest::new("");
     assert!(result.is_err());
 
-    if let Err(PaftError::EmptySearchQuery) = result {
+    if result == Err(PaftError::EmptySearchQuery) {
         // expected
     } else {
         panic!("Expected EmptySearchQuery error for empty query");
@@ -20,7 +20,7 @@ fn search_request_validation_whitespace_only_query_rejected() {
     let result = SearchRequest::new("   \t\n  ");
     assert!(result.is_err());
 
-    if let Err(PaftError::EmptySearchQuery) = result {
+    if result == Err(PaftError::EmptySearchQuery) {
         // expected
     } else {
         panic!("Expected EmptySearchQuery error for whitespace-only query");
