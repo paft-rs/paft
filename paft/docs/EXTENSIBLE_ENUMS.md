@@ -4,6 +4,12 @@
 
 paft uses a consistent "Other(String)" extensible enum pattern across all enum types (`Currency`, `Exchange`, `AssetKind`, `MarketState`, `Period`, `RecommendationGrade`, etc.). This pattern provides a pragmatic solution to the fragmentation problem in financial data, allowing the library to gracefully handle provider-specific or unknown variants without failing.
 
+Important serde and normalization rules:
+
+- Emission is a single canonical token per known variant (UPPERCASE ASCII, no spaces), and the parser accepts a superset of aliases (case-insensitive).
+- For `Other(s)`, serialization emits exactly the `Display`/`code()` string (no escape prefix). Deserialization routes through `try_from_str`, which first checks aliases and then uppercases unknown tokens into `Other(UPPERCASE)`.
+- This maintains round-trip identity for canonical variants and consistent normalization for unknowns: canonical "BTC" ↔ `BTC`; unknown "bitcoin" ↔ `Other("BITCOIN")`.
+
 ## The Philosophy
 
 ### The Problem: Provider Fragmentation
@@ -22,44 +28,90 @@ Instead of failing when encountering unknown values, paft's extensible enums:
 1. **Try to parse** the input as a known canonical variant first
 2. **Fall back gracefully** to `Other(String)` for unknown values
 3. **Normalize** unknown values to uppercase for consistency
-4. **Preserve** the original string for debugging and provider compatibility
+4. **Preserve** the normalized string for debugging and provider compatibility
 
 ## Implementation Pattern
 
 Every extensible enum in paft follows this consistent pattern:
 
 ```rust
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Display, AsRefStr, EnumString, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, AsRefStr, EnumString, Default)]
 #[strum(ascii_case_insensitive)]
-#[serde(from = "String", into = "String")]
 pub enum ExampleEnum {
     /// Known variant with multiple serialization aliases
     #[strum(serialize = "VARIANT1", serialize = "ALT_NAME")]
     Variant1,
-    
+
     /// Another known variant
     Variant2,
-    
+
     /// Unknown or provider-specific value
     Other(String),
 }
 
-impl From<String> for ExampleEnum {
-    fn from(s: String) -> Self {
-        // Try to parse as a known variant first
-        match Self::from_str(&s) {
-            Ok(variant) => variant,
-            Err(_) => Self::Other(s.to_uppercase()),
+impl ExampleEnum {
+    /// Parses a string, returning `Other(UPPERCASE)` for unknown values.
+    pub fn try_from_str(input: &str) -> Result<Self, String> {
+        let trimmed = input.trim();
+        if trimmed.is_empty() {
+            return Err("example enum cannot be empty".to_string());
         }
+
+        if let Ok(parsed) = Self::from_str(trimmed) {
+            return Ok(parsed);
+        }
+
+        Ok(Self::Other(trimmed.to_ascii_uppercase()))
+    }
+}
+
+impl From<String> for ExampleEnum {
+    fn from(value: String) -> Self {
+        Self::try_from_str(&value).expect("invalid example enum string")
     }
 }
 
 impl From<ExampleEnum> for String {
     fn from(enum_value: ExampleEnum) -> Self {
-        match enum_value {
-            ExampleEnum::Other(s) => s,
-            _ => enum_value.to_string(),
-        }
+        format!("{}", enum_value)
+    }
+}
+
+impl serde::Serialize for ExampleEnum {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for ExampleEnum {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Self::try_from_str(&raw).map_err(serde::de::Error::custom)
+    }
+}
+
+impl fmt::Display for ExampleEnum {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let value = match self {
+            ExampleEnum::Variant1 => "VARIANT1",
+            ExampleEnum::Variant2 => "VARIANT2",
+            ExampleEnum::Other(code) => code,
+        };
+        f.write_str(value)
+    }
+}
+
+impl std::convert::TryFrom<String> for ExampleEnum {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from_str(&value)
     }
 }
 ```
@@ -71,7 +123,7 @@ impl From<ExampleEnum> for String {
 ✅ **Graceful Degradation**: Never fails on unknown values  
 ✅ **Provider Compatibility**: Works with any data source  
 ✅ **Future-Proof**: Handles new values without code changes  
-✅ **Debugging Friendly**: Preserves original provider strings  
+✅ **Debugging Friendly**: Preserves normalized provider strings  
 ✅ **Type Safety**: Still provides compile-time checks for known variants  
 
 ### Costs
@@ -113,7 +165,8 @@ fn process_currency(currency: Currency) -> String {
 ```rust
 fn handle_provider_currency(provider_code: &str) -> Currency {
     // Always falls back to Other, even for known variants
-    Currency::from(provider_code.to_string())
+    Currency::try_from_str(provider_code)
+        .unwrap_or_else(|_| Currency::Other(provider_code.trim().to_uppercase()))
 }
 ```
 
@@ -122,9 +175,10 @@ fn handle_provider_currency(provider_code: &str) -> Currency {
 fn handle_provider_currency(provider_code: &str) -> Currency {
     // Map provider-specific codes to canonical variants
     match provider_code {
-        "BITCOIN" | "XBT" => Currency::Other("BTC".to_string()),
+        "BITCOIN" | "XBT" => Currency::BTC,
         "DOLLAR" => Currency::USD,
-        _ => Currency::from(provider_code.to_string()),
+        other => Currency::try_from_str(other)
+            .unwrap_or_else(|_| Currency::Other(other.trim().to_uppercase())),
     }
 }
 ```
@@ -155,7 +209,7 @@ fn analyze_asset(asset: AssetKind) {
 
 **❌ Don't do this:**
 ```rust
-// Creates Other variant unnecessarily
+// Creates Other variant unnecessarily and breaks round-trip
 let currency = Currency::Other("USD".to_string());
 ```
 
@@ -193,12 +247,12 @@ When building libraries on top of paft, encourage mapping provider-specific stri
 // In your provider adapter
 impl From<GenericProviderCurrency> for Currency {
     fn from(gp_currency: GenericProviderCurrency) -> Self {
-        match yf_currency.code.as_str() {
-            "BTC" | "BITCOIN" => Currency::Other("BTC".to_string()),
+        match gp_currency.code.as_ref() {
+            "BTC" | "BITCOIN" => Currency::BTC,
             "USD" => Currency::USD,
             "EUR" => Currency::EUR,
             // Map as many as possible to canonical variants
-            _ => Currency::Other(yf_currency.code.to_uppercase()),
+            other => Currency::Other(other.trim().to_uppercase()),
         }
     }
 }
@@ -212,10 +266,15 @@ pub mod currency_utils {
     
     /// Attempts to normalize a currency code to a canonical variant
     pub fn normalize_currency_code(code: &str) -> Currency {
-        match code.to_uppercase().as_str() {
-            "BITCOIN" | "XBT" => Currency::Other("BTC".to_string()),
-            "DOLLAR" | "US_DOLLAR" => Currency::USD,
-            _ => Currency::from(code.to_string()),
+        let trimmed = code.trim();
+        if trimmed.is_empty() {
+            return Currency::Other("UNKNOWN".to_string());
+        }
+
+        match trimmed.to_uppercase().as_ref() {
+            "BITCOIN" | "XBT" => Currency::BTC,
+            "DOLLAR" | "US_DOLLAR" | "USD" => Currency::USD,
+            other => Currency::Other(other.to_string()),
         }
     }
     
@@ -223,7 +282,7 @@ pub mod currency_utils {
     pub fn is_common_currency(currency: &Currency) -> bool {
         match currency {
             Currency::USD | Currency::EUR | Currency::GBP | Currency::JPY => true,
-            Currency::Other(code) => matches!(code.as_str(), "BTC" | "ETH"),
+            Currency::Other(code) => matches!(code.as_ref(), "BTC" | "ETH"),
             _ => false,
         }
     }
@@ -287,7 +346,7 @@ fn process_currencies(currencies: Vec<Currency>) {
                 println!("Processing unknown currency: {}", code);
                 
                 // Try to handle common unknown currencies
-                match code.as_str() {
+                match code.as_ref() {
                     "BTC" => {
                         println!("Bitcoin detected - using crypto logic");
                         // Crypto-specific logic
@@ -308,11 +367,14 @@ fn process_currencies(currencies: Vec<Currency>) {
 
 // Helper function to normalize provider data
 fn normalize_provider_currency(provider_code: &str) -> Currency {
-    match provider_code.to_uppercase().as_str() {
-        "DOLLAR" | "US_DOLLAR" => Currency::USD,
-        "EURO" => Currency::EUR,
-        "BITCOIN" | "XBT" => Currency::Other("BTC".to_string()),
-        _ => Currency::from(provider_code.to_string()),
+    // Prefer canonical variants, never produce Other for values we model canonically
+    match provider_code.to_uppercase().as_ref() {
+        "DOLLAR" | "US_DOLLAR" | "USD" => Currency::USD,
+        "EURO" | "EUR" => Currency::EUR,
+        "BITCOIN" | "XBT" | "BTC" => Currency::BTC,
+        "ETHEREUM" | "ETH" => Currency::ETH,
+        _ => Currency::try_from_str(provider_code)
+            .unwrap_or_else(|_| Currency::Other(provider_code.trim().to_uppercase())),
     }
 }
 ```

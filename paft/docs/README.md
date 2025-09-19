@@ -44,7 +44,7 @@ match currency {
     Currency::EUR => "Euro",
     Currency::Other(code) => {
         // Always handle the Other variant
-        match code.as_str() {
+        match code.as_ref() {
             "BTC" => "Bitcoin",
             _ => &format!("Unknown: {}", code),
         }

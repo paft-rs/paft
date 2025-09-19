@@ -18,13 +18,13 @@ Standardized Rust types for financial data that work with any provider—Yahoo F
 [dependencies]
 # Basic installation with all supported data types
 # default = ["market", "fundamentals"]
-paft = "0.1.1"
+paft = "0.2.0"
 
 # Or, install with all features enabled
-paft = { version = "0.1.1", features = ["dataframe"] }
+paft = { version = "0.2.0", features = ["dataframe"] }
 
 # Or, customize your installation
-paft = { version = "0.1.1", default-features = false, features = ["fundamentals", "dataframe"] }
+paft = { version = "0.2.0", default-features = false, features = ["fundamentals", "dataframe"] }
 ```
 
 ## What's Included
@@ -107,7 +107,7 @@ Enable DataFrame support for analysis:
 
 ```toml
 [dependencies]
-paft = { version = "0.1.1", features = ["dataframe"] }
+paft = { version = "0.2.0", features = ["dataframe"] }
 ```
 
 ```rust
@@ -134,7 +134,7 @@ If you explicitly want the ergonomic panicking operators, enable the
 
 ```toml
 [dependencies]
-paft = { version = "0.1.1", features = ["panicking-money-ops"] }
+paft = { version = "0.2.0", features = ["panicking-money-ops"] }
 ```
 
 Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic
@@ -158,7 +158,7 @@ match currency {
     Currency::EUR => "Euro", 
     Currency::Other(code) => {
         // Graceful fallback for unknown currencies
-        match code.as_str() {
+        match code.as_ref() {
             "BTC" => "Bitcoin",
             _ => "Unknown currency",
         }
@@ -170,6 +170,16 @@ let exchange = Exchange::Other("BATS".to_string()); // Unknown exchange
 ```
 
 This pattern ensures your code never breaks when providers return new or unexpected values.
+
+## Canonical Codes vs Human Labels
+
+Enums ship with three complementary string representations:
+
+- **Wire**: `code()` returns the canonical token used in APIs and serialization.
+- **Display**: `to_string()` mirrors `code()` so logging and dataframes stay consistent.
+- **Human**: Opt-in helpers such as `Currency::full_name()`, `AssetKind::full_name()`, and `MarketState::full_name()` provide sentence-case labels for UI surfaces.
+
+Keep the rule of thumb: *wire = code = Display; human prose = explicit helper*.
 
 ### More Details
 

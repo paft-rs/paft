@@ -88,7 +88,7 @@ fn analyze_data(quote: paft::Quote, history: paft::HistoryResponse) {
 
   ```toml
   [dependencies]
-  paft = { version = "0.1.1", features = ["panicking-money-ops"] }
+  paft = { version = "0.2.0", features = ["panicking-money-ops"] }
   ```
 
   Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic
@@ -214,7 +214,7 @@ impl GenericQuoteWire {
             price: self.regularMarketPrice.map(|amount| 
                 paft::Money::new(amount.into(), paft::Currency::USD)
             ),
-            exchange: self.exchange.as_ref().map(|ex| match ex.as_str() {
+            exchange: self.exchange.as_ref().map(|ex| match ex.as_ref() {
                 "NASDAQ" => paft::Exchange::NASDAQ,
                 "NYSE" => paft::Exchange::NYSE,
                 other => paft::Exchange::Other(other.to_string()), // Graceful handling

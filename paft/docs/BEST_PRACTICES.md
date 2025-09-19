@@ -62,20 +62,22 @@ fn analyze_asset(asset: AssetKind) {
 ### 3. Create Mapping Functions for Common Cases
 
 ```rust
-/// Maps provider-specific currency codes to canonical variants or common Other values
+/// Maps provider-specific currency codes to canonical variants.
+/// Never produce Other for values we model canonically.
 fn normalize_currency(provider_code: &str) -> Currency {
-    match provider_code.to_uppercase().as_str() {
+    match provider_code.to_uppercase().as_ref() {
         // Map to canonical variants when possible
-        "DOLLAR" | "US_DOLLAR" => Currency::USD,
-        "EURO" => Currency::EUR,
+        "DOLLAR" | "US_DOLLAR" | "USD" => Currency::USD,
+        "EURO" | "EUR" => Currency::EUR,
         "POUND" | "GBP" => Currency::GBP,
-        
-        // Normalize crypto currencies to common Other values
-        "BITCOIN" | "XBT" => Currency::Other("BTC".to_string()),
-        "ETHEREUM" => Currency::Other("ETH".to_string()),
-        
-        // Preserve other values as-is
-        _ => Currency::from(provider_code.to_string()),
+
+        // Map common cryptos to canonical variants when available
+        "BITCOIN" | "XBT" | "BTC" => Currency::BTC,
+        "ETHEREUM" | "ETH" => Currency::ETH,
+
+        // Preserve other values as uppercase Other
+        _ => Currency::try_from_str(provider_code)
+            .unwrap_or_else(|_| Currency::Other(provider_code.trim().to_uppercase())),
     }
 }
 ```
@@ -108,18 +110,19 @@ When building libraries on top of paft, map provider-specific strings to canonic
 // In your provider adapter
 impl From<GenericProviderCurrency> for Currency {
     fn from(gp_currency: GenericProviderCurrency) -> Self {
-        match yf_currency.code.as_str() {
+        match gp_currency.code.as_ref() {
             // Map to canonical variants
             "USD" => Currency::USD,
             "EUR" => Currency::EUR,
             "GBP" => Currency::GBP,
             
             // Normalize crypto currencies
-            "BTC" | "BITCOIN" => Currency::Other("BTC".to_string()),
-            "ETH" | "ETHEREUM" => Currency::Other("ETH".to_string()),
+            "BTC" | "BITCOIN" => Currency::BTC,
+            "ETH" | "ETHEREUM" => Currency::ETH,
             
             // Preserve other values
-            _ => Currency::Other(yf_currency.code.to_uppercase()),
+            other => Currency::try_from_str(other)
+                .unwrap_or_else(|_| Currency::Other(other.trim().to_uppercase())),
         }
     }
 }
@@ -130,23 +133,33 @@ impl From<GenericProviderCurrency> for Currency {
 ```rust
 pub mod currency_utils {
     use super::Currency;
-    
+
     /// Attempts to normalize a currency code to a canonical variant
     pub fn normalize_currency_code(code: &str) -> Currency {
-        match code.to_uppercase().as_str() {
-            "DOLLAR" | "US_DOLLAR" => Currency::USD,
-            "EURO" => Currency::EUR,
-            "BITCOIN" | "XBT" => Currency::Other("BTC".to_string()),
-            _ => Currency::from(code.to_string()),
+        let trimmed = code.trim();
+        if trimmed.is_empty() {
+            return Currency::Other("UNKNOWN".to_string());
+        }
+        match trimmed.to_uppercase().as_ref() {
+            "DOLLAR" | "US_DOLLAR" | "USD" => Currency::USD,
+            "EURO" | "EUR" => Currency::EUR,
+            "POUND" | "GBP" => Currency::GBP,
+            "BITCOIN" | "XBT" | "BTC" => Currency::BTC,
+            "ETHEREUM" | "ETH" => Currency::ETH,
+            other => Currency::Other(other.to_string()),
         }
     }
-    
+
     /// Returns true if the currency is commonly used
     pub fn is_common_currency(currency: &Currency) -> bool {
         match currency {
-            Currency::USD | Currency::EUR | Currency::GBP | Currency::JPY => true,
-            Currency::Other(code) => matches!(code.as_str(), "BTC" | "ETH"),
-            _ => false,
+            Currency::USD
+            | Currency::EUR
+            | Currency::GBP
+            | Currency::JPY
+            | Currency::BTC
+            | Currency::ETH => true,
+            Currency::Other(_) => false,
         }
     }
 }
@@ -160,15 +173,15 @@ pub mod currency_utils {
 /// Known mappings:
 /// - "US_DOLLAR" -> USD (canonical)
 /// - "EURO" -> EUR (canonical)
-/// - "BITCOIN" -> Other("BTC") (normalized)
+/// - "BITCOIN" -> BTC (canonical)
 /// 
 /// Unmapped values are preserved as Other(String) in uppercase
 impl From<AlphaVantageCurrency> for Currency {
     fn from(av_currency: AlphaVantageCurrency) -> Self {
-        match av_currency.code.to_uppercase().as_str() {
+        match av_currency.code.to_uppercase().as_ref() {
             "US_DOLLAR" => Currency::USD,
             "EURO" => Currency::EUR,
-            "BITCOIN" => Currency::Other("BTC".to_string()),
+            "BITCOIN" => Currency::BTC,
             _ => Currency::Other(av_currency.code.to_uppercase()),
         }
     }
@@ -225,7 +238,7 @@ impl ProviderAdapter {
         // Populate mappings
         currency_mappings.insert("DOLLAR".to_string(), Currency::USD);
         currency_mappings.insert("EURO".to_string(), Currency::EUR);
-        currency_mappings.insert("BITCOIN".to_string(), Currency::Other("BTC".to_string()));
+        currency_mappings.insert("BITCOIN".to_string(), Currency::BTC);
         
         exchange_mappings.insert("NASDAQ-GS".to_string(), Exchange::NASDAQ);
         exchange_mappings.insert("NYSE-ARCA".to_string(), Exchange::NYSE);
@@ -265,7 +278,7 @@ impl LazyProviderAdapter {
             let mut mappings = std::collections::HashMap::new();
             mappings.insert("DOLLAR".to_string(), Currency::USD);
             mappings.insert("EURO".to_string(), Currency::EUR);
-            mappings.insert("BITCOIN".to_string(), Currency::Other("BTC".to_string()));
+            mappings.insert("BITCOIN".to_string(), Currency::BTC);
             mappings
         })
     }
@@ -324,15 +337,13 @@ pub struct CurrencyCompat {
 impl CurrencyCompat {
     pub fn from_string(code: &str) -> Self {
         Self {
-            currency: Currency::from(code.to_string()),
+            currency: Currency::try_from_str(code)
+                .unwrap_or_else(|_| Currency::Other(code.trim().to_uppercase())),
         }
     }
     
     pub fn to_string(&self) -> String {
-        match &self.currency {
-            Currency::Other(s) => s.clone(),
-            _ => self.currency.to_string(),
-        }
+        self.currency.to_string()
     }
     
     pub fn is_known(&self) -> bool {
@@ -428,7 +439,7 @@ mod tests {
     #[test]
     fn test_currency_normalization() {
         assert_eq!(normalize_currency("DOLLAR"), Currency::USD);
-        assert_eq!(normalize_currency("BITCOIN"), Currency::Other("BTC".to_string()));
+        assert_eq!(normalize_currency("BITCOIN"), Currency::BTC);
         assert_eq!(normalize_currency("UNKNOWN"), Currency::Other("UNKNOWN".to_string()));
     }
 }
@@ -443,7 +454,7 @@ proptest! {
     #[test]
     fn test_currency_roundtrip(currency in any::<Currency>()) {
         let string_repr = currency.to_string();
-        let parsed = Currency::from(string_repr);
+        let parsed = Currency::try_from_str(&string_repr).unwrap();
         assert_eq!(currency, parsed);
     }
     
@@ -465,7 +476,7 @@ fn test_generic_provider_currency_mapping() {
     let test_cases = vec![
         ("USD", Currency::USD),
         ("EUR", Currency::EUR),
-        ("BTC", Currency::Other("BTC".to_string())),
+        ("BTC", Currency::BTC),
         ("UNKNOWN", Currency::Other("UNKNOWN".to_string())),
     ];
     
