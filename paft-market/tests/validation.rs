@@ -1,6 +1,6 @@
 use chrono::DateTime;
 use paft_core::domain::AssetKind;
-use paft_core::error::PaftError;
+use paft_market::MarketError;
 use paft_market::requests::{HistoryRequest, Range, SearchRequest};
 
 #[test]
@@ -8,7 +8,7 @@ fn search_request_validation_empty_query_rejected() {
     let result = SearchRequest::new("");
     assert!(result.is_err());
 
-    if result == Err(PaftError::EmptySearchQuery) {
+    if result == Err(MarketError::EmptySearchQuery) {
         // expected
     } else {
         panic!("Expected EmptySearchQuery error for empty query");
@@ -20,7 +20,7 @@ fn search_request_validation_whitespace_only_query_rejected() {
     let result = SearchRequest::new("   \t\n  ");
     assert!(result.is_err());
 
-    if result == Err(PaftError::EmptySearchQuery) {
+    if result == Err(MarketError::EmptySearchQuery) {
         // expected
     } else {
         panic!("Expected EmptySearchQuery error for whitespace-only query");
@@ -32,7 +32,7 @@ fn search_request_validation_zero_limit_rejected() {
     let result = SearchRequest::builder("AAPL").limit(0).build();
     assert!(result.is_err());
 
-    if let Err(PaftError::InvalidSearchLimit(limit)) = result {
+    if let Err(MarketError::InvalidSearchLimit(limit)) = result {
         assert_eq!(limit, 0);
     } else {
         panic!("Expected InvalidSearchLimit error for zero limit");
@@ -88,7 +88,7 @@ fn history_request_validation_period_start_ge_end_rejected() {
         .build();
     assert!(result.is_err());
 
-    if let Err(PaftError::InvalidPeriod { start, end }) = result {
+    if let Err(MarketError::InvalidPeriod { start, end }) = result {
         assert_eq!(start, 2000);
         assert_eq!(end, 1000);
     } else {
@@ -106,7 +106,7 @@ fn history_request_validation_period_start_eq_end_rejected() {
         .build();
     assert!(result.is_err());
 
-    if let Err(PaftError::InvalidPeriod { start, end }) = result {
+    if let Err(MarketError::InvalidPeriod { start, end }) = result {
         assert_eq!(start, 1000);
         assert_eq!(end, 1000);
     } else {

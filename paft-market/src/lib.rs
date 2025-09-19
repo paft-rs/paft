@@ -1,9 +1,12 @@
 //! Market data types, requests, and responses for paft.
 #![warn(missing_docs)]
 
+pub mod error;
 pub mod market;
 pub mod requests;
 pub mod responses;
+
+pub use error::MarketError;
 
 pub use market::{
     action::Action,

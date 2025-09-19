@@ -3,7 +3,8 @@
 use serde::{Deserialize, Serialize};
 
 use paft_core::domain::AssetKind;
-use paft_core::error::PaftError;
+
+use crate::error::MarketError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// Request to search for instruments by free-text query.
@@ -38,7 +39,7 @@ impl SearchRequestBuilder {
 
     /// Set the asset kind filter.
     #[must_use]
-    pub fn kind(mut self, kind: AssetKind) -> Self {
+    pub const fn kind(mut self, kind: AssetKind) -> Self {
         self.kind = Some(kind);
         self
     }
@@ -57,17 +58,17 @@ impl SearchRequestBuilder {
     /// - Limit is set to 0
     ///
     /// # Errors
-    /// Returns `PaftError::EmptySearchQuery` if the query is empty/whitespace,
-    /// or `PaftError::InvalidSearchLimit(0)` if a zero limit is provided.
-    pub fn build(self) -> Result<SearchRequest, PaftError> {
+    /// Returns `MarketError::EmptySearchQuery` if the query is empty/whitespace,
+    /// or `MarketError::InvalidSearchLimit(0)` if a zero limit is provided.
+    pub fn build(self) -> Result<SearchRequest, MarketError> {
         // Validate request invariants
         if self.query.trim().is_empty() {
-            return Err(PaftError::EmptySearchQuery);
+            return Err(MarketError::EmptySearchQuery);
         }
         if let Some(lim) = self.limit
             && lim == 0
         {
-            return Err(PaftError::InvalidSearchLimit(lim));
+            return Err(MarketError::InvalidSearchLimit(lim));
         }
 
         Ok(SearchRequest {
@@ -90,7 +91,7 @@ impl SearchRequest {
     ///
     /// # Errors
     /// Propagates errors from `SearchRequestBuilder::build`.
-    pub fn new(query: impl Into<String>) -> Result<Self, PaftError> {
+    pub fn new(query: impl Into<String>) -> Result<Self, MarketError> {
         Self::builder(query).build()
     }
 

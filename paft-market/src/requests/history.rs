@@ -3,8 +3,8 @@
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 
+use crate::error::MarketError;
 use chrono::{DateTime, Utc};
-use paft_core::error::PaftError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Logical lookback range presets.
@@ -231,13 +231,13 @@ impl HistoryRequestBuilder {
     /// - `period` start is not before end
     ///
     /// # Errors
-    /// Returns `PaftError::InvalidPeriod` when a `Period { start, end }` has `start >= end`.
-    pub fn build(self) -> Result<HistoryRequest, PaftError> {
+    /// Returns `MarketError::InvalidPeriod` when a `Period { start, end }` has `start >= end`.
+    pub fn build(self) -> Result<HistoryRequest, MarketError> {
         // Validate period constraints
         if let TimeSpec::Period { start, end } = &self.time_spec
             && start >= end
         {
-            return Err(PaftError::InvalidPeriod {
+            return Err(MarketError::InvalidPeriod {
                 start: start.timestamp(),
                 end: end.timestamp(),
             });
@@ -270,7 +270,7 @@ impl HistoryRequest {
     ///
     /// # Errors
     /// Propagates errors from `HistoryRequestBuilder::build`.
-    pub fn try_from_range(range: Range, interval: Interval) -> Result<Self, PaftError> {
+    pub fn try_from_range(range: Range, interval: Interval) -> Result<Self, MarketError> {
         Self::builder().range(range).interval(interval).build()
     }
 
@@ -284,7 +284,7 @@ impl HistoryRequest {
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         interval: Interval,
-    ) -> Result<Self, PaftError> {
+    ) -> Result<Self, MarketError> {
         Self::builder()
             .period(start, end)
             .interval(interval)
