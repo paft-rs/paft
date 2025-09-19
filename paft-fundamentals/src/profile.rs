@@ -2,78 +2,86 @@
 
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use strum::{AsRefStr, Display, EnumString};
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 #[cfg(feature = "dataframe")]
 use paft_core::dataframe::ToDataFrame;
+use paft_core::error::PaftError;
+
+use paft_core::domain::string_canonical::Canonical;
 
 /// Fund types with canonical variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of fund types while gracefully
 /// handling unknown or provider-specific fund types through the `Other` variant.
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-    Display,
-    AsRefStr,
-    EnumString,
-    Default,
-)]
-#[strum(ascii_case_insensitive)]
-#[serde(from = "String", into = "String")]
+///
+/// Canonical/serde rules:
+/// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
+/// - Parser accepts a superset of tokens (aliases, case-insensitive)
+/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
+/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum FundKind {
     /// Exchange-Traded Fund
-    #[strum(to_string = "ETF", serialize = "EXCHANGE_TRADED_FUND")]
     #[default]
     Etf,
     /// Mutual Fund
-    #[strum(to_string = "MUTUAL_FUND", serialize = "MUTUAL")]
     MutualFund,
     /// Index Fund
-    #[strum(to_string = "INDEX_FUND", serialize = "INDEX")]
     IndexFund,
     /// Closed-End Fund
-    #[strum(to_string = "CLOSED_END_FUND", serialize = "CEF")]
     ClosedEndFund,
     /// Money Market Fund
-    #[strum(to_string = "MONEY_MARKET_FUND", serialize = "MMF")]
     MoneyMarketFund,
     /// Hedge Fund
-    #[strum(to_string = "HEDGE_FUND")]
     HedgeFund,
     /// Real Estate Investment Trust
-    #[strum(to_string = "REIT", serialize = "REAL_ESTATE_INVESTMENT_TRUST")]
     Reit,
     /// Unit Investment Trust
-    #[strum(to_string = "UIT", serialize = "UNIT_INVESTMENT_TRUST")]
     UnitInvestmentTrust,
     /// Unknown or provider-specific fund type
-    Other(String),
+    Other(Canonical),
 }
 
-impl From<String> for FundKind {
-    fn from(s: String) -> Self {
-        // Try to parse as a known variant first
-        Self::from_str(&s).unwrap_or_else(|_| Self::Other(s.to_uppercase()))
+impl FundKind {
+    /// Attempts to parse a fund kind, uppercasing unknown inputs into `Other`.
+    ///
+    /// # Errors
+    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+        Self::from_str(input)
     }
 }
 
-impl From<FundKind> for String {
-    fn from(fund_kind: FundKind) -> Self {
-        match fund_kind {
-            FundKind::Other(s) => s,
-            _ => fund_kind.to_string(),
-        }
+// Centralized string impls via macro
+paft_core::string_enum_with_code!(
+    FundKind, Other, "FundKind",
+    {
+        "ETF" => FundKind::Etf,
+        "MUTUAL_FUND" => FundKind::MutualFund,
+        "INDEX_FUND" => FundKind::IndexFund,
+        "CLOSED_END_FUND" => FundKind::ClosedEndFund,
+        "MONEY_MARKET_FUND" => FundKind::MoneyMarketFund,
+        "HEDGE_FUND" => FundKind::HedgeFund,
+        "REIT" => FundKind::Reit,
+        "UIT" => FundKind::UnitInvestmentTrust
+    },
+    {
+        "EXCHANGE_TRADED_FUND" => FundKind::Etf,
+        "MUTUAL" => FundKind::MutualFund,
+        "INDEX" => FundKind::IndexFund,
+        "CEF" => FundKind::ClosedEndFund,
+        "MMF" => FundKind::MoneyMarketFund,
+        "REAL_ESTATE_INVESTMENT_TRUST" => FundKind::Reit,
+        "UNIT_INVESTMENT_TRUST" => FundKind::UnitInvestmentTrust
     }
-}
+);
+
+paft_core::impl_display_via_code!(FundKind);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]

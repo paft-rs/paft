@@ -9,25 +9,47 @@ fn eps_trend_helpers() {
     let t = EpsTrend::new(
         Some(Money::new(Decimal::new(100, 2), Currency::USD)),
         vec![
-            TrendPoint::new("7d", Money::new(Decimal::new(101, 2), Currency::USD)),
-            TrendPoint::new("30d", Money::new(Decimal::new(98, 2), Currency::USD)),
+            TrendPoint::try_new_str("7d", Money::new(Decimal::new(101, 2), Currency::USD)).unwrap(),
+            TrendPoint::try_new_str("30d", Money::new(Decimal::new(98, 2), Currency::USD)).unwrap(),
         ],
     );
-    assert_eq!(t.available_periods(), vec!["7d", "30d"]);
-    assert!(t.find_by_period("7d").is_some());
-    assert!(t.find_by_period("90d").is_none());
+    assert_eq!(
+        t.available_periods()
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>(),
+        vec!["7D", "30D"]
+    );
+    assert!(
+        t.find_by_period(&"7d".parse().expect("valid period"))
+            .is_some()
+    );
+    assert!(
+        t.find_by_period(&"90d".parse().expect("valid period"))
+            .is_none()
+    );
+    assert!(t.find_by_period_str("7d").expect("parsed").is_some());
+    assert!(t.find_by_period_str("90d").expect("parsed").is_none());
 }
 
 #[test]
 fn eps_revisions_helpers() {
     let r = EpsRevisions::new(vec![
-        RevisionPoint::new("7d", 3, 1),
-        RevisionPoint::new("30d", 4, 6),
+        RevisionPoint::try_new_str("7d", 3, 1).unwrap(),
+        RevisionPoint::try_new_str("30d", 4, 6).unwrap(),
     ]);
-    assert_eq!(r.available_periods(), vec!["7d", "30d"]);
+    assert_eq!(
+        r.available_periods()
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>(),
+        vec!["7D", "30D"]
+    );
     assert_eq!(r.total_up_revisions(), 7);
     assert_eq!(r.total_down_revisions(), 7);
     assert_eq!(r.net_revisions(), 0);
+    assert!(r.find_by_period_str("7d").expect("parsed").is_some());
+    assert!(r.find_by_period_str("90d").expect("parsed").is_none());
 }
 
 #[test]

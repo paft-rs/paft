@@ -18,7 +18,6 @@ chrono = { workspace = true }
 paft-core = { workspace = true, features = [] }
 df-derive = { workspace = true, optional = true }
 polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde", "regex", "timezones", "diagonal_concat", "json", "rolling_window"], optional = true }
-strum = { workspace = true }
 
 [features]
 default = []

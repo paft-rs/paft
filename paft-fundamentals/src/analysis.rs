@@ -2,7 +2,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use strum::{AsRefStr, Display, EnumString};
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
@@ -10,109 +9,140 @@ use df_derive::ToDataFrame;
 #[cfg(feature = "dataframe")]
 use paft_core::dataframe::ToDataFrame;
 use paft_core::domain::{Money, Period};
+use paft_core::error::PaftError;
+
+use paft_core::domain::string_canonical::Canonical;
 
 /// Analyst recommendation grades with canonical variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of recommendation grades while gracefully
 /// handling unknown or provider-specific grades through the `Other` variant.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Display, AsRefStr, EnumString,
-)]
-#[strum(ascii_case_insensitive)]
-#[serde(from = "String", into = "String")]
+///
+/// Canonical/serde rules:
+/// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
+/// - Parser accepts a superset of tokens (aliases, case-insensitive)
+/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
+/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum RecommendationGrade {
     /// Strong buy recommendation
-    #[strum(to_string = "STRONG_BUY", serialize = "STRONG BUY", serialize = "BUY+")]
     StrongBuy,
     /// Buy recommendation
-    #[strum(to_string = "BUY")]
     Buy,
     /// Hold recommendation
-    #[strum(to_string = "HOLD", serialize = "NEUTRAL")]
     Hold,
     /// Sell recommendation
-    #[strum(to_string = "SELL")]
     Sell,
     /// Strong sell recommendation
-    #[strum(
-        to_string = "STRONG_SELL",
-        serialize = "STRONG SELL",
-        serialize = "SELL-"
-    )]
     StrongSell,
     /// Outperform recommendation
-    #[strum(to_string = "OUTPERFORM", serialize = "OVERWEIGHT")]
     Outperform,
     /// Underperform recommendation
-    #[strum(to_string = "UNDERPERFORM", serialize = "UNDERWEIGHT")]
     Underperform,
     /// Unknown or provider-specific grade
-    Other(String),
+    Other(Canonical),
 }
 
-impl From<String> for RecommendationGrade {
-    fn from(s: String) -> Self {
-        // Try to parse as a known variant first
-        Self::from_str(&s).unwrap_or_else(|_| Self::Other(s.to_uppercase()))
+impl RecommendationGrade {
+    /// Attempts to parse a recommendation grade, uppercasing unknown inputs into `Other`.
+    ///
+    /// # Errors
+    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+        Self::from_str(input)
     }
 }
 
-impl From<RecommendationGrade> for String {
-    fn from(grade: RecommendationGrade) -> Self {
-        match grade {
-            RecommendationGrade::Other(s) => s,
-            _ => grade.to_string(),
-        }
+// serde via macro
+
+// Implement code() and string impls via macro
+paft_core::string_enum_with_code!(
+    RecommendationGrade, Other, "RecommendationGrade",
+    {
+        "STRONG_BUY" => RecommendationGrade::StrongBuy,
+        "BUY" => RecommendationGrade::Buy,
+        "HOLD" => RecommendationGrade::Hold,
+        "SELL" => RecommendationGrade::Sell,
+        "STRONG_SELL" => RecommendationGrade::StrongSell,
+        "OUTPERFORM" => RecommendationGrade::Outperform,
+        "UNDERPERFORM" => RecommendationGrade::Underperform
+    },
+    {
+        // Aliases
+        "NEUTRAL" => RecommendationGrade::Hold,
+        "MARKET_PERFORM" => RecommendationGrade::Hold,
+        "OVERWEIGHT" => RecommendationGrade::Outperform,
+        "UNDERWEIGHT" => RecommendationGrade::Underperform
     }
-}
+);
+
+// Display should match code for these enums
+paft_core::impl_display_via_code!(RecommendationGrade);
 
 /// Analyst recommendation actions with canonical variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of recommendation actions while gracefully
 /// handling unknown or provider-specific actions through the `Other` variant.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Display, AsRefStr, EnumString,
-)]
-#[strum(ascii_case_insensitive)]
-#[serde(from = "String", into = "String")]
+///
+/// Canonical/serde rules:
+/// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
+/// - Parser accepts a superset of tokens (aliases, case-insensitive)
+/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
+/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum RecommendationAction {
     /// Upgrade action
-    #[strum(to_string = "UPGRADE", serialize = "UP")]
     Upgrade,
     /// Downgrade action
-    #[strum(to_string = "DOWNGRADE", serialize = "DOWN")]
     Downgrade,
     /// Initiate coverage
-    #[strum(to_string = "INIT", serialize = "INITIATED", serialize = "INITIATE")]
     Initiate,
     /// Maintain or reiterate recommendation
-    #[strum(to_string = "MAINTAIN", serialize = "REITERATE")]
     Maintain,
     /// Resume coverage
-    #[strum(to_string = "RESUME")]
     Resume,
     /// Suspend coverage
-    #[strum(to_string = "SUSPEND")]
     Suspend,
     /// Unknown or provider-specific action
-    Other(String),
+    Other(Canonical),
 }
 
-impl From<String> for RecommendationAction {
-    fn from(s: String) -> Self {
-        // Try to parse as a known variant first
-        Self::from_str(&s).unwrap_or_else(|_| Self::Other(s.to_uppercase()))
+impl RecommendationAction {
+    /// Attempts to parse a recommendation action, uppercasing unknown inputs into `Other`.
+    ///
+    /// # Errors
+    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+        Self::from_str(input)
     }
 }
 
-impl From<RecommendationAction> for String {
-    fn from(action: RecommendationAction) -> Self {
-        match action {
-            RecommendationAction::Other(s) => s,
-            _ => action.to_string(),
-        }
+// Implement code() and string impls via macro
+paft_core::string_enum_with_code!(
+    RecommendationAction, Other, "RecommendationAction",
+    {
+        "UPGRADE" => RecommendationAction::Upgrade,
+        "DOWNGRADE" => RecommendationAction::Downgrade,
+        "INIT" => RecommendationAction::Initiate,
+        "MAINTAIN" => RecommendationAction::Maintain,
+        "RESUME" => RecommendationAction::Resume,
+        "SUSPEND" => RecommendationAction::Suspend
+    },
+    {
+        // Aliases
+        "UP" => RecommendationAction::Upgrade,
+        "DOWN" => RecommendationAction::Downgrade,
+        "INITIATED" => RecommendationAction::Initiate,
+        "INITIATE" => RecommendationAction::Initiate,
+        "REITERATE" => RecommendationAction::Maintain
     }
-}
+);
+
+paft_core::impl_display_via_code!(RecommendationAction);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
@@ -303,18 +333,28 @@ pub struct RevenueEstimate {
 pub struct TrendPoint {
     /// The period this data point represents (e.g., "7d", "1mo", "3mo").
     /// This allows providers to use their own time period conventions.
-    pub period: String,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub period: Period,
     /// The value for this time period.
     pub value: Money,
 }
 
 impl TrendPoint {
     /// Creates a new trend point with the specified period and value.
-    pub fn new(period: impl Into<String>, value: Money) -> Self {
-        Self {
-            period: period.into(),
+    #[must_use]
+    pub const fn new(period: Period, value: Money) -> Self {
+        Self { period, value }
+    }
+
+    /// Creates a new trend point from a period string.
+    ///
+    /// # Errors
+    /// Returns an error if the period string cannot be parsed.
+    pub fn try_new_str(period: &str, value: Money) -> Result<Self, PaftError> {
+        Ok(Self {
+            period: period.parse()?,
             value,
-        }
+        })
     }
 }
 
@@ -344,18 +384,29 @@ impl EpsTrend {
         }
     }
 
-    /// Finds a trend point by period string.
+    /// Finds a trend point by period.
     #[must_use]
-    pub fn find_by_period(&self, period: &str) -> Option<&TrendPoint> {
-        self.historical.iter().find(|point| point.period == period)
+    pub fn find_by_period(&self, period: &Period) -> Option<&TrendPoint> {
+        self.historical.iter().find(|point| &point.period == period)
+    }
+
+    /// Finds a trend point by period string.
+    ///
+    /// Parses `period` using `Period`'s string parser and performs the lookup.
+    ///
+    /// # Errors
+    /// Returns `PaftError` if the provided `period` string cannot be parsed.
+    pub fn find_by_period_str(&self, period: &str) -> Result<Option<&TrendPoint>, PaftError> {
+        let parsed: Period = period.parse()?;
+        Ok(self.find_by_period(&parsed))
     }
 
     /// Returns all available periods in the historical data.
     #[must_use]
-    pub fn available_periods(&self) -> Vec<&str> {
+    pub fn available_periods(&self) -> Vec<Period> {
         self.historical
             .iter()
-            .map(|point| point.period.as_str())
+            .map(|point| point.period.clone())
             .collect()
     }
 }
@@ -369,7 +420,8 @@ impl EpsTrend {
 pub struct RevisionPoint {
     /// The period this data point represents (e.g., "7d", "1mo", "3mo").
     /// This allows providers to use their own time period conventions.
-    pub period: String,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub period: Period,
     /// Number of upward revisions in this period.
     pub up_count: u32,
     /// Number of downward revisions in this period.
@@ -378,12 +430,25 @@ pub struct RevisionPoint {
 
 impl RevisionPoint {
     /// Creates a new revision point with the specified period and counts.
-    pub fn new(period: impl Into<String>, up_count: u32, down_count: u32) -> Self {
+    #[must_use]
+    pub const fn new(period: Period, up_count: u32, down_count: u32) -> Self {
         Self {
-            period: period.into(),
+            period,
             up_count,
             down_count,
         }
+    }
+
+    /// Creates a new revision point from a period string.
+    ///
+    /// # Errors
+    /// Returns an error if the period string cannot be parsed.
+    pub fn try_new_str(period: &str, up: u32, down: u32) -> Result<Self, PaftError> {
+        Ok(Self {
+            period: period.parse()?,
+            up_count: up,
+            down_count: down,
+        })
     }
 
     /// Returns the total number of revisions (up + down) in this period.
@@ -422,18 +487,29 @@ impl EpsRevisions {
         Self { historical }
     }
 
-    /// Finds a revision point by period string.
+    /// Finds a revision point by period.
     #[must_use]
-    pub fn find_by_period(&self, period: &str) -> Option<&RevisionPoint> {
-        self.historical.iter().find(|point| point.period == period)
+    pub fn find_by_period(&self, period: &Period) -> Option<&RevisionPoint> {
+        self.historical.iter().find(|point| &point.period == period)
+    }
+
+    /// Finds a revision point by period string.
+    ///
+    /// Parses `period` using `Period`'s string parser and performs the lookup.
+    ///
+    /// # Errors
+    /// Returns `PaftError` if the provided `period` string cannot be parsed.
+    pub fn find_by_period_str(&self, period: &str) -> Result<Option<&RevisionPoint>, PaftError> {
+        let parsed: Period = period.parse()?;
+        Ok(self.find_by_period(&parsed))
     }
 
     /// Returns all available periods in the historical data.
     #[must_use]
-    pub fn available_periods(&self) -> Vec<&str> {
+    pub fn available_periods(&self) -> Vec<Period> {
         self.historical
             .iter()
-            .map(|point| point.period.as_str())
+            .map(|point| point.period.clone())
             .collect()
     }
 
@@ -467,15 +543,11 @@ pub struct EarningsTrendRow {
     /// The growth rate.
     pub growth: Option<f64>,
     /// Earnings estimate data with analyst consensus.
-    #[serde(flatten)]
     pub earnings_estimate: EarningsEstimate,
     /// Revenue estimate data with analyst consensus.
-    #[serde(flatten)]
     pub revenue_estimate: RevenueEstimate,
     /// EPS trend changes over different time periods.
-    #[serde(flatten)]
     pub eps_trend: EpsTrend,
     /// EPS revisions tracking upward and downward changes.
-    #[serde(flatten)]
     pub eps_revisions: EpsRevisions,
 }

@@ -2,129 +2,163 @@
 
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use strum::{AsRefStr, Display, EnumString};
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 #[cfg(feature = "dataframe")]
 use paft_core::dataframe::ToDataFrame;
-use paft_core::domain::Money;
+use paft_core::domain::{Money, Period};
+use paft_core::error::PaftError;
+
+use paft_core::domain::string_canonical::Canonical;
 
 /// Transaction types for insider activities with canonical variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of transaction types while gracefully
 /// handling unknown or provider-specific transaction types through the `Other` variant.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Display, AsRefStr, EnumString,
-)]
-#[strum(ascii_case_insensitive)]
-#[serde(from = "String", into = "String")]
+///
+/// Canonical/serde rules:
+/// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
+/// - Parser accepts a superset of tokens (aliases, case-insensitive)
+/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
+/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TransactionType {
     /// Purchase or acquisition of shares
-    #[strum(to_string = "BUY", serialize = "PURCHASE", serialize = "ACQUISITION")]
     Buy,
     /// Sale or disposal of shares
-    #[strum(to_string = "SELL", serialize = "SALE", serialize = "DISPOSAL")]
     Sell,
     /// Stock award or grant
-    #[strum(to_string = "AWARD", serialize = "GRANT", serialize = "STOCK_AWARD")]
     Award,
     /// Exercise of options
-    #[strum(to_string = "EXERCISE", serialize = "OPTION_EXERCISE")]
     Exercise,
     /// Gift of shares
-    #[strum(to_string = "GIFT")]
     Gift,
     /// Conversion of securities
-    #[strum(to_string = "CONVERSION")]
     Conversion,
     /// Unknown or provider-specific transaction type
-    Other(String),
+    Other(Canonical),
 }
 
-impl From<String> for TransactionType {
-    fn from(s: String) -> Self {
-        // Try to parse as a known variant first
-        Self::from_str(&s).unwrap_or_else(|_| Self::Other(s.to_uppercase()))
+impl TransactionType {
+    /// Attempts to parse a transaction type, uppercasing unknown inputs into `Other`.
+    ///
+    /// # Errors
+    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+        Self::from_str(input)
     }
 }
 
-impl From<TransactionType> for String {
-    fn from(transaction_type: TransactionType) -> Self {
-        match transaction_type {
-            TransactionType::Other(s) => s,
-            _ => transaction_type.to_string(),
-        }
+// Centralized code() and string impls via macro
+paft_core::string_enum_with_code!(
+    TransactionType, Other, "TransactionType",
+    {
+        "BUY" => TransactionType::Buy,
+        "SELL" => TransactionType::Sell,
+        "AWARD" => TransactionType::Award,
+        "EXERCISE" => TransactionType::Exercise,
+        "GIFT" => TransactionType::Gift,
+        "CONVERSION" => TransactionType::Conversion
+    },
+    {
+        // Aliases
+        "PURCHASE" => TransactionType::Buy,
+        "ACQUISITION" => TransactionType::Buy,
+        "SALE" => TransactionType::Sell,
+        "DISPOSAL" => TransactionType::Sell,
+        "GRANT" => TransactionType::Award,
+        "STOCK_AWARD" => TransactionType::Award,
+        "OPTION_EXERCISE" => TransactionType::Exercise
     }
-}
+);
+
+// Display equals code for these enums
+paft_core::impl_display_via_code!(TransactionType);
 
 /// Insider positions in a company with canonical variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of insider positions while gracefully
 /// handling unknown or provider-specific positions through the `Other` variant.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Display, AsRefStr, EnumString,
-)]
-#[strum(ascii_case_insensitive)]
-#[serde(from = "String", into = "String")]
+///
+/// Canonical/serde rules:
+/// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
+/// - Parser accepts a superset of tokens (aliases, case-insensitive)
+/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
+/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum InsiderPosition {
     /// Officer of the company
-    #[strum(to_string = "OFFICER")]
     Officer,
     /// Director or board member
-    #[strum(to_string = "DIRECTOR", serialize = "BOARD_MEMBER")]
     Director,
     /// Beneficial owner (typically >10% ownership)
-    #[strum(
-        to_string = "OWNER",
-        serialize = "BENEFICIAL_OWNER",
-        serialize = "10%_OWNER"
-    )]
     Owner,
     /// Chief Executive Officer
-    #[strum(to_string = "CEO", serialize = "CHIEF_EXECUTIVE_OFFICER")]
     Ceo,
     /// Chief Financial Officer
-    #[strum(to_string = "CFO", serialize = "CHIEF_FINANCIAL_OFFICER")]
     Cfo,
     /// Chief Operating Officer
-    #[strum(to_string = "COO", serialize = "CHIEF_OPERATING_OFFICER")]
     Coo,
     /// Chief Technology Officer
-    #[strum(to_string = "CTO", serialize = "CHIEF_TECHNOLOGY_OFFICER")]
     Cto,
     /// President
-    #[strum(to_string = "PRESIDENT")]
     President,
     /// Vice President
-    #[strum(to_string = "VP", serialize = "VICE_PRESIDENT")]
     VicePresident,
     /// Secretary
-    #[strum(to_string = "SECRETARY")]
     Secretary,
     /// Treasurer
-    #[strum(to_string = "TREASURER")]
     Treasurer,
     /// Unknown or provider-specific position
-    Other(String),
+    Other(Canonical),
 }
 
-impl From<String> for InsiderPosition {
-    fn from(s: String) -> Self {
-        // Try to parse as a known variant first
-        Self::from_str(&s).unwrap_or_else(|_| Self::Other(s.to_uppercase()))
+impl InsiderPosition {
+    /// Attempts to parse an insider position, uppercasing unknown inputs into `Other`.
+    ///
+    /// # Errors
+    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+        Self::from_str(input)
     }
 }
 
-impl From<InsiderPosition> for String {
-    fn from(position: InsiderPosition) -> Self {
-        match position {
-            InsiderPosition::Other(s) => s,
-            _ => position.to_string(),
-        }
+// Centralized code() and string impls via macro
+paft_core::string_enum_with_code!(
+    InsiderPosition, Other, "InsiderPosition",
+    {
+        "OFFICER" => InsiderPosition::Officer,
+        "DIRECTOR" => InsiderPosition::Director,
+        "OWNER" => InsiderPosition::Owner,
+        "CEO" => InsiderPosition::Ceo,
+        "CFO" => InsiderPosition::Cfo,
+        "COO" => InsiderPosition::Coo,
+        "CTO" => InsiderPosition::Cto,
+        "PRESIDENT" => InsiderPosition::President,
+        "VP" => InsiderPosition::VicePresident,
+        "SECRETARY" => InsiderPosition::Secretary,
+        "TREASURER" => InsiderPosition::Treasurer
+    },
+    {
+        // Aliases
+        "BOARD_MEMBER" => InsiderPosition::Director,
+        "BENEFICIAL_OWNER" => InsiderPosition::Owner,
+        "10_OWNER" => InsiderPosition::Owner,
+        "CHIEF_EXECUTIVE_OFFICER" => InsiderPosition::Ceo,
+        "CHIEF_FINANCIAL_OFFICER" => InsiderPosition::Cfo,
+        "CHIEF_OPERATING_OFFICER" => InsiderPosition::Coo,
+        "CHIEF_TECHNOLOGY_OFFICER" => InsiderPosition::Cto,
+        "VICE_PRESIDENT" => InsiderPosition::VicePresident
     }
-}
+);
+
+paft_core::impl_display_via_code!(InsiderPosition);
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
@@ -202,8 +236,9 @@ pub struct InsiderRosterHolder {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct NetSharePurchaseActivity {
-    /// The period the summary covers (e.g., "3m").
-    pub period: String,
+    /// The period the summary covers (e.g., `Period::Quarter { year: 2023, quarter: 4 }`).
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub period: Period,
     /// The total number of shares purchased by insiders.
     pub buy_shares: Option<u64>,
     /// The number of separate buy transactions.
