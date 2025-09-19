@@ -17,7 +17,6 @@ use std::{borrow::Borrow, fmt, str::FromStr};
 pub struct Canonical(String);
 
 impl Canonical {
-
     /// Attempts to create a new canonical string from arbitrary input, rejecting
     /// values that would canonicalize to an empty token (e.g., strings composed
     /// solely of separators or non-alphanumeric characters).
