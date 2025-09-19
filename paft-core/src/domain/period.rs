@@ -41,9 +41,9 @@ static DAY_FIRST_DATE_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::n
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII where applicable)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive where appropriate)
-/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
 /// - `Display` output matches the canonical form for structured variants and the raw `s` for `Other(s)`
-/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+/// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 ///
 /// Canonical outputs:
 /// - Quarters: `YYYYQ#` (e.g., `2023Q4`)

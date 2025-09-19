@@ -65,9 +65,11 @@ impl ExampleEnum {
     }
 }
 
-impl From<String> for ExampleEnum {
-    fn from(value: String) -> Self {
-        Self::try_from_str(&value).expect("invalid example enum string")
+impl std::convert::TryFrom<String> for ExampleEnum {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from_str(&value)
     }
 }
 

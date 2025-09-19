@@ -21,9 +21,9 @@ use paft_core::domain::string_canonical::Canonical;
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
-/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+/// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum RecommendationGrade {
@@ -89,9 +89,9 @@ paft_core::impl_display_via_code!(RecommendationGrade);
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
-/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+/// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum RecommendationAction {
