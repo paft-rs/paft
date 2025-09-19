@@ -1437,7 +1437,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "paft"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -1451,24 +1451,22 @@ dependencies = [
 
 [[package]]
 name = "paft-core"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "chrono-tz",
  "df-derive",
- "once_cell",
  "polars",
  "regex",
  "rust_decimal",
  "serde",
  "serde_json",
- "strum",
  "thiserror",
 ]
 
 [[package]]
 name = "paft-fundamentals"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "df-derive",
@@ -1477,12 +1475,11 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_json",
- "strum",
 ]
 
 [[package]]
 name = "paft-market"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "bitflags",
  "chrono",
@@ -1493,6 +1490,7 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -2929,15 +2927,6 @@ name = "strength_reduce"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe895eb47f22e2ddd4dabc02bce419d2e643c8e3b585c78158b349195bc24d82"
-
-[[package]]
-name = "strum"
-version = "0.27.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
-dependencies = [
- "strum_macros",
-]
 
 [[package]]
 name = "strum_macros"
