@@ -7,14 +7,20 @@ pub mod instrument;
 pub mod market_state;
 pub mod money;
 pub mod period;
+pub mod string_canonical;
 
+pub use crate::{
+    impl_display_via_code, string_enum, string_enum_closed, string_enum_closed_with_code,
+    string_enum_with_code,
+};
 pub use currency::Currency;
 pub use currency_utils::{
-    clear_currency_minor_units, currency_minor_units, describe_currency, is_common_currency,
-    normalize_currency_code, set_currency_minor_units,
+    MinorUnitError, clear_currency_minor_units, currency_minor_units, set_currency_minor_units,
+    try_normalize_currency_code,
 };
 pub use exchange::Exchange;
 pub use instrument::{AssetKind, Instrument};
 pub use market_state::MarketState;
 pub use money::{ExchangeRate, Money, MoneyError};
 pub use period::Period;
+pub use string_canonical::{Canonical, canonicalize};

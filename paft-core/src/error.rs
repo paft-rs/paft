@@ -1,19 +1,23 @@
 use thiserror::Error;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
-/// Errors shared across the paft workspace (request validation, parsing, etc.).
+/// Domain-oriented errors shared across the paft workspace.
 pub enum PaftError {
-    /// Search query must not be empty.
-    #[error("Search query must not be empty")]
-    EmptySearchQuery,
+    /// Invalid value provided for an enum parser.
+    #[error("Invalid {enum_name} value: '{value}'")]
+    InvalidEnumValue {
+        /// Enum type name for context (e.g., "Currency").
+        enum_name: &'static str,
+        /// The offending input value.
+        value: String,
+    },
 
-    /// Search limit must be greater than 0.
-    #[error("Search limit must be greater than 0, but was {0}")]
-    InvalidSearchLimit(usize),
-
-    /// `HistoryRequest`: 'range' and 'period' are mutually exclusive.
-    #[error("HistoryRequest: 'range' and 'period' are mutually exclusive")]
-    ExclusiveRangeAndPeriod,
+    /// Invalid canonical token produced by normalization helpers.
+    #[error("Invalid canonical token: '{value}' - canonicalized value must be non-empty")]
+    InvalidCanonicalToken {
+        /// The original input that failed to produce a canonical token.
+        value: String,
+    },
 
     /// `HistoryRequest`: 'period' start must be before end.
     #[error("HistoryRequest: 'period' start ({start}) must be before end ({end})")]

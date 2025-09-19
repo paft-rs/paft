@@ -3,172 +3,120 @@
 //! This module provides type-safe handling of exchange identifiers while gracefully
 //! handling unknown or provider-specific exchanges through the `Other` variant.
 
-use serde::{Deserialize, Serialize};
+use super::string_canonical::Canonical;
+use crate::error::PaftError;
+// no module-level serde imports needed here
 use std::str::FromStr;
-use strum::{AsRefStr, Display, EnumString};
 
 /// Exchange enumeration with major exchanges and extensible fallback.
 ///
 /// This enum provides type-safe handling of exchange identifiers while gracefully
 /// handling unknown or provider-specific exchanges through the `Other` variant.
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-    Display,
-    AsRefStr,
-    EnumString,
-    Default,
-)]
-#[strum(ascii_case_insensitive)]
-#[serde(from = "String", into = "String")]
+///
+/// Canonical/serde rules:
+/// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
+/// - Parser accepts a superset of tokens (aliases, case-insensitive)
+/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
+/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum Exchange {
     /// NASDAQ Stock Market
-    #[strum(serialize = "NASDAQ")]
     #[default]
     NASDAQ,
     /// New York Stock Exchange
-    #[strum(serialize = "NYSE")]
     NYSE,
     /// American Stock Exchange
-    #[strum(serialize = "AMEX")]
     AMEX,
     /// BATS Global Markets
-    #[strum(serialize = "BATS")]
     BATS,
     /// Over-the-Counter Markets
-    #[strum(serialize = "OTC")]
     OTC,
     /// London Stock Exchange
-    #[strum(serialize = "LSE")]
     LSE,
     /// Tokyo Stock Exchange
-    #[strum(serialize = "TSE")]
     TSE,
     /// Hong Kong Stock Exchange
-    #[strum(serialize = "HKEX")]
     HKEX,
     /// Shanghai Stock Exchange
-    #[strum(serialize = "SSE")]
     SSE,
     /// Shenzhen Stock Exchange
-    #[strum(serialize = "SZSE")]
     SZSE,
     /// Toronto Stock Exchange
-    #[strum(serialize = "TSX")]
     TSX,
     /// Australian Securities Exchange
-    #[strum(serialize = "ASX")]
     ASX,
     /// Euronext
-    #[strum(to_string = "Euronext", serialize = "EURONEXT")]
     Euronext,
     /// Deutsche Börse (XETRA)
-    #[strum(serialize = "XETRA")]
     XETRA,
     /// Swiss Exchange
-    #[strum(serialize = "SIX")]
     SIX,
     /// Borsa Italiana
-    #[strum(serialize = "BIT")]
     BIT,
     /// Bolsa de Madrid
-    #[strum(serialize = "BME")]
     BME,
     /// Euronext Amsterdam
-    #[strum(serialize = "AEX")]
     AEX,
     /// Euronext Brussels
-    #[strum(serialize = "BRU")]
     BRU,
     /// Euronext Lisbon
-    #[strum(serialize = "LIS")]
     LIS,
     /// Euronext Paris
-    #[strum(serialize = "EPA")]
     EPA,
     /// Oslo Børs
-    #[strum(serialize = "OSL")]
     OSL,
     /// Stockholm Stock Exchange
-    #[strum(serialize = "STO")]
     STO,
     /// Copenhagen Stock Exchange
-    #[strum(serialize = "CPH")]
     CPH,
     /// Warsaw Stock Exchange
-    #[strum(serialize = "WSE")]
     WSE,
     /// Prague Stock Exchange
-    #[strum(serialize = "PSE")]
     PSE,
     /// Budapest Stock Exchange
-    #[strum(serialize = "BSE")]
     BSE,
     /// Moscow Exchange
-    #[strum(serialize = "MOEX")]
     MOEX,
     /// Istanbul Stock Exchange
-    #[strum(serialize = "BIST")]
     BIST,
     /// Johannesburg Stock Exchange
-    #[strum(serialize = "JSE")]
     JSE,
     /// Tel Aviv Stock Exchange
-    #[strum(serialize = "TASE")]
     TASE,
     /// Bombay Stock Exchange
-    #[strum(to_string = "BOMBAY", serialize = "BSE_IND")]
     BseIndia,
     /// National Stock Exchange of India
-    #[strum(serialize = "NSE")]
     NSE,
     /// Korea Exchange
-    #[strum(serialize = "KRX")]
     KRX,
     /// Singapore Exchange
-    #[strum(serialize = "SGX")]
     SGX,
     /// Thailand Stock Exchange
-    #[strum(serialize = "SET")]
     SET,
     /// Bursa Malaysia
-    #[strum(serialize = "KLSE")]
     KLSE,
     /// Philippine Stock Exchange
-    #[strum(to_string = "PSEI", serialize = "PSE_PH")]
     PsePhil,
     /// Indonesia Stock Exchange
-    #[strum(serialize = "IDX")]
     IDX,
     /// Ho Chi Minh Stock Exchange
-    #[strum(serialize = "HOSE")]
     HOSE,
     /// Unknown or provider-specific exchange
-    Other(String),
-}
-
-impl From<String> for Exchange {
-    fn from(s: String) -> Self {
-        // Try to parse as a known variant first
-        Self::from_str(&s).unwrap_or_else(|_| Self::Other(s.to_uppercase()))
-    }
-}
-
-impl From<Exchange> for String {
-    fn from(exchange: Exchange) -> Self {
-        match exchange {
-            Exchange::Other(s) => s,
-            _ => exchange.to_string(),
-        }
-    }
+    Other(Canonical),
 }
 
 impl Exchange {
+    /// Attempts to parse an exchange identifier.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty or contains only whitespace.
+    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+        Self::from_str(input)
+    }
+
     /// Returns true if this is a major US exchange
     #[must_use]
     pub const fn is_us_exchange(&self) -> bool {
@@ -202,12 +150,107 @@ impl Exchange {
         )
     }
 
-    /// Returns the string code for this enum variant
+    /// Returns the human-readable name for this exchange.
     #[must_use]
-    pub fn code(&self) -> &str {
+    pub fn full_name(&self) -> &str {
         match self {
-            Self::Other(s) => s,
-            _ => self.as_ref(),
+            Self::NASDAQ => "Nasdaq",
+            Self::NYSE => "NYSE",
+            Self::AMEX => "AMEX",
+            Self::BATS => "BATS",
+            Self::OTC => "OTC",
+            Self::LSE => "London Stock Exchange",
+            Self::TSE => "Tokyo Stock Exchange",
+            Self::HKEX => "Hong Kong Stock Exchange",
+            Self::SSE => "Shanghai Stock Exchange",
+            Self::SZSE => "Shenzhen Stock Exchange",
+            Self::TSX => "Toronto Stock Exchange",
+            Self::ASX => "Australian Securities Exchange",
+            Self::Euronext => "Euronext",
+            Self::XETRA => "Xetra",
+            Self::SIX => "Swiss Exchange",
+            Self::BIT => "Borsa Italiana",
+            Self::BME => "Bolsa de Madrid",
+            Self::AEX => "Euronext Amsterdam",
+            Self::BRU => "Euronext Brussels",
+            Self::LIS => "Euronext Lisbon",
+            Self::EPA => "Euronext Paris",
+            Self::OSL => "Oslo Børs",
+            Self::STO => "Stockholm Stock Exchange",
+            Self::CPH => "Copenhagen Stock Exchange",
+            Self::WSE => "Warsaw Stock Exchange",
+            Self::PSE => "Prague Stock Exchange",
+            Self::BSE => "Budapest Stock Exchange",
+            Self::MOEX => "Moscow Exchange",
+            Self::BIST => "Istanbul Stock Exchange",
+            Self::JSE => "Johannesburg Stock Exchange",
+            Self::TASE => "Tel Aviv Stock Exchange",
+            Self::BseIndia => "Bombay Stock Exchange",
+            Self::NSE => "National Stock Exchange of India",
+            Self::KRX => "Korea Exchange",
+            Self::SGX => "Singapore Exchange",
+            Self::SET => "Stock Exchange of Thailand",
+            Self::KLSE => "Bursa Malaysia",
+            Self::PsePhil => "Philippine Stock Exchange",
+            Self::IDX => "Indonesia Stock Exchange",
+            Self::HOSE => "Ho Chi Minh Stock Exchange",
+            Self::Other(code) => code.as_ref(),
         }
     }
 }
+
+// Implement code() and string impls via macro (open enum)
+crate::string_enum_with_code!(
+    Exchange, Other, "Exchange",
+    {
+        "NASDAQ" => Exchange::NASDAQ,
+        "NYSE" => Exchange::NYSE,
+        "AMEX" => Exchange::AMEX,
+        "BATS" => Exchange::BATS,
+        "OTC" => Exchange::OTC,
+        "LSE" => Exchange::LSE,
+        "TSE" => Exchange::TSE,
+        "HKEX" => Exchange::HKEX,
+        "SSE" => Exchange::SSE,
+        "SZSE" => Exchange::SZSE,
+        "TSX" => Exchange::TSX,
+        "ASX" => Exchange::ASX,
+        "EURONEXT" => Exchange::Euronext,
+        "XETRA" => Exchange::XETRA,
+        "SIX" => Exchange::SIX,
+        "BIT" => Exchange::BIT,
+        "BME" => Exchange::BME,
+        "AEX" => Exchange::AEX,
+        "BRU" => Exchange::BRU,
+        "LIS" => Exchange::LIS,
+        "EPA" => Exchange::EPA,
+        "OSL" => Exchange::OSL,
+        "STO" => Exchange::STO,
+        "CPH" => Exchange::CPH,
+        "WSE" => Exchange::WSE,
+        "PSE_CZ" => Exchange::PSE,
+        "BSE" => Exchange::BSE,
+        "MOEX" => Exchange::MOEX,
+        "BIST" => Exchange::BIST,
+        "JSE" => Exchange::JSE,
+        "TASE" => Exchange::TASE,
+        "BSE_IND" => Exchange::BseIndia,
+        "NSE" => Exchange::NSE,
+        "KRX" => Exchange::KRX,
+        "SGX" => Exchange::SGX,
+        "SET" => Exchange::SET,
+        "KLSE" => Exchange::KLSE,
+        "PSE_PH" => Exchange::PsePhil,
+        "IDX" => Exchange::IDX,
+        "HOSE" => Exchange::HOSE
+    },
+    {
+        // Provider aliases
+        "EURONEXT_PARIS" => Exchange::EPA,
+        "PSE" => Exchange::PSE,
+        "BOMBAY" => Exchange::BseIndia,
+        "BSE_INDIA" => Exchange::BseIndia
+    }
+);
+
+crate::impl_display_via_code!(Exchange);

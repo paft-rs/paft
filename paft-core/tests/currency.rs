@@ -1,110 +1,301 @@
-//! Tests for currency module
+//! Tests covering canonical/alias behavior for currencies.
 
 use paft_core::domain::Currency;
+use std::str::FromStr;
 
-#[test]
-fn test_currency_from_string() {
-    assert_eq!(Currency::from("USD".to_string()), Currency::USD);
-    assert_eq!(Currency::from("eur".to_string()), Currency::EUR);
-    assert_eq!(Currency::from("GBP".to_string()), Currency::GBP);
-    assert_eq!(Currency::from("JPY".to_string()), Currency::JPY);
-    assert_eq!(Currency::from("CAD".to_string()), Currency::CAD);
-    assert_eq!(Currency::from("BTC".to_string()), Currency::BTC);
-
-    // Whitespace is trimmed before parsing
-    assert_eq!(Currency::from("  usd  ".to_string()), Currency::USD);
-
-    // Common aliases map to canonical variants
-    assert_eq!(Currency::from("US_DOLLAR".to_string()), Currency::USD);
-    assert_eq!(Currency::from("Pound Sterling".to_string()), Currency::GBP);
-
-    // Unknown strings default to uppercase Other variant
-    assert_eq!(
-        Currency::from("custom coin".to_string()),
-        Currency::Other("CUSTOM COIN".to_string())
-    );
+struct Case {
+    variant: Currency,
+    canonical: &'static str,
+    full_name: &'static str,
+    aliases: &'static [&'static str],
 }
 
 #[test]
-fn test_currency_to_string() {
-    assert_eq!(String::from(Currency::USD), "USD");
-    assert_eq!(String::from(Currency::EUR), "EUR");
-    assert_eq!(String::from(Currency::GBP), "GBP");
-    assert_eq!(String::from(Currency::JPY), "JPY");
-    assert_eq!(String::from(Currency::CAD), "CAD");
-    assert_eq!(String::from(Currency::BTC), "BTC");
+#[allow(clippy::too_many_lines)]
+fn currency_round_trips_display_fromstr_and_serde() {
+    for case in cases() {
+        assert_round_trip(&case);
+    }
 }
 
 #[test]
-fn test_currency_methods() {
-    assert_eq!(Currency::USD.code(), "USD");
-    assert_eq!(Currency::EUR.code(), "EUR");
-    assert_eq!(Currency::Other("BTC".to_string()).code(), "BTC");
+fn currency_other_values_uppercase_and_round_trip() {
+    let parsed = Currency::try_from_str("usd-lite").unwrap();
+    assert_eq!(parsed.to_string(), "USD_LITE");
+    assert_eq!(String::from(parsed.clone()), "USD_LITE");
 
+    let json = serde_json::to_string(&parsed).unwrap();
+    assert_eq!(json, "\"USD_LITE\"");
+    let back: Currency = serde_json::from_str(&json).unwrap();
+    assert_eq!(back, parsed);
+}
+
+#[test]
+fn currency_try_from_and_serde_reject_empty() {
+    let err = Currency::try_from_str("").unwrap_err();
+    match err {
+        paft_core::error::PaftError::InvalidEnumValue { enum_name, value } => {
+            assert_eq!(enum_name, "Currency");
+            assert_eq!(value, "");
+        }
+        other => panic!("unexpected error: {other}"),
+    }
+
+    let result: Result<Currency, _> = serde_json::from_str("\"\"");
+    assert!(result.is_err());
+}
+
+#[test]
+fn currency_decimal_place_expectations() {
+    assert_eq!(Currency::JPY.decimal_places(), 0);
+    assert_eq!(Currency::KRW.decimal_places(), 0);
+    assert_eq!(Currency::BTC.decimal_places(), 8);
+    assert_eq!(Currency::ETH.decimal_places(), 18);
+    assert_eq!(Currency::XMR.decimal_places(), 12);
+}
+
+#[test]
+fn currency_reserve_currency_helper() {
     assert!(Currency::USD.is_reserve_currency());
     assert!(Currency::EUR.is_reserve_currency());
     assert!(Currency::GBP.is_reserve_currency());
     assert!(Currency::JPY.is_reserve_currency());
     assert!(Currency::CHF.is_reserve_currency());
     assert!(!Currency::CAD.is_reserve_currency());
-    assert!(!Currency::Other("BTC".to_string()).is_reserve_currency());
 }
 
-#[test]
-fn test_currency_case_normalization() {
-    // Test that different case variations of the same string are normalized to uppercase
-    let currency1 = Currency::from("btc".to_string());
-    let currency2 = Currency::from("BTC".to_string());
-    let currency3 = Currency::from("Btc".to_string());
-    let currency4 = Currency::from("bTc".to_string());
+#[allow(clippy::too_many_lines)]
+fn cases() -> Vec<Case> {
+    use Currency::*;
 
-    // All should be equal since they're normalized to uppercase
-    assert_eq!(currency1, currency2);
-    assert_eq!(currency2, currency3);
-    assert_eq!(currency3, currency4);
-
-    // All should be BTC variant
-    assert_eq!(currency1, Currency::BTC);
-    assert_eq!(currency2, Currency::BTC);
-    assert_eq!(currency3, Currency::BTC);
-    assert_eq!(currency4, Currency::BTC);
-
-    // Test with ETH (which is now a proper variant)
-    let crypto1 = Currency::from("eth".to_string());
-    let crypto2 = Currency::from("ETH".to_string());
-    let crypto3 = Currency::from("Eth".to_string());
-
-    assert_eq!(crypto1, crypto2);
-    assert_eq!(crypto2, crypto3);
-    assert_eq!(crypto1, Currency::ETH);
-
-    // Test with a truly unknown currency
-    let unknown1 = Currency::from("ethereum".to_string());
-    let unknown2 = Currency::from("ETHEREUM".to_string());
-    let unknown3 = Currency::from("Ethereum".to_string());
-
-    assert_eq!(unknown1, unknown2);
-    assert_eq!(unknown2, unknown3);
-    assert_eq!(unknown1, Currency::Other("ETHEREUM".to_string()));
+    vec![
+        Case {
+            variant: USD,
+            canonical: "USD",
+            full_name: "US Dollar",
+            aliases: &["US_DOLLAR", "US DOLLAR", "USDOLLAR", "DOLLAR"],
+        },
+        Case {
+            variant: EUR,
+            canonical: "EUR",
+            full_name: "Euro",
+            aliases: &["EURO"],
+        },
+        Case {
+            variant: GBP,
+            canonical: "GBP",
+            full_name: "Pound Sterling",
+            aliases: &["POUND", "POUND STERLING"],
+        },
+        Case {
+            variant: JPY,
+            canonical: "JPY",
+            full_name: "Japanese Yen",
+            aliases: &[],
+        },
+        Case {
+            variant: CAD,
+            canonical: "CAD",
+            full_name: "Canadian Dollar",
+            aliases: &[],
+        },
+        Case {
+            variant: AUD,
+            canonical: "AUD",
+            full_name: "Australian Dollar",
+            aliases: &[],
+        },
+        Case {
+            variant: CHF,
+            canonical: "CHF",
+            full_name: "Swiss Franc",
+            aliases: &[],
+        },
+        Case {
+            variant: CNY,
+            canonical: "CNY",
+            full_name: "Chinese Yuan",
+            aliases: &[],
+        },
+        Case {
+            variant: HKD,
+            canonical: "HKD",
+            full_name: "Hong Kong Dollar",
+            aliases: &[],
+        },
+        Case {
+            variant: SGD,
+            canonical: "SGD",
+            full_name: "Singapore Dollar",
+            aliases: &[],
+        },
+        Case {
+            variant: INR,
+            canonical: "INR",
+            full_name: "Indian Rupee",
+            aliases: &[],
+        },
+        Case {
+            variant: BRL,
+            canonical: "BRL",
+            full_name: "Brazilian Real",
+            aliases: &[],
+        },
+        Case {
+            variant: MXN,
+            canonical: "MXN",
+            full_name: "Mexican Peso",
+            aliases: &[],
+        },
+        Case {
+            variant: KRW,
+            canonical: "KRW",
+            full_name: "South Korean Won",
+            aliases: &[],
+        },
+        Case {
+            variant: NZD,
+            canonical: "NZD",
+            full_name: "New Zealand Dollar",
+            aliases: &[],
+        },
+        Case {
+            variant: NOK,
+            canonical: "NOK",
+            full_name: "Norwegian Krone",
+            aliases: &[],
+        },
+        Case {
+            variant: SEK,
+            canonical: "SEK",
+            full_name: "Swedish Krona",
+            aliases: &[],
+        },
+        Case {
+            variant: DKK,
+            canonical: "DKK",
+            full_name: "Danish Krone",
+            aliases: &[],
+        },
+        Case {
+            variant: PLN,
+            canonical: "PLN",
+            full_name: "Polish Zloty",
+            aliases: &[],
+        },
+        Case {
+            variant: CZK,
+            canonical: "CZK",
+            full_name: "Czech Koruna",
+            aliases: &[],
+        },
+        Case {
+            variant: HUF,
+            canonical: "HUF",
+            full_name: "Hungarian Forint",
+            aliases: &[],
+        },
+        Case {
+            variant: RUB,
+            canonical: "RUB",
+            full_name: "Russian Ruble",
+            aliases: &[],
+        },
+        Case {
+            variant: TRY,
+            canonical: "TRY",
+            full_name: "Turkish Lira",
+            aliases: &[],
+        },
+        Case {
+            variant: ZAR,
+            canonical: "ZAR",
+            full_name: "South African Rand",
+            aliases: &[],
+        },
+        Case {
+            variant: ILS,
+            canonical: "ILS",
+            full_name: "Israeli Shekel",
+            aliases: &[],
+        },
+        Case {
+            variant: THB,
+            canonical: "THB",
+            full_name: "Thai Baht",
+            aliases: &[],
+        },
+        Case {
+            variant: MYR,
+            canonical: "MYR",
+            full_name: "Malaysian Ringgit",
+            aliases: &[],
+        },
+        Case {
+            variant: PHP,
+            canonical: "PHP",
+            full_name: "Philippine Peso",
+            aliases: &[],
+        },
+        Case {
+            variant: IDR,
+            canonical: "IDR",
+            full_name: "Indonesian Rupiah",
+            aliases: &[],
+        },
+        Case {
+            variant: VND,
+            canonical: "VND",
+            full_name: "Vietnamese Dong",
+            aliases: &[],
+        },
+        Case {
+            variant: BTC,
+            canonical: "BTC",
+            full_name: "Bitcoin",
+            aliases: &[],
+        },
+        Case {
+            variant: ETH,
+            canonical: "ETH",
+            full_name: "Ethereum",
+            aliases: &[],
+        },
+        Case {
+            variant: XMR,
+            canonical: "XMR",
+            full_name: "Monero",
+            aliases: &[],
+        },
+    ]
 }
 
-#[test]
-fn test_cryptocurrency_decimal_places() {
-    // Test that cryptocurrencies have correct decimal places
-    assert_eq!(Currency::BTC.decimal_places(), 8);
-    assert_eq!(Currency::ETH.decimal_places(), 18);
-    assert_eq!(Currency::XMR.decimal_places(), 12);
+fn assert_round_trip(case: &Case) {
+    let display = case.variant.to_string();
+    assert_eq!(display, case.canonical);
+    assert_eq!(case.variant.code(), case.canonical);
+    assert_eq!(case.variant.full_name(), case.full_name);
 
-    // Test minor unit scale
-    assert_eq!(Currency::BTC.minor_unit_scale(), 100_000_000); // 10^8
-    assert_eq!(Currency::ETH.minor_unit_scale(), 1_000_000_000_000_000_000); // 10^18
-    assert_eq!(Currency::XMR.minor_unit_scale(), 1_000_000_000_000); // 10^12
-}
+    let parsed = Currency::from_str(case.canonical).unwrap();
+    assert_eq!(parsed, case.variant);
 
-#[test]
-fn test_decimal_places_for_fiat_outliers() {
-    assert_eq!(Currency::JPY.decimal_places(), 0);
-    assert_eq!(Currency::KRW.decimal_places(), 0);
-    assert_eq!(Currency::IDR.decimal_places(), 2);
-    assert_eq!(Currency::HUF.decimal_places(), 2);
+    let json = serde_json::to_string(&case.variant).unwrap();
+    assert_eq!(json, format!("\"{}\"", case.canonical));
+    let back: Currency = serde_json::from_str(&json).unwrap();
+    assert_eq!(back, case.variant);
+
+    for alias in case.aliases {
+        let parsed_alias = Currency::from_str(alias).unwrap();
+        assert_eq!(parsed_alias, case.variant);
+
+        let redisplay = parsed_alias.to_string();
+        assert_eq!(redisplay, case.canonical);
+
+        let reparsed = Currency::from_str(parsed_alias.code()).unwrap();
+        assert_eq!(reparsed, case.variant);
+
+        let alias_json = format!("\"{alias}\"");
+        let alias_back: Currency = serde_json::from_str(&alias_json).unwrap();
+        assert_eq!(alias_back, case.variant);
+    }
 }

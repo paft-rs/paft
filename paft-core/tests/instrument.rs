@@ -16,7 +16,10 @@ fn asset_kind_variants() {
         AssetKind::Bond,
         AssetKind::Commodity,
         AssetKind::Option,
-        AssetKind::Other("UNKNOWN".to_string()),
+        AssetKind::Future,
+        AssetKind::REIT,
+        AssetKind::Warrant,
+        AssetKind::Convertible,
     ];
 
     // Test that all variants are different
@@ -30,23 +33,6 @@ fn asset_kind_variants() {
 }
 
 #[test]
-fn asset_kind_case_normalization() {
-    // Test that unknown asset kinds are normalized to uppercase
-    assert_eq!(
-        AssetKind::from("unknown_asset".to_string()),
-        AssetKind::Other("UNKNOWN_ASSET".to_string())
-    );
-    assert_eq!(
-        AssetKind::from("custom_type".to_string()),
-        AssetKind::Other("CUSTOM_TYPE".to_string())
-    );
-    assert_eq!(
-        AssetKind::from("MixedCase".to_string()),
-        AssetKind::Other("MIXEDCASE".to_string())
-    );
-}
-
-#[test]
 fn asset_kind_debug_formatting() {
     let equity = AssetKind::Equity;
     let debug_str = format!("{equity:?}");
@@ -55,6 +41,13 @@ fn asset_kind_debug_formatting() {
     let crypto = AssetKind::Crypto;
     let debug_str = format!("{crypto:?}");
     assert_eq!(debug_str, "Crypto");
+}
+
+#[test]
+fn asset_kind_full_name_is_human_friendly() {
+    assert_eq!(AssetKind::Equity.full_name(), "Equity");
+    assert_eq!(AssetKind::PerpetualFuture.full_name(), "Perpetual Future");
+    assert_eq!(AssetKind::LST.full_name(), "Liquid Staking Token");
 }
 
 #[test]
@@ -100,7 +93,16 @@ fn asset_kind_all_variants_serialization() {
         AssetKind::Bond,
         AssetKind::Commodity,
         AssetKind::Option,
-        AssetKind::Other("UNKNOWN".to_string()),
+        AssetKind::Future,
+        AssetKind::REIT,
+        AssetKind::Warrant,
+        AssetKind::Convertible,
+        AssetKind::NFT,
+        AssetKind::PerpetualFuture,
+        AssetKind::LeveragedToken,
+        AssetKind::LPToken,
+        AssetKind::LST,
+        AssetKind::RWA,
     ];
 
     for variant in variants {
@@ -108,32 +110,6 @@ fn asset_kind_all_variants_serialization() {
         let deserialized: AssetKind = serde_json::from_str(&json).unwrap();
         assert_eq!(variant, deserialized);
     }
-}
-
-#[test]
-fn asset_kind_other_variant_serialization() {
-    // Test that unknown asset kinds are properly handled
-    let unknown_kind = AssetKind::Other("STRUCTURED_PRODUCT".to_string());
-    let json = serde_json::to_string(&unknown_kind).unwrap();
-    let deserialized: AssetKind = serde_json::from_str(&json).unwrap();
-    assert_eq!(unknown_kind, deserialized);
-
-    // Test that it serializes to the custom string
-    assert_eq!(json, "\"STRUCTURED_PRODUCT\"");
-}
-
-#[test]
-fn asset_kind_string_conversion() {
-    // Test that known variants parse correctly
-    let equity_from_string: AssetKind = "EQUITY".to_string().into();
-    assert_eq!(equity_from_string, AssetKind::Equity);
-
-    // Test that unknown strings become Other variants and are normalized to uppercase
-    let unknown_from_string: AssetKind = "structured_product".to_string().into();
-    assert_eq!(
-        unknown_from_string,
-        AssetKind::Other("STRUCTURED_PRODUCT".to_string())
-    );
 }
 
 // -----------------
@@ -162,13 +138,13 @@ fn instrument_crypto_construction() {
         AssetKind::Crypto,
         Some("BBG000B9XRY5".to_string()),
         None,
-        Some(Exchange::Other("COINBASE".to_string())),
+        Some(Exchange::try_from_str("COINBASE").unwrap()),
     );
     assert_eq!(instrument.figi(), Some("BBG000B9XRY5"));
     assert_eq!(instrument.symbol(), "BTC-USD");
     assert_eq!(
         instrument.exchange(),
-        Some(&Exchange::Other("COINBASE".to_string()))
+        Some(&Exchange::try_from_str("COINBASE").unwrap())
     );
     assert_eq!(instrument.kind(), &AssetKind::Crypto);
 }
@@ -221,7 +197,7 @@ fn instrument_hash() {
         AssetKind::Crypto,
         Some("BBG000B9XRY5".to_string()),
         None,
-        Some(Exchange::Other("COINBASE".to_string())),
+        Some(Exchange::try_from_str("COINBASE").unwrap()),
     );
 
     map.insert(instrument1.clone(), "Apple");
@@ -352,7 +328,7 @@ fn instrument_serialization_with_other_exchange() {
         AssetKind::Equity,
         Some("BBG000B9XRY4".to_string()),
         None,
-        Some(Exchange::Other("CUSTOM".to_string())),
+        Some(Exchange::try_from_str("CUSTOM").unwrap()),
     );
     let json = serde_json::to_string(&instrument).unwrap();
     let deserialized: Instrument = serde_json::from_str(&json).unwrap();
@@ -472,7 +448,7 @@ fn instrument_with_unicode_symbol() {
         AssetKind::Equity,
         Some("BBG000B9XRY6".to_string()),
         None,
-        Some(Exchange::Other("SHANGHAI".to_string())),
+        Some(Exchange::try_from_str("SHANGHAI").unwrap()),
     );
     let json = serde_json::to_string(&instrument).unwrap();
     let deserialized: Instrument = serde_json::from_str(&json).unwrap();

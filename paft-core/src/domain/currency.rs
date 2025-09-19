@@ -3,171 +3,109 @@
 //! This module provides type-safe handling of currency codes while gracefully
 //! handling unknown or provider-specific currencies through the `Other` variant.
 
-use serde::{Deserialize, Serialize};
+// no module-level serde imports needed here
 use std::str::FromStr;
-use strum::{AsRefStr, Display, EnumString};
 
-use super::currency_utils::currency_minor_units;
+use super::currency_utils::{MAX_MINOR_UNIT_DECIMALS, currency_minor_units};
+use super::money::MoneyError;
+use super::string_canonical::Canonical;
+use crate::error::PaftError;
 
 /// Currency enumeration with major currencies and extensible fallback.
 ///
 /// This enum provides type-safe handling of currency codes while gracefully
 /// handling unknown or provider-specific currencies through the `Other` variant.
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-    Display,
-    AsRefStr,
-    EnumString,
-    Default,
-)]
-#[strum(ascii_case_insensitive)]
-#[serde(from = "String", into = "String")]
+///
+/// Canonical/serde rules:
+/// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
+/// - Parser accepts a superset of tokens (aliases, case-insensitive)
+/// - `Other(s)` serializes using an escape prefix `~` as "`~{s}`" and must be non-empty
+/// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
+/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum Currency {
     /// US Dollar
-    #[strum(serialize = "USD")]
     #[default]
     USD,
     /// Euro
-    #[strum(serialize = "EUR")]
     EUR,
     /// British Pound Sterling
-    #[strum(serialize = "GBP")]
     GBP,
     /// Japanese Yen
-    #[strum(serialize = "JPY")]
     JPY,
     /// Canadian Dollar
-    #[strum(serialize = "CAD")]
     CAD,
     /// Australian Dollar
-    #[strum(serialize = "AUD")]
     AUD,
     /// Swiss Franc
-    #[strum(serialize = "CHF")]
     CHF,
     /// Chinese Yuan
-    #[strum(serialize = "CNY")]
     CNY,
     /// Hong Kong Dollar
-    #[strum(serialize = "HKD")]
     HKD,
     /// Singapore Dollar
-    #[strum(serialize = "SGD")]
     SGD,
     /// Indian Rupee
-    #[strum(serialize = "INR")]
     INR,
     /// Brazilian Real
-    #[strum(serialize = "BRL")]
     BRL,
     /// Mexican Peso
-    #[strum(serialize = "MXN")]
     MXN,
     /// South Korean Won
-    #[strum(serialize = "KRW")]
     KRW,
     /// New Zealand Dollar
-    #[strum(serialize = "NZD")]
     NZD,
     /// Norwegian Krone
-    #[strum(serialize = "NOK")]
     NOK,
     /// Swedish Krona
-    #[strum(serialize = "SEK")]
     SEK,
     /// Danish Krone
-    #[strum(serialize = "DKK")]
     DKK,
     /// Polish Zloty
-    #[strum(serialize = "PLN")]
     PLN,
     /// Czech Koruna
-    #[strum(serialize = "CZK")]
     CZK,
     /// Hungarian Forint
-    #[strum(serialize = "HUF")]
     HUF,
     /// Russian Ruble
-    #[strum(serialize = "RUB")]
     RUB,
     /// Turkish Lira
-    #[strum(serialize = "TRY")]
     TRY,
     /// South African Rand
-    #[strum(serialize = "ZAR")]
     ZAR,
     /// Israeli Shekel
-    #[strum(serialize = "ILS")]
     ILS,
     /// Thai Baht
-    #[strum(serialize = "THB")]
     THB,
     /// Malaysian Ringgit
-    #[strum(serialize = "MYR")]
     MYR,
     /// Philippine Peso
-    #[strum(serialize = "PHP")]
     PHP,
     /// Indonesian Rupiah
-    #[strum(serialize = "IDR")]
     IDR,
     /// Vietnamese Dong
-    #[strum(serialize = "VND")]
     VND,
     /// Bitcoin
-    #[strum(serialize = "BTC")]
     BTC,
     /// Ethereum
-    #[strum(serialize = "ETH")]
     ETH,
     /// Monero
-    #[strum(serialize = "XMR")]
     XMR,
     /// Unknown or provider-specific currency
-    Other(String),
-}
-
-impl From<String> for Currency {
-    fn from(s: String) -> Self {
-        // Trim and uppercase once to handle noisy provider strings.
-        let trimmed = s.trim();
-        if trimmed.is_empty() {
-            return Self::Other(trimmed.to_string());
-        }
-
-        // Try to parse the trimmed string as-is (this retains canonical casing
-        // such as "usd" -> USD via `strum`'s ascii_case_insensitive option).
-        if let Ok(parsed) = Self::from_str(trimmed) {
-            return parsed;
-        }
-
-        // Apply additional alias normalization for common provider spellings
-        // before falling back to `Other`.
-        match trimmed.to_uppercase().as_str() {
-            "US_DOLLAR" | "US DOLLAR" | "USDOLLAR" | "DOLLAR" => Self::USD,
-            "EURO" => Self::EUR,
-            "POUND" | "POUND STERLING" => Self::GBP,
-            code => Self::Other(code.to_string()),
-        }
-    }
-}
-
-impl From<Currency> for String {
-    fn from(currency: Currency) -> Self {
-        match currency {
-            Currency::Other(s) => s,
-            _ => currency.to_string(),
-        }
-    }
+    Other(Canonical),
 }
 
 impl Currency {
+    /// Attempts to parse a currency from the provided string, enforcing canonical aliases.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty or contains only whitespace.
+    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+        Self::from_str(input)
+    }
+
     /// Returns true if this is a major reserve currency
     #[must_use]
     pub const fn is_reserve_currency(&self) -> bool {
@@ -175,15 +113,6 @@ impl Currency {
             self,
             Self::USD | Self::EUR | Self::GBP | Self::JPY | Self::CHF
         )
-    }
-
-    /// Returns the string code for this enum variant
-    #[must_use]
-    pub fn code(&self) -> &str {
-        match self {
-            Self::Other(s) => s,
-            _ => self.as_ref(),
-        }
     }
 
     /// Returns the number of decimal places (minor units) for this currency according to ISO 4217.
@@ -215,19 +144,19 @@ impl Currency {
     /// assert_eq!(Currency::JPY.decimal_places(), 0);
     /// assert_eq!(Currency::BTC.decimal_places(), 8);
     /// assert_eq!(Currency::ETH.decimal_places(), 18);
-    /// assert_eq!(Currency::Other("XYZ".to_string()).decimal_places(), 2);
+    /// assert_eq!(Currency::try_from_str("XYZ").unwrap().decimal_places(), 2);
     /// ```
     #[must_use]
-    pub fn decimal_places(&self) -> u32 {
+    pub fn decimal_places(&self) -> u8 {
         if let Self::Other(code) = self
-            && let Some(decimals) = currency_minor_units(code)
+            && let Some(decimals) = currency_minor_units(code.as_ref())
         {
             return decimals;
         }
         self.base_decimal_places()
     }
 
-    const fn base_decimal_places(&self) -> u32 {
+    const fn base_decimal_places(&self) -> u8 {
         match self {
             // Fiat currencies with 0 decimal places
             Self::JPY | Self::KRW | Self::VND => 0,
@@ -268,6 +197,47 @@ impl Currency {
         }
     }
 
+    /// Returns the human-readable name for this currency.
+    #[must_use]
+    pub fn full_name(&self) -> &str {
+        match self {
+            Self::USD => "US Dollar",
+            Self::EUR => "Euro",
+            Self::GBP => "Pound Sterling",
+            Self::JPY => "Japanese Yen",
+            Self::CAD => "Canadian Dollar",
+            Self::AUD => "Australian Dollar",
+            Self::CHF => "Swiss Franc",
+            Self::CNY => "Chinese Yuan",
+            Self::HKD => "Hong Kong Dollar",
+            Self::SGD => "Singapore Dollar",
+            Self::INR => "Indian Rupee",
+            Self::BRL => "Brazilian Real",
+            Self::MXN => "Mexican Peso",
+            Self::KRW => "South Korean Won",
+            Self::NZD => "New Zealand Dollar",
+            Self::NOK => "Norwegian Krone",
+            Self::SEK => "Swedish Krona",
+            Self::DKK => "Danish Krone",
+            Self::PLN => "Polish Zloty",
+            Self::CZK => "Czech Koruna",
+            Self::HUF => "Hungarian Forint",
+            Self::RUB => "Russian Ruble",
+            Self::TRY => "Turkish Lira",
+            Self::ZAR => "South African Rand",
+            Self::ILS => "Israeli Shekel",
+            Self::THB => "Thai Baht",
+            Self::MYR => "Malaysian Ringgit",
+            Self::PHP => "Philippine Peso",
+            Self::IDR => "Indonesian Rupiah",
+            Self::VND => "Vietnamese Dong",
+            Self::BTC => "Bitcoin",
+            Self::ETH => "Ethereum",
+            Self::XMR => "Monero",
+            Self::Other(code) => code.as_ref(),
+        }
+    }
+
     /// Returns the scaling factor for converting between major and minor units.
     /// This is `10^decimal_places`.
     ///
@@ -275,11 +245,75 @@ impl Currency {
     /// ```
     /// use paft_core::domain::Currency;
     ///
-    /// assert_eq!(Currency::USD.minor_unit_scale(), 100);  // 10^2
-    /// assert_eq!(Currency::JPY.minor_unit_scale(), 1);    // 10^0
+    /// assert_eq!(Currency::USD.minor_unit_scale().unwrap(), 100);  // 10^2
+    /// assert_eq!(Currency::JPY.minor_unit_scale().unwrap(), 1);    // 10^0
     /// ```
-    #[must_use]
-    pub fn minor_unit_scale(&self) -> i64 {
-        10_i64.pow(self.decimal_places())
+    ///
+    /// # Errors
+    /// Returns `MoneyError::ConversionError` if `decimal_places()` exceeds the
+    /// maximum supported precision for minor units.
+    pub fn minor_unit_scale(&self) -> Result<i64, MoneyError> {
+        let decimals = self.decimal_places();
+        if decimals > MAX_MINOR_UNIT_DECIMALS {
+            return Err(MoneyError::ConversionError);
+        }
+        Ok(10_i64.pow(u32::from(decimals)))
     }
 }
+
+// Serde implemented via macro
+
+// Implement code() and string impls via macro (open enum)
+crate::string_enum_with_code!(
+    Currency, Other, "Currency",
+    {
+        "USD" => Currency::USD,
+        "EUR" => Currency::EUR,
+        "GBP" => Currency::GBP,
+        "JPY" => Currency::JPY,
+        "CAD" => Currency::CAD,
+        "AUD" => Currency::AUD,
+        "CHF" => Currency::CHF,
+        "CNY" => Currency::CNY,
+        "HKD" => Currency::HKD,
+        "SGD" => Currency::SGD,
+        "INR" => Currency::INR,
+        "BRL" => Currency::BRL,
+        "MXN" => Currency::MXN,
+        "KRW" => Currency::KRW,
+        "NZD" => Currency::NZD,
+        "NOK" => Currency::NOK,
+        "SEK" => Currency::SEK,
+        "DKK" => Currency::DKK,
+        "PLN" => Currency::PLN,
+        "CZK" => Currency::CZK,
+        "HUF" => Currency::HUF,
+        "RUB" => Currency::RUB,
+        "TRY" => Currency::TRY,
+        "ZAR" => Currency::ZAR,
+        "ILS" => Currency::ILS,
+        "THB" => Currency::THB,
+        "MYR" => Currency::MYR,
+        "PHP" => Currency::PHP,
+        "IDR" => Currency::IDR,
+        "VND" => Currency::VND,
+        "BTC" => Currency::BTC,
+        "ETH" => Currency::ETH,
+        "XMR" => Currency::XMR
+    },
+    {
+        // Aliases
+        "US_DOLLAR" => Currency::USD,
+        "USDOLLAR" => Currency::USD,
+        "DOLLAR" => Currency::USD,
+        "EURO" => Currency::EUR,
+        "POUND" => Currency::GBP,
+        "POUND_STERLING" => Currency::GBP,
+        "RMB" => Currency::CNY,
+        "CNH" => Currency::CNY,
+        "XBT" => Currency::BTC,
+        "BITCOIN" => Currency::BTC,
+    }
+);
+
+crate::impl_display_via_code!(Currency);

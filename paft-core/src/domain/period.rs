@@ -4,11 +4,13 @@
 //! extensible fallback variant.
 
 use regex::Regex;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as DeError};
+use std::borrow::Cow;
 use std::fmt;
 
+use super::string_canonical::Canonical;
 use crate::error::PaftError;
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 
 // Compile-time compiled regex patterns for Period parsing
 static QUARTERLY_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
@@ -35,7 +37,25 @@ static DAY_FIRST_DATE_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::n
 ///
 /// This enum provides type-safe handling of financial periods while gracefully
 /// handling unknown or provider-specific period formats through the `Other` variant.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+///
+/// Canonical/serde rules:
+/// - Emission uses a single canonical form per variant (UPPERCASE ASCII where applicable)
+/// - Parser accepts a superset of tokens (aliases, case-insensitive where appropriate)
+/// - `Other(s)` serializes using an escape prefix `~` as "~{s}" and must be non-empty
+/// - `Display` output matches the canonical form for structured variants and the raw `s` for `Other(s)`
+/// - Serde round-trips preserve identity for all values, including `Other`, via the escape prefix
+///
+/// Canonical outputs:
+/// - Quarters: `YYYYQ#` (e.g., `2023Q4`)
+/// - Years: `YYYY` (e.g., `2023`)
+/// - Dates: `YYYY-MM-DD` (ISO 8601)
+/// - `Other` stores and emits `canonicalize`-style tokens
+///
+/// `Display` and serde always emit the canonical forms listed above. The parser
+/// accepts common provider variants (e.g., `FY2023`, `2023-Q4`, `12/31/2023`) and
+/// normalizes to the single canonical emission for round-trip stability.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Period {
     /// Quarterly period with year and quarter number
     Quarter {
@@ -49,17 +69,26 @@ pub enum Period {
         /// The year of the annual period
         year: i32,
     },
-    /// Specific date timestamp
+    /// Specific date
     Date(
-        /// Date and time in UTC
-        #[serde(with = "chrono::serde::ts_seconds")]
-        DateTime<Utc>,
+        /// Calendar date (UTC newline-free)
+        NaiveDate,
     ),
     /// Unknown or provider-specific period format
-    Other(String),
+    Other(Canonical),
 }
 
 impl Period {
+    /// Returns the canonical display/serde code for this period.
+    #[must_use]
+    pub fn code(&self) -> Cow<'_, str> {
+        match self {
+            Self::Quarter { year, quarter } => Cow::Owned(format!("{year}Q{quarter}")),
+            Self::Year { year } => Cow::Owned(year.to_string()),
+            Self::Date(date) => Cow::Owned(date.format("%Y-%m-%d").to_string()),
+            Self::Other(s) => Cow::Borrowed(s.as_ref()),
+        }
+    }
     /// Returns the year for this period, if applicable
     #[must_use]
     pub const fn year(&self) -> Option<i32> {
@@ -136,10 +165,8 @@ impl Period {
             let month = month_str.parse::<u32>().ok()?;
             let day = day_str.parse::<u32>().ok()?;
 
-            if let Some(date) = chrono::NaiveDate::from_ymd_opt(year, month, day)
-                && let Some(datetime) = date.and_hms_opt(0, 0, 0)
-            {
-                return Some(Self::Date(datetime.and_utc()));
+            if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
+                return Some(Self::Date(date));
             }
         }
 
@@ -153,10 +180,8 @@ impl Period {
             let day = day_str.parse::<u32>().ok()?;
             let year = year_str.parse::<i32>().ok()?;
 
-            if let Some(date) = chrono::NaiveDate::from_ymd_opt(year, month, day)
-                && let Some(datetime) = date.and_hms_opt(0, 0, 0)
-            {
-                return Some(Self::Date(datetime.and_utc()));
+            if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
+                return Some(Self::Date(date));
             }
         }
 
@@ -170,10 +195,8 @@ impl Period {
             let month = month_str.parse::<u32>().ok()?;
             let year = year_str.parse::<i32>().ok()?;
 
-            if let Some(date) = chrono::NaiveDate::from_ymd_opt(year, month, day)
-                && let Some(datetime) = date.and_hms_opt(0, 0, 0)
-            {
-                return Some(Self::Date(datetime.and_utc()));
+            if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
+                return Some(Self::Date(date));
             }
         }
 
@@ -181,57 +204,80 @@ impl Period {
     }
 }
 
-impl TryFrom<String> for Period {
-    type Error = PaftError;
+impl From<Period> for String {
+    fn from(val: Period) -> Self {
+        val.code().into_owned()
+    }
+}
 
-    fn try_from(s: String) -> Result<Self, Self::Error> {
+impl fmt::Display for Period {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.code())
+    }
+}
+
+impl Serialize for Period {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.code())
+    }
+}
+
+impl<'de> Deserialize<'de> for Period {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        raw.parse::<Self>().map_err(DeError::custom)
+    }
+}
+
+impl std::str::FromStr for Period {
+    type Err = PaftError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim();
 
-        // Try to parse quarterly format
+        if trimmed.is_empty() {
+            return Err(PaftError::InvalidPeriodFormat {
+                format: s.to_string(),
+            });
+        }
+
         if let Some(period) = Self::parse_quarterly(trimmed) {
             return Ok(period);
         }
 
-        // Try to parse year format
         if let Some(period) = Self::parse_year(trimmed) {
             return Ok(period);
         }
 
-        // Try to parse date format
         if let Some(period) = Self::parse_date(trimmed) {
             return Ok(period);
         }
 
-        // If no patterns match, check if any pattern matched but had invalid values
-        // This helps distinguish between "unknown format" and "invalid values"
         if QUARTERLY_REGEX.is_match(trimmed)
             || YEAR_REGEX.is_match(trimmed)
             || DATE_REGEX.is_match(trimmed)
             || US_DATE_REGEX.is_match(trimmed)
             || DAY_FIRST_DATE_REGEX.is_match(trimmed)
         {
-            return Err(PaftError::InvalidPeriodFormat { format: s });
+            return Err(PaftError::InvalidPeriodFormat {
+                format: s.to_string(),
+            });
         }
 
-        // If no patterns match, store as Other (unknown format)
-        Ok(Self::Other(s.to_uppercase()))
+        Ok(Self::Other(Canonical::try_new(trimmed)?))
     }
 }
 
-impl From<Period> for String {
-    fn from(val: Period) -> Self {
-        match val {
-            Period::Quarter { year, quarter } => format!("{year}Q{quarter}"),
-            Period::Year { year } => year.to_string(),
-            Period::Date(datetime) => datetime.date_naive().format("%Y-%m-%d").to_string(),
-            Period::Other(s) => s,
-        }
-    }
-}
+impl TryFrom<String> for Period {
+    type Error = PaftError;
 
-impl fmt::Display for Period {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s: String = self.clone().into();
-        write!(f, "{s}")
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.as_str().parse()
     }
 }

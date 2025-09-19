@@ -1,5 +1,6 @@
 //! Money type for representing financial values with currency.
 
+use super::currency_utils::{MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS};
 use crate::domain::currency::Currency;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::{Decimal, RoundingStrategy};
@@ -214,8 +215,13 @@ impl Money {
     /// ```
     #[must_use]
     pub fn as_minor_units(&self) -> Option<i128> {
-        let scale = self.currency.minor_unit_scale();
-        (self.amount * Decimal::from(scale)).to_i128()
+        let decimals = self.currency.decimal_places();
+        let Ok(scale) = Self::ensure_scale_within_limits(decimals) else {
+            return None;
+        };
+
+        let multiplier = Decimal::from(10_i64.pow(scale));
+        (self.amount * multiplier).to_i128()
     }
 
     /// Creates a new Money instance from a string amount and currency.
@@ -244,17 +250,24 @@ impl Money {
     /// ```
     /// use paft_core::domain::{Money, Currency};
     ///
-    /// let usd = Money::from_minor_units(12345, Currency::USD); // $123.45
-    /// let jpy = Money::from_minor_units(123, Currency::JPY);   // ¥123
+    /// let usd = Money::from_minor_units(12345, Currency::USD).unwrap(); // $123.45
+    /// let jpy = Money::from_minor_units(123, Currency::JPY).unwrap();   // ¥123
     /// ```
-    #[must_use]
-    pub fn from_minor_units(minor_units: i128, currency: Currency) -> Self {
-        let decimal_places = currency.decimal_places();
-        let amount = Decimal::from_i128_with_scale(minor_units, decimal_places);
-        Self::new(amount, currency)
+    ///
+    /// # Errors
+    ///
+    /// Returns `MoneyError::ConversionError` when the currency's configured
+    /// precision exceeds the safe scaling limits enforced by `rust_decimal`.
+    pub fn from_minor_units(minor_units: i128, currency: Currency) -> Result<Self, MoneyError> {
+        let scale = Self::ensure_scale_within_limits(currency.decimal_places())?;
+        let amount = Decimal::from_i128_with_scale(minor_units, scale);
+        Ok(Self::new(amount, currency))
     }
 
     /// Returns the amount as a formatted string with currency code.
+    ///
+    /// This uses `currency.code()` for the currency token, which is the
+    /// canonical emission used by both `Display` and serde across enums.
     #[must_use]
     pub fn format(&self) -> String {
         format!("{} {}", self.amount, self.currency.code())
@@ -400,10 +413,20 @@ impl Money {
             });
         }
 
-        let decimal_places = rate.to.decimal_places();
+        let scale = Self::ensure_scale_within_limits(rate.to.decimal_places())?;
         let converted_amount = (self.amount * rate.rate())
-            .round_dp_with_strategy(decimal_places, RoundingStrategy::MidpointAwayFromZero);
+            .round_dp_with_strategy(scale, RoundingStrategy::MidpointAwayFromZero);
         Ok(Self::new(converted_amount, rate.to.clone()))
+    }
+
+    fn ensure_scale_within_limits(decimals: u8) -> Result<u32, MoneyError> {
+        if decimals > MAX_DECIMAL_PRECISION {
+            return Err(MoneyError::ConversionError);
+        }
+        if decimals > MAX_MINOR_UNIT_DECIMALS {
+            return Err(MoneyError::ConversionError);
+        }
+        Ok(u32::from(decimals))
     }
 }
 

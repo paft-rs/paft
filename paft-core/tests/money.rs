@@ -155,7 +155,7 @@ fn test_try_convert_respects_target_precision() {
 #[test]
 fn test_from_minor_units_large_precision() {
     let wei: i128 = 1_234_567_890_123_456_789;
-    let eth = Money::from_minor_units(wei, Currency::ETH);
+    let eth = Money::from_minor_units(wei, Currency::ETH).unwrap();
 
     assert_eq!(eth.currency(), &Currency::ETH);
     assert_eq!(eth.as_minor_units(), Some(wei));
@@ -163,4 +163,46 @@ fn test_from_minor_units_large_precision() {
         eth.amount(),
         Decimal::from_str("1.234567890123456789").unwrap()
     );
+}
+
+#[test]
+fn test_money_minor_units_boundary_precisions() {
+    // 0 decimals (JPY)
+    let jpy_minor = 42i128;
+    let jpy = Money::from_minor_units(jpy_minor, Currency::JPY).unwrap();
+    assert_eq!(jpy.currency(), &Currency::JPY);
+    assert_eq!(jpy.as_minor_units(), Some(jpy_minor));
+    assert_eq!(jpy.amount(), Decimal::from(jpy_minor));
+
+    // 8 decimals (BTC)
+    let sats = 12_345_678i128;
+    let btc = Money::from_minor_units(sats, Currency::BTC).unwrap();
+    assert_eq!(btc.currency(), &Currency::BTC);
+    assert_eq!(btc.as_minor_units(), Some(sats));
+    assert_eq!(btc.amount(), Decimal::from_str("0.12345678").unwrap());
+
+    // 12 decimals (XMR)
+    let atomic_units = 1_234_567_890_123i128;
+    let xmr = Money::from_minor_units(atomic_units, Currency::XMR).unwrap();
+    assert_eq!(xmr.currency(), &Currency::XMR);
+    assert_eq!(xmr.as_minor_units(), Some(atomic_units));
+    assert_eq!(xmr.amount(), Decimal::from_str("1.234567890123").unwrap());
+
+    // 18 decimals (ETH)
+    let wei = 1_000_000_000_000_000_000i128;
+    let eth = Money::from_minor_units(wei, Currency::ETH).unwrap();
+    assert_eq!(eth.currency(), &Currency::ETH);
+    assert_eq!(eth.as_minor_units(), Some(wei));
+    assert_eq!(eth.amount(), Decimal::from(1));
+}
+
+#[test]
+fn test_money_respects_builtin_usdc_override() {
+    let usdc = Currency::try_from_str("USDC").unwrap();
+    let microscopic = 1_500_000i128; // 1.5 USDC with 6 decimal places
+    let money = Money::from_minor_units(microscopic, usdc.clone()).unwrap();
+
+    assert_eq!(money.currency(), &usdc);
+    assert_eq!(money.as_minor_units(), Some(microscopic));
+    assert_eq!(money.amount(), Decimal::from_str("1.5").unwrap());
 }

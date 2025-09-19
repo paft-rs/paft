@@ -2,91 +2,105 @@
 
 use super::Exchange;
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
-use std::str::FromStr;
-use strum::{AsRefStr, Display, EnumString};
+use std::{borrow::Cow, str::FromStr};
 
-/// Default string used for unknown asset kinds.
-pub const UNKNOWN_ASSET_KIND: &str = "UNKNOWN";
-
-/// Kinds of financial instruments with canonical variants and extensible fallback.
-///
-/// This enum provides type-safe handling of asset kinds while gracefully
-/// handling unknown or provider-specific asset types through the `Other` variant.
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-    Display,
-    AsRefStr,
-    EnumString,
-    Default,
-)]
-#[strum(ascii_case_insensitive)]
-#[serde(from = "String", into = "String")]
+/// Kinds of financial instruments
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub enum AssetKind {
     /// Common stock or equity-like instruments.
-    #[strum(serialize = "EQUITY", serialize = "STOCK")]
     #[default]
     Equity,
     /// Cryptocurrency assets.
-    #[strum(serialize = "CRYPTO", serialize = "CRYPTOCURRENCY")]
     Crypto,
     /// Funds and ETFs.
-    #[strum(serialize = "FUND", serialize = "ETF")]
     Fund,
     /// Market indexes.
-    #[strum(serialize = "INDEX")]
     Index,
     /// Foreign exchange currency pairs.
-    #[strum(serialize = "FOREX", serialize = "FX", serialize = "CURRENCY")]
     Forex,
     /// Bonds and fixed income.
-    #[strum(serialize = "BOND", serialize = "FIXED_INCOME")]
     Bond,
     /// Commodities.
-    #[strum(serialize = "COMMODITY")]
     Commodity,
     /// Option contracts.
-    #[strum(serialize = "OPTION")]
     Option,
-    /// Unknown or provider-specific asset kind.
-    Other(String),
+    /// Commodity futures.
+    Future,
+    /// Real Estate Investment Trusts.
+    REIT,
+    /// Warrants.
+    Warrant,
+    /// Convertible bonds/securities.
+    Convertible,
+    /// Non-fungible tokens.
+    NFT,
+    /// Perpetual futures contracts (no expiration date).
+    PerpetualFuture,
+    /// Leveraged tokens (e.g., 3x leveraged Bitcoin tokens).
+    LeveragedToken,
+    /// Liquidity provider tokens (`DeFi` protocol tokens).
+    LPToken,
+    /// Liquid staking tokens (e.g., stETH, rETH).
+    LST,
+    /// Real-world assets (tokenized physical assets).
+    RWA,
 }
 
-impl From<String> for AssetKind {
-    fn from(s: String) -> Self {
-        // Try to parse as a known variant first
-        Self::from_str(&s).unwrap_or_else(|_| Self::Other(s.to_uppercase()))
+crate::string_enum_closed_with_code!(
+    AssetKind,
+    "AssetKind",
+    {
+        "EQUITY" => AssetKind::Equity,
+        "CRYPTO" => AssetKind::Crypto,
+        "FUND" => AssetKind::Fund,
+        "INDEX" => AssetKind::Index,
+        "FOREX" => AssetKind::Forex,
+        "BOND" => AssetKind::Bond,
+        "COMMODITY" => AssetKind::Commodity,
+        "OPTION" => AssetKind::Option,
+        "FUTURE" => AssetKind::Future,
+        "REIT" => AssetKind::REIT,
+        "WARRANT" => AssetKind::Warrant,
+        "CONVERTIBLE" => AssetKind::Convertible,
+        "NFT" => AssetKind::NFT,
+        "PERPETUAL_FUTURE" => AssetKind::PerpetualFuture,
+        "LEVERAGED_TOKEN" => AssetKind::LeveragedToken,
+        "LP_TOKEN" => AssetKind::LPToken,
+        "LST" => AssetKind::LST,
+        "RWA" => AssetKind::RWA
+    },
+    {
+        "STOCK" => AssetKind::Equity,
+        "FX" => AssetKind::Forex,
     }
-}
+);
 
-impl From<AssetKind> for String {
-    fn from(kind: AssetKind) -> Self {
-        match kind {
-            AssetKind::Other(s) => s,
-            _ => kind.to_string(),
-        }
-    }
-}
+crate::impl_display_via_code!(AssetKind);
 
 impl AssetKind {
-    /// Returns true if this is a known/canonical asset kind
+    /// Human-readable label for displaying this asset kind.
     #[must_use]
-    pub const fn is_canonical(&self) -> bool {
-        !matches!(self, Self::Other(_))
-    }
-
-    /// Returns the asset kind as a string representation
-    #[must_use]
-    pub fn as_str(&self) -> &str {
+    pub const fn full_name(&self) -> &'static str {
         match self {
-            Self::Other(s) => s,
-            _ => self.as_ref(),
+            Self::Equity => "Equity",
+            Self::Crypto => "Crypto",
+            Self::Fund => "Fund",
+            Self::Index => "Index",
+            Self::Forex => "Forex",
+            Self::Bond => "Bond",
+            Self::Commodity => "Commodity",
+            Self::Option => "Option",
+            Self::Future => "Future",
+            Self::REIT => "REIT",
+            Self::Warrant => "Warrant",
+            Self::Convertible => "Convertible",
+            Self::NFT => "NFT",
+            Self::PerpetualFuture => "Perpetual Future",
+            Self::LeveragedToken => "Leveraged Token",
+            Self::LPToken => "LP Token",
+            Self::LST => "Liquid Staking Token",
+            Self::RWA => "Real-World Asset",
         }
     }
 }
@@ -100,20 +114,10 @@ impl AssetKind {
 /// better identifiers when available.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Instrument {
-    /// Financial Instrument Global Identifier (FIGI) - a free, open, stable identifier.
-    /// This is the preferred identifier for cross-provider data aggregation.
     figi: Option<String>,
-    /// International Securities Identification Number (ISIN) - globally unique but may have licensing restrictions.
-    /// Second choice for global identification when FIGI is not available.
     isin: Option<String>,
-    /// Ticker symbol (e.g., "AAPL", "BRK.A").
-    /// While ubiquitous, symbols can be ambiguous and vary by exchange/provider.
-    /// This is the only required field to maintain backward compatibility.
     symbol: String,
-    /// Exchange identifier with canonical variants and extensible fallback.
-    /// Optional but recommended for disambiguating symbols.
     exchange: Option<Exchange>,
-    /// Asset kind classification.
     kind: AssetKind,
 }
 
@@ -175,6 +179,11 @@ impl Instrument {
     /// This method returns a `Cow<str>` to avoid unnecessary allocations:
     /// - Returns `Cow::Borrowed` for FIGI, ISIN, and symbol-only cases
     /// - Returns `Cow::Owned` only for the symbol@exchange case that requires formatting
+    ///
+    /// # Future compatibility
+    /// The `symbol@exchange` fallback currently uses the exchange display code (e.g. `NASDAQ`).
+    /// These values are not MICs and should be treated as a legacy format until
+    /// a canonical mapping is introduced in a future release.
     #[must_use]
     pub fn unique_key(&self) -> Cow<'_, str> {
         if let Some(figi) = &self.figi {

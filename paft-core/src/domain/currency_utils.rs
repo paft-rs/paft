@@ -1,16 +1,55 @@
 //! Utilities and helpers for working with `Currency` values.
 
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::{LazyLock, RwLock};
 
 use super::Currency;
+use super::string_canonical::canonicalize;
+
+/// Maximum precision supported by `rust_decimal` for safe scaling operations.
+pub(crate) const MAX_DECIMAL_PRECISION: u8 = 28;
+/// Maximum precision that can be converted into an `i64` minor-unit scale (10^18).
+pub(crate) const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
+
+/// Errors that can occur when configuring minor-unit overrides.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MinorUnitError {
+    /// The requested precision exceeds what `rust_decimal` supports (28 fractional digits).
+    ExceedsDecimalPrecision {
+        /// Requested fractional digits.
+        decimals: u8,
+    },
+    /// The requested precision would overflow `10_i64.pow(decimals)` used for minor units.
+    ExceedsMinorUnitScale {
+        /// Requested fractional digits.
+        decimals: u8,
+    },
+}
+
+impl fmt::Display for MinorUnitError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ExceedsDecimalPrecision { decimals } => write!(
+                f,
+                "decimal precision {decimals} exceeds rust_decimal maximum of {MAX_DECIMAL_PRECISION}"
+            ),
+            Self::ExceedsMinorUnitScale { decimals } => write!(
+                f,
+                "decimal precision {decimals} exceeds minor-unit scaling limit of {MAX_MINOR_UNIT_DECIMALS}"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for MinorUnitError {}
 
 /// Built-in precision overrides for commonly used non-ISO currency codes.
 ///
 /// These values cover high-volume crypto assets and stablecoins that do not
 /// have dedicated `Currency` enum variants but require non-standard
 /// decimal precision.
-const BUILTIN_MINOR_UNIT_OVERRIDES: &[(&str, u32)] = &[
+const BUILTIN_MINOR_UNIT_OVERRIDES: &[(&str, u8)] = &[
     // Stablecoins
     ("USDC", 6),
     ("USDT", 6),
@@ -28,7 +67,7 @@ const BUILTIN_MINOR_UNIT_OVERRIDES: &[(&str, u32)] = &[
     ("UNI", 8),
 ];
 
-static MINOR_UNIT_OVERRIDES: LazyLock<RwLock<HashMap<String, u32>>> = LazyLock::new(|| {
+static MINOR_UNIT_OVERRIDES: LazyLock<RwLock<HashMap<String, u8>>> = LazyLock::new(|| {
     let mut map = HashMap::new();
     for (code, decimals) in BUILTIN_MINOR_UNIT_OVERRIDES {
         map.insert((*code).to_string(), *decimals);
@@ -36,63 +75,18 @@ static MINOR_UNIT_OVERRIDES: LazyLock<RwLock<HashMap<String, u32>>> = LazyLock::
     RwLock::new(map)
 });
 
-fn canonicalize(code: &str) -> String {
-    code.trim().to_uppercase()
-}
-
 /// Attempts to normalize a currency code to a canonical variant or common `Other` value.
-#[must_use]
-pub fn normalize_currency_code(code: &str) -> Currency {
-    let normalized = canonicalize(code);
-
-    match normalized.as_str() {
-        // Map to canonical variants when possible
-        "DOLLAR" | "US_DOLLAR" | "USD" => Currency::USD,
-        "EURO" | "EUR" => Currency::EUR,
-        "POUND" | "GBP" => Currency::GBP,
-
-        // Normalize crypto currencies to common Other values
-        "BITCOIN" | "XBT" => Currency::BTC,
-        "ETHEREUM" => Currency::ETH,
-
-        // Preserve other values as-is
-        _ => Currency::from(normalized),
-    }
-}
-
-/// Returns `true` if the currency is commonly used in financial applications.
-#[must_use]
-pub fn is_common_currency(currency: &Currency) -> bool {
-    match currency {
-        // Major fiat currencies and commonly used cryptos
-        Currency::USD
-        | Currency::EUR
-        | Currency::GBP
-        | Currency::JPY
-        | Currency::BTC
-        | Currency::ETH => true,
-        Currency::Other(code) => matches!(code.as_str(), "BTC" | "ETH"),
-
-        _ => false,
-    }
-}
-
-/// Returns a human-readable description of the currency.
-#[must_use]
-pub fn describe_currency(currency: &Currency) -> String {
-    match currency {
-        Currency::USD => "US Dollar".to_string(),
-        Currency::EUR => "Euro".to_string(),
-        Currency::GBP => "British Pound".to_string(),
-        Currency::JPY => "Japanese Yen".to_string(),
-        Currency::Other(code) => format!("Unknown currency ({code})"),
-        _ => format!("{currency}"),
-    }
+///
+/// # Errors
+///
+/// Returns an error on empty input to preserve `Currency` invariants.
+pub fn try_normalize_currency_code(code: &str) -> Result<Currency, crate::error::PaftError> {
+    Currency::try_from_str(code)
 }
 
 /// Returns the configured minor-unit precision for the provided currency code, if any.
 #[must_use]
-pub fn currency_minor_units(code: &str) -> Option<u32> {
+pub fn currency_minor_units(code: &str) -> Option<u8> {
     let canonical = canonicalize(code);
     MINOR_UNIT_OVERRIDES
         .read()
@@ -103,15 +97,28 @@ pub fn currency_minor_units(code: &str) -> Option<u32> {
 /// Registers or updates the minor-unit precision for a currency code.
 ///
 /// Returns the previously configured precision, if one existed.
-pub fn set_currency_minor_units(code: &str, decimals: u32) -> Option<u32> {
+///
+/// # Errors
+///
+/// Returns [`MinorUnitError`] when the requested precision would exceed either the
+/// `rust_decimal` precision limit (28 fractional digits) or the safe minor-unit
+/// scaling limit (18 fractional digits, used in `10_i64.pow` conversions).
+pub fn set_currency_minor_units(code: &str, decimals: u8) -> Result<Option<u8>, MinorUnitError> {
+    if decimals > MAX_DECIMAL_PRECISION {
+        return Err(MinorUnitError::ExceedsDecimalPrecision { decimals });
+    }
+    if decimals > MAX_MINOR_UNIT_DECIMALS {
+        return Err(MinorUnitError::ExceedsMinorUnitScale { decimals });
+    }
+
     let canonical = canonicalize(code);
-    MINOR_UNIT_OVERRIDES
+    Ok(MINOR_UNIT_OVERRIDES
         .write()
-        .map_or(None, |mut map| map.insert(canonical, decimals))
+        .map_or(None, |mut map| map.insert(canonical, decimals)))
 }
 
 /// Removes any configured precision override for a currency code.
-pub fn clear_currency_minor_units(code: &str) -> Option<u32> {
+pub fn clear_currency_minor_units(code: &str) -> Option<u8> {
     let canonical = canonicalize(code);
     MINOR_UNIT_OVERRIDES
         .write()
