@@ -13,15 +13,10 @@ use std::{borrow::Borrow, fmt, str::FromStr};
 /// - Trimmed
 /// - ASCII uppercased
 /// - Whitespace collapsed to single underscores
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Canonical(String);
 
 impl Canonical {
-    /// Creates a new canonical string from arbitrary input.
-    #[must_use]
-    pub fn new(input: &str) -> Self {
-        Self(canonicalize(input))
-    }
 
     /// Attempts to create a new canonical string from arbitrary input, rejecting
     /// values that would canonicalize to an empty token (e.g., strings composed
