@@ -1,11 +1,14 @@
 //! Commonly used types for convenient glob import.
+//!
+//! Note: All enums expose a canonical `code()` string used by both `Display`
+//! and serde to ensure round-trip stability across providers.
 
 // Re-export core types via namespaced modules
 pub use crate::core::PaftError;
 pub use crate::core::domain::{
     AssetKind, Currency, Exchange, ExchangeRate, Instrument, MarketState, Money, MoneyError,
-    Period, clear_currency_minor_units, currency_minor_units, describe_currency,
-    is_common_currency, normalize_currency_code, set_currency_minor_units,
+    Period, clear_currency_minor_units, currency_minor_units, set_currency_minor_units,
+    try_normalize_currency_code,
 };
 
 // Re-export dataframe traits
@@ -36,6 +39,8 @@ pub use crate::fundamentals::statements::{
 };
 
 // Re-export market types (flattened via namespace)
+#[cfg(feature = "market")]
+pub use crate::market::MarketError;
 #[cfg(feature = "market")]
 pub use crate::market::action::Action;
 #[cfg(feature = "market")]

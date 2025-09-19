@@ -13,6 +13,7 @@ pub mod core {
 /// Namespaced access to `paft-market` (feature-gated).
 #[cfg(feature = "market")]
 pub mod market {
+    pub use paft_market::error::{self, MarketError};
     pub use paft_market::market::{action, news, options, quote};
     pub use paft_market::requests;
     pub use paft_market::responses;

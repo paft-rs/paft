@@ -7,6 +7,7 @@
 use paft::prelude::{AssetKind, Exchange, Instrument};
 use std::collections::HashMap;
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     println!("=== Hierarchical Identifier Examples ===\n");
 
@@ -16,7 +17,10 @@ fn main() {
         Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity);
 
     println!("   Symbol: {}", generic_instrument.symbol());
-    println!("   Exchange: {:?}", generic_instrument.exchange());
+    println!(
+        "   Exchange: {}",
+        generic_instrument.exchange().map_or("-", Exchange::code)
+    );
     println!("   Unique Key: {}", generic_instrument.unique_key());
     println!(
         "   Globally Identified: {}",
@@ -39,7 +43,12 @@ fn main() {
     println!("   Symbol: {}", professional_instrument.symbol());
     println!("   FIGI: {:?}", professional_instrument.figi());
     println!("   ISIN: {:?}", professional_instrument.isin());
-    println!("   Exchange: {:?}", professional_instrument.exchange());
+    println!(
+        "   Exchange: {}",
+        professional_instrument
+            .exchange()
+            .map_or("-", Exchange::code)
+    );
     println!("   Unique Key: {}", professional_instrument.unique_key());
     println!(
         "   Globally Identified: {}",
@@ -60,7 +69,10 @@ fn main() {
     println!("   Symbol: {}", european_instrument.symbol());
     println!("   FIGI: {:?}", european_instrument.figi());
     println!("   ISIN: {:?}", european_instrument.isin());
-    println!("   Exchange: {:?}", european_instrument.exchange());
+    println!(
+        "   Exchange: {}",
+        european_instrument.exchange().map_or("-", Exchange::code)
+    );
     println!("   Unique Key: {}", european_instrument.unique_key());
     println!(
         "   Globally Identified: {}",
@@ -75,7 +87,10 @@ fn main() {
     println!("   Symbol: {}", minimal_instrument.symbol());
     println!("   FIGI: {:?}", minimal_instrument.figi());
     println!("   ISIN: {:?}", minimal_instrument.isin());
-    println!("   Exchange: {:?}", minimal_instrument.exchange());
+    println!(
+        "   Exchange: {}",
+        minimal_instrument.exchange().map_or("-", Exchange::code)
+    );
     println!("   Unique Key: {}", minimal_instrument.unique_key());
     println!(
         "   Globally Identified: {}",

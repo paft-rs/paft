@@ -1,9 +1,9 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
-use paft::prelude::PaftError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
-    Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range, SearchRequest,
+    Instrument, Interval, MarketError, MarketState, Money, Quote, QuoteUpdate, Range,
+    SearchRequest,
 };
 use rust_decimal::Decimal;
 use std::str::FromStr;
@@ -102,7 +102,7 @@ fn error_handling_workflow() {
     let result = SearchRequest::builder("").limit(0).build();
     assert!(result.is_err());
 
-    if result == Err(PaftError::EmptySearchQuery) {
+    if result == Err(MarketError::EmptySearchQuery) {
         // The validation correctly identifies empty search query
     } else {
         panic!("Expected EmptySearchQuery error, got: {result:?}");
@@ -117,7 +117,7 @@ fn error_handling_workflow() {
         .build();
     assert!(result.is_err());
 
-    if let Err(PaftError::InvalidPeriod { start, end }) = result {
+    if let Err(MarketError::InvalidPeriod { start, end }) = result {
         assert_eq!(start, 2000);
         assert_eq!(end, 1000);
     } else {
@@ -199,7 +199,16 @@ fn asset_kind_workflow() {
         AssetKind::Bond,
         AssetKind::Commodity,
         AssetKind::Option,
-        AssetKind::Other("UNKNOWN".to_string()),
+        AssetKind::Future,
+        AssetKind::REIT,
+        AssetKind::Warrant,
+        AssetKind::Convertible,
+        AssetKind::NFT,
+        AssetKind::PerpetualFuture,
+        AssetKind::LeveragedToken,
+        AssetKind::LPToken,
+        AssetKind::LST,
+        AssetKind::RWA,
     ];
 
     // Test that each asset kind can be used in an instrument
@@ -209,7 +218,7 @@ fn asset_kind_workflow() {
             asset_kind.clone(),
             Some("BBG000B9XRY7".to_string()),
             None,
-            Some(Exchange::Other("TEST".to_string())),
+            Some(Exchange::try_from_str("TEST").unwrap()),
         );
         assert_eq!(instrument.kind(), &asset_kind);
 
