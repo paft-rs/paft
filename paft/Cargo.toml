@@ -16,6 +16,7 @@ categories = ["finance", "data-structures", "api-bindings"]
 paft-core = { workspace = true }
 paft-market = { workspace = true, optional = true }
 paft-fundamentals = { workspace = true, optional = true }
+iso_currency = { workspace = true }
 
 [features]
 default = ["market", "fundamentals"]

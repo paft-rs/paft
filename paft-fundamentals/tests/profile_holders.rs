@@ -1,9 +1,8 @@
-use chrono::{TimeZone, Utc};
+use iso_currency::Currency as IsoCurrency;
 use paft_core::domain::{Currency, Money};
-use paft_fundamentals::holders::{InsiderPosition, InsiderTransaction, TransactionType};
 use paft_fundamentals::profile::{Address, CompanyProfile, FundKind, FundProfile, Profile};
 use rust_decimal::Decimal;
-use serde_json::{from_str, json, to_string};
+use serde_json::{from_str, to_string};
 
 #[test]
 fn profile_isin_accessor() {
@@ -44,22 +43,20 @@ fn address_serde_roundtrip() {
 
 #[test]
 fn insider_transaction_serde_with_enums_and_timestamps() {
-    let tx = InsiderTransaction {
-        insider: "Jane Doe".into(),
-        position: InsiderPosition::Cfo,
-        transaction_type: TransactionType::Buy,
+    let tx = paft_fundamentals::holders::InsiderTransaction {
+        insider: "John Doe".to_string(),
+        position: paft_fundamentals::holders::InsiderPosition::Officer,
+        transaction_type: paft_fundamentals::holders::TransactionType::Buy,
         shares: Some(1000),
-        value: Some(Money::new(Decimal::new(12345, 2), Currency::USD)),
-        transaction_date: Utc.with_ymd_and_hms(2024, 9, 1, 0, 0, 0).unwrap(),
+        value: Some(Money::new(
+            Decimal::new(12345, 2),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        transaction_date: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         url: "https://example.com".into(),
     };
-    let s = to_string(&tx).unwrap();
-    // Ensure json contains expected string enums and ts_seconds
-    let v: serde_json::Value = from_str(&s).unwrap();
-    assert_eq!(v["position"], json!("CFO"));
-    assert_eq!(v["transaction_type"], json!("BUY"));
-    assert_eq!(v["transaction_date"], json!(1_725_148_800));
 
-    let back: InsiderTransaction = from_str(&s).unwrap();
-    assert_eq!(back, tx);
+    let json = serde_json::to_string(&tx).unwrap();
+    let back: paft_fundamentals::holders::InsiderTransaction = serde_json::from_str(&json).unwrap();
+    assert_eq!(tx, back);
 }

@@ -65,7 +65,7 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
 
 #[test]
 fn display_matches_wire_codes_for_core_enums() {
-    let usd = Currency::USD;
+    let usd = Currency::Iso(iso_currency::Currency::USD);
     assert_eq!(usd.to_string(), usd.code());
 
     let nasdaq = Exchange::NASDAQ;

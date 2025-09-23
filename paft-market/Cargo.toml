@@ -4,7 +4,7 @@ version.workspace = true
 edition = "2024"
 license.workspace = true
 authors.workspace = true
-description = "Market data types, requests, and responses for paft."
+description = "Market data models and requests for paft."
 repository.workspace = true
 homepage = "https://github.com/paft-rs/paft"
 documentation = "https://docs.rs/paft-market"
@@ -21,6 +21,7 @@ df-derive = { workspace = true, optional = true }
 polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde", "regex", "timezones", "diagonal_concat", "json", "rolling_window"], optional = true }
 bitflags = { version = "2", features = ["serde"] }
 thiserror = { workspace = true }
+iso_currency = { workspace = true }
 
 [features]
 default = []

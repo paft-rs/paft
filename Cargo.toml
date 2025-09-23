@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 authors = ["G. Ramistella <heydays_micron_7m@icloud.com>"]
 edition = "2024"
 license = "MIT"
@@ -25,6 +25,7 @@ regex = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = { version = "0.10", features = ["serde"] }
 rust_decimal = { version = "1.36", features = ["serde"] }
+iso_currency = "0.5"
 
 # Local crates
 paft-core = { path = "paft-core", version = "0.2.0", default-features = false }

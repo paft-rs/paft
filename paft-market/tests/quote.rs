@@ -1,4 +1,5 @@
 use chrono::DateTime;
+use iso_currency::Currency as IsoCurrency;
 use paft_core::domain::{Currency, Exchange, MarketState, Money};
 use paft_market::market::quote::{Quote, QuoteUpdate};
 use rust_decimal::Decimal;
@@ -13,10 +14,13 @@ fn quote_construction() {
     let quote = Quote {
         symbol: "AAPL".to_string(),
         shortname: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -26,13 +30,16 @@ fn quote_construction() {
     assert_eq!(quote.shortname, Some("Apple Inc.".to_string()));
     assert_eq!(
         quote.price,
-        Some(Money::new(Decimal::from(150), Currency::USD))
+        Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD)
+        ))
     );
     assert_eq!(
         quote.previous_close,
         Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD
+            Currency::Iso(IsoCurrency::USD)
         ))
     );
     assert_eq!(quote.exchange, Some(Exchange::NASDAQ));
@@ -62,10 +69,13 @@ fn quote_clone() {
     let original = Quote {
         symbol: "AAPL".to_string(),
         shortname: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -80,10 +90,13 @@ fn quote_debug_formatting() {
     let quote = Quote {
         symbol: "AAPL".to_string(),
         shortname: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -100,20 +113,26 @@ fn quote_currency_consistency() {
     let quote = Quote {
         symbol: "AAPL".to_string(),
         shortname: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
 
     // The currency should be accessible from the Money fields
-    assert_eq!(quote.price.as_ref().unwrap().currency(), &Currency::USD);
+    assert_eq!(
+        quote.price.as_ref().unwrap().currency(),
+        &Currency::Iso(IsoCurrency::USD)
+    );
     assert_eq!(
         quote.previous_close.as_ref().unwrap().currency(),
-        &Currency::USD
+        &Currency::Iso(IsoCurrency::USD)
     );
 }
 
@@ -140,8 +159,14 @@ fn quote_money_fields() {
     let quote = Quote {
         symbol: "AAPL".to_string(),
         shortname: None,
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
-        previous_close: Some(Money::new(Decimal::from(147), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Money::new(
+            Decimal::from(147),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         exchange: None,
         market_state: None,
     };
@@ -149,12 +174,15 @@ fn quote_money_fields() {
     // Test price
     let price_money = quote.price.as_ref().unwrap();
     assert_eq!(price_money.amount(), Decimal::from(150));
-    assert_eq!(price_money.currency(), &Currency::USD);
+    assert_eq!(price_money.currency(), &Currency::Iso(IsoCurrency::USD));
 
     // Test previous_close
     let prev_close_money = quote.previous_close.as_ref().unwrap();
     assert_eq!(prev_close_money.amount(), Decimal::from(147));
-    assert_eq!(prev_close_money.currency(), &Currency::USD);
+    assert_eq!(
+        prev_close_money.currency(),
+        &Currency::Iso(IsoCurrency::USD)
+    );
 
     // Test with None prices
     let quote_no_prices = Quote {
@@ -179,10 +207,13 @@ fn quote_money_fields() {
 fn quote_update_construction() {
     let update = QuoteUpdate {
         symbol: "AAPL".to_string(),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
@@ -190,13 +221,16 @@ fn quote_update_construction() {
     assert_eq!(update.symbol, "AAPL");
     assert_eq!(
         update.price,
-        Some(Money::new(Decimal::from(150), Currency::USD))
+        Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD)
+        ))
     );
     assert_eq!(
         update.previous_close,
         Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD
+            Currency::Iso(IsoCurrency::USD)
         ))
     );
     assert_eq!(update.ts.timestamp(), 1_640_995_200);
@@ -206,7 +240,10 @@ fn quote_update_construction() {
 fn quote_update_partial_fields() {
     let update = QuoteUpdate {
         symbol: "AAPL".to_string(),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
@@ -214,7 +251,10 @@ fn quote_update_partial_fields() {
     assert_eq!(update.symbol, "AAPL");
     assert_eq!(
         update.price,
-        Some(Money::new(Decimal::from(150), Currency::USD))
+        Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD)
+        ))
     );
     assert_eq!(update.previous_close, None);
     assert_eq!(update.ts.timestamp(), 1_640_995_200);
@@ -224,10 +264,13 @@ fn quote_update_partial_fields() {
 fn quote_update_clone() {
     let original = QuoteUpdate {
         symbol: "AAPL".to_string(),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
@@ -240,10 +283,13 @@ fn quote_update_clone() {
 fn quote_update_debug_formatting() {
     let update = QuoteUpdate {
         symbol: "AAPL".to_string(),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
@@ -262,10 +308,13 @@ fn quote_serialization() {
     let quote = Quote {
         symbol: "AAPL".to_string(),
         shortname: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -281,8 +330,14 @@ fn quote_with_none_fields() {
     let quote = Quote {
         symbol: "AAPL".to_string(),
         shortname: None,
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
-        previous_close: None,
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Money::new(
+            Decimal::from(147),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         exchange: None,
         market_state: None,
     };
@@ -296,10 +351,13 @@ fn quote_with_none_fields() {
 fn quote_update_serialization() {
     let update = QuoteUpdate {
         symbol: "AAPL".to_string(),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: Some(Money::new(
             Decimal::from(1475) / Decimal::from(10),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
@@ -330,11 +388,11 @@ fn serialization_roundtrip_preserves_precision() {
         shortname: Some("Apple Inc.".to_string()),
         price: Some(Money::new(
             Decimal::from_str("150.123456789").unwrap(),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         previous_close: Some(Money::new(
             Decimal::from_str("147.135802469").unwrap(),
-            Currency::USD,
+            Currency::Iso(IsoCurrency::USD),
         )),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -364,7 +422,10 @@ fn deserialization_handles_missing_optional_fields() {
     assert_eq!(deserialized.symbol, "AAPL");
     assert_eq!(
         deserialized.price,
-        Some(Money::new(Decimal::from(150), Currency::USD))
+        Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD)
+        ))
     );
     assert_eq!(deserialized.shortname, None);
     assert_eq!(deserialized.previous_close, None);

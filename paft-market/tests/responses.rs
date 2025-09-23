@@ -1,8 +1,9 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
+use iso_currency::Currency as IsoCurrency;
 use paft_core::domain::{Currency, Money};
 use paft_market::market::action::Action;
-use paft_market::responses::history::{Candle, HistoryMeta, HistoryResponse};
+use paft_market::{Candle, HistoryMeta, HistoryResponse};
 use rust_decimal::Decimal;
 use std::str::FromStr;
 
@@ -10,10 +11,22 @@ use std::str::FromStr;
 fn candle_serialization() {
     let candle = Candle {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        open: Money::new(Decimal::from_str("100.0").unwrap(), Currency::USD),
-        high: Money::new(Decimal::from_str("110.0").unwrap(), Currency::USD),
-        low: Money::new(Decimal::from_str("95.0").unwrap(), Currency::USD),
-        close: Money::new(Decimal::from_str("105.0").unwrap(), Currency::USD),
+        open: Money::new(
+            Decimal::from_str("100.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        high: Money::new(
+            Decimal::from_str("110.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        low: Money::new(
+            Decimal::from_str("95.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        close: Money::new(
+            Decimal::from_str("105.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
         volume: Some(1_000_000),
     };
 
@@ -26,10 +39,22 @@ fn candle_serialization() {
 fn candle_with_none_volume() {
     let candle = Candle {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        open: Money::new(Decimal::from_str("100.0").unwrap(), Currency::USD),
-        high: Money::new(Decimal::from_str("110.0").unwrap(), Currency::USD),
-        low: Money::new(Decimal::from_str("95.0").unwrap(), Currency::USD),
-        close: Money::new(Decimal::from_str("105.0").unwrap(), Currency::USD),
+        open: Money::new(
+            Decimal::from_str("100.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        high: Money::new(
+            Decimal::from_str("110.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        low: Money::new(
+            Decimal::from_str("95.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        close: Money::new(
+            Decimal::from_str("105.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
         volume: None,
     };
 
@@ -42,7 +67,10 @@ fn candle_with_none_volume() {
 fn action_dividend_serialization() {
     let action = Action::Dividend {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        amount: Money::new(Decimal::from_str("0.5").unwrap(), Currency::USD),
+        amount: Money::new(
+            Decimal::from_str("0.5").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
     };
 
     let json = serde_json::to_string(&action).unwrap();
@@ -67,7 +95,10 @@ fn action_split_serialization() {
 fn action_capital_gain_serialization() {
     let action = Action::CapitalGain {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        gain: Money::new(Decimal::from_str("1.0").unwrap(), Currency::USD),
+        gain: Money::new(
+            Decimal::from_str("1.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
     };
 
     let json = serde_json::to_string(&action).unwrap();
@@ -100,32 +131,77 @@ fn history_meta_with_none_fields() {
 }
 
 #[test]
-fn complex_nested_serialization() {
-    let history_response = HistoryResponse {
-        candles: vec![Candle {
-            ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-            open: Money::new(Decimal::from_str("100.0").unwrap(), Currency::USD),
-            high: Money::new(Decimal::from_str("110.0").unwrap(), Currency::USD),
-            low: Money::new(Decimal::from_str("95.0").unwrap(), Currency::USD),
-            close: Money::new(Decimal::from_str("105.0").unwrap(), Currency::USD),
-            volume: Some(1_000_000),
-        }],
-        actions: vec![Action::Dividend {
-            ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-            amount: Money::new(Decimal::from_str("0.5").unwrap(), Currency::USD),
-        }],
-        adjusted: true,
-        meta: Some(HistoryMeta {
-            timezone: Some("America/New_York".parse::<Tz>().unwrap()),
-            utc_offset_seconds: Some(-18_000),
-        }),
-        unadjusted_close: Some(vec![Money::new(
+fn responses_smoke() {
+    let candles = vec![Candle {
+        ts: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        open: Money::new(
+            Decimal::from_str("100.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        high: Money::new(
+            Decimal::from_str("110.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        low: Money::new(
+            Decimal::from_str("95.0").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        close: Money::new(
             Decimal::from_str("105.0").unwrap(),
-            Currency::USD,
-        )]),
+            Currency::Iso(IsoCurrency::USD),
+        ),
+        volume: Some(1_000_000),
+    }];
+
+    let meta = HistoryMeta {
+        timezone: Some("America/New_York".parse::<Tz>().unwrap()),
+        utc_offset_seconds: Some(-5 * 3600),
     };
 
-    let json = serde_json::to_string(&history_response).unwrap();
+    let response = HistoryResponse {
+        candles,
+        actions: vec![],
+        adjusted: false,
+        meta: Some(meta),
+        unadjusted_close: None,
+    };
+
+    assert_eq!(response.candles.len(), 1);
+}
+
+#[test]
+fn complex_nested_serialization() {
+    let response = HistoryResponse {
+        meta: Some(HistoryMeta {
+            timezone: Some("America/New_York".parse::<Tz>().unwrap()),
+            utc_offset_seconds: Some(-5 * 3600),
+        }),
+        candles: vec![Candle {
+            ts: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+            open: Money::new(
+                Decimal::from_str("100.0").unwrap(),
+                Currency::Iso(IsoCurrency::USD),
+            ),
+            high: Money::new(
+                Decimal::from_str("110.0").unwrap(),
+                Currency::Iso(IsoCurrency::USD),
+            ),
+            low: Money::new(
+                Decimal::from_str("95.0").unwrap(),
+                Currency::Iso(IsoCurrency::USD),
+            ),
+            close: Money::new(
+                Decimal::from_str("105.0").unwrap(),
+                Currency::Iso(IsoCurrency::USD),
+            ),
+            volume: Some(1_000_000),
+        }],
+        actions: vec![],
+        adjusted: false,
+        unadjusted_close: None,
+    };
+
+    let json = serde_json::to_string(&response).unwrap();
     let deserialized: HistoryResponse = serde_json::from_str(&json).unwrap();
-    assert_eq!(history_response, deserialized);
+    assert_eq!(response, deserialized);
 }

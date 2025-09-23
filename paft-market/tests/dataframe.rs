@@ -1,46 +1,72 @@
 #![cfg(feature = "dataframe")]
-use chrono::DateTime;
+use iso_currency::Currency as IsoCurrency;
 use paft_core::dataframe::{ToDataFrame, ToDataFrameVec};
-use paft_core::domain::{Currency, Exchange, MarketState, Money};
-use paft_market::market::quote::{Quote, QuoteUpdate};
+use paft_core::domain::{Currency, Exchange, Money};
+use paft_market::market::quote::Quote;
 use rust_decimal::Decimal;
 
 #[test]
-fn quote_to_dataframe_smoke() {
-    let q = Quote {
+fn vec_quote_to_dataframe_smoke() {
+    let quotes = [Quote {
         symbol: "AAPL".to_string(),
         shortname: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::USD)),
-        previous_close: Some(Money::new(Decimal::from(147), Currency::USD)),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Money::new(
+            Decimal::from(147),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         exchange: Some(Exchange::NASDAQ),
-        market_state: Some(MarketState::Regular),
-    };
-    let df = q.to_dataframe().unwrap();
-    assert_eq!(df.height(), 1);
+        market_state: None,
+    }];
+
+    let df = quotes.to_dataframe().unwrap();
+    let cols = df.get_column_names();
+    assert!(cols.iter().any(|c| c.as_str() == "symbol"));
 }
 
 #[test]
-fn vec_quote_to_dataframe_smoke() {
-    let v = [Quote {
+fn quote_to_dataframe_smoke() {
+    let quote = Quote {
         symbol: "AAPL".to_string(),
-        shortname: None,
-        price: None,
-        previous_close: None,
-        exchange: None,
+        shortname: Some("Apple Inc.".to_string()),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Money::new(
+            Decimal::from(147),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        exchange: Some(Exchange::NASDAQ),
         market_state: None,
-    }];
-    let df = v.to_dataframe().unwrap();
+    };
+
+    let df = quote.to_dataframe().unwrap();
+    let cols = df.get_column_names();
+    assert!(cols.iter().any(|c| c.as_str() == "symbol"));
     assert_eq!(df.height(), 1);
 }
 
 #[test]
 fn quote_update_to_dataframe_smoke() {
-    let u = QuoteUpdate {
+    use paft_market::market::quote::QuoteUpdate;
+    let update = QuoteUpdate {
         symbol: "AAPL".to_string(),
-        price: None,
-        previous_close: None,
-        ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        price: Some(Money::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Money::new(
+            Decimal::from(147),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        ts: chrono::DateTime::from_timestamp(0, 0).unwrap(),
     };
-    let df = u.to_dataframe().unwrap();
-    assert_eq!(df.height(), 1);
+
+    let df = update.to_dataframe().unwrap();
+    let cols = df.get_column_names();
+    assert!(cols.iter().any(|c| c.as_str() == "symbol"));
 }

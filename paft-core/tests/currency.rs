@@ -1,5 +1,6 @@
 //! Tests covering canonical/alias behavior for currencies.
 
+use iso_currency::Currency as IsoCurrency;
 use paft_core::domain::Currency;
 use std::str::FromStr;
 
@@ -22,7 +23,6 @@ fn currency_round_trips_display_fromstr_and_serde() {
 fn currency_other_values_uppercase_and_round_trip() {
     let parsed = Currency::try_from_str("usd-lite").unwrap();
     assert_eq!(parsed.to_string(), "USD_LITE");
-    assert_eq!(String::from(parsed.clone()), "USD_LITE");
 
     let json = serde_json::to_string(&parsed).unwrap();
     assert_eq!(json, "\"USD_LITE\"");
@@ -47,8 +47,8 @@ fn currency_try_from_and_serde_reject_empty() {
 
 #[test]
 fn currency_decimal_place_expectations() {
-    assert_eq!(Currency::JPY.decimal_places(), 0);
-    assert_eq!(Currency::KRW.decimal_places(), 0);
+    assert_eq!(Currency::Iso(IsoCurrency::JPY).decimal_places(), 0);
+    assert_eq!(Currency::Iso(IsoCurrency::KRW).decimal_places(), 0);
     assert_eq!(Currency::BTC.decimal_places(), 8);
     assert_eq!(Currency::ETH.decimal_places(), 18);
     assert_eq!(Currency::XMR.decimal_places(), 12);
@@ -56,213 +56,211 @@ fn currency_decimal_place_expectations() {
 
 #[test]
 fn currency_reserve_currency_helper() {
-    assert!(Currency::USD.is_reserve_currency());
-    assert!(Currency::EUR.is_reserve_currency());
-    assert!(Currency::GBP.is_reserve_currency());
-    assert!(Currency::JPY.is_reserve_currency());
-    assert!(Currency::CHF.is_reserve_currency());
-    assert!(!Currency::CAD.is_reserve_currency());
+    assert!(Currency::Iso(IsoCurrency::USD).is_reserve_currency());
+    assert!(Currency::Iso(IsoCurrency::EUR).is_reserve_currency());
+    assert!(Currency::Iso(IsoCurrency::GBP).is_reserve_currency());
+    assert!(Currency::Iso(IsoCurrency::JPY).is_reserve_currency());
+    assert!(Currency::Iso(IsoCurrency::CHF).is_reserve_currency());
+    assert!(!Currency::Iso(IsoCurrency::CAD).is_reserve_currency());
 }
 
 #[allow(clippy::too_many_lines)]
 fn cases() -> Vec<Case> {
-    use Currency::*;
-
     vec![
         Case {
-            variant: USD,
+            variant: Currency::Iso(IsoCurrency::USD),
             canonical: "USD",
-            full_name: "US Dollar",
-            aliases: &["US_DOLLAR", "US DOLLAR", "USDOLLAR", "DOLLAR"],
+            full_name: IsoCurrency::USD.name(),
+            aliases: &[],
         },
         Case {
-            variant: EUR,
+            variant: Currency::Iso(IsoCurrency::EUR),
             canonical: "EUR",
-            full_name: "Euro",
-            aliases: &["EURO"],
+            full_name: IsoCurrency::EUR.name(),
+            aliases: &[],
         },
         Case {
-            variant: GBP,
+            variant: Currency::Iso(IsoCurrency::GBP),
             canonical: "GBP",
-            full_name: "Pound Sterling",
-            aliases: &["POUND", "POUND STERLING"],
+            full_name: IsoCurrency::GBP.name(),
+            aliases: &[],
         },
         Case {
-            variant: JPY,
+            variant: Currency::Iso(IsoCurrency::JPY),
             canonical: "JPY",
-            full_name: "Japanese Yen",
+            full_name: IsoCurrency::JPY.name(),
             aliases: &[],
         },
         Case {
-            variant: CAD,
+            variant: Currency::Iso(IsoCurrency::CAD),
             canonical: "CAD",
-            full_name: "Canadian Dollar",
+            full_name: IsoCurrency::CAD.name(),
             aliases: &[],
         },
         Case {
-            variant: AUD,
+            variant: Currency::Iso(IsoCurrency::AUD),
             canonical: "AUD",
-            full_name: "Australian Dollar",
+            full_name: IsoCurrency::AUD.name(),
             aliases: &[],
         },
         Case {
-            variant: CHF,
+            variant: Currency::Iso(IsoCurrency::CHF),
             canonical: "CHF",
-            full_name: "Swiss Franc",
+            full_name: IsoCurrency::CHF.name(),
             aliases: &[],
         },
         Case {
-            variant: CNY,
+            variant: Currency::Iso(IsoCurrency::CNY),
             canonical: "CNY",
-            full_name: "Chinese Yuan",
+            full_name: IsoCurrency::CNY.name(),
             aliases: &[],
         },
         Case {
-            variant: HKD,
+            variant: Currency::Iso(IsoCurrency::HKD),
             canonical: "HKD",
-            full_name: "Hong Kong Dollar",
+            full_name: IsoCurrency::HKD.name(),
             aliases: &[],
         },
         Case {
-            variant: SGD,
+            variant: Currency::Iso(IsoCurrency::SGD),
             canonical: "SGD",
-            full_name: "Singapore Dollar",
+            full_name: IsoCurrency::SGD.name(),
             aliases: &[],
         },
         Case {
-            variant: INR,
+            variant: Currency::Iso(IsoCurrency::INR),
             canonical: "INR",
-            full_name: "Indian Rupee",
+            full_name: IsoCurrency::INR.name(),
             aliases: &[],
         },
         Case {
-            variant: BRL,
+            variant: Currency::Iso(IsoCurrency::BRL),
             canonical: "BRL",
-            full_name: "Brazilian Real",
+            full_name: IsoCurrency::BRL.name(),
             aliases: &[],
         },
         Case {
-            variant: MXN,
+            variant: Currency::Iso(IsoCurrency::MXN),
             canonical: "MXN",
-            full_name: "Mexican Peso",
+            full_name: IsoCurrency::MXN.name(),
             aliases: &[],
         },
         Case {
-            variant: KRW,
+            variant: Currency::Iso(IsoCurrency::KRW),
             canonical: "KRW",
-            full_name: "South Korean Won",
+            full_name: IsoCurrency::KRW.name(),
             aliases: &[],
         },
         Case {
-            variant: NZD,
+            variant: Currency::Iso(IsoCurrency::NZD),
             canonical: "NZD",
-            full_name: "New Zealand Dollar",
+            full_name: IsoCurrency::NZD.name(),
             aliases: &[],
         },
         Case {
-            variant: NOK,
+            variant: Currency::Iso(IsoCurrency::NOK),
             canonical: "NOK",
-            full_name: "Norwegian Krone",
+            full_name: IsoCurrency::NOK.name(),
             aliases: &[],
         },
         Case {
-            variant: SEK,
+            variant: Currency::Iso(IsoCurrency::SEK),
             canonical: "SEK",
-            full_name: "Swedish Krona",
+            full_name: IsoCurrency::SEK.name(),
             aliases: &[],
         },
         Case {
-            variant: DKK,
+            variant: Currency::Iso(IsoCurrency::DKK),
             canonical: "DKK",
-            full_name: "Danish Krone",
+            full_name: IsoCurrency::DKK.name(),
             aliases: &[],
         },
         Case {
-            variant: PLN,
+            variant: Currency::Iso(IsoCurrency::PLN),
             canonical: "PLN",
-            full_name: "Polish Zloty",
+            full_name: IsoCurrency::PLN.name(),
             aliases: &[],
         },
         Case {
-            variant: CZK,
+            variant: Currency::Iso(IsoCurrency::CZK),
             canonical: "CZK",
-            full_name: "Czech Koruna",
+            full_name: IsoCurrency::CZK.name(),
             aliases: &[],
         },
         Case {
-            variant: HUF,
+            variant: Currency::Iso(IsoCurrency::HUF),
             canonical: "HUF",
-            full_name: "Hungarian Forint",
+            full_name: IsoCurrency::HUF.name(),
             aliases: &[],
         },
         Case {
-            variant: RUB,
+            variant: Currency::Iso(IsoCurrency::RUB),
             canonical: "RUB",
-            full_name: "Russian Ruble",
+            full_name: IsoCurrency::RUB.name(),
             aliases: &[],
         },
         Case {
-            variant: TRY,
+            variant: Currency::Iso(IsoCurrency::TRY),
             canonical: "TRY",
-            full_name: "Turkish Lira",
+            full_name: IsoCurrency::TRY.name(),
             aliases: &[],
         },
         Case {
-            variant: ZAR,
+            variant: Currency::Iso(IsoCurrency::ZAR),
             canonical: "ZAR",
-            full_name: "South African Rand",
+            full_name: IsoCurrency::ZAR.name(),
             aliases: &[],
         },
         Case {
-            variant: ILS,
+            variant: Currency::Iso(IsoCurrency::ILS),
             canonical: "ILS",
-            full_name: "Israeli Shekel",
+            full_name: IsoCurrency::ILS.name(),
             aliases: &[],
         },
         Case {
-            variant: THB,
+            variant: Currency::Iso(IsoCurrency::THB),
             canonical: "THB",
-            full_name: "Thai Baht",
+            full_name: IsoCurrency::THB.name(),
             aliases: &[],
         },
         Case {
-            variant: MYR,
+            variant: Currency::Iso(IsoCurrency::MYR),
             canonical: "MYR",
-            full_name: "Malaysian Ringgit",
+            full_name: IsoCurrency::MYR.name(),
             aliases: &[],
         },
         Case {
-            variant: PHP,
+            variant: Currency::Iso(IsoCurrency::PHP),
             canonical: "PHP",
-            full_name: "Philippine Peso",
+            full_name: IsoCurrency::PHP.name(),
             aliases: &[],
         },
         Case {
-            variant: IDR,
+            variant: Currency::Iso(IsoCurrency::IDR),
             canonical: "IDR",
-            full_name: "Indonesian Rupiah",
+            full_name: IsoCurrency::IDR.name(),
             aliases: &[],
         },
         Case {
-            variant: VND,
+            variant: Currency::Iso(IsoCurrency::VND),
             canonical: "VND",
-            full_name: "Vietnamese Dong",
+            full_name: IsoCurrency::VND.name(),
             aliases: &[],
         },
         Case {
-            variant: BTC,
+            variant: Currency::BTC,
             canonical: "BTC",
             full_name: "Bitcoin",
             aliases: &[],
         },
         Case {
-            variant: ETH,
+            variant: Currency::ETH,
             canonical: "ETH",
             full_name: "Ethereum",
             aliases: &[],
         },
         Case {
-            variant: XMR,
+            variant: Currency::XMR,
             canonical: "XMR",
             full_name: "Monero",
             aliases: &[],

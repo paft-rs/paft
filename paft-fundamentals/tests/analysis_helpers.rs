@@ -1,3 +1,4 @@
+use iso_currency::Currency as IsoCurrency;
 use paft_core::domain::{Currency, Money};
 use paft_fundamentals::analysis::{
     EpsRevisions, EpsTrend, RecommendationSummary, RevisionPoint, TrendPoint,
@@ -7,10 +8,21 @@ use rust_decimal::Decimal;
 #[test]
 fn eps_trend_helpers() {
     let t = EpsTrend::new(
-        Some(Money::new(Decimal::new(100, 2), Currency::USD)),
+        Some(Money::new(
+            Decimal::new(100, 2),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         vec![
-            TrendPoint::try_new_str("7d", Money::new(Decimal::new(101, 2), Currency::USD)).unwrap(),
-            TrendPoint::try_new_str("30d", Money::new(Decimal::new(98, 2), Currency::USD)).unwrap(),
+            TrendPoint::try_new_str(
+                "7d",
+                Money::new(Decimal::new(101, 2), Currency::Iso(IsoCurrency::USD)),
+            )
+            .unwrap(),
+            TrendPoint::try_new_str(
+                "30d",
+                Money::new(Decimal::new(98, 2), Currency::Iso(IsoCurrency::USD)),
+            )
+            .unwrap(),
         ],
     );
     assert_eq!(

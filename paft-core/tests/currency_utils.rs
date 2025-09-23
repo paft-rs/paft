@@ -5,15 +5,20 @@ use paft_core::domain::{
 
 #[test]
 fn test_currency_parsing_accepts_aliases_and_unknown() {
-    assert_eq!(Currency::try_from_str("DOLLAR").unwrap(), Currency::USD);
-    assert_eq!(Currency::try_from_str("BITCOIN").unwrap(), Currency::BTC);
+    assert_eq!(
+        Currency::try_from_str("BITCOIN").unwrap(),
+        Currency::Other("BITCOIN".parse().unwrap())
+    );
     let u = Currency::try_from_str("UNKNOWN").unwrap();
     assert_eq!(u.to_string(), "UNKNOWN");
 }
 
 #[test]
 fn test_currency_normalization_trims_whitespace() {
-    assert_eq!(Currency::try_from_str(" usd \t").unwrap(), Currency::USD);
+    assert_eq!(
+        Currency::try_from_str(" usd \t").unwrap().to_string(),
+        "USD"
+    );
     assert_eq!(
         Currency::try_from_str("  custom ").unwrap().to_string(),
         "CUSTOM"
@@ -24,7 +29,10 @@ fn test_currency_normalization_trims_whitespace() {
 
 #[test]
 fn test_currency_full_name() {
-    assert_eq!(Currency::USD.full_name(), "US Dollar");
+    assert_eq!(
+        Currency::Iso(iso_currency::Currency::USD).full_name(),
+        iso_currency::Currency::USD.name()
+    );
     assert_eq!(Currency::BTC.full_name(), "Bitcoin");
     let unknown = Currency::try_from_str("UNKNOWN").unwrap();
     assert_eq!(unknown.full_name(), "UNKNOWN");

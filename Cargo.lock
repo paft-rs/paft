@@ -1209,6 +1209,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "iso_country"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20633e788d3948ea7336861fdb09ec247f5dae4267e8f0743fa97de26c28624d"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
+name = "iso_currency"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fed4b3f0921193400b1df556228bfd917c57c7fa38bda904d552653c5c3b641b"
+dependencies = [
+ "iso_country",
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
 name = "itertools"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1253,6 +1273,12 @@ dependencies = [
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
@@ -1441,6 +1467,7 @@ version = "0.2.0"
 dependencies = [
  "chrono",
  "chrono-tz",
+ "iso_currency",
  "paft-core",
  "paft-fundamentals",
  "paft-market",
@@ -1456,6 +1483,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "df-derive",
+ "iso_currency",
  "polars",
  "regex",
  "rust_decimal",
@@ -1469,12 +1497,15 @@ name = "paft-fundamentals"
 version = "0.2.0"
 dependencies = [
  "chrono",
+ "chrono-tz",
  "df-derive",
+ "iso_currency",
  "paft-core",
  "polars",
  "rust_decimal",
  "serde",
  "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -1485,6 +1516,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "df-derive",
+ "iso_currency",
  "paft-core",
  "polars",
  "rust_decimal",

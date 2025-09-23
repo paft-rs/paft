@@ -2,6 +2,7 @@
 //! in paft. This example shows best practices for consuming paft types that use the
 //! extensible enum pattern.
 
+use iso_currency::Currency as IsoCurrency;
 use paft::core::domain::Currency;
 #[cfg(feature = "fundamentals")]
 use paft::fundamentals::analysis::RecommendationGrade;
@@ -42,19 +43,17 @@ fn handle_currencies() {
         .collect();
 
     for currency in currencies {
-        match currency {
-            // Handle known currencies with full type safety
-            Currency::USD => println!("  ✓ US Dollar - major reserve currency"),
-            Currency::EUR => println!("  ✓ Euro - major reserve currency"),
-            // Handle other known currencies
-            other if matches!(other, Currency::BTC | Currency::ETH) => {
-                println!("  ✓ {other} - known currency");
-            }
-            // Handle unknown currencies gracefully
-            other => println!(
+        if currency == Currency::Iso(IsoCurrency::USD) {
+            println!("  ✓ US Dollar - major reserve currency");
+        } else if currency == Currency::Iso(IsoCurrency::EUR) {
+            println!("  ✓ Euro - major reserve currency");
+        } else if currency == Currency::BTC || currency == Currency::ETH {
+            println!("  ✓ {currency} - known currency");
+        } else {
+            println!(
                 "  ⚠ Unknown currency: {} - needs investigation",
-                other.code()
-            ),
+                currency.code()
+            );
         }
     }
     println!();
@@ -119,9 +118,11 @@ fn fromstr_demo() {
 /// Normalize generic provider currency codes
 /// Format currency for display
 fn format_currency(currency: &Currency) -> String {
-    match currency {
-        Currency::USD => "USD (canonical)".to_string(),
-        Currency::EUR => "EUR (canonical)".to_string(),
-        _ => format!("{currency} (canonical)"),
+    if currency == &Currency::Iso(IsoCurrency::USD) {
+        "USD (canonical)".to_string()
+    } else if currency == &Currency::Iso(IsoCurrency::EUR) {
+        "EUR (canonical)".to_string()
+    } else {
+        format!("{currency} (canonical)")
     }
 }

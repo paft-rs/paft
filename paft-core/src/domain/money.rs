@@ -81,9 +81,10 @@ impl ExchangeRate {
     /// # Example
     /// ```
     /// use paft_core::domain::{ExchangeRate, Currency};
+    /// use iso_currency::Currency as IsoCurrency;
     /// use rust_decimal::Decimal;
     ///
-    /// let rate = ExchangeRate::new(Currency::USD, Currency::EUR, Decimal::new(85, 2)).unwrap();
+    /// let rate = ExchangeRate::new(Currency::Iso(IsoCurrency::USD), Currency::Iso(IsoCurrency::EUR), Decimal::new(85, 2)).unwrap();
     /// assert_eq!(rate.rate(), Decimal::new(85, 2)); // 0.85 EUR per 1 USD
     /// ```
     pub fn new(from: Currency, to: Currency, rate: Decimal) -> Result<Self, MoneyError> {
@@ -119,12 +120,13 @@ impl ExchangeRate {
     /// # Example
     /// ```
     /// use paft_core::domain::{ExchangeRate, Currency};
+    /// use iso_currency::Currency as IsoCurrency;
     /// use rust_decimal::Decimal;
     ///
-    /// let usd_to_eur = ExchangeRate::new(Currency::USD, Currency::EUR, Decimal::new(85, 2)).unwrap();
+    /// let usd_to_eur = ExchangeRate::new(Currency::Iso(IsoCurrency::USD), Currency::Iso(IsoCurrency::EUR), Decimal::new(85, 2)).unwrap();
     /// let eur_to_usd = usd_to_eur.inverse();
-    /// assert_eq!(eur_to_usd.from(), &Currency::EUR);
-    /// assert_eq!(eur_to_usd.to(), &Currency::USD);
+    /// assert_eq!(eur_to_usd.from(), &Currency::Iso(IsoCurrency::EUR));
+    /// assert_eq!(eur_to_usd.to(), &Currency::Iso(IsoCurrency::USD));
     /// ```
     #[must_use]
     pub fn inverse(&self) -> Self {
@@ -392,14 +394,15 @@ impl Money {
     /// # Example
     /// ```
     /// use paft_core::domain::{Money, Currency, ExchangeRate};
+    /// use iso_currency::Currency as IsoCurrency;
     /// use rust_decimal::Decimal;
     ///
-    /// let usd = Money::new(Decimal::new(100, 0), Currency::USD); // $100.00
-    /// let rate = ExchangeRate::new(Currency::USD, Currency::EUR, Decimal::new(85, 2)).unwrap(); // 0.85 EUR per USD
+    /// let usd = Money::new(Decimal::new(100, 0), Currency::Iso(IsoCurrency::USD)); // $100.00
+    /// let rate = ExchangeRate::new(Currency::Iso(IsoCurrency::USD), Currency::Iso(IsoCurrency::EUR), Decimal::new(85, 2)).unwrap(); // 0.85 EUR per USD
     ///
     /// let eur = usd.try_convert(&rate).unwrap();
     /// assert_eq!(eur.amount(), Decimal::new(8500, 2)); // €85.00
-    /// assert_eq!(eur.currency(), &Currency::EUR);
+    /// assert_eq!(eur.currency(), &Currency::Iso(IsoCurrency::EUR));
     /// ```
     /// # Errors
     /// Returns `MoneyError::IncompatibleExchangeRate` if the money's
