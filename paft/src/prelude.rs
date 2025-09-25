@@ -5,7 +5,11 @@
 
 // Re-export core types via namespaced modules
 pub use crate::core::PaftError;
-pub use crate::core::domain::{AssetKind, Exchange, Instrument, MarketState, Period};
+#[cfg(feature = "domain")]
+pub use crate::domain::{
+    AssetKind, Canonical, CanonicalError, DomainError, Exchange, Instrument, MarketState, Period,
+    StringCode, canonicalize,
+};
 pub use crate::money::{
     Currency, clear_currency_minor_units, currency_minor_units, set_currency_minor_units,
     try_normalize_currency_code,

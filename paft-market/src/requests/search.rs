@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use paft_core::domain::AssetKind;
+use paft_domain::AssetKind;
 
 use crate::error::MarketError;
 

@@ -1,6 +1,6 @@
 #![cfg(feature = "dataframe")]
 use iso_currency::Currency as IsoCurrency;
-use paft_core::domain::Period;
+use paft_domain::Period;
 use paft_fundamentals::analysis::{EarningsYear, RecommendationRow};
 use paft_fundamentals::statements::IncomeStatementRow;
 use paft_money::Money;

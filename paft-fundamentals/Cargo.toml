@@ -18,6 +18,7 @@ thiserror = { workspace = true }
 chrono = { workspace = true }
 chrono-tz = { workspace = true }
 paft-core = { workspace = true }
+paft-domain = { workspace = true }
 paft-money = { workspace = true }
 paft-utils = { workspace = true }
 iso_currency = { workspace = true }
@@ -26,7 +27,7 @@ df-derive = { workspace = true, optional = true }
 
 [features]
 default = []
-dataframe = ["polars", "df-derive", "paft-utils/dataframe", "paft-core/dataframe"]
+dataframe = ["polars", "df-derive", "paft-utils/dataframe", "paft-core/dataframe", "paft-domain/dataframe"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

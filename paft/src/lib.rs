@@ -4,10 +4,20 @@
 /// Namespaced access to `paft-core`.
 pub mod core {
     pub use paft_core::PaftError;
-    pub use paft_core::domain;
     pub use paft_core::error;
     #[cfg(feature = "dataframe")]
     pub use paft_utils::dataframe;
+}
+
+/// Namespaced access to `paft-domain` (feature-gated).
+#[cfg(feature = "domain")]
+pub mod domain {
+    pub use paft_domain::{
+        AssetKind, Canonical, CanonicalError, DomainError, Exchange, Instrument, MarketState,
+        Period, StringCode, canonicalize,
+    };
+    #[cfg(feature = "dataframe")]
+    pub use paft_domain::{ToDataFrame, ToDataFrameVec};
 }
 
 /// Namespaced access to `paft-market` (feature-gated).

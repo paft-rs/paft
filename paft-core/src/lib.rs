@@ -1,8 +1,6 @@
-//! Core types and utilities for the paft ecosystem.
+//! Core infrastructure utilities for the paft ecosystem.
 #![warn(missing_docs)]
 
-/// Core cross-cutting domain types (currency, exchange, period, money, market state, instrument).
-pub mod domain;
 /// Error definitions shared across crates.
 pub mod error;
 /// Private serde helper modules for custom serialization patterns.

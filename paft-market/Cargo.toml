@@ -17,6 +17,7 @@ serde = { workspace = true, features = ["derive"] }
 chrono = { workspace = true }
 chrono-tz = { workspace = true }
 paft-core = { workspace = true, features = [] }
+paft-domain = { workspace = true }
 paft-utils = { workspace = true }
 paft-money = { workspace = true }
 df-derive = { workspace = true, optional = true }
@@ -27,7 +28,7 @@ thiserror = { workspace = true }
 
 [features]
 default = []
-dataframe = ["paft-utils/dataframe", "polars", "df-derive", "paft-core/dataframe"]
+dataframe = ["paft-utils/dataframe", "polars", "df-derive", "paft-core/dataframe", "paft-domain/dataframe"]
 
 [dev-dependencies]
 rust_decimal = { workspace = true }

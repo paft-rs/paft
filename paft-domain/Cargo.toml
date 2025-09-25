@@ -1,0 +1,27 @@
+[package]
+name = "paft-domain"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Domain modeling primitives (instrument, exchange, period, market state) for the paft ecosystem."
+readme = "../README.md"
+keywords = ["finance", "market-data", "types", "serde", "instruments"]
+categories = ["finance", "data-structures"]
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+regex = { workspace = true }
+chrono = { workspace = true }
+paft-utils = { workspace = true }
+paft-money = { workspace = true }
+paft-core = { workspace = true }
+
+[features]
+default = []
+dataframe = ["paft-utils/dataframe"]
+
+[dev-dependencies]
+serde_json = { workspace = true }

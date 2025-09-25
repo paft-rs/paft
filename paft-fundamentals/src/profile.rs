@@ -7,10 +7,9 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 use paft_core::error::PaftError;
+use paft_domain::Canonical;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
-
-use paft_core::domain::Canonical;
 
 /// Fund types with canonical variants and extensible fallback.
 ///

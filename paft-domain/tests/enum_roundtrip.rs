@@ -1,4 +1,4 @@
-use paft_core::domain::{AssetKind, Exchange, MarketState, Period};
+use paft_domain::{AssetKind, DomainError, Exchange, MarketState, Period};
 use paft_money::Currency;
 use std::str::FromStr;
 
@@ -49,20 +49,19 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
         ));
 
         // Exchange
-        let err = Exchange::from_str(input).unwrap_err();
+        let err = Exchange::try_from_str(input).unwrap_err();
         match err {
-            paft_core::error::PaftError::InvalidEnumValue { enum_name, value } => {
-                assert_eq!(enum_name, "Exchange");
+            DomainError::InvalidExchangeValue { value } => {
                 assert_eq!(value, (*input).to_string());
             }
-            other => panic!("unexpected error: {other}"),
+            DomainError::InvalidPeriodFormat { .. } => unreachable!(),
         }
     }
 }
 
 #[test]
 fn display_matches_wire_codes_for_core_enums() {
-    let usd = Currency::Iso(iso_currency::Currency::USD);
+    let usd = Currency::from_str("USD").unwrap();
     assert_eq!(usd.to_string(), usd.code());
 
     let nasdaq = Exchange::NASDAQ;

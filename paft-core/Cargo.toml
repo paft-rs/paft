@@ -15,12 +15,9 @@ categories = ["data-structures", "finance"]
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
-regex = { workspace = true }
 chrono = { workspace = true }
-chrono-tz = { workspace = true }
-rust_decimal = { workspace = true }
+regex = { workspace = true }
 paft-utils = { workspace = true }
-paft-money = { workspace = true }
 
 [features]
 default = []

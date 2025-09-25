@@ -1,5 +1,5 @@
 use chrono::DateTime;
-use paft_core::domain::AssetKind;
+use paft_domain::AssetKind;
 use paft_market::MarketError;
 use paft_market::requests::{HistoryRequest, Range, SearchRequest};
 

@@ -1,6 +1,6 @@
-//! Tests covering canonical/alias behavior for exchanges.
+//! Tests covering canonical/alias behavior for exchanges (migrated from paft-core).
 
-use paft_core::domain::Exchange;
+use paft_domain::Exchange;
 use std::str::FromStr;
 
 struct Case {

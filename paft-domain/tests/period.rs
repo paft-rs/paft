@@ -1,7 +1,5 @@
-//! Tests for `MarketState` and Period canonical behaviors.
-
 use chrono::NaiveDate;
-use paft_core::domain::{MarketState, Period};
+use paft_domain::{DomainError, MarketState, Period};
 use std::str::FromStr;
 
 #[test]
@@ -64,10 +62,10 @@ fn period_invalid_matches_raise_error() {
     for invalid in ["2023Q0", "2023Q5", "2023-13-01", "2023/02/30"] {
         let err = invalid.parse::<Period>().unwrap_err();
         match err {
-            paft_core::error::PaftError::InvalidPeriodFormat { format } => {
+            DomainError::InvalidPeriodFormat { format } => {
                 assert_eq!(format, invalid);
             }
-            other => panic!("unexpected error: {other}"),
+            DomainError::InvalidExchangeValue { .. } => unreachable!(),
         }
     }
 }

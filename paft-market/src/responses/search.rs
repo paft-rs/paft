@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use paft_core::domain::{AssetKind, Exchange};
+use paft_domain::{AssetKind, Exchange};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// A single search result item.

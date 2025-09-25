@@ -1,6 +1,6 @@
 #![cfg(feature = "dataframe")]
 use iso_currency::Currency as IsoCurrency;
-use paft_core::domain::Exchange;
+use paft_domain::Exchange;
 use paft_market::market::quote::Quote;
 use paft_money::{Currency, Money};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};

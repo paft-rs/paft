@@ -11,4 +11,10 @@ pub enum MoneyParseError {
         /// The offending input value.
         value: String,
     },
+    /// Occurs when metadata is not registered for a custom currency.
+    #[error("Metadata not registered for custom currency '{code}'")]
+    MetadataNotFound { 
+        /// The custom currency code.
+        code: String,
+    },
 }

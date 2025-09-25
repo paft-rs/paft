@@ -8,7 +8,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as DeErr
 use std::borrow::Cow;
 use std::fmt;
 
-use crate::error::PaftError;
+use crate::error::DomainError;
 use chrono::NaiveDate;
 use paft_utils::Canonical;
 
@@ -236,13 +236,13 @@ impl<'de> Deserialize<'de> for Period {
 }
 
 impl std::str::FromStr for Period {
-    type Err = PaftError;
+    type Err = DomainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim();
 
         if trimmed.is_empty() {
-            return Err(PaftError::InvalidPeriodFormat {
+            return Err(DomainError::InvalidPeriodFormat {
                 format: s.to_string(),
             });
         }
@@ -265,13 +265,13 @@ impl std::str::FromStr for Period {
             || US_DATE_REGEX.is_match(trimmed)
             || DAY_FIRST_DATE_REGEX.is_match(trimmed)
         {
-            return Err(PaftError::InvalidPeriodFormat {
+            return Err(DomainError::InvalidPeriodFormat {
                 format: s.to_string(),
             });
         }
 
         let canonical =
-            Canonical::try_new(trimmed).map_err(|_| PaftError::InvalidPeriodFormat {
+            Canonical::try_new(trimmed).map_err(|_| DomainError::InvalidPeriodFormat {
                 format: s.to_string(),
             })?;
 
@@ -280,7 +280,7 @@ impl std::str::FromStr for Period {
 }
 
 impl TryFrom<String> for Period {
-    type Error = PaftError;
+    type Error = DomainError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         s.as_str().parse()

@@ -3,7 +3,7 @@
 //! This module provides type-safe handling of exchange identifiers while gracefully
 //! handling unknown or provider-specific exchanges through the `Other` variant.
 
-use crate::error::PaftError;
+use crate::error::DomainError;
 // no module-level serde imports needed here
 use paft_utils::Canonical;
 use std::str::FromStr;
@@ -113,8 +113,17 @@ impl Exchange {
     /// # Errors
     ///
     /// Returns an error if `input` is empty or contains only whitespace.
-    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
-        Self::from_str(input)
+    pub fn try_from_str(input: &str) -> Result<Self, DomainError> {
+        let trimmed = input.trim();
+        if trimmed.is_empty() {
+            return Err(DomainError::InvalidExchangeValue {
+                value: input.to_string(),
+            });
+        }
+
+        Self::from_str(trimmed).map_err(|_| DomainError::InvalidExchangeValue {
+            value: input.to_string(),
+        })
     }
 
     /// Returns true if this is a major US exchange

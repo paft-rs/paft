@@ -1,4 +1,4 @@
-use paft_core::domain::AssetKind;
+use paft_domain::AssetKind;
 use paft_market::requests::history::{HistoryRequest, Interval, Range};
 use paft_market::requests::search::SearchRequest;
 

@@ -6,13 +6,11 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
-use paft_core::domain::Period;
 use paft_core::error::PaftError;
+use paft_domain::{Canonical, DomainError, Period};
 use paft_money::Money;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
-
-use paft_core::domain::Canonical;
 
 /// Analyst recommendation grades with canonical variants and extensible fallback.
 ///
@@ -351,7 +349,7 @@ impl TrendPoint {
     ///
     /// # Errors
     /// Returns an error if the period string cannot be parsed.
-    pub fn try_new_str(period: &str, value: Money) -> Result<Self, PaftError> {
+    pub fn try_new_str(period: &str, value: Money) -> Result<Self, DomainError> {
         Ok(Self {
             period: period.parse()?,
             value,
@@ -396,8 +394,8 @@ impl EpsTrend {
     /// Parses `period` using `Period`'s string parser and performs the lookup.
     ///
     /// # Errors
-    /// Returns `PaftError` if the provided `period` string cannot be parsed.
-    pub fn find_by_period_str(&self, period: &str) -> Result<Option<&TrendPoint>, PaftError> {
+    /// Returns `DomainError` if the provided `period` string cannot be parsed.
+    pub fn find_by_period_str(&self, period: &str) -> Result<Option<&TrendPoint>, DomainError> {
         let parsed: Period = period.parse()?;
         Ok(self.find_by_period(&parsed))
     }
@@ -444,7 +442,7 @@ impl RevisionPoint {
     ///
     /// # Errors
     /// Returns an error if the period string cannot be parsed.
-    pub fn try_new_str(period: &str, up: u32, down: u32) -> Result<Self, PaftError> {
+    pub fn try_new_str(period: &str, up: u32, down: u32) -> Result<Self, DomainError> {
         Ok(Self {
             period: period.parse()?,
             up_count: up,
@@ -499,8 +497,8 @@ impl EpsRevisions {
     /// Parses `period` using `Period`'s string parser and performs the lookup.
     ///
     /// # Errors
-    /// Returns `PaftError` if the provided `period` string cannot be parsed.
-    pub fn find_by_period_str(&self, period: &str) -> Result<Option<&RevisionPoint>, PaftError> {
+    /// Returns `DomainError` if the provided `period` string cannot be parsed.
+    pub fn find_by_period_str(&self, period: &str) -> Result<Option<&RevisionPoint>, DomainError> {
         let parsed: Period = period.parse()?;
         Ok(self.find_by_period(&parsed))
     }

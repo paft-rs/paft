@@ -1469,6 +1469,7 @@ dependencies = [
  "chrono-tz",
  "iso_currency",
  "paft-core",
+ "paft-domain",
  "paft-fundamentals",
  "paft-market",
  "paft-money",
@@ -1483,12 +1484,23 @@ name = "paft-core"
 version = "0.3.0"
 dependencies = [
  "chrono",
- "chrono-tz",
  "iso_currency",
+ "paft-utils",
+ "regex",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "paft-domain"
+version = "0.3.0"
+dependencies = [
+ "chrono",
+ "paft-core",
  "paft-money",
  "paft-utils",
  "regex",
- "rust_decimal",
  "serde",
  "serde_json",
  "thiserror",
@@ -1503,6 +1515,7 @@ dependencies = [
  "df-derive",
  "iso_currency",
  "paft-core",
+ "paft-domain",
  "paft-money",
  "paft-utils",
  "polars",
@@ -1522,6 +1535,7 @@ dependencies = [
  "df-derive",
  "iso_currency",
  "paft-core",
+ "paft-domain",
  "paft-money",
  "paft-utils",
  "polars",
