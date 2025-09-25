@@ -6,11 +6,11 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
-#[cfg(feature = "dataframe")]
-use paft_core::dataframe::ToDataFrame;
 use paft_core::error::PaftError;
+#[cfg(feature = "dataframe")]
+use paft_utils::dataframe::ToDataFrame;
 
-use paft_core::domain::string_canonical::Canonical;
+use paft_core::domain::Canonical;
 
 /// Fund types with canonical variants and extensible fallback.
 ///

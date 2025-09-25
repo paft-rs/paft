@@ -1,12 +1,11 @@
-use paft_core::PaftError;
-use paft_core::domain::{
-    AssetKind, Currency, Exchange, MarketState, Period, string_canonical::Canonical,
-};
+use paft_core::domain::{AssetKind, Exchange, MarketState, Period};
+use paft_money::Currency;
 use std::str::FromStr;
 
-fn assert_display_parse_display_idempotent<T>(token: &str)
+fn assert_display_parse_display_idempotent<T, E>(token: &str)
 where
-    T: ToString + FromStr<Err = paft_core::error::PaftError> + PartialEq + Clone,
+    T: ToString + FromStr<Err = E> + PartialEq + Clone,
+    E: std::fmt::Debug,
 {
     let parsed = T::from_str(token).unwrap();
     let display1 = parsed.to_string();
@@ -18,20 +17,20 @@ where
 #[test]
 fn other_roundtrip_is_stable_for_core_enums() {
     // Currency
-    assert_display_parse_display_idempotent::<Currency>("USD");
-    assert_display_parse_display_idempotent::<Currency>("us dollar");
+    assert_display_parse_display_idempotent::<Currency, _>("USD");
+    assert_display_parse_display_idempotent::<Currency, _>("us dollar");
     let other_currency = Currency::from_str("foo-bar").unwrap();
     assert_eq!(other_currency.to_string(), "FOO_BAR");
 
     // Exchange
-    assert_display_parse_display_idempotent::<Exchange>("NASDAQ");
+    assert_display_parse_display_idempotent::<Exchange, _>("NASDAQ");
     let other_exchange = Exchange::from_str("some-ex").unwrap();
     assert_eq!(other_exchange.to_string(), "SOME_EX");
 
     // Period
-    assert_display_parse_display_idempotent::<Period>("2023Q4");
-    assert_display_parse_display_idempotent::<Period>("2023-12-31");
-    assert_display_parse_display_idempotent::<Period>("FY2023"); // normalizes to 2023
+    assert_display_parse_display_idempotent::<Period, _>("2023Q4");
+    assert_display_parse_display_idempotent::<Period, _>("2023-12-31");
+    assert_display_parse_display_idempotent::<Period, _>("FY2023"); // normalizes to 2023
     let other_period = Period::from_str("custom range").unwrap();
     assert_eq!(other_period.to_string(), "CUSTOM_RANGE");
 }
@@ -43,13 +42,11 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
     for input in &empties {
         // Currency
         let err = Currency::from_str(input).unwrap_err();
-        match err {
-            paft_core::error::PaftError::InvalidEnumValue { enum_name, value } => {
-                assert_eq!(enum_name, "Currency");
-                assert_eq!(value, (*input).to_string());
-            }
-            other => panic!("unexpected error: {other}"),
-        }
+        assert!(matches!(
+            err,
+            paft_money::MoneyParseError::InvalidEnumValue { enum_name, value }
+                if enum_name == "Currency" && value.as_str() == *input
+        ));
 
         // Exchange
         let err = Exchange::from_str(input).unwrap_err();
@@ -96,14 +93,5 @@ fn extensible_enums_preserve_other_canonical_tokens() {
     match venue {
         Exchange::Other(ref canon) => assert_eq!(canon.as_ref(), "MY_EXCHANGE"),
         other => panic!("expected Other variant, got {other:?}"),
-    }
-}
-
-#[test]
-fn canonical_from_str_uses_precise_error() {
-    let err = Canonical::from_str("***").unwrap_err();
-    match err {
-        PaftError::InvalidCanonicalToken { value } => assert_eq!(value, "***"),
-        other => panic!("unexpected error variant: {other:?}"),
     }
 }

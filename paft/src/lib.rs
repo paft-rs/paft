@@ -4,10 +4,10 @@
 /// Namespaced access to `paft-core`.
 pub mod core {
     pub use paft_core::PaftError;
-    #[cfg(feature = "dataframe")]
-    pub use paft_core::dataframe;
     pub use paft_core::domain;
     pub use paft_core::error;
+    #[cfg(feature = "dataframe")]
+    pub use paft_utils::dataframe;
 }
 
 /// Namespaced access to `paft-market` (feature-gated).
@@ -17,6 +17,17 @@ pub mod market {
     pub use paft_market::market::{action, news, options, quote};
     pub use paft_market::requests;
     pub use paft_market::responses;
+}
+
+/// Namespaced access to `paft-money` types.
+pub mod money {
+    pub use paft_money::{
+        Currency, ExchangeRate, MinorUnitError, Money, MoneyError, clear_currency_minor_units,
+        currency_minor_units, set_currency_minor_units, try_normalize_currency_code,
+    };
+
+    /// Re-export `iso_currency::Currency` for convenience.
+    pub use iso_currency::Currency as IsoCurrency;
 }
 
 /// Namespaced access to `paft-fundamentals` (feature-gated).

@@ -51,17 +51,6 @@ fn asset_kind_full_name_is_human_friendly() {
 }
 
 #[test]
-fn asset_kind_clone() {
-    let original = AssetKind::Equity;
-    let cloned = original.clone();
-    let copied = original.clone(); // Clone trait (no longer Copy)
-
-    assert_eq!(original, cloned);
-    assert_eq!(original, copied);
-    assert_eq!(cloned, copied);
-}
-
-#[test]
 fn asset_kind_hash() {
     use std::collections::HashMap;
 

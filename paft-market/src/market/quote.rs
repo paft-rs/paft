@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
+use paft_core::domain::{Exchange, MarketState};
+use paft_money::Money;
 #[cfg(feature = "dataframe")]
-use paft_core::dataframe::ToDataFrame;
-use paft_core::domain::{Exchange, MarketState, Money};
+use paft_utils::dataframe::ToDataFrame;
 
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

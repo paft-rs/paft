@@ -68,6 +68,7 @@ fn analyze_data(quote: paft::Quote, history: paft::HistoryResponse) {
 - **Instruments**: `Instrument`, `AssetKind` (Equity, Crypto, Fund, Index, etc.)
 - **Market Data**: `Quote`, `Candle`, `MarketState`
 - **Historical Data**: `HistoryRequest`, `HistoryResponse`, `Interval`, `Range`
+- **Money & Currency**: `paft_money::Money`, `paft_money::Currency`
 - **Fundamentals**: `CompanyProfile`, `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`
 - **Options**: `OptionContract`, `OptionChain`
 - **News & Search**: `NewsArticle`, `SearchResult`

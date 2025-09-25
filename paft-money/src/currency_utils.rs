@@ -4,13 +4,15 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::{LazyLock, RwLock};
 
-use super::Currency;
-use super::string_canonical::canonicalize;
+use paft_utils::canonicalize;
+
+use crate::currency::Currency;
+use crate::error::MoneyParseError;
 
 /// Maximum precision supported by `rust_decimal` for safe scaling operations.
-pub(crate) const MAX_DECIMAL_PRECISION: u8 = 28;
+pub const MAX_DECIMAL_PRECISION: u8 = 28;
 /// Maximum precision that can be converted into an `i64` minor-unit scale (10^18).
-pub(crate) const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
+pub const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
 
 /// Errors that can occur when configuring minor-unit overrides.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,10 +47,6 @@ impl fmt::Display for MinorUnitError {
 impl std::error::Error for MinorUnitError {}
 
 /// Built-in precision overrides for commonly used non-ISO currency codes.
-///
-/// These values cover high-volume crypto assets and stablecoins that do not
-/// have dedicated `Currency` enum variants but require non-standard
-/// decimal precision.
 const BUILTIN_MINOR_UNIT_OVERRIDES: &[(&str, u8)] = &[
     // Stablecoins
     ("USDC", 6),
@@ -78,14 +76,12 @@ static MINOR_UNIT_OVERRIDES: LazyLock<RwLock<HashMap<String, u8>>> = LazyLock::n
 /// Attempts to normalize a currency code to a canonical variant or common `Other` value.
 ///
 /// # Errors
-///
-/// Returns an error on empty input to preserve `Currency` invariants.
-pub fn try_normalize_currency_code(code: &str) -> Result<Currency, crate::error::PaftError> {
+/// Returns `MoneyParseError::InvalidEnumValue` when the code is empty or cannot be canonicalized.
+pub fn try_normalize_currency_code(code: &str) -> Result<Currency, MoneyParseError> {
     Currency::try_from_str(code)
 }
 
 /// Returns the configured minor-unit precision for the provided currency code, if any.
-#[must_use]
 pub fn currency_minor_units(code: &str) -> Option<u8> {
     let canonical = canonicalize(code);
     MINOR_UNIT_OVERRIDES
@@ -96,13 +92,8 @@ pub fn currency_minor_units(code: &str) -> Option<u8> {
 
 /// Registers or updates the minor-unit precision for a currency code.
 ///
-/// Returns the previously configured precision, if one existed.
-///
 /// # Errors
-///
-/// Returns [`MinorUnitError`] when the requested precision would exceed either the
-/// `rust_decimal` precision limit (28 fractional digits) or the safe minor-unit
-/// scaling limit (18 fractional digits, used in `10_i64.pow` conversions).
+/// Returns a `MinorUnitError` when the requested precision exceeds supported limits.
 pub fn set_currency_minor_units(code: &str, decimals: u8) -> Result<Option<u8>, MinorUnitError> {
     if decimals > MAX_DECIMAL_PRECISION {
         return Err(MinorUnitError::ExceedsDecimalPrecision { decimals });

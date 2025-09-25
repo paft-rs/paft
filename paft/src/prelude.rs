@@ -5,15 +5,16 @@
 
 // Re-export core types via namespaced modules
 pub use crate::core::PaftError;
-pub use crate::core::domain::{
-    AssetKind, Currency, Exchange, ExchangeRate, Instrument, MarketState, Money, MoneyError,
-    Period, clear_currency_minor_units, currency_minor_units, set_currency_minor_units,
+pub use crate::core::domain::{AssetKind, Exchange, Instrument, MarketState, Period};
+pub use crate::money::{
+    Currency, clear_currency_minor_units, currency_minor_units, set_currency_minor_units,
     try_normalize_currency_code,
 };
+pub use crate::money::{ExchangeRate, Money, MoneyError};
 
 // Re-export dataframe traits
 #[cfg(feature = "dataframe")]
-pub use crate::core::dataframe::{ToDataFrame, ToDataFrameVec};
+pub use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
 // Re-export fundamentals types (flattened via namespace)
 #[cfg(feature = "fundamentals")]

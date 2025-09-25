@@ -8,9 +8,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as DeErr
 use std::borrow::Cow;
 use std::fmt;
 
-use super::string_canonical::Canonical;
 use crate::error::PaftError;
 use chrono::NaiveDate;
+use paft_utils::Canonical;
 
 // Compile-time compiled regex patterns for Period parsing
 static QUARTERLY_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
@@ -270,7 +270,12 @@ impl std::str::FromStr for Period {
             });
         }
 
-        Ok(Self::Other(Canonical::try_new(trimmed)?))
+        let canonical =
+            Canonical::try_new(trimmed).map_err(|_| PaftError::InvalidPeriodFormat {
+                format: s.to_string(),
+            })?;
+
+        Ok(Self::Other(canonical))
     }
 }
 

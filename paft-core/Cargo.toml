@@ -19,14 +19,14 @@ regex = { workspace = true }
 chrono = { workspace = true }
 chrono-tz = { workspace = true }
 rust_decimal = { workspace = true }
-df-derive = { workspace = true, optional = true }
-polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde", "regex", "timezones", "diagonal_concat", "json", "rolling_window", "dtype-decimal"], optional = true }
-iso_currency = { workspace = true }
+paft-utils = { workspace = true }
+paft-money = { workspace = true }
 
 [features]
 default = []
-dataframe = ["polars", "df-derive"]
+dataframe = ["paft-utils/dataframe"]
 panicking-money-ops = []
 
 [dev-dependencies]
 serde_json = { workspace = true }
+iso_currency = { workspace = true }

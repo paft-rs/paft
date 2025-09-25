@@ -1,7 +1,7 @@
 #![cfg(feature = "dataframe")]
 use iso_currency::Currency as IsoCurrency;
-use paft_core::dataframe::{ToDataFrame, ToDataFrameVec};
-use paft_core::domain::{Currency, ExchangeRate, Money};
+use paft_money::{Currency, ExchangeRate, Money};
+use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 use rust_decimal::Decimal;
 
 #[test]

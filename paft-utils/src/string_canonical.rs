@@ -1,11 +1,10 @@
 //! Shared canonical string utilities for extensible enums.
 //!
 //! All extensible enum `Other` branches must construct their canonical token via
-//! `Canonical::try_new` to guarantee we never serialize an empty string and thus
+//! [`Canonical::try_new`] to guarantee we never serialize an empty string and thus
 //! preserve serde/display round-trips.
 
 use std::{borrow::Borrow, fmt, str::FromStr};
-// Intentionally no serde imports here: the macro refers to serde with absolute paths
 
 /// Canonical string wrapper used for `Other` variants.
 ///
@@ -26,12 +25,12 @@ impl Canonical {
     ///
     /// # Errors
     ///
-    /// Returns `PaftError::InvalidEnumValue` when the canonicalized token would
+    /// Returns `CanonicalError::InvalidCanonicalToken` when the canonicalized token would
     /// be empty.
-    pub fn try_new(input: &str) -> Result<Self, crate::error::PaftError> {
+    pub fn try_new(input: &str) -> Result<Self, CanonicalError> {
         let token = canonicalize(input);
         if token.is_empty() {
-            return Err(crate::error::PaftError::InvalidCanonicalToken {
+            return Err(CanonicalError::InvalidCanonicalToken {
                 value: input.to_string(),
             });
         }
@@ -64,7 +63,7 @@ impl Borrow<str> for Canonical {
 }
 
 impl FromStr for Canonical {
-    type Err = crate::error::PaftError;
+    type Err = CanonicalError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::try_new(s)
@@ -109,7 +108,7 @@ pub fn canonicalize(input: &str) -> String {
 
 /// Trait for enums that have a canonical string code.
 ///
-/// Implemented via the `string_enum!` macro for all string-backed enums in this workspace.
+/// Implemented via macros across the paft workspace.
 pub trait StringCode {
     /// Returns the canonical string code for this value.
     fn code(&self) -> &str;
@@ -118,4 +117,15 @@ pub trait StringCode {
     fn is_canonical(&self) -> bool {
         true
     }
+}
+
+/// Errors that can occur when constructing canonical strings.
+#[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
+pub enum CanonicalError {
+    /// Invalid canonical token produced by normalization helpers.
+    #[error("Invalid canonical token: '{value}' - canonicalized value must be non-empty")]
+    InvalidCanonicalToken {
+        /// The original input that failed to produce a canonical token.
+        value: String,
+    },
 }

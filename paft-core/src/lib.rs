@@ -9,8 +9,10 @@ pub mod error;
 pub mod serde_helpers;
 
 #[cfg(feature = "dataframe")]
-/// DataFrame conversion traits for paft
-pub mod dataframe;
+/// Re-export `DataFrame` conversion traits from `paft-utils`
+pub mod dataframe {
+    pub use paft_utils::dataframe::*;
+}
 
 /// Internal macro exports for string-backed enums used across the paft workspace.
 /// These remain public for crate interoperability but are not covered by semver guarantees.
@@ -22,7 +24,7 @@ macro_rules! __string_enum_base {
             $( $alias:literal => $variant:path ),+ $(,)?
         }
     ) => {
-        impl $crate::domain::string_canonical::StringCode for $Type {
+        impl paft_utils::StringCode for $Type {
             fn code(&self) -> &str { $Type::code(self) }
         }
 
@@ -56,7 +58,7 @@ macro_rules! __string_enum_base {
                         value: input.to_string(),
                     });
                 }
-                let token = $crate::domain::string_canonical::canonicalize(trimmed);
+                let token = paft_utils::canonicalize(trimmed);
                 let parsed = match token.as_str() {
                     $( $alias => $variant, )*
                     _ => {
@@ -95,7 +97,7 @@ macro_rules! __string_enum_base {
             $( $alias:literal => $variant:path ),+ $(,)?
         }
     ) => {
-        impl $crate::domain::string_canonical::StringCode for $Type {
+        impl paft_utils::StringCode for $Type {
             fn code(&self) -> &str { $Type::code(self) }
             fn is_canonical(&self) -> bool { $Type::is_canonical(self) }
         }
@@ -136,11 +138,11 @@ macro_rules! __string_enum_base {
                         value: input.to_string(),
                     });
                 }
-                let token = $crate::domain::string_canonical::canonicalize(trimmed);
+                let token = paft_utils::canonicalize(trimmed);
                 let parsed = match token.as_str() {
                     $( $alias => $variant, )*
                     _ => {
-                        let canon = $crate::domain::string_canonical::Canonical::try_new(trimmed)
+                        let canon = paft_utils::Canonical::try_new(trimmed)
                             .map_err(|_| $crate::error::PaftError::InvalidEnumValue {
                                 enum_name: $enum_name,
                                 value: input.to_string(),
@@ -170,19 +172,6 @@ macro_rules! __string_enum_base {
                 $( ($alias, $variant) ),*
             ];
         }
-    };
-}
-
-/// Open (extensible) string enum with `Other` variant policy.
-#[doc(hidden)]
-#[macro_export]
-macro_rules! string_enum {
-    (
-        $Type:ident, $Other:ident, $enum_name:literal, {
-            $( $alias:literal => $variant:path ),+ $(,)?
-        }
-    ) => {
-        $crate::__string_enum_base! { $Type, $enum_name, other($Type::$Other), { $( $alias => $variant ),+ } }
     };
 }
 
@@ -290,4 +279,4 @@ macro_rules! string_enum_closed_with_code {
 pub use error::PaftError;
 
 #[cfg(feature = "dataframe")]
-pub use dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
+pub use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};

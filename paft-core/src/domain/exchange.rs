@@ -3,9 +3,9 @@
 //! This module provides type-safe handling of exchange identifiers while gracefully
 //! handling unknown or provider-specific exchanges through the `Other` variant.
 
-use super::string_canonical::Canonical;
 use crate::error::PaftError;
 // no module-level serde imports needed here
+use paft_utils::Canonical;
 use std::str::FromStr;
 
 /// Exchange enumeration with major exchanges and extensible fallback.

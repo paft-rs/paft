@@ -47,7 +47,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Workspace: Version bumped to 0.1.1; `polars` updated to 0.51.
+- Workspace: Version bumped to 0.2.0; `polars` updated to 0.51.
 - paft-core: `Money::try_convert` now rounds with `MidpointAwayFromZero` to the target currency scale.
 - paft-core: `Currency::decimal_places()` consults runtime overrides for `Currency::Other` codes; built‑in overrides added for common cryptos/stablecoins in `currency_utils`.
 - paft-market: History builder defaults now enable `INCLUDE_ACTIONS | AUTO_ADJUST`; getters read from bitflags.

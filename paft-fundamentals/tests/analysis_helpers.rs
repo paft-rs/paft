@@ -1,8 +1,9 @@
 use iso_currency::Currency as IsoCurrency;
-use paft_core::domain::{Currency, Money};
 use paft_fundamentals::analysis::{
     EpsRevisions, EpsTrend, RecommendationSummary, RevisionPoint, TrendPoint,
 };
+use paft_money::Currency;
+use paft_money::Money;
 use rust_decimal::Decimal;
 
 #[test]

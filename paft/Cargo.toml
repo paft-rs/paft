@@ -14,8 +14,10 @@ categories = ["finance", "data-structures", "api-bindings"]
 
 [dependencies]
 paft-core = { workspace = true }
+paft-money = { workspace = true }
 paft-market = { workspace = true, optional = true }
 paft-fundamentals = { workspace = true, optional = true }
+paft-utils = { workspace = true }
 iso_currency = { workspace = true }
 
 [features]
@@ -24,9 +26,9 @@ default = ["market", "fundamentals"]
 market = ["paft-market"]
 fundamentals = ["paft-fundamentals"]
 
-dataframe = ["paft-core/dataframe", "paft-market?/dataframe", "paft-fundamentals?/dataframe"]
+dataframe = ["paft-utils/dataframe", "paft-money/dataframe", "paft-core/dataframe", "paft-market?/dataframe", "paft-fundamentals?/dataframe"]
 full = ["market", "fundamentals", "dataframe"]
-panicking-money-ops = ["paft-core/panicking-money-ops"]
+panicking-money-ops = ["paft-core/panicking-money-ops", "paft-money/panicking-money-ops"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

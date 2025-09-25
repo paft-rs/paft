@@ -1,7 +1,7 @@
 //! Market session state enumeration with helpers and serde support.
 use std::str::FromStr;
 /// Market state enumeration
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum MarketState {
     /// Pre-market trading hours

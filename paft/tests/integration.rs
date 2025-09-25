@@ -246,7 +246,7 @@ fn asset_kind_workflow() {
     for asset_kind in asset_kinds {
         let instrument = Instrument::new(
             "TEST",
-            asset_kind.clone(),
+            asset_kind,
             Some("BBG000B9XRY7".to_string()),
             None,
             Some(Exchange::try_from_str("TEST").unwrap()),

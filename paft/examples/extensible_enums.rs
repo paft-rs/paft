@@ -3,9 +3,9 @@
 //! extensible enum pattern.
 
 use iso_currency::Currency as IsoCurrency;
-use paft::core::domain::Currency;
 #[cfg(feature = "fundamentals")]
 use paft::fundamentals::analysis::RecommendationGrade;
+use paft::prelude::Currency;
 
 fn main() {
     println!("=== paft Extensible Enum Pattern Examples ===\n");
@@ -19,9 +19,6 @@ fn main() {
 
     // Example 3: Normalizing provider-specific data
     normalize_provider_data();
-
-    // Example 4: Demonstrate FromStr on canonical and alias inputs
-    fromstr_demo();
 }
 
 /// Example 1: Properly handling currencies with Other variants
@@ -104,15 +101,6 @@ fn normalize_provider_data() {
         println!("    {} -> {}", code, format_currency(&currency));
     }
     println!();
-}
-
-/// Example 4: Show `std::str::FromStr` acceptance of canonical and alias inputs
-fn fromstr_demo() {
-    let canonical = "USD".parse::<Currency>().unwrap();
-    let alias = "us dollar".parse::<Currency>().unwrap();
-    assert!(canonical.is_canonical());
-    assert!(alias.is_canonical());
-    println!("FromStr demo: USD == us dollar -> {}", (canonical == alias));
 }
 
 /// Normalize generic provider currency codes

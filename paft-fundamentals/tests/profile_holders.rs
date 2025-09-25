@@ -1,6 +1,7 @@
 use iso_currency::Currency as IsoCurrency;
-use paft_core::domain::{Currency, Money};
 use paft_fundamentals::profile::{Address, CompanyProfile, FundKind, FundProfile, Profile};
+use paft_money::Currency;
+use paft_money::Money;
 use rust_decimal::Decimal;
 use serde_json::{from_str, to_string};
 

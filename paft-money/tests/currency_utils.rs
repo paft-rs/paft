@@ -1,6 +1,6 @@
-use paft_core::domain::currency_utils::MinorUnitError;
-use paft_core::domain::{
-    Currency, clear_currency_minor_units, currency_minor_units, set_currency_minor_units,
+use paft_money::{
+    Currency, MinorUnitError, clear_currency_minor_units, currency_minor_units,
+    set_currency_minor_units,
 };
 
 #[test]

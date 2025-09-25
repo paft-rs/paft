@@ -12,13 +12,6 @@ pub enum PaftError {
         value: String,
     },
 
-    /// Invalid canonical token produced by normalization helpers.
-    #[error("Invalid canonical token: '{value}' - canonicalized value must be non-empty")]
-    InvalidCanonicalToken {
-        /// The original input that failed to produce a canonical token.
-        value: String,
-    },
-
     /// `HistoryRequest`: 'period' start must be before end.
     #[error("HistoryRequest: 'period' start ({start}) must be before end ({end})")]
     InvalidPeriod {

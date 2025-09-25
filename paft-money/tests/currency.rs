@@ -1,7 +1,7 @@
 //! Tests covering canonical/alias behavior for currencies.
 
 use iso_currency::Currency as IsoCurrency;
-use paft_core::domain::Currency;
+use paft_money::Currency;
 use std::str::FromStr;
 
 struct Case {
@@ -33,13 +33,11 @@ fn currency_other_values_uppercase_and_round_trip() {
 #[test]
 fn currency_try_from_and_serde_reject_empty() {
     let err = Currency::try_from_str("").unwrap_err();
-    match err {
-        paft_core::error::PaftError::InvalidEnumValue { enum_name, value } => {
-            assert_eq!(enum_name, "Currency");
-            assert_eq!(value, "");
-        }
-        other => panic!("unexpected error: {other}"),
-    }
+    assert!(matches!(
+        err,
+        paft_money::MoneyParseError::InvalidEnumValue { enum_name, value }
+            if enum_name == "Currency" && value.is_empty()
+    ));
 
     let result: Result<Currency, _> = serde_json::from_str("\"\"");
     assert!(result.is_err());

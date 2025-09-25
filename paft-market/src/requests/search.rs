@@ -103,8 +103,8 @@ impl SearchRequest {
 
     /// Get the asset kind filter if set.
     #[must_use]
-    pub fn kind(&self) -> Option<AssetKind> {
-        self.kind.clone()
+    pub const fn kind(&self) -> Option<AssetKind> {
+        self.kind
     }
 
     /// Get the result limit if set.

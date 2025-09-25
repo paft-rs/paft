@@ -1,9 +1,9 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
 use iso_currency::Currency as IsoCurrency;
-use paft_core::domain::{Currency, Money};
 use paft_market::market::action::Action;
 use paft_market::{Candle, HistoryMeta, HistoryResponse};
+use paft_money::{Currency, Money};
 use rust_decimal::Decimal;
 use std::str::FromStr;
 

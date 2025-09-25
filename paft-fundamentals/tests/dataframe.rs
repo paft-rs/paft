@@ -1,9 +1,10 @@
 #![cfg(feature = "dataframe")]
 use iso_currency::Currency as IsoCurrency;
-use paft_core::dataframe::ToDataFrame;
-use paft_core::domain::{Money, Period};
+use paft_core::domain::Period;
 use paft_fundamentals::analysis::{EarningsYear, RecommendationRow};
 use paft_fundamentals::statements::IncomeStatementRow;
+use paft_money::Money;
+use paft_utils::dataframe::ToDataFrame;
 use rust_decimal::Decimal;
 
 #[test]
@@ -13,7 +14,7 @@ fn earnings_year_to_dataframe() {
         revenue: None,
         earnings: Some(Money::new(
             Decimal::from(10),
-            paft_core::domain::Currency::Iso(IsoCurrency::USD),
+            paft_money::Currency::Iso(IsoCurrency::USD),
         )),
     };
     let df = e.to_dataframe().unwrap();

@@ -1,6 +1,6 @@
 //! History response types.
 
-use paft_core::domain::Money;
+use paft_money::Money;
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
@@ -8,7 +8,7 @@ use chrono_tz::Tz;
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 #[cfg(feature = "dataframe")]
-use paft_core::dataframe::ToDataFrame;
+use paft_utils::dataframe::ToDataFrame;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]

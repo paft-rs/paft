@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
-use paft_core::domain::Money;
+use paft_money::Money;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// Corporate action attached to a history series.

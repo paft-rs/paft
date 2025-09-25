@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, str::FromStr};
 
 /// Kinds of financial instruments
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum AssetKind {
     /// Common stock or equity-like instruments.

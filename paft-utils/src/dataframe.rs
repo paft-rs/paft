@@ -1,4 +1,4 @@
-//! DataFrame conversion traits for paft
+//! `DataFrame` conversion traits for paft utilities.
 //!
 //! This module defines the public `ToDataFrame` trait for single items,
 //! a public extension trait `ToDataFrameVec` for slices/Vecs,

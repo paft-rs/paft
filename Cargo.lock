@@ -551,9 +551,9 @@ checksum = "85d3cef41d236720ed453e102153a53e4cc3d2fde848c0078a50cf249e8e3e5b"
 
 [[package]]
 name = "df-derive"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "973e2afa18642414197a53d8321573d3f927317df44e9a69c6442f8146623a57"
+checksum = "1e50c478b2030ec82f4af7092621f564a1981153daa1b9d747fe3339753828b0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1463,7 +1463,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "paft"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -1471,6 +1471,8 @@ dependencies = [
  "paft-core",
  "paft-fundamentals",
  "paft-market",
+ "paft-money",
+ "paft-utils",
  "polars",
  "rust_decimal",
  "serde_json",
@@ -1478,13 +1480,13 @@ dependencies = [
 
 [[package]]
 name = "paft-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "chrono-tz",
- "df-derive",
  "iso_currency",
- "polars",
+ "paft-money",
+ "paft-utils",
  "regex",
  "rust_decimal",
  "serde",
@@ -1494,13 +1496,15 @@ dependencies = [
 
 [[package]]
 name = "paft-fundamentals"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "chrono-tz",
  "df-derive",
  "iso_currency",
  "paft-core",
+ "paft-money",
+ "paft-utils",
  "polars",
  "rust_decimal",
  "serde",
@@ -1510,7 +1514,7 @@ dependencies = [
 
 [[package]]
 name = "paft-market"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bitflags",
  "chrono",
@@ -1518,10 +1522,34 @@ dependencies = [
  "df-derive",
  "iso_currency",
  "paft-core",
+ "paft-money",
+ "paft-utils",
  "polars",
  "rust_decimal",
  "serde",
  "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "paft-money"
+version = "0.3.0"
+dependencies = [
+ "df-derive",
+ "iso_currency",
+ "paft-utils",
+ "polars",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "paft-utils"
+version = "0.3.0"
+dependencies = [
+ "polars",
  "thiserror",
 ]
 

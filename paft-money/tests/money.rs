@@ -1,6 +1,6 @@
 use iso_currency::Currency as IsoCurrency;
-use paft_core::domain::{Currency, ExchangeRate, Money};
-use rust_decimal::Decimal;
+use paft_money::{Currency, ExchangeRate, Money};
+use rust_decimal::{Decimal, RoundingStrategy};
 use std::str::FromStr;
 
 #[cfg(feature = "panicking-money-ops")]
@@ -164,6 +164,28 @@ fn test_try_convert_respects_target_precision() {
         eth_ten.as_minor_units(),
         Some(10_000_000_000_000_000_000i128)
     );
+}
+
+#[test]
+fn test_try_convert_with_custom_rounding_strategy() {
+    let eur = Money::new(
+        Decimal::from_str("1.005").unwrap(),
+        Currency::Iso(IsoCurrency::EUR),
+    );
+    let rate = ExchangeRate::new(
+        Currency::Iso(IsoCurrency::EUR),
+        Currency::Iso(IsoCurrency::USD),
+        Decimal::ONE,
+    )
+    .unwrap();
+
+    let default = eur.try_convert(&rate).unwrap();
+    assert_eq!(default.amount(), Decimal::from_str("1.01").unwrap());
+
+    let toward_zero = eur
+        .try_convert_with(&rate, RoundingStrategy::MidpointTowardZero)
+        .unwrap();
+    assert_eq!(toward_zero.amount(), Decimal::from_str("1.00").unwrap());
 }
 
 #[test]
