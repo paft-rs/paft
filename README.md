@@ -213,7 +213,7 @@ impl GenericQuoteWire {
         paft::Quote {
             symbol: symbol.to_string(),
             price: self.regularMarketPrice.map(|amount| 
-                paft::Money::new(amount.into(), paft::Currency::USD)
+                paft::Money::new(amount.into(), paft::Currency::Iso(paft::IsoCurrency::USD))
             ),
             exchange: self.exchange.as_ref().map(|ex| match ex.as_ref() {
                 "NASDAQ" => paft::Exchange::NASDAQ,

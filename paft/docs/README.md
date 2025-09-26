@@ -39,9 +39,11 @@ Detailed best practices guide with practical implementation strategies:
 ### Essential Pattern
 
 ```rust
+use paft_money::{Currency, IsoCurrency};
+
 match currency {
-    Currency::USD => "US Dollar",
-    Currency::EUR => "Euro",
+    Currency::Iso(IsoCurrency::USD) => "US Dollar",
+    Currency::Iso(IsoCurrency::EUR) => "Euro",
     Currency::Other(code) => {
         // Always handle the Other variant
         match code.as_ref() {

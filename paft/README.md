@@ -17,7 +17,7 @@ Standardized Rust types for financial data that work with any provider—Yahoo F
 ```toml
 [dependencies]
 # Basic installation with all supported data types
-# default = ["market", "fundamentals"]
+# default = ["domain", "market", "fundamentals", "rust-decimal"]
 paft = "0.3.0"
 
 # Or, install with all features enabled
@@ -50,6 +50,10 @@ paft = { version = "0.3.0", default-features = false, features = ["fundamentals"
 ### Basic Usage
 
 ```rust
+use paft::{
+    AssetKind, Currency, Exchange, Instrument, IsoCurrency, MarketState, Money, Quote,
+};
+
 // Create instruments with different levels of identification
 let apple = Instrument::new(
     "AAPL",
@@ -65,8 +69,8 @@ let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto);
 let quote = Quote {
     symbol: "AAPL".to_string(),
     shortname: Some("Apple Inc.".to_string()),
-    price: Some(Money::new(Decimal::new(19012, 2), Currency::USD)),
-    previous_close: Some(Money::new(Decimal::new(18996, 2), Currency::USD)),
+    price: Some(Money::new(Decimal::new(19012, 2), Currency::Iso(IsoCurrency::USD))),
+    previous_close: Some(Money::new(Decimal::new(18996, 2), Currency::Iso(IsoCurrency::USD))),
     exchange: Some(Exchange::NASDAQ),
     market_state: Some(MarketState::Regular),
     ..Default::default()
@@ -130,7 +134,7 @@ let half = a.try_div(Decimal::from(2))?;
 ```
 
 If you explicitly want the ergonomic panicking operators, enable the
-`panicking-money-ops` feature via the `paft` facade (it forwards to `paft-core`):
+`panicking-money-ops` feature via the `paft` facade (it forwards to `paft-money`):
 
 ```toml
 [dependencies]
@@ -150,12 +154,12 @@ untrusted data, keep this feature disabled and use the `try_*` APIs.
 paft uses extensible enums with `Other(String)` variants to gracefully handle unknown provider values:
 
 ```rust
-use paft::{Currency, Exchange};
+use paft::{Currency, Exchange, IsoCurrency};
 
 // Handle unknown currencies from providers
 match currency {
-    Currency::USD => "US Dollar",
-    Currency::EUR => "Euro", 
+    Currency::Iso(IsoCurrency::USD) => "US Dollar",
+    Currency::Iso(IsoCurrency::EUR) => "Euro", 
     Currency::Other(code) => {
         // Graceful fallback for unknown currencies
         match code.as_ref() {

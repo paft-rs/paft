@@ -17,10 +17,12 @@ This document provides specific best practices for working with paft's extensibl
 
 **❌ Compilation Error:**
 ```rust
+use paft_money::{Currency, IsoCurrency};
+
 fn process_currency(currency: Currency) -> &'static str {
     match currency {
-        Currency::USD => "US Dollar",
-        Currency::EUR => "Euro",
+        Currency::Iso(IsoCurrency::USD) => "US Dollar",
+        Currency::Iso(IsoCurrency::EUR) => "Euro",
         // Missing Other variant - compiler error!
     }
 }
@@ -28,10 +30,12 @@ fn process_currency(currency: Currency) -> &'static str {
 
 **✅ Correct Approach:**
 ```rust
+use paft_money::{Currency, IsoCurrency};
+
 fn process_currency(currency: Currency) -> String {
     match currency {
-        Currency::USD => "US Dollar".to_string(),
-        Currency::EUR => "Euro".to_string(),
+        Currency::Iso(IsoCurrency::USD) => "US Dollar".to_string(),
+        Currency::Iso(IsoCurrency::EUR) => "Euro".to_string(),
         Currency::Other(code) => format!("Unknown currency: {}", code),
     }
 }
@@ -67,9 +71,9 @@ fn analyze_asset(asset: AssetKind) {
 fn normalize_currency(provider_code: &str) -> Currency {
     match provider_code.to_uppercase().as_ref() {
         // Map to canonical variants when possible
-        "DOLLAR" | "US_DOLLAR" | "USD" => Currency::USD,
-        "EURO" | "EUR" => Currency::EUR,
-        "POUND" | "GBP" => Currency::GBP,
+        "DOLLAR" | "US_DOLLAR" | "USD" => Currency::Iso(IsoCurrency::USD),
+        "EURO" | "EUR" => Currency::Iso(IsoCurrency::EUR),
+        "POUND" | "GBP" => Currency::Iso(IsoCurrency::GBP),
 
         // Map common cryptos to canonical variants when available
         "BITCOIN" | "XBT" | "BTC" => Currency::BTC,
@@ -87,8 +91,8 @@ fn normalize_currency(provider_code: &str) -> Currency {
 ```rust
 fn get_currency_info(currency: Currency) -> CurrencyInfo {
     match currency {
-        Currency::USD => CurrencyInfo::usd(),
-        Currency::EUR => CurrencyInfo::euro(),
+        Currency::Iso(IsoCurrency::USD) => CurrencyInfo::usd(),
+        Currency::Iso(IsoCurrency::EUR) => CurrencyInfo::euro(),
         Currency::Other(code) => {
             // Log unknown currency for monitoring
             log::warn!("Unknown currency encountered: {}", code);
@@ -112,9 +116,9 @@ impl From<GenericProviderCurrency> for Currency {
     fn from(gp_currency: GenericProviderCurrency) -> Self {
         match gp_currency.code.as_ref() {
             // Map to canonical variants
-            "USD" => Currency::USD,
-            "EUR" => Currency::EUR,
-            "GBP" => Currency::GBP,
+            "USD" => Currency::Iso(IsoCurrency::USD),
+            "EUR" => Currency::Iso(IsoCurrency::EUR),
+            "GBP" => Currency::Iso(IsoCurrency::GBP),
             
             // Normalize crypto currencies
             "BTC" | "BITCOIN" => Currency::BTC,
@@ -133,6 +137,7 @@ impl From<GenericProviderCurrency> for Currency {
 ```rust
 pub mod currency_utils {
     use super::Currency;
+    use paft_money::IsoCurrency;
 
     /// Attempts to normalize a currency code to a canonical variant
     pub fn normalize_currency_code(code: &str) -> Currency {
@@ -141,9 +146,9 @@ pub mod currency_utils {
             return Currency::Other("UNKNOWN".to_string());
         }
         match trimmed.to_uppercase().as_ref() {
-            "DOLLAR" | "US_DOLLAR" | "USD" => Currency::USD,
-            "EURO" | "EUR" => Currency::EUR,
-            "POUND" | "GBP" => Currency::GBP,
+            "DOLLAR" | "US_DOLLAR" | "USD" => Currency::Iso(IsoCurrency::USD),
+            "EURO" | "EUR" => Currency::Iso(IsoCurrency::EUR),
+            "POUND" | "GBP" => Currency::Iso(IsoCurrency::GBP),
             "BITCOIN" | "XBT" | "BTC" => Currency::BTC,
             "ETHEREUM" | "ETH" => Currency::ETH,
             other => Currency::Other(other.to_string()),
@@ -153,10 +158,7 @@ pub mod currency_utils {
     /// Returns true if the currency is commonly used
     pub fn is_common_currency(currency: &Currency) -> bool {
         match currency {
-            Currency::USD
-            | Currency::EUR
-            | Currency::GBP
-            | Currency::JPY
+            Currency::Iso(IsoCurrency::USD | IsoCurrency::EUR | IsoCurrency::GBP | IsoCurrency::JPY)
             | Currency::BTC
             | Currency::ETH => true,
             Currency::Other(_) => false,
@@ -171,16 +173,16 @@ pub mod currency_utils {
 /// Currency mapping for Alpha Vantage provider
 /// 
 /// Known mappings:
-/// - "US_DOLLAR" -> USD (canonical)
-/// - "EURO" -> EUR (canonical)
+/// - "US_DOLLAR" -> Currency::Iso(IsoCurrency::USD) (canonical)
+/// - "EURO" -> Currency::Iso(IsoCurrency::EUR) (canonical)
 /// - "BITCOIN" -> BTC (canonical)
 /// 
 /// Unmapped values are preserved as Other(String) in uppercase
 impl From<AlphaVantageCurrency> for Currency {
     fn from(av_currency: AlphaVantageCurrency) -> Self {
         match av_currency.code.to_uppercase().as_ref() {
-            "US_DOLLAR" => Currency::USD,
-            "EURO" => Currency::EUR,
+            "US_DOLLAR" => Currency::Iso(IsoCurrency::USD),
+            "EURO" => Currency::Iso(IsoCurrency::EUR),
             "BITCOIN" => Currency::BTC,
             _ => Currency::Other(av_currency.code.to_uppercase()),
         }
@@ -198,8 +200,8 @@ pub struct CurrencyProcessor {
 impl CurrencyProcessor {
     pub fn process_currency(&mut self, currency: Currency) -> Result<CurrencyInfo, Error> {
         match currency {
-            Currency::USD => Ok(CurrencyInfo::usd()),
-            Currency::EUR => Ok(CurrencyInfo::euro()),
+            Currency::Iso(IsoCurrency::USD) => Ok(CurrencyInfo::usd()),
+            Currency::Iso(IsoCurrency::EUR) => Ok(CurrencyInfo::euro()),
             Currency::Other(code) => {
                 // Track unknown currencies for analysis
                 self.unknown_currencies.insert(code.clone());
@@ -236,8 +238,8 @@ impl ProviderAdapter {
         let mut exchange_mappings = std::collections::HashMap::new();
         
         // Populate mappings
-        currency_mappings.insert("DOLLAR".to_string(), Currency::USD);
-        currency_mappings.insert("EURO".to_string(), Currency::EUR);
+        currency_mappings.insert("DOLLAR".to_string(), Currency::Iso(IsoCurrency::USD));
+        currency_mappings.insert("EURO".to_string(), Currency::Iso(IsoCurrency::EUR));
         currency_mappings.insert("BITCOIN".to_string(), Currency::BTC);
         
         exchange_mappings.insert("NASDAQ-GS".to_string(), Exchange::NASDAQ);
@@ -276,8 +278,8 @@ impl LazyProviderAdapter {
     fn get_mappings(&self) -> &std::collections::HashMap<String, Currency> {
         self.mappings.get_or_init(|| {
             let mut mappings = std::collections::HashMap::new();
-            mappings.insert("DOLLAR".to_string(), Currency::USD);
-            mappings.insert("EURO".to_string(), Currency::EUR);
+            mappings.insert("DOLLAR".to_string(), Currency::Iso(IsoCurrency::USD));
+            mappings.insert("EURO".to_string(), Currency::Iso(IsoCurrency::EUR));
             mappings.insert("BITCOIN".to_string(), Currency::BTC);
             mappings
         })
@@ -311,8 +313,8 @@ fn process_currency(currency_code: &str) -> String {
 ```rust
 fn process_currency(currency: Currency) -> String {
     match currency {
-        Currency::USD => "US Dollar".to_string(),
-        Currency::EUR => "Euro".to_string(),
+        Currency::Iso(IsoCurrency::USD) => "US Dollar".to_string(),
+        Currency::Iso(IsoCurrency::EUR) => "Euro".to_string(),
         Currency::Other(code) => format!("Unknown: {}", code),
     }
 }
@@ -320,8 +322,8 @@ fn process_currency(currency: Currency) -> String {
 // Migration helper
 fn migrate_currency_code(code: &str) -> Currency {
     match code {
-        "USD" => Currency::USD,
-        "EUR" => Currency::EUR,
+        "USD" => Currency::Iso(IsoCurrency::USD),
+        "EUR" => Currency::Iso(IsoCurrency::EUR),
         _ => Currency::Other(code.to_uppercase()),
     }
 }
@@ -418,12 +420,13 @@ impl CurrencyCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use paft_money::IsoCurrency;
     
     #[test]
     fn test_currency_processing() {
         // Test canonical variants
-        assert_eq!(process_currency(Currency::USD), "US Dollar");
-        assert_eq!(process_currency(Currency::EUR), "Euro");
+        assert_eq!(process_currency(Currency::Iso(IsoCurrency::USD)), "US Dollar");
+        assert_eq!(process_currency(Currency::Iso(IsoCurrency::EUR)), "Euro");
         
         // Test Other variants
         assert_eq!(
@@ -438,7 +441,7 @@ mod tests {
     
     #[test]
     fn test_currency_normalization() {
-        assert_eq!(normalize_currency("DOLLAR"), Currency::USD);
+        assert_eq!(normalize_currency("DOLLAR"), Currency::Iso(IsoCurrency::USD));
         assert_eq!(normalize_currency("BITCOIN"), Currency::BTC);
         assert_eq!(normalize_currency("UNKNOWN"), Currency::Other("UNKNOWN".to_string()));
     }
@@ -474,8 +477,8 @@ proptest! {
 #[test]
 fn test_generic_provider_currency_mapping() {
     let test_cases = vec![
-        ("USD", Currency::USD),
-        ("EUR", Currency::EUR),
+        ("USD", Currency::Iso(IsoCurrency::USD)),
+        ("EUR", Currency::Iso(IsoCurrency::EUR)),
         ("BTC", Currency::BTC),
         ("UNKNOWN", Currency::Other("UNKNOWN".to_string())),
     ];
