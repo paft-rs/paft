@@ -32,12 +32,10 @@ pub mod market {
 /// Namespaced access to `paft-money` types.
 pub mod money {
     pub use paft_money::{
-        Currency, ExchangeRate, MinorUnitError, Money, MoneyError, clear_currency_minor_units,
-        currency_minor_units, set_currency_minor_units, try_normalize_currency_code,
+        Currency, ExchangeRate, IsoCurrency, MinorUnitError, Money, MoneyError,
+        clear_currency_metadata, currency_metadata, set_currency_metadata,
+        try_normalize_currency_code,
     };
-
-    /// Re-export `iso_currency::Currency` for convenience.
-    pub use iso_currency::Currency as IsoCurrency;
 }
 
 /// Namespaced access to `paft-fundamentals` (feature-gated).

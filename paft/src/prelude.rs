@@ -11,7 +11,7 @@ pub use crate::domain::{
     StringCode, canonicalize,
 };
 pub use crate::money::{
-    Currency, clear_currency_minor_units, currency_minor_units, set_currency_minor_units,
+    Currency, clear_currency_metadata, currency_metadata, set_currency_metadata,
     try_normalize_currency_code,
 };
 pub use crate::money::{ExchangeRate, Money, MoneyError};
