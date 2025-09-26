@@ -1,8 +1,7 @@
 use iso_currency::Currency as IsoCurrency;
 use paft_domain::{Exchange, MarketState};
 use paft_market::market::quote::Quote;
-use paft_money::{Currency, Money};
-use rust_decimal::Decimal;
+use paft_money::{Currency, Decimal, Money};
 
 #[must_use]
 /// Builds a sample quote for testing.

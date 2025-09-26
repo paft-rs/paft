@@ -2,9 +2,8 @@
 use iso_currency::Currency as IsoCurrency;
 use paft_domain::Exchange;
 use paft_market::market::quote::Quote;
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Decimal, Money};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
-use rust_decimal::Decimal;
 
 #[test]
 fn vec_quote_to_dataframe_smoke() {

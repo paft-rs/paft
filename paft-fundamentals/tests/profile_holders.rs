@@ -1,9 +1,8 @@
 use iso_currency::Currency as IsoCurrency;
 use paft_fundamentals::profile::{Address, CompanyProfile, FundKind, FundProfile, Profile};
-use paft_money::Currency;
-use paft_money::Money;
-use rust_decimal::Decimal;
+use paft_money::{Currency, Decimal, Money};
 use serde_json::{from_str, to_string};
+use std::str::FromStr;
 
 #[test]
 fn profile_isin_accessor() {
@@ -49,7 +48,13 @@ fn insider_transaction_serde_with_enums_and_timestamps() {
         position: paft_fundamentals::holders::InsiderPosition::Officer,
         transaction_type: paft_fundamentals::holders::TransactionType::Buy,
         shares: Some(1000),
-        value: Some(Money::new(Decimal::new(12345, 2), Currency::Iso(IsoCurrency::USD)).unwrap()),
+        value: Some(
+            Money::new(
+                Decimal::from_str("123.45").unwrap(),
+                Currency::Iso(IsoCurrency::USD),
+            )
+            .unwrap(),
+        ),
         transaction_date: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         url: "https://example.com".into(),
     };

@@ -2,8 +2,7 @@ use chrono::DateTime;
 use iso_currency::Currency as IsoCurrency;
 use paft_domain::{Exchange, MarketState};
 use paft_market::market::quote::{Quote, QuoteUpdate};
-use paft_money::{Currency, Money};
-use rust_decimal::Decimal;
+use paft_money::{Currency, Decimal, Money};
 use std::str::FromStr;
 
 // -----------------

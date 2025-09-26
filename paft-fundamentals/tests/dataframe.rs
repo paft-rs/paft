@@ -3,9 +3,8 @@ use iso_currency::Currency as IsoCurrency;
 use paft_domain::Period;
 use paft_fundamentals::analysis::{EarningsYear, RecommendationRow};
 use paft_fundamentals::statements::IncomeStatementRow;
-use paft_money::Money;
+use paft_money::{Decimal, Money};
 use paft_utils::dataframe::ToDataFrame;
-use rust_decimal::Decimal;
 
 #[test]
 fn earnings_year_to_dataframe() {

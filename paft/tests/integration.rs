@@ -6,7 +6,7 @@ use paft::prelude::{
     Instrument, Interval, MarketError, MarketState, Money, Quote, QuoteUpdate, Range,
     SearchRequest,
 };
-use rust_decimal::Decimal;
+use paft_money::Decimal;
 use std::str::FromStr;
 
 #[test]
