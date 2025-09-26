@@ -35,11 +35,7 @@ fn parse_rejects_invalid_tokens() {
 #[cfg(feature = "bigdecimal")]
 #[test]
 fn parse_high_precision_bigdecimal_mode() {
-    let m = Money::from_str(
-        "12345678901234567890.123456789012345678",
-        Currency::ETH,
-    )
-    .unwrap();
+    let m = Money::from_str("12345678901234567890.123456789012345678", Currency::ETH).unwrap();
     assert_eq!(
         m.amount(),
         Decimal::from_str("12345678901234567890.123456789012345678").unwrap()
@@ -49,14 +45,13 @@ fn parse_high_precision_bigdecimal_mode() {
 #[cfg(not(feature = "bigdecimal"))]
 #[test]
 fn parse_high_precision_rust_decimal_mode() {
-    let m = Money::from_str(
-        "12345678901234567890.123456789012345678",
-        Currency::ETH,
-    )
-    .unwrap();
+    let m = Money::from_str("12345678901234567890.123456789012345678", Currency::ETH).unwrap();
     eprintln!("m: {:?}", m);
     eprintln!("m.amount(): {:?}", m.amount());
-    eprintln!("Decimal::from_str(\"12345678901234567890.123456789012345678\"): {:?}", Decimal::from_str("12345678901234567890.123456789012345678"));
+    eprintln!(
+        "Decimal::from_str(\"12345678901234567890.123456789012345678\"): {:?}",
+        Decimal::from_str("12345678901234567890.123456789012345678")
+    );
     assert_eq!(
         m.amount(),
         Decimal::from_str("12345678901234567890.123456789012345678").unwrap()

@@ -1,6 +1,10 @@
+// This test requires the market feature
+#![cfg(feature = "market")]
+
 use chrono::DateTime;
 use paft::prelude::{HistoryRequest, Interval, Range, SearchRequest};
 
+#[cfg(feature = "market")]
 #[test]
 fn test_encapsulation_prevents_invalid_construction() {
     // This test demonstrates that users can no longer create invalid instances
@@ -65,6 +69,7 @@ fn test_encapsulation_prevents_invalid_construction() {
     );
 }
 
+#[cfg(feature = "market")]
 #[test]
 fn test_serialization_still_works() {
     // Test that serialization/deserialization still works with private fields

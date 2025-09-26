@@ -4,11 +4,28 @@
 //! types of identifiers, allowing providers to populate the identifiers they have
 //! access to while encouraging the use of better identifiers when available.
 
+#[cfg(feature = "domain")]
 use paft::prelude::{AssetKind, Exchange, Instrument};
+
+#[cfg(feature = "domain")]
 use std::collections::HashMap;
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    #[cfg(feature = "domain")]
+    {
+        run_example();
+    }
+
+    #[cfg(not(feature = "domain"))]
+    {
+        println!("This example requires the 'domain' feature to be enabled.");
+        println!("Run with: cargo run --example hierarchical_identifiers --features domain");
+    }
+}
+
+#[cfg(feature = "domain")]
+fn run_example() {
     println!("=== Hierarchical Identifier Examples ===\n");
 
     // Example 1: Generic provider (basic symbol + exchange)

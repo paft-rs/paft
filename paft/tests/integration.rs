@@ -1,3 +1,6 @@
+// This test requires both domain and market features
+#![cfg(all(feature = "domain", feature = "market"))]
+
 use chrono::DateTime;
 use chrono_tz::Tz;
 use iso_currency::Currency as IsoCurrency;
@@ -9,6 +12,7 @@ use paft::prelude::{
 use paft_money::Decimal;
 use std::str::FromStr;
 
+#[cfg(all(feature = "domain", feature = "market"))]
 #[test]
 fn end_to_end_workflow() {
     // Test a complete workflow from search to history to quote updates
@@ -122,6 +126,7 @@ fn end_to_end_workflow() {
     assert_eq!(history_response.candles[0].close, quote.price.unwrap());
 }
 
+#[cfg(all(feature = "domain", feature = "market"))]
 #[test]
 fn error_handling_workflow() {
     // Test error handling in a realistic workflow
@@ -170,6 +175,7 @@ fn error_handling_workflow() {
     assert_eq!(e.timestamp(), 2000);
 }
 
+#[cfg(all(feature = "domain", feature = "market"))]
 #[test]
 fn serialization_workflow() {
     // Test serialization in a realistic workflow
@@ -217,6 +223,7 @@ fn serialization_workflow() {
     assert_eq!(quote, deserialized_quote);
 }
 
+#[cfg(all(feature = "domain", feature = "market"))]
 #[test]
 fn asset_kind_workflow() {
     // Test AssetKind usage in a realistic workflow
@@ -260,6 +267,7 @@ fn asset_kind_workflow() {
     }
 }
 
+#[cfg(all(feature = "domain", feature = "market"))]
 #[test]
 fn interval_and_range_workflow() {
     // Test Interval and Range usage in a realistic workflow
@@ -318,6 +326,7 @@ fn interval_and_range_workflow() {
     }
 }
 
+#[cfg(all(feature = "domain", feature = "market"))]
 #[test]
 fn action_types_workflow() {
     // Test all action types in a realistic workflow
