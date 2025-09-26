@@ -17,9 +17,19 @@ use paft_utils::canonicalize;
 use crate::currency::Currency;
 use crate::error::MoneyParseError;
 
-/// Maximum precision supported by `rust_decimal` for safe scaling operations.
+/// Maximum precision supported by the active decimal backend for safe scaling operations.
+///
+/// * With the default `rust-decimal` backend this reflects the 28 fractional digits that
+///   `rust_decimal::Decimal` can represent safely.
+#[cfg(not(feature = "bigdecimal"))]
 pub const MAX_DECIMAL_PRECISION: u8 = 28;
+/// Maximum precision supported by the active decimal backend for safe scaling operations.
+#[cfg(feature = "bigdecimal")]
+pub const MAX_DECIMAL_PRECISION: u8 = u8::MAX;
 /// Maximum precision that can be converted into an `i64` minor-unit scale (10^18).
+///
+/// This is bounded by `10_i128.pow(scale)` fitting into an `i128`, ensuring minor-unit
+/// conversions remain safe regardless of backend precision.
 pub const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
 
 /// Metadata describing additional information for custom currencies.
@@ -34,7 +44,7 @@ pub struct CurrencyMetadata {
 /// Errors that can occur when configuring minor-unit overrides.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MinorUnitError {
-    /// The requested precision exceeds what `rust_decimal` supports (28 fractional digits).
+    /// The requested precision exceeds the decimal backend's supported limit.
     ExceedsDecimalPrecision {
         /// Requested fractional digits.
         decimals: u8,
@@ -51,7 +61,7 @@ impl fmt::Display for MinorUnitError {
         match self {
             Self::ExceedsDecimalPrecision { decimals } => write!(
                 f,
-                "decimal precision {decimals} exceeds rust_decimal maximum of {MAX_DECIMAL_PRECISION}"
+                "decimal precision {decimals} exceeds maximum of {MAX_DECIMAL_PRECISION}"
             ),
             Self::ExceedsMinorUnitScale { decimals } => write!(
                 f,
@@ -115,6 +125,7 @@ pub fn set_currency_metadata(
     full_name: impl Into<String>,
     minor_units: u8,
 ) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
+    #[cfg(not(feature = "bigdecimal"))]
     if minor_units > MAX_DECIMAL_PRECISION {
         return Err(MinorUnitError::ExceedsDecimalPrecision {
             decimals: minor_units,

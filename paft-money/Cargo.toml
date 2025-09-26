@@ -16,16 +16,20 @@ categories = ["finance", "data-structures"]
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 iso_currency = { workspace = true }
-rust_decimal = { workspace = true }
+rust_decimal = { workspace = true, optional = true }
+bigdecimal = { workspace = true, optional = true }
+num-traits = { workspace = true, optional = true }
+num-bigint = { workspace = true, optional = true }
 paft-utils = { workspace = true }
 df-derive = { workspace = true, optional = true }
 polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde", "regex", "timezones", "diagonal_concat", "json", "rolling_window", "dtype-decimal"], optional = true }
 
 [features]
-default = []
-dataframe = ["polars", "df-derive"]
+default = ["rust-decimal"]
+rust-decimal = ["dep:rust_decimal"]
+bigdecimal = ["dep:bigdecimal", "dep:num-traits", "dep:num-bigint"]
+dataframe = ["polars", "df-derive", "paft-utils/dataframe"]
 panicking-money-ops = []
 
 [dev-dependencies]
 serde_json = { workspace = true }
-

@@ -1,7 +1,13 @@
 use iso_currency::Currency as IsoCurrency;
-use paft_money::{Currency, ExchangeRate, Money};
-use rust_decimal::{Decimal, RoundingStrategy};
+use paft_money::{Currency, Decimal, ExchangeRate, Money, RoundingStrategy};
 use std::str::FromStr;
+
+#[cfg(feature = "dataframe")]
+use paft_money::decimal;
+#[cfg(feature = "dataframe")]
+use paft_utils::dataframe::ToDataFrame;
+#[cfg(feature = "dataframe")]
+use std::convert::TryFrom;
 
 #[cfg(feature = "panicking-money-ops")]
 mod panicking_ops_tests {
@@ -103,7 +109,7 @@ mod non_panicking_default_tests {
     #[test]
     fn test_non_panicking_division_uses_try_div() {
         let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
-        assert!(usd_100.try_div(Decimal::ZERO).is_err());
+        assert!(usd_100.try_div(Decimal::from(0)).is_err());
         let ok = usd_100.try_div(Decimal::from(2)).unwrap();
         assert_eq!(ok.amount(), Decimal::from(50));
         assert_eq!(ok.currency(), &Currency::Iso(IsoCurrency::USD));
@@ -140,12 +146,12 @@ fn test_exchange_rate_creation() {
     let rate = ExchangeRate::new(
         Currency::Iso(IsoCurrency::USD),
         Currency::Iso(IsoCurrency::EUR),
-        Decimal::new(85, 2),
+        Decimal::from_str("0.85").unwrap(),
     )
     .unwrap();
     assert_eq!(rate.from(), &Currency::Iso(IsoCurrency::USD));
     assert_eq!(rate.to(), &Currency::Iso(IsoCurrency::EUR));
-    assert_eq!(rate.rate(), Decimal::new(85, 2));
+    assert_eq!(rate.rate(), Decimal::from_str("0.85").unwrap());
 }
 
 #[test]
@@ -154,14 +160,14 @@ fn test_try_convert_respects_target_precision() {
     let rate = ExchangeRate::new(
         Currency::Iso(IsoCurrency::JPY),
         Currency::Iso(IsoCurrency::USD),
-        Decimal::new(89, 4),
+        Decimal::from_str("0.0089").unwrap(),
     )
     .unwrap();
 
     let usd = jpy.try_convert(&rate).unwrap();
 
     assert_eq!(usd.currency(), &Currency::Iso(IsoCurrency::USD));
-    assert_eq!(usd.amount(), Decimal::new(890, 2));
+    assert_eq!(usd.amount(), Decimal::from_str("8.90").unwrap());
     assert_eq!(usd.as_minor_units().unwrap(), 890i128);
 
     let eth_ten = Money::new(Decimal::from(10), Currency::ETH).unwrap();
@@ -247,4 +253,72 @@ fn test_money_respects_builtin_usdc_override() {
     assert_eq!(money.currency(), &usdc);
     assert_eq!(money.as_minor_units().unwrap(), microscopic);
     assert_eq!(money.amount(), Decimal::from_str("1.5").unwrap());
+}
+
+#[cfg(all(feature = "dataframe", not(feature = "bigdecimal")))]
+#[test]
+fn test_money_dataframe_rust_decimal_backend() {
+    use polars::prelude::AnyValue;
+
+    let usd = Money::new(
+        Decimal::from_str("123.45").unwrap(),
+        Currency::Iso(IsoCurrency::USD),
+    )
+    .unwrap();
+
+    let df = usd.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+
+    let amount_value = df.column("amount").unwrap().get(0).unwrap();
+    match amount_value {
+        AnyValue::Decimal(value, scale) => {
+            assert_eq!(scale, 10);
+            let df_amount =
+                decimal::from_minor_units(value, u32::try_from(scale).expect("scale fits in u32"));
+            assert_eq!(df_amount, usd.amount());
+        }
+        other => panic!("expected decimal value, got {other:?}"),
+    }
+
+    let currency_value = df.column("currency").unwrap().get(0).unwrap();
+    match currency_value {
+        AnyValue::String(s) => assert_eq!(s, "USD"),
+        AnyValue::StringOwned(s) => assert_eq!(s.as_str(), "USD"),
+        other => panic!("expected string value, got {other:?}"),
+    }
+}
+
+#[cfg(all(feature = "dataframe", feature = "bigdecimal"))]
+#[test]
+fn test_money_dataframe_bigdecimal_backend() {
+    use polars::prelude::AnyValue;
+
+    let eth_amount = Decimal::from_str("1.234567890123456789012345").unwrap();
+    let eth = Money::new(eth_amount, Currency::ETH).unwrap();
+
+    let df = eth.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+
+    let amount_value = df.column("amount").unwrap().get(0).unwrap();
+    match amount_value {
+        AnyValue::Decimal(value, scale) => {
+            assert_eq!(scale, 10);
+            let df_amount =
+                decimal::from_minor_units(value, u32::try_from(scale).expect("scale fits in u32"));
+            let expected = decimal::round_dp_with_strategy(
+                &eth.amount(),
+                u32::try_from(scale).expect("scale fits in u32"),
+                RoundingStrategy::ToZero,
+            );
+            assert_eq!(df_amount, expected);
+        }
+        other => panic!("expected decimal value, got {other:?}"),
+    }
+
+    let currency_value = df.column("currency").unwrap().get(0).unwrap();
+    match currency_value {
+        AnyValue::String(s) => assert_eq!(s, "ETH"),
+        AnyValue::StringOwned(s) => assert_eq!(s.as_str(), "ETH"),
+        other => panic!("expected string value, got {other:?}"),
+    }
 }
