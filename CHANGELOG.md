@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 
 - Moved from `paft-core` to `paft-money`:
   - `Money`, `Currency`, `ExchangeRate`, `MoneyError`, `MinorUnitError`
-  - Helpers: `try_normalize_currency_code`, `currency_minor_units`, `set_currency_minor_units`, `clear_currency_minor_units`
+  - Helpers: `try_normalize_currency_code`, `currency_metadata`, `set_currency_metadata`, `clear_currency_metadata`
 - Removed `paft-core::domain::string_canonical` (moved to `paft-utils`; re-exported via `paft_core::domain::{Canonical, canonicalize, StringCode}`).
 - DataFrame traits moved to `paft-utils`:
   - Use `paft_utils::dataframe::{ToDataFrame, ToDataFrameVec}` (also re-exported via `paft_core::dataframe`).
@@ -38,17 +38,26 @@ All notable changes to this project will be documented in this file.
 - DataFrame feature wiring: `paft-core`'s `dataframe` feature now depends on `paft-utils/dataframe`; all crates import traits from `paft_utils::dataframe`.
 - `paft` facade: new `money` namespace; dataframe re-exports now come from `paft-utils`.
 - README: examples and docs reference `paft_money::{Money, Currency}`.
+- paft-money: ISO-None → metadata overlay. `Currency::decimal_places()` now:
+  - Uses the ISO exponent when present.
+  - If ISO is silent (e.g., `XAU`, `XDR`), looks up the metadata registry by ISO code.
+  - If metadata exists, uses that scale; otherwise returns `MoneyError::MetadataNotFound`.
+  - Removed `MoneyError::IsoExponentUnavailable`.
+  - Register overlays via `set_currency_metadata("XAU", "Gold", N)`.
 - Features: `panicking-money-ops` now forwards to `paft-money`.
 
 ### Migration notes
 
 - Replace imports:
-  - `paft_core::domain::{Money, Currency, ExchangeRate, MoneyError, MinorUnitError, try_normalize_currency_code, currency_minor_units, set_currency_minor_units, clear_currency_minor_units}` → `paft_money::{...}` (or `paft::money::{...}` via facade)
+  - `paft_core::domain::{Money, Currency, ExchangeRate, MoneyError, MinorUnitError, try_normalize_currency_code, currency_metadata, set_currency_metadata, clear_currency_metadata}` → `paft_money::{...}` (or `paft::money::{...}` via facade)
   - `paft_core::dataframe::{ToDataFrame, ToDataFrameVec}` → `paft_utils::dataframe::{...}` (or `paft::core::dataframe::{...}` via facade)
   - `paft_core::domain::string_canonical::Canonical` → `paft_core::domain::Canonical` or `paft_utils::Canonical`
 - If you use the facade prelude, most downstream code continues to compile; prefer `paft::prelude::{Currency, Money}`.
 - Where you previously cloned `AssetKind`, you can now copy it.
 - Pattern matching on ISO currencies should use `Currency::Iso(IsoCurrency::XXX)`.
+- For metals/funds (ISO-None), register a domain-appropriate scale:
+  - Example defaults: `XAU` 3 or 6 dp; `XDR` 6 dp; `XAG`/`XPT` often 3 dp.
+  - Use `set_currency_metadata("CODE", "Name", decimals)`; absence will yield `MetadataNotFound`.
 - If you handle parse errors for currencies, update matches to `paft_money::MoneyParseError` variants.
 
 ## [0.2.0] - 2025-09-19

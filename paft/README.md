@@ -18,13 +18,13 @@ Standardized Rust types for financial data that work with any provider—Yahoo F
 [dependencies]
 # Basic installation with all supported data types
 # default = ["market", "fundamentals"]
-paft = "0.2.0"
+paft = "0.3.0"
 
 # Or, install with all features enabled
-paft = { version = "0.2.0", features = ["dataframe"] }
+paft = { version = "0.3.0", features = ["dataframe"] }
 
 # Or, customize your installation
-paft = { version = "0.2.0", default-features = false, features = ["fundamentals", "dataframe"] }
+paft = { version = "0.3.0", default-features = false, features = ["fundamentals", "dataframe"] }
 ```
 
 ## What's Included
@@ -107,7 +107,7 @@ Enable DataFrame support for analysis:
 
 ```toml
 [dependencies]
-paft = { version = "0.2.0", features = ["dataframe"] }
+paft = { version = "0.3.0", features = ["dataframe"] }
 ```
 
 ```rust
@@ -134,7 +134,7 @@ If you explicitly want the ergonomic panicking operators, enable the
 
 ```toml
 [dependencies]
-paft = { version = "0.2.0", features = ["panicking-money-ops"] }
+paft = { version = "0.3.0", features = ["panicking-money-ops"] }
 ```
 
 Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic
