@@ -49,6 +49,12 @@ pub enum MoneyError {
         /// The currency of the money being converted.
         money_currency: Currency,
     },
+    /// Occurs when attempting to use a currency without registered metadata.
+    #[error("metadata not registered for currency {currency}")]
+    MetadataNotFound {
+        /// The currency missing metadata.
+        currency: Currency,
+    },
     /// Occurs when parsing a decimal amount fails.
     #[error("invalid decimal")]
     InvalidDecimal,
@@ -129,22 +135,30 @@ impl ExchangeRate {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct Money {
     /// The numeric value.
-    pub amount: Decimal,
+    amount: Decimal,
     /// The currency.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub currency: Currency,
+    currency: Currency,
 }
 
 impl Money {
-    /// Creates a new `Money` instance.
-    #[must_use]
-    pub const fn new(amount: Decimal, currency: Currency) -> Self {
-        Self { amount, currency }
+    /// Creates a new `Money` instance rounded to the currency's minor units.
+    ///
+    /// # Errors
+    /// Returns `MoneyError::MetadataNotFound` when metadata is not registered for a custom currency.
+    pub fn new(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
+        let rounded = Self::round_amount(amount, &currency)?;
+        Ok(Self {
+            amount: rounded,
+            currency,
+        })
     }
 
     /// Creates a new `Money` instance with zero amount and the specified currency.
-    #[must_use]
-    pub const fn zero(currency: Currency) -> Self {
+    ///
+    /// # Errors
+    /// Returns `MoneyError::MetadataNotFound` when metadata is not registered for a custom currency.
+    pub fn zero(currency: Currency) -> Result<Self, MoneyError> {
         Self::new(Decimal::ZERO, currency)
     }
 
@@ -160,25 +174,27 @@ impl Money {
         &self.currency
     }
 
-    /// Returns the amount as the smallest currency unit (minor units), if possible.
-    #[must_use]
-    pub fn as_minor_units(&self) -> Option<i128> {
-        let decimals = self.currency.decimal_places();
-        let Ok(scale) = Self::ensure_scale_within_limits(decimals) else {
-            return None;
-        };
+    /// Returns the amount as the smallest currency unit (minor units).
+    ///
+    /// # Errors
+    /// Returns `MoneyError::ConversionError` or `MoneyError::MetadataNotFound` when conversion cannot be performed.
+    pub fn as_minor_units(&self) -> Result<i128, MoneyError> {
+        let decimals = Self::decimals_for_currency(&self.currency)?;
+        let scale = Self::ensure_scale_within_limits(decimals)?;
 
         let multiplier = Decimal::from(10_i64.pow(scale));
-        (self.amount * multiplier).to_i128()
+        (self.amount * multiplier)
+            .to_i128()
+            .ok_or(MoneyError::ConversionError)
     }
 
     /// Creates a new Money instance from a string amount and currency.
     ///
     /// # Errors
     /// Returns an error when the string cannot be parsed as a decimal.
-    pub fn from_str(amount: &str, currency: Currency) -> Result<Self, rust_decimal::Error> {
-        let amount = Decimal::from_str_exact(amount)?;
-        Ok(Self::new(amount, currency))
+    pub fn from_str(amount: &str, currency: Currency) -> Result<Self, MoneyError> {
+        let amount = Decimal::from_str_exact(amount).map_err(|_| MoneyError::InvalidDecimal)?;
+        Self::new(amount, currency)
     }
 
     /// Creates a new Money instance from an integer amount in the currency's minor units.
@@ -186,9 +202,10 @@ impl Money {
     /// # Errors
     /// Returns `MoneyError::ConversionError` when the currency precision exceeds supported limits.
     pub fn from_minor_units(minor_units: i128, currency: Currency) -> Result<Self, MoneyError> {
-        let scale = Self::ensure_scale_within_limits(currency.decimal_places())?;
+        let decimals = Self::decimals_for_currency(&currency)?;
+        let scale = Self::ensure_scale_within_limits(decimals)?;
         let amount = Decimal::from_i128_with_scale(minor_units, scale);
-        Ok(Self::new(amount, currency))
+        Self::new(amount, currency)
     }
 
     /// Returns the amount as a formatted string with currency code.
@@ -208,7 +225,7 @@ impl Money {
                 found: rhs.currency.clone(),
             });
         }
-        Ok(Self::new(self.amount + rhs.amount, self.currency.clone()))
+        Self::new(self.amount + rhs.amount, self.currency.clone())
     }
 
     /// Subtraction that returns an error for currency mismatch.
@@ -222,12 +239,14 @@ impl Money {
                 found: rhs.currency.clone(),
             });
         }
-        Ok(Self::new(self.amount - rhs.amount, self.currency.clone()))
+        Self::new(self.amount - rhs.amount, self.currency.clone())
     }
 
     /// Multiplication that preserves the currency.
-    #[must_use]
-    pub fn mul(&self, rhs: Decimal) -> Self {
+    ///
+    /// # Errors
+    /// Returns `MoneyError::MetadataNotFound` when metadata is missing for the currency.
+    pub fn try_mul(&self, rhs: Decimal) -> Result<Self, MoneyError> {
         Self::new(self.amount * rhs, self.currency.clone())
     }
 
@@ -239,7 +258,7 @@ impl Money {
         if rhs.is_zero() {
             return Err(MoneyError::DivisionByZero);
         }
-        Ok(Self::new(self.amount / rhs, self.currency.clone()))
+        Self::new(self.amount / rhs, self.currency.clone())
     }
 
     /// Converts this money to another currency using the provided exchange rate and rounding strategy.
@@ -259,9 +278,10 @@ impl Money {
             });
         }
 
-        let scale = Self::ensure_scale_within_limits(rate.to.decimal_places())?;
+        let decimals = rate.to.decimal_places()?;
+        let scale = Self::ensure_scale_within_limits(decimals)?;
         let converted_amount = (self.amount * rate.rate()).round_dp_with_strategy(scale, rounding);
-        Ok(Self::new(converted_amount, rate.to.clone()))
+        Self::new(converted_amount, rate.to.clone())
     }
 
     /// Converts this money to another currency using the provided exchange rate.
@@ -285,6 +305,16 @@ impl Money {
         }
         Ok(u32::from(decimals))
     }
+
+    fn decimals_for_currency(currency: &Currency) -> Result<u8, MoneyError> {
+        currency.decimal_places()
+    }
+
+    fn round_amount(amount: Decimal, currency: &Currency) -> Result<Decimal, MoneyError> {
+        let decimals = Self::decimals_for_currency(currency)?;
+        let scale = Self::ensure_scale_within_limits(decimals)?;
+        Ok(amount.round_dp_with_strategy(scale, RoundingStrategy::MidpointAwayFromZero))
+    }
 }
 
 #[cfg(feature = "panicking-money-ops")]
@@ -307,6 +337,7 @@ impl Add for Money {
         );
 
         Self::new(lhs_amount + rhs_amount, lhs_currency)
+            .expect("matching currencies share metadata")
     }
 }
 
@@ -323,6 +354,7 @@ impl<'b> Add<&'b Money> for &Money {
         );
 
         Money::new(self.amount + rhs.amount, self.currency.clone())
+            .expect("matching currencies share metadata")
     }
 }
 
@@ -346,6 +378,7 @@ impl Sub for Money {
         );
 
         Self::new(lhs_amount - rhs_amount, lhs_currency)
+            .expect("matching currencies share metadata")
     }
 }
 
@@ -362,6 +395,7 @@ impl<'b> Sub<&'b Money> for &Money {
         );
 
         Money::new(self.amount - rhs.amount, self.currency.clone())
+            .expect("matching currencies share metadata")
     }
 }
 
@@ -370,7 +404,7 @@ impl Mul<Decimal> for Money {
     type Output = Self;
 
     fn mul(self, rhs: Decimal) -> Self::Output {
-        Self::new(self.amount * rhs, self.currency)
+        Self::new(self.amount * rhs, self.currency).expect("currency metadata available")
     }
 }
 
@@ -380,7 +414,7 @@ impl Div<Decimal> for Money {
 
     fn div(self, rhs: Decimal) -> Self::Output {
         assert!(!rhs.is_zero(), "division by zero");
-        Self::new(self.amount / rhs, self.currency)
+        Self::new(self.amount / rhs, self.currency).expect("currency metadata available")
     }
 }
 
@@ -390,6 +424,6 @@ impl Div<Decimal> for &Money {
 
     fn div(self, rhs: Decimal) -> Self::Output {
         assert!(!rhs.is_zero(), "division by zero");
-        Money::new(self.amount / rhs, self.currency.clone())
+        Money::new(self.amount / rhs, self.currency.clone()).expect("currency metadata available")
     }
 }

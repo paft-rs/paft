@@ -1,5 +1,13 @@
 //! Utilities and helpers for working with `Currency` values.
+//!
+//! This module also provides the metadata overlay registry used when ISO 4217 is
+//! silent about a currency's minor-unit exponent (e.g., metals like `XAU`, funds
+//! like `XDR`). Use [`set_currency_metadata`] to register a name and decimal
+//! places for such currencies so that [`Currency::decimal_places`](crate::currency::Currency::decimal_places)
+//! can resolve a scale. If no overlay exists, money operations that require a
+//! scale will return `MoneyError::MetadataNotFound`.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::{LazyLock, RwLock};
@@ -13,6 +21,15 @@ use crate::error::MoneyParseError;
 pub const MAX_DECIMAL_PRECISION: u8 = 28;
 /// Maximum precision that can be converted into an `i64` minor-unit scale (10^18).
 pub const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
+
+/// Metadata describing additional information for custom currencies.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CurrencyMetadata {
+    /// Human-readable name for the currency.
+    pub full_name: Cow<'static, str>,
+    /// Number of decimal places (minor units) for the currency.
+    pub minor_units: u8,
+}
 
 /// Errors that can occur when configuring minor-unit overrides.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,32 +63,40 @@ impl fmt::Display for MinorUnitError {
 
 impl std::error::Error for MinorUnitError {}
 
-/// Built-in precision overrides for commonly used non-ISO currency codes.
-const BUILTIN_MINOR_UNIT_OVERRIDES: &[(&str, u8)] = &[
-    // Stablecoins
-    ("USDC", 6),
-    ("USDT", 6),
-    // Major crypto assets
-    ("BNB", 8),
-    ("ADA", 6),
-    ("SOL", 9),
-    ("XRP", 6),
-    ("DOT", 10),
-    ("DOGE", 8),
-    ("AVAX", 8),
-    ("LINK", 8),
-    ("LTC", 8),
-    ("MATIC", 8),
-    ("UNI", 8),
+/// Built-in metadata for commonly used non-ISO currency codes.
+const BUILTIN_CURRENCY_METADATA: &[(&str, &str, u8)] = &[
+    ("USDC", "USD Coin", 6),
+    ("USDT", "Tether", 6),
+    ("BNB", "BNB", 8),
+    ("ADA", "Cardano", 6),
+    ("SOL", "Solana", 9),
+    ("XRP", "XRP", 6),
+    ("DOT", "Polkadot", 10),
+    ("DOGE", "Dogecoin", 8),
+    ("AVAX", "Avalanche", 8),
+    ("LINK", "Chainlink", 8),
+    ("LTC", "Litecoin", 8),
+    ("MATIC", "Polygon", 8),
+    ("UNI", "Uniswap", 8),
 ];
 
-static MINOR_UNIT_OVERRIDES: LazyLock<RwLock<HashMap<String, u8>>> = LazyLock::new(|| {
+static BUILTIN_METADATA: LazyLock<HashMap<String, CurrencyMetadata>> = LazyLock::new(|| {
     let mut map = HashMap::new();
-    for (code, decimals) in BUILTIN_MINOR_UNIT_OVERRIDES {
-        map.insert((*code).to_string(), *decimals);
+    for (code, full_name, decimals) in BUILTIN_CURRENCY_METADATA {
+        let canonical = canonicalize(code);
+        map.insert(
+            canonical,
+            CurrencyMetadata {
+                full_name: Cow::Borrowed(*full_name),
+                minor_units: *decimals,
+            },
+        );
     }
-    RwLock::new(map)
+    map
 });
+
+static CUSTOM_METADATA: LazyLock<RwLock<HashMap<String, CurrencyMetadata>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Attempts to normalize a currency code to a canonical variant or common `Other` value.
 ///
@@ -81,37 +106,56 @@ pub fn try_normalize_currency_code(code: &str) -> Result<Currency, MoneyParseErr
     Currency::try_from_str(code)
 }
 
-/// Returns the configured minor-unit precision for the provided currency code, if any.
-pub fn currency_minor_units(code: &str) -> Option<u8> {
-    let canonical = canonicalize(code);
-    MINOR_UNIT_OVERRIDES
-        .read()
-        .ok()
-        .and_then(|map| map.get(&canonical).copied())
-}
-
-/// Registers or updates the minor-unit precision for a currency code.
+/// Registers metadata for a custom currency.
 ///
 /// # Errors
 /// Returns a `MinorUnitError` when the requested precision exceeds supported limits.
-pub fn set_currency_minor_units(code: &str, decimals: u8) -> Result<Option<u8>, MinorUnitError> {
-    if decimals > MAX_DECIMAL_PRECISION {
-        return Err(MinorUnitError::ExceedsDecimalPrecision { decimals });
+pub fn set_currency_metadata(
+    code: &str,
+    full_name: impl Into<String>,
+    minor_units: u8,
+) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
+    if minor_units > MAX_DECIMAL_PRECISION {
+        return Err(MinorUnitError::ExceedsDecimalPrecision {
+            decimals: minor_units,
+        });
     }
-    if decimals > MAX_MINOR_UNIT_DECIMALS {
-        return Err(MinorUnitError::ExceedsMinorUnitScale { decimals });
+    if minor_units > MAX_MINOR_UNIT_DECIMALS {
+        return Err(MinorUnitError::ExceedsMinorUnitScale {
+            decimals: minor_units,
+        });
     }
 
     let canonical = canonicalize(code);
-    Ok(MINOR_UNIT_OVERRIDES
+    let full_name: String = full_name.into();
+    let metadata = CurrencyMetadata {
+        full_name: Cow::Owned(full_name),
+        minor_units,
+    };
+
+    Ok(CUSTOM_METADATA
         .write()
-        .map_or(None, |mut map| map.insert(canonical, decimals)))
+        .map_or(None, |mut map| map.insert(canonical, metadata)))
 }
 
-/// Removes any configured precision override for a currency code.
-pub fn clear_currency_minor_units(code: &str) -> Option<u8> {
+/// Retrieves metadata for a custom currency, if registered.
+pub fn currency_metadata(code: &str) -> Option<CurrencyMetadata> {
     let canonical = canonicalize(code);
-    MINOR_UNIT_OVERRIDES
+    if let Some(custom) = CUSTOM_METADATA
+        .read()
+        .ok()
+        .and_then(|map| map.get(&canonical).cloned())
+    {
+        return Some(custom);
+    }
+
+    BUILTIN_METADATA.get(&canonical).cloned()
+}
+
+/// Removes metadata for a custom currency and any associated minor-unit overrides.
+pub fn clear_currency_metadata(code: &str) -> Option<CurrencyMetadata> {
+    let canonical = canonicalize(code);
+    CUSTOM_METADATA
         .write()
         .map_or(None, |mut map| map.remove(&canonical))
 }
