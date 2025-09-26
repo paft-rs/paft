@@ -49,10 +49,7 @@ fn insider_transaction_serde_with_enums_and_timestamps() {
         position: paft_fundamentals::holders::InsiderPosition::Officer,
         transaction_type: paft_fundamentals::holders::TransactionType::Buy,
         shares: Some(1000),
-        value: Some(Money::new(
-            Decimal::new(12345, 2),
-            Currency::Iso(IsoCurrency::USD),
-        )),
+        value: Some(Money::new(Decimal::new(12345, 2), Currency::Iso(IsoCurrency::USD)).unwrap()),
         transaction_date: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         url: "https://example.com".into(),
     };

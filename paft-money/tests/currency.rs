@@ -45,11 +45,11 @@ fn currency_try_from_and_serde_reject_empty() {
 
 #[test]
 fn currency_decimal_place_expectations() {
-    assert_eq!(Currency::Iso(IsoCurrency::JPY).decimal_places(), 0);
-    assert_eq!(Currency::Iso(IsoCurrency::KRW).decimal_places(), 0);
-    assert_eq!(Currency::BTC.decimal_places(), 8);
-    assert_eq!(Currency::ETH.decimal_places(), 18);
-    assert_eq!(Currency::XMR.decimal_places(), 12);
+    assert_eq!(Currency::Iso(IsoCurrency::JPY).decimal_places().unwrap(), 0);
+    assert_eq!(Currency::Iso(IsoCurrency::KRW).decimal_places().unwrap(), 0);
+    assert_eq!(Currency::BTC.decimal_places().unwrap(), 8);
+    assert_eq!(Currency::ETH.decimal_places().unwrap(), 18);
+    assert_eq!(Currency::XMR.decimal_places().unwrap(), 12);
 }
 
 #[test]
@@ -270,7 +270,7 @@ fn assert_round_trip(case: &Case) {
     let display = case.variant.to_string();
     assert_eq!(display, case.canonical);
     assert_eq!(case.variant.code(), case.canonical);
-    assert_eq!(case.variant.full_name(), case.full_name);
+    assert_eq!(case.variant.full_name().as_ref(), case.full_name);
 
     let parsed = Currency::from_str(case.canonical).unwrap();
     assert_eq!(parsed, case.variant);

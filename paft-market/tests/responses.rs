@@ -14,19 +14,23 @@ fn candle_serialization() {
         open: Money::new(
             Decimal::from_str("100.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         high: Money::new(
             Decimal::from_str("110.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         low: Money::new(
             Decimal::from_str("95.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         close: Money::new(
             Decimal::from_str("105.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         volume: Some(1_000_000),
     };
 
@@ -42,19 +46,23 @@ fn candle_with_none_volume() {
         open: Money::new(
             Decimal::from_str("100.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         high: Money::new(
             Decimal::from_str("110.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         low: Money::new(
             Decimal::from_str("95.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         close: Money::new(
             Decimal::from_str("105.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         volume: None,
     };
 
@@ -70,7 +78,8 @@ fn action_dividend_serialization() {
         amount: Money::new(
             Decimal::from_str("0.5").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
     };
 
     let json = serde_json::to_string(&action).unwrap();
@@ -98,7 +107,8 @@ fn action_capital_gain_serialization() {
         gain: Money::new(
             Decimal::from_str("1.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
     };
 
     let json = serde_json::to_string(&action).unwrap();
@@ -137,19 +147,23 @@ fn responses_smoke() {
         open: Money::new(
             Decimal::from_str("100.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         high: Money::new(
             Decimal::from_str("110.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         low: Money::new(
             Decimal::from_str("95.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         close: Money::new(
             Decimal::from_str("105.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         volume: Some(1_000_000),
     }];
 
@@ -181,19 +195,23 @@ fn complex_nested_serialization() {
             open: Money::new(
                 Decimal::from_str("100.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            ),
+            )
+            .unwrap(),
             high: Money::new(
                 Decimal::from_str("110.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            ),
+            )
+            .unwrap(),
             low: Money::new(
                 Decimal::from_str("95.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            ),
+            )
+            .unwrap(),
             close: Money::new(
                 Decimal::from_str("105.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            ),
+            )
+            .unwrap(),
             volume: Some(1_000_000),
         }],
         actions: vec![],

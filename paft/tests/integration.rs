@@ -46,19 +46,23 @@ fn end_to_end_workflow() {
         open: Money::new(
             Decimal::from_str("100.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         high: Money::new(
             Decimal::from_str("110.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         low: Money::new(
             Decimal::from_str("95.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         close: Money::new(
             Decimal::from_str("105.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
         volume: Some(1_000_000),
     };
 
@@ -67,7 +71,8 @@ fn end_to_end_workflow() {
         amount: Money::new(
             Decimal::from_str("0.5").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        ),
+        )
+        .unwrap(),
     };
 
     let meta = HistoryMeta {
@@ -80,24 +85,23 @@ fn end_to_end_workflow() {
         actions: vec![action],
         adjusted: true,
         meta: Some(meta),
-        unadjusted_close: Some(vec![Money::new(
-            Decimal::from_str("105.0").unwrap(),
-            Currency::Iso(IsoCurrency::USD),
-        )]),
+        unadjusted_close: Some(vec![
+            Money::new(
+                Decimal::from_str("105.0").unwrap(),
+                Currency::Iso(IsoCurrency::USD),
+            )
+            .unwrap(),
+        ]),
     };
 
     // 5. Create a quote
     let quote = Quote {
         symbol: "AAPL".to_string(),
         shortname: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(
-            Decimal::from(105),
-            Currency::Iso(IsoCurrency::USD),
-        )),
-        previous_close: Some(Money::new(
-            Decimal::from(100),
-            Currency::Iso(IsoCurrency::USD),
-        )),
+        price: Some(Money::new(Decimal::from(105), Currency::Iso(IsoCurrency::USD)).unwrap()),
+        previous_close: Some(
+            Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap(),
+        ),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -105,14 +109,10 @@ fn end_to_end_workflow() {
     // 6. Create a quote update
     let quote_update = QuoteUpdate {
         symbol: "AAPL".to_string(),
-        price: Some(Money::new(
-            Decimal::from(106),
-            Currency::Iso(IsoCurrency::USD),
-        )),
-        previous_close: Some(Money::new(
-            Decimal::from(100),
-            Currency::Iso(IsoCurrency::USD),
-        )),
+        price: Some(Money::new(Decimal::from(106), Currency::Iso(IsoCurrency::USD)).unwrap()),
+        previous_close: Some(
+            Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap(),
+        ),
         ts: DateTime::from_timestamp(1_640_995_260, 0).unwrap(),
     };
 
@@ -200,14 +200,14 @@ fn serialization_workflow() {
     let quote = Quote {
         symbol: "AAPL".to_string(),
         shortname: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(
-            Decimal::from(150),
-            Currency::Iso(IsoCurrency::USD),
-        )),
-        previous_close: Some(Money::new(
-            Decimal::from(1475) / Decimal::from(10),
-            Currency::Iso(IsoCurrency::USD),
-        )),
+        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
+        previous_close: Some(
+            Money::new(
+                Decimal::from(1475) / Decimal::from(10),
+                Currency::Iso(IsoCurrency::USD),
+            )
+            .unwrap(),
+        ),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -328,7 +328,8 @@ fn action_types_workflow() {
             amount: Money::new(
                 Decimal::from_str("0.5").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            ),
+            )
+            .unwrap(),
         },
         Action::Split {
             ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
@@ -340,7 +341,8 @@ fn action_types_workflow() {
             gain: Money::new(
                 Decimal::from_str("1.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            ),
+            )
+            .unwrap(),
         },
     ];
 

@@ -12,10 +12,13 @@ fn earnings_year_to_dataframe() {
     let e = EarningsYear {
         year: 2024,
         revenue: None,
-        earnings: Some(Money::new(
-            Decimal::from(10),
-            paft_money::Currency::Iso(IsoCurrency::USD),
-        )),
+        earnings: Some(
+            Money::new(
+                Decimal::from(10),
+                paft_money::Currency::Iso(IsoCurrency::USD),
+            )
+            .unwrap(),
+        ),
     };
     let df = e.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);

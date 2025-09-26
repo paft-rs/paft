@@ -9,8 +9,8 @@ mod panicking_ops_tests {
 
     #[test]
     fn test_same_currency_arithmetic() {
-        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD));
-        let usd_50 = Money::new(Decimal::from(50), Currency::Iso(IsoCurrency::USD));
+        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let usd_50 = Money::new(Decimal::from(50), Currency::Iso(IsoCurrency::USD)).unwrap();
 
         // Addition should work
         let total = &usd_100 + &usd_50;
@@ -26,8 +26,8 @@ mod panicking_ops_tests {
     #[test]
     #[should_panic(expected = "currency mismatch")]
     fn test_different_currency_addition_panics() {
-        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD));
-        let eur_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::EUR));
+        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let eur_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::EUR)).unwrap();
 
         // Addition should panic on currency mismatch
         let _ = &usd_100 + &eur_100;
@@ -35,12 +35,16 @@ mod panicking_ops_tests {
 
     #[test]
     fn test_money_scalar_operations() {
-        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD));
+        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
 
         // Multiplication
-        let doubled = usd_100.mul(Decimal::from(2));
+        let doubled = usd_100.try_mul(Decimal::from(2)).unwrap();
         assert_eq!(doubled.amount(), Decimal::from(200));
         assert_eq!(doubled.currency(), &Currency::Iso(IsoCurrency::USD));
+
+        let try_tripled = usd_100.try_mul(Decimal::from(3)).unwrap();
+        assert_eq!(try_tripled.amount(), Decimal::from(300));
+        assert_eq!(try_tripled.currency(), &Currency::Iso(IsoCurrency::USD));
 
         // Division
         let halved = &usd_100 / Decimal::from(2);
@@ -50,8 +54,8 @@ mod panicking_ops_tests {
 
     #[test]
     fn test_money_reference_arithmetic_is_ergonomic() {
-        let lhs = Money::new(Decimal::from(125), Currency::Iso(IsoCurrency::USD));
-        let rhs = Money::new(Decimal::from(75), Currency::Iso(IsoCurrency::USD));
+        let lhs = Money::new(Decimal::from(125), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let rhs = Money::new(Decimal::from(75), Currency::Iso(IsoCurrency::USD)).unwrap();
 
         // Addition and subtraction should work on references without cloning
         let sum = &lhs + &rhs;
@@ -69,15 +73,15 @@ mod panicking_ops_tests {
 
     #[test]
     fn test_money_owned_arithmetic_is_ergonomic() {
-        let a = Money::new(Decimal::from(125), Currency::Iso(IsoCurrency::USD));
-        let b = Money::new(Decimal::from(75), Currency::Iso(IsoCurrency::USD));
+        let a = Money::new(Decimal::from(125), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let b = Money::new(Decimal::from(75), Currency::Iso(IsoCurrency::USD)).unwrap();
 
         let sum = a + b;
         assert_eq!(sum.amount(), Decimal::from(200));
         assert_eq!(sum.currency(), &Currency::Iso(IsoCurrency::USD));
 
-        let c = Money::new(Decimal::from(125), Currency::Iso(IsoCurrency::USD));
-        let d = Money::new(Decimal::from(75), Currency::Iso(IsoCurrency::USD));
+        let c = Money::new(Decimal::from(125), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let d = Money::new(Decimal::from(75), Currency::Iso(IsoCurrency::USD)).unwrap();
 
         let diff = c - d;
         assert_eq!(diff.amount(), Decimal::from(50));
@@ -87,7 +91,7 @@ mod panicking_ops_tests {
     #[test]
     #[should_panic(expected = "division by zero")]
     fn test_division_by_zero_panics() {
-        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD));
+        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
         let _ = &usd_100 / Decimal::from(0);
     }
 }
@@ -98,7 +102,7 @@ mod non_panicking_default_tests {
 
     #[test]
     fn test_non_panicking_division_uses_try_div() {
-        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD));
+        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
         assert!(usd_100.try_div(Decimal::ZERO).is_err());
         let ok = usd_100.try_div(Decimal::from(2)).unwrap();
         assert_eq!(ok.amount(), Decimal::from(50));
@@ -107,8 +111,8 @@ mod non_panicking_default_tests {
 
     #[test]
     fn test_try_add_try_sub_work_without_ops() {
-        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD));
-        let usd_50 = Money::new(Decimal::from(50), Currency::Iso(IsoCurrency::USD));
+        let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let usd_50 = Money::new(Decimal::from(50), Currency::Iso(IsoCurrency::USD)).unwrap();
         assert_eq!(
             usd_100.try_add(&usd_50).unwrap().amount(),
             Decimal::from(150)
@@ -125,8 +129,9 @@ fn test_as_minor_units_basic() {
     let usd_123_45 = Money::new(
         Decimal::from_str("123.45").unwrap(),
         Currency::Iso(IsoCurrency::USD),
-    );
-    assert_eq!(usd_123_45.as_minor_units(), Some(12345i128));
+    )
+    .unwrap();
+    assert_eq!(usd_123_45.as_minor_units().unwrap(), 12345i128);
 }
 
 #[test]
@@ -145,7 +150,7 @@ fn test_exchange_rate_creation() {
 
 #[test]
 fn test_try_convert_respects_target_precision() {
-    let jpy = Money::new(Decimal::from(1000), Currency::Iso(IsoCurrency::JPY));
+    let jpy = Money::new(Decimal::from(1000), Currency::Iso(IsoCurrency::JPY)).unwrap();
     let rate = ExchangeRate::new(
         Currency::Iso(IsoCurrency::JPY),
         Currency::Iso(IsoCurrency::USD),
@@ -157,35 +162,36 @@ fn test_try_convert_respects_target_precision() {
 
     assert_eq!(usd.currency(), &Currency::Iso(IsoCurrency::USD));
     assert_eq!(usd.amount(), Decimal::new(890, 2));
-    assert_eq!(usd.as_minor_units(), Some(890i128));
+    assert_eq!(usd.as_minor_units().unwrap(), 890i128);
 
-    let eth_ten = Money::new(Decimal::from(10), Currency::ETH);
+    let eth_ten = Money::new(Decimal::from(10), Currency::ETH).unwrap();
     assert_eq!(
-        eth_ten.as_minor_units(),
-        Some(10_000_000_000_000_000_000i128)
+        eth_ten.as_minor_units().unwrap(),
+        10_000_000_000_000_000_000i128
     );
 }
 
 #[test]
 fn test_try_convert_with_custom_rounding_strategy() {
     let eur = Money::new(
-        Decimal::from_str("1.005").unwrap(),
+        Decimal::from_str("1.00").unwrap(),
         Currency::Iso(IsoCurrency::EUR),
-    );
+    )
+    .unwrap();
     let rate = ExchangeRate::new(
         Currency::Iso(IsoCurrency::EUR),
         Currency::Iso(IsoCurrency::USD),
-        Decimal::ONE,
+        Decimal::from_str("1.015").unwrap(),
     )
     .unwrap();
 
     let default = eur.try_convert(&rate).unwrap();
-    assert_eq!(default.amount(), Decimal::from_str("1.01").unwrap());
+    assert_eq!(default.amount(), Decimal::from_str("1.02").unwrap());
 
     let toward_zero = eur
         .try_convert_with(&rate, RoundingStrategy::MidpointTowardZero)
         .unwrap();
-    assert_eq!(toward_zero.amount(), Decimal::from_str("1.00").unwrap());
+    assert_eq!(toward_zero.amount(), Decimal::from_str("1.01").unwrap());
 }
 
 #[test]
@@ -194,7 +200,7 @@ fn test_from_minor_units_large_precision() {
     let eth = Money::from_minor_units(wei, Currency::ETH).unwrap();
 
     assert_eq!(eth.currency(), &Currency::ETH);
-    assert_eq!(eth.as_minor_units(), Some(wei));
+    assert_eq!(eth.as_minor_units().unwrap(), wei);
     assert_eq!(
         eth.amount(),
         Decimal::from_str("1.234567890123456789").unwrap()
@@ -207,28 +213,28 @@ fn test_money_minor_units_boundary_precisions() {
     let jpy_minor = 42i128;
     let jpy = Money::from_minor_units(jpy_minor, Currency::Iso(IsoCurrency::JPY)).unwrap();
     assert_eq!(jpy.currency(), &Currency::Iso(IsoCurrency::JPY));
-    assert_eq!(jpy.as_minor_units(), Some(jpy_minor));
+    assert_eq!(jpy.as_minor_units().unwrap(), jpy_minor);
     assert_eq!(jpy.amount(), Decimal::from(jpy_minor));
 
     // 8 decimals (BTC)
     let sats = 12_345_678i128;
     let btc = Money::from_minor_units(sats, Currency::BTC).unwrap();
     assert_eq!(btc.currency(), &Currency::BTC);
-    assert_eq!(btc.as_minor_units(), Some(sats));
+    assert_eq!(btc.as_minor_units().unwrap(), sats);
     assert_eq!(btc.amount(), Decimal::from_str("0.12345678").unwrap());
 
     // 12 decimals (XMR)
     let atomic_units = 1_234_567_890_123i128;
     let xmr = Money::from_minor_units(atomic_units, Currency::XMR).unwrap();
     assert_eq!(xmr.currency(), &Currency::XMR);
-    assert_eq!(xmr.as_minor_units(), Some(atomic_units));
+    assert_eq!(xmr.as_minor_units().unwrap(), atomic_units);
     assert_eq!(xmr.amount(), Decimal::from_str("1.234567890123").unwrap());
 
     // 18 decimals (ETH)
     let wei = 1_000_000_000_000_000_000i128;
     let eth = Money::from_minor_units(wei, Currency::ETH).unwrap();
     assert_eq!(eth.currency(), &Currency::ETH);
-    assert_eq!(eth.as_minor_units(), Some(wei));
+    assert_eq!(eth.as_minor_units().unwrap(), wei);
     assert_eq!(eth.amount(), Decimal::from(1));
 }
 
@@ -239,6 +245,6 @@ fn test_money_respects_builtin_usdc_override() {
     let money = Money::from_minor_units(microscopic, usdc.clone()).unwrap();
 
     assert_eq!(money.currency(), &usdc);
-    assert_eq!(money.as_minor_units(), Some(microscopic));
+    assert_eq!(money.as_minor_units().unwrap(), microscopic);
     assert_eq!(money.amount(), Decimal::from_str("1.5").unwrap());
 }

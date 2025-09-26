@@ -9,19 +9,16 @@ use rust_decimal::Decimal;
 #[test]
 fn eps_trend_helpers() {
     let t = EpsTrend::new(
-        Some(Money::new(
-            Decimal::new(100, 2),
-            Currency::Iso(IsoCurrency::USD),
-        )),
+        Some(Money::new(Decimal::new(100, 2), Currency::Iso(IsoCurrency::USD)).unwrap()),
         vec![
             TrendPoint::try_new_str(
                 "7d",
-                Money::new(Decimal::new(101, 2), Currency::Iso(IsoCurrency::USD)),
+                Money::new(Decimal::new(101, 2), Currency::Iso(IsoCurrency::USD)).unwrap(),
             )
             .unwrap(),
             TrendPoint::try_new_str(
                 "30d",
-                Money::new(Decimal::new(98, 2), Currency::Iso(IsoCurrency::USD)),
+                Money::new(Decimal::new(98, 2), Currency::Iso(IsoCurrency::USD)).unwrap(),
             )
             .unwrap(),
         ],
