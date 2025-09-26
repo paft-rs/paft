@@ -16,12 +16,16 @@ thiserror = { workspace = true }
 regex = { workspace = true }
 chrono = { workspace = true }
 paft-utils = { workspace = true }
-paft-money = { workspace = true }
+paft-money = { workspace = true, default-features = false }
 paft-core = { workspace = true }
 
 [features]
-default = []
-dataframe = ["paft-utils/dataframe"]
+default = ["rust-decimal"]
+
+rust-decimal = ["paft-money/rust-decimal"]
+bigdecimal = ["paft-money/bigdecimal"]
+
+dataframe = ["paft-utils/dataframe", "paft-money/dataframe"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

@@ -22,7 +22,6 @@ paft-utils = { workspace = true }
 [features]
 default = []
 dataframe = ["paft-utils/dataframe"]
-panicking-money-ops = []
 
 [dev-dependencies]
 serde_json = { workspace = true }

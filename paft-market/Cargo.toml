@@ -19,7 +19,7 @@ chrono-tz = { workspace = true }
 paft-core = { workspace = true, features = [] }
 paft-domain = { workspace = true }
 paft-utils = { workspace = true }
-paft-money = { workspace = true }
+paft-money = { workspace = true, default-features = false }
 df-derive = { workspace = true, optional = true }
 polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde", "regex", "timezones", "diagonal_concat", "json", "rolling_window"], optional = true }
 iso_currency = { workspace = true }
@@ -27,8 +27,12 @@ bitflags = { version = "2", features = ["serde"] }
 thiserror = { workspace = true }
 
 [features]
-default = []
-dataframe = ["paft-utils/dataframe", "polars", "df-derive", "paft-core/dataframe", "paft-domain/dataframe"]
+default = ["rust-decimal"]
+
+rust-decimal = ["paft-money/rust-decimal"]
+bigdecimal = ["paft-money/bigdecimal"]
+
+dataframe = ["paft-utils/dataframe", "polars", "df-derive", "paft-core/dataframe", "paft-domain/dataframe", "paft-money/dataframe"]
 
 [dev-dependencies]
 rust_decimal = { workspace = true }

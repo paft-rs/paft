@@ -28,12 +28,15 @@ regex = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = { version = "0.10", features = ["serde"] }
 rust_decimal = { version = "1.36", features = ["serde"] }
+bigdecimal = { version = "0.4", features = ["serde"] }
+num-bigint = "0.4"
+num-traits = "0.2"
 iso_currency = "0.5"
 
 # Local crates
 paft-core = { path = "paft-core", version = "0.3.0", default-features = false }
 paft-market = { path = "paft-market", version = "0.3.0", default-features = false }
 paft-fundamentals = { path = "paft-fundamentals", version = "0.3.0", default-features = false }
-paft-money = { path = "paft-money", version = "0.3.0", default-features = false }
+paft-money = { path = "paft-money", version = "0.3.0", default-features = false}
 paft-utils = { path = "paft-utils", version = "0.3.0", default-features = false }
 paft-domain = { path = "paft-domain", version = "0.3.0", default-features = false }
