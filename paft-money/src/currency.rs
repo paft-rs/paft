@@ -174,7 +174,7 @@ impl FromStr for Currency {
             });
         }
         let token = canonicalize(trimmed);
-        let canon = token.as_str();
+        let canon = token.as_ref();
 
         if canon == "BTC" {
             return Ok(Self::BTC);

@@ -4,7 +4,11 @@
 //! [`Canonical::try_new`] to guarantee we never serialize an empty string and thus
 //! preserve serde/display round-trips.
 
-use std::{borrow::Borrow, fmt, str::FromStr};
+use std::{
+    borrow::{Borrow, Cow},
+    fmt,
+    str::FromStr,
+};
 
 /// Canonical string wrapper used for `Other` variants.
 ///
@@ -34,13 +38,21 @@ impl Canonical {
                 value: input.to_string(),
             });
         }
-        Ok(Self(token))
+        Ok(Self(token.into_owned()))
     }
 
     /// Returns the inner canonical string slice.
+    #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Consumes the `Canonical` and returns the inner `String`.
+    #[inline]
+    #[must_use]
+    pub fn into_inner(self) -> String {
+        self.0
     }
 }
 
@@ -74,36 +86,71 @@ impl FromStr for Canonical {
 ///
 /// All `Display`/serde string forms across enums are canonical tokens produced by this function.
 ///
-/// Rules:
-/// - Uppercase ASCII letters
-/// - Convert every contiguous run of non-alphanumeric characters to a single underscore `_`
-/// - Trim leading and trailing underscores
+/// # Canonical Form Contract
+///
+/// Canonical form is `[A-Z0-9]+(?:_[A-Z0-9]+)*`. Non-ASCII and non-alphanumeric characters
+/// are treated as separators. Empty after normalization → error.
+///
+/// # Canonicalization Rules
+///
+/// - **ASCII-only**: Only ASCII uppercase letters (A-Z) and digits (0-9) are preserved as-is
+/// - **Case normalization**: ASCII lowercase letters are converted to uppercase
+/// - **Separators**: All non-alphanumeric ASCII characters and Unicode codepoints become separators
+/// - **Separator handling**: Contiguous separators collapse to a single underscore `_`
+/// - **Trimming**: Leading and trailing separators are removed
+/// - **Underscores**: Multiple underscores collapse to single underscores; no leading/trailing/double underscores
+///
+/// Returns `Cow::Borrowed(input)` if `input` is already canonical; otherwise returns an owned, normalized string.
+#[inline]
 #[must_use]
-pub fn canonicalize(input: &str) -> String {
+pub fn canonicalize(input: &str) -> Cow<'_, str> {
+    // Fast path: check if input is already canonical
+    if is_canonical(input) {
+        return Cow::Borrowed(input);
+    }
+
     let mut out = String::with_capacity(input.len());
-    let mut previous_was_separator = false;
+    let mut prev_sep = true; // treat start as "just saw a separator" to skip leading seps
 
     for ch in input.chars() {
-        let mut c = ch;
-        if c.is_ascii_lowercase() {
-            c = c.to_ascii_uppercase();
-        }
-
+        let c = ch.to_ascii_uppercase();
         if c.is_ascii_alphanumeric() {
             out.push(c);
-            previous_was_separator = false;
-        } else if !previous_was_separator {
+            prev_sep = false;
+        } else if !prev_sep {
             out.push('_');
-            previous_was_separator = true;
+            prev_sep = true;
         }
     }
 
-    let trimmed = out.trim_matches('_');
-    if trimmed.len() == out.len() {
-        out
-    } else {
-        trimmed.to_string()
+    if out.ends_with('_') {
+        out.pop(); // drop trailing separator without reallocation
     }
+
+    Cow::Owned(out)
+}
+
+/// Checks if a string is already in canonical form.
+///
+/// A string is canonical if:
+/// - All characters are ASCII uppercase letters or digits
+/// - There are no consecutive non-alphanumeric characters
+/// - There are no leading or trailing underscores
+#[inline]
+fn is_canonical(input: &str) -> bool {
+    let b = input.as_bytes();
+    if b.is_empty() || b[0] == b'_' || b[b.len() - 1] == b'_' {
+        return false;
+    }
+    let mut prev = b'_';
+    for &c in b {
+        match c {
+            b'A'..=b'Z' | b'0'..=b'9' => prev = c,
+            b'_' if prev != b'_' => prev = c,
+            _ => return false,
+        }
+    }
+    true
 }
 
 /// Trait for enums that have a canonical string code.

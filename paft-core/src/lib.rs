@@ -57,7 +57,7 @@ macro_rules! __string_enum_base {
                     });
                 }
                 let token = paft_utils::canonicalize(trimmed);
-                let parsed = match token.as_str() {
+                let parsed = match token.as_ref() {
                     $( $alias => $variant, )*
                     _ => {
                         return Err($crate::error::PaftError::InvalidEnumValue {
@@ -137,7 +137,7 @@ macro_rules! __string_enum_base {
                     });
                 }
                 let token = paft_utils::canonicalize(trimmed);
-                let parsed = match token.as_str() {
+                let parsed = match token.as_ref() {
                     $( $alias => $variant, )*
                     _ => {
                         let canon = paft_utils::Canonical::try_new(trimmed)

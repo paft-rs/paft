@@ -93,7 +93,7 @@ const BUILTIN_CURRENCY_METADATA: &[(&str, &str, u8)] = &[
 static BUILTIN_METADATA: LazyLock<HashMap<String, CurrencyMetadata>> = LazyLock::new(|| {
     let mut map = HashMap::new();
     for (code, full_name, decimals) in BUILTIN_CURRENCY_METADATA {
-        let canonical = canonicalize(code);
+        let canonical = canonicalize(code).into_owned();
         map.insert(
             canonical,
             CurrencyMetadata {
@@ -146,7 +146,7 @@ pub fn set_currency_metadata(
 
     Ok(CUSTOM_METADATA
         .write()
-        .map_or(None, |mut map| map.insert(canonical, metadata)))
+        .map_or(None, |mut map| map.insert(canonical.into_owned(), metadata)))
 }
 
 /// Retrieves metadata for a custom currency, if registered.
@@ -155,12 +155,12 @@ pub fn currency_metadata(code: &str) -> Option<CurrencyMetadata> {
     if let Some(custom) = CUSTOM_METADATA
         .read()
         .ok()
-        .and_then(|map| map.get(&canonical).cloned())
+        .and_then(|map| map.get(canonical.as_ref()).cloned())
     {
         return Some(custom);
     }
 
-    BUILTIN_METADATA.get(&canonical).cloned()
+    BUILTIN_METADATA.get(canonical.as_ref()).cloned()
 }
 
 /// Removes metadata for a custom currency and any associated minor-unit overrides.
@@ -168,5 +168,5 @@ pub fn clear_currency_metadata(code: &str) -> Option<CurrencyMetadata> {
     let canonical = canonicalize(code);
     CUSTOM_METADATA
         .write()
-        .map_or(None, |mut map| map.remove(&canonical))
+        .map_or(None, |mut map| map.remove(canonical.as_ref()))
 }
