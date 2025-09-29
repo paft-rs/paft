@@ -385,6 +385,12 @@ impl Money {
     }
 }
 
+impl std::fmt::Display for Money {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", decimal_to_string(&self.amount), self.currency)
+    }
+}
+
 #[cfg(feature = "panicking-money-ops")]
 impl Add for Money {
     type Output = Self;

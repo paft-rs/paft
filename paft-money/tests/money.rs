@@ -255,6 +255,31 @@ fn test_money_respects_builtin_usdc_override() {
     assert_eq!(money.amount(), Decimal::from_str("1.5").unwrap());
 }
 
+#[test]
+fn test_money_display() {
+    let usd = Money::new(
+        Decimal::from_str("123.45").unwrap(),
+        Currency::Iso(IsoCurrency::USD),
+    )
+    .unwrap();
+    assert_eq!(format!("{}", usd), "123.45 USD");
+
+    let eur = Money::new(
+        Decimal::from_str("99.99").unwrap(),
+        Currency::Iso(IsoCurrency::EUR),
+    )
+    .unwrap();
+    assert_eq!(format!("{}", eur), "99.99 EUR");
+
+    // Test with trailing zeros removed
+    let jpy = Money::new(
+        Decimal::from_str("100.00").unwrap(),
+        Currency::Iso(IsoCurrency::JPY),
+    )
+    .unwrap();
+    assert_eq!(format!("{}", jpy), "100 JPY");
+}
+
 #[cfg(all(feature = "dataframe", not(feature = "bigdecimal")))]
 #[test]
 fn test_money_dataframe_rust_decimal_backend() {
