@@ -36,6 +36,8 @@ crate::string_enum_closed_with_code!(
     {
         "PRE" => MarketState::Pre,
         "POST" => MarketState::Post,
+        "PRE_MARKET" => MarketState::Pre,
+        "POST_MARKET" => MarketState::Post,
     }
 );
 
