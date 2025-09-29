@@ -6,10 +6,11 @@
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as DeError};
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::fmt;
 
 use crate::error::DomainError;
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 use paft_utils::Canonical;
 
 // Compile-time compiled regex patterns for Period parsing
@@ -79,6 +80,17 @@ pub enum Period {
 }
 
 impl Period {
+    /// Internal: establish a stable ordering precedence across variants.
+    /// Date < Quarter < Year < Other
+    fn type_rank(&self) -> u8 {
+        match self {
+            Self::Date(_) => 0,
+            Self::Quarter { .. } => 1,
+            Self::Year { .. } => 2,
+            Self::Other(_) => 3,
+        }
+    }
+
     /// Returns the canonical display/serde code for this period.
     #[must_use]
     pub fn code(&self) -> Cow<'_, str> {
@@ -123,6 +135,115 @@ impl Period {
     #[must_use]
     pub const fn is_date(&self) -> bool {
         matches!(self, Self::Date(_))
+    }
+
+    /// Returns the next chronological quarter bucket after this period, if applicable.
+    ///
+    /// - For `Date`, computes the quarter containing the date, then returns the next quarter.
+    /// - For `Quarter`, returns the next quarter (wrapping to Q1 of the next year).
+    /// - For `Year`, returns `Q1` of the next year.
+    /// - For `Other`, returns `None`.
+    #[must_use]
+    pub fn next_quarter(&self) -> Option<Self> {
+        match self {
+            Self::Date(d) => {
+                let (y, q) = Self::quarter_for_date(d);
+                let (ny, nq) = Self::increment_quarter(y, q);
+                Some(Self::Quarter {
+                    year: ny,
+                    quarter: nq,
+                })
+            }
+            Self::Quarter { year, quarter } => {
+                let (ny, nq) = Self::increment_quarter(*year, *quarter);
+                Some(Self::Quarter {
+                    year: ny,
+                    quarter: nq,
+                })
+            }
+            Self::Year { year } => Some(Self::Quarter {
+                year: *year + 1,
+                quarter: 1,
+            }),
+            Self::Other(_) => None,
+        }
+    }
+
+    /// Returns the last calendar date of the year this period belongs to.
+    ///
+    /// - For `Date`, uses the date's year
+    /// - For `Quarter`, uses the quarter's year
+    /// - For `Year`, uses that year
+    /// - For `Other`, returns `None`
+    #[must_use]
+    pub fn year_end(&self) -> Option<NaiveDate> {
+        let y = match self {
+            Self::Date(d) => d.year(),
+            Self::Quarter { year, .. } => *year,
+            Self::Year { year } => *year,
+            Self::Other(_) => return None,
+        };
+        NaiveDate::from_ymd_opt(y, 12, 31)
+    }
+
+    /// Returns true if both values describe the same time bucket.
+    ///
+    /// Cross-variant rules:
+    /// - Year vs Date: true if date.year == year
+    /// - Year vs Quarter: true if quarter.year == year
+    /// - Quarter vs Date: true if date falls within that quarter of that year
+    /// - Other vs Other: true if canonical strings match
+    /// - Otherwise, same-variant exact equality
+    #[must_use]
+    pub fn is_same_bucket_as(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Year { year: ay }, Self::Year { year: by }) => ay == by,
+            (Self::Year { year }, Self::Date(d)) | (Self::Date(d), Self::Year { year }) => {
+                d.year() == *year
+            }
+            (Self::Year { year }, Self::Quarter { year: qy, .. })
+            | (Self::Quarter { year: qy, .. }, Self::Year { year }) => qy == year,
+
+            (
+                Self::Quarter {
+                    year: ay,
+                    quarter: aq,
+                },
+                Self::Quarter {
+                    year: by,
+                    quarter: bq,
+                },
+            ) => ay == by && aq == bq,
+            (Self::Quarter { year, quarter }, Self::Date(d))
+            | (Self::Date(d), Self::Quarter { year, quarter }) => {
+                let (dy, dq) = Self::quarter_for_date(d);
+                dy == *year && dq == *quarter
+            }
+
+            (Self::Date(a), Self::Date(b)) => a == b,
+            (Self::Other(a), Self::Other(b)) => a.as_ref() == b.as_ref(),
+            _ => false,
+        }
+    }
+
+    fn quarter_for_date(d: &NaiveDate) -> (i32, u8) {
+        let y = d.year();
+        let m = d.month();
+        let q = match m {
+            1..=3 => 1,
+            4..=6 => 2,
+            7..=9 => 3,
+            _ => 4,
+        };
+        (y, q)
+    }
+
+    fn increment_quarter(year: i32, quarter: u8) -> (i32, u8) {
+        if quarter < 4 {
+            (year, quarter + 1)
+        } else {
+            (year + 1, 1)
+        }
     }
 }
 
@@ -207,6 +328,36 @@ impl Period {
 impl From<Period> for String {
     fn from(val: Period) -> Self {
         val.code().into_owned()
+    }
+}
+
+impl Ord for Period {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.type_rank().cmp(&other.type_rank()) {
+            Ordering::Equal => match (self, other) {
+                (Self::Date(a), Self::Date(b)) => a.cmp(b),
+                (
+                    Self::Quarter {
+                        year: ay,
+                        quarter: aq,
+                    },
+                    Self::Quarter {
+                        year: by,
+                        quarter: bq,
+                    },
+                ) => (ay, aq).cmp(&(by, bq)),
+                (Self::Year { year: ay }, Self::Year { year: by }) => ay.cmp(by),
+                (Self::Other(a), Self::Other(b)) => a.as_ref().cmp(b.as_ref()),
+                _ => Ordering::Equal,
+            },
+            ord => ord,
+        }
+    }
+}
+
+impl PartialOrd for Period {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
