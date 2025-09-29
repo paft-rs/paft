@@ -19,23 +19,38 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - features: "rust-decimal"
+            args: "--no-default-features --features full,rust-decimal,panicking-money-ops"
+          - features: "bigdecimal"
+            args: "--no-default-features --features full,bigdecimal,panicking-money-ops"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
 
       - name: Cache Cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Run clippy
-        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: Install cargo-hack
+        run: cargo install cargo-hack
+
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
+      - name: Run clippy (${{ matrix.features }})
+        run: cargo hack clippy --workspace --all-targets --ignore-unknown-features ${{ matrix.args }} -- -D warnings
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run tests
-        run: cargo test --all-targets --locked
+      - name: Run tests (${{ matrix.features }})
+        run: cargo hack nextest run --workspace --all-targets --ignore-unknown-features ${{ matrix.args }} --locked --status-level none --final-status-level none --success-output never --failure-output final --hide-progress-bar --no-tests pass
 
 
