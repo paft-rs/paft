@@ -173,19 +173,6 @@ macro_rules! __string_enum_base {
     };
 }
 
-/// Closed string enum (no `Other`), deserialization errors on unknown tokens.
-#[doc(hidden)]
-#[macro_export]
-macro_rules! string_enum_closed {
-    (
-        $Type:ident, $enum_name:literal, {
-            $( $alias:literal => $variant:path ),+ $(,)?
-        }
-    ) => {
-        $crate::__string_enum_base! { $Type, $enum_name, error, { $( $alias => $variant ),+ } }
-    };
-}
-
 /// Helper to implement Display using the type's `code()` method.
 #[doc(hidden)]
 #[macro_export]
