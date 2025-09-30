@@ -52,8 +52,8 @@ fn run_example() {
     let professional_instrument = Instrument::try_new(
         "AAPL",
         AssetKind::Equity,
-        Some("BBG000B9XRY4".to_string()), // FIGI
-        Some("US0378331005"),             // ISIN
+        Some("BBG000B9XRY4"), // FIGI
+        Some("US0378331005"), // ISIN
         Some(Exchange::NASDAQ),
     )
     .expect("valid professional instrument");

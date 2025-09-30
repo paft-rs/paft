@@ -18,6 +18,35 @@ mod feature_enabled {
     }
 
     #[test]
+    fn deserialize_requires_valid_isin() {
+        let json = r#"{
+            "figi": null,
+            "isin": "US0378331006",
+            "symbol": "AAPL",
+            "exchange": null,
+            "kind": "EQUITY"
+        }"#;
+
+        let err = serde_json::from_str::<Instrument>(json)
+            .expect_err("invalid ISIN should be rejected during deserialize");
+        assert!(err.to_string().contains("Invalid ISIN"));
+    }
+
+    #[test]
+    fn deserialize_normalizes_loose_isin() {
+        let json = r#"{
+            "figi": null,
+            "isin": "us-037833-1005 ",
+            "symbol": "AAPL",
+            "exchange": null,
+            "kind": "EQUITY"
+        }"#;
+
+        let instrument: Instrument = serde_json::from_str(json).expect("valid loose ISIN");
+        assert_eq!(instrument.isin(), Some("US0378331005"));
+    }
+
+    #[test]
     fn try_set_isin_normalizes_loose_input() {
         let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
         instrument
@@ -64,21 +93,34 @@ mod feature_disabled {
     use paft_domain::{AssetKind, Instrument, instrument::is_valid_isin};
 
     #[test]
-    fn try_set_isin_uppercases_and_trims() {
+    fn try_set_isin_scrubs_and_uppercases() {
         let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
         instrument
             .try_set_isin(" us-037833-1005 ")
-            .expect("feature disabled accepts any value");
-        assert_eq!(instrument.isin(), Some("US-037833-1005"));
+            .expect("feature disabled scrubs separators and allows value");
+        assert_eq!(instrument.isin(), Some("US0378331005"));
     }
 
     #[test]
-    fn try_set_isin_always_accepts_values() {
+    fn try_set_isin_accepts_non_empty_values() {
         let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
         instrument
             .try_set_isin("invalid!!!")
-            .expect("feature disabled accepts invalid forms");
-        assert_eq!(instrument.isin(), Some("INVALID!!!"));
+            .expect("feature disabled accepts non-empty forms");
+        assert_eq!(instrument.isin(), Some("INVALID"));
+    }
+
+    #[test]
+    fn try_set_isin_rejects_empty_after_scrub() {
+        let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
+        let err = instrument
+            .try_set_isin("   ---   ")
+            .expect_err("scrubbed empty strings are rejected");
+        assert!(matches!(
+            err,
+            paft_domain::DomainError::InvalidIsin { value }
+                if value == "   ---   "
+        ));
     }
 
     #[test]
@@ -93,5 +135,35 @@ mod feature_disabled {
         assert!(is_valid_isin("US0378331005"));
         assert!(is_valid_isin("us-037833-1005"));
         assert!(!is_valid_isin("   ---   "));
+    }
+
+    #[test]
+    fn deserialize_scrubs_and_uppercases() {
+        let json = r#"{
+            "figi": null,
+            "isin": " us-037833-1005 ",
+            "symbol": "AAPL",
+            "exchange": null,
+            "kind": "EQUITY"
+        }"#;
+
+        let instrument: Instrument =
+            serde_json::from_str(json).expect("feature disabled normalization");
+        assert_eq!(instrument.isin(), Some("US0378331005"));
+    }
+
+    #[test]
+    fn deserialize_rejects_empty_after_scrub() {
+        let json = r#"{
+            "figi": null,
+            "isin": "---",
+            "symbol": "AAPL",
+            "exchange": null,
+            "kind": "EQUITY"
+        }"#;
+
+        let err = serde_json::from_str::<Instrument>(json)
+            .expect_err("empty after scrub should be rejected");
+        assert!(err.to_string().contains("Invalid ISIN"));
     }
 }

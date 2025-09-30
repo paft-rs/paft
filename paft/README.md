@@ -27,6 +27,20 @@ paft = { version = "0.3.0", features = ["dataframe"] }
 paft = { version = "0.3.0", default-features = false, features = ["fundamentals", "dataframe"] }
 ```
 
+## Feature Flags
+
+All features are optional—disable the defaults (`default-features = false`) and opt back into what you need.
+
+- `domain` *(default)*: exposes instrument, exchange, period, and other domain models.
+- `market` *(default, enables `domain`)*: markets and history types such as `Quote`, `Candle`, and `HistoryRequest`.
+- `fundamentals` *(default, enables `domain`)*: fundamentals, ESG, and ownership data structures.
+- `rust-decimal` *(default)*: uses `rust_decimal` as the money backend; mutually exclusive with `bigdecimal`.
+- `bigdecimal`: swaps the money backend to `BigDecimal` when you require arbitrary precision.
+- `dataframe`: forwards DataFrame support from `paft-utils`, providing `ToDataFrame`/`ToDataFrameVec`.
+- `full`: convenience bundle for `domain`, `market`, `fundamentals`, and `dataframe`.
+- `panicking-money-ops`: re-enables `Money` arithmetic operators that panic on mismatched currencies (see below).
+- `isin-validate`: forwards to `paft-domain/isin-validate`, enabling ISIN checksum validation and normalization everywhere (including deserialization).
+
 ## What's Included
 
 ### Core Types
@@ -58,7 +72,7 @@ use paft::{
 let apple = Instrument::try_new(
     "AAPL",
     AssetKind::Equity,
-    Some("BBG000B9XRY4".to_string()), // FIGI (best)
+    Some("BBG000B9XRY4"), // FIGI (best)
     Some("US0378331005"),            // ISIN
     Some(Exchange::NASDAQ),
 )

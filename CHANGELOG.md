@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Facade (`paft`) adds a `money` module and re-exports dataframe traits; domain types are behind `feature = "domain"`.
 - Currency now backed by `iso_currency` for ISO 4217; combined with `rust_decimal` (default) or `bigdecimal` (opt-in) in `paft-money` for a robust money type supporting fiat, crypto, and provider-specific codes.
 - Most users can keep using the `paft` facade; advanced users can depend on `paft-money`/`paft-utils` directly for a smaller dependency graph.
+- Feature-gated ISIN validation and normalization in `paft-domain` (forwarded by the facade via `feature = "isin-validate"`). `Instrument::try_new` replaces `new` to surface validation errors where enabled.
 
 ### Breaking changes
 
@@ -24,6 +25,8 @@ All notable changes to this project will be documented in this file.
 - DataFrame traits now live in `paft-utils`; `paft-core` re-exports them under `paft_core::dataframe` when the `dataframe` feature is enabled.
 - The `paft` facade now exposes `paft::money::{Currency, Money, ExchangeRate, ...}` and re-exports `IsoCurrency`.
 - Currency parse errors now originate from `paft-money` (`paft_money::MoneyParseError`).
+- `paft-domain::Instrument::new(...)` is replaced by `Instrument::try_new(...) -> Result<Instrument, DomainError>`.
+- `Instrument::try_new` signature change: the `figi` parameter is now `Option<&str>` (was `Option<String>`). Internally it is stored as `String`.
 
 ### Added
 
@@ -31,6 +34,12 @@ All notable changes to this project will be documented in this file.
 - `AssetKind` and `MarketState` now implement `Copy`.
 - `SearchRequest::kind()` is `const` and returns by value.
 - ISO 4217 integration via `iso_currency` across currency parsing, display names, and exponents.
+
+- Optional ISIN validation in `paft-domain` behind `feature = "isin-validate"`; validation is provided by the new optional dependency `isin`.
+- Facade (`paft`) forwards `isin-validate` to `paft-domain` so you can enable it at the top level.
+- New error variant: `DomainError::InvalidIsin`.
+- ISIN helpers in `paft-domain::instrument`: `normalize_isin_strict(&str) -> Result<String, DomainError>` and `is_valid_isin(&str) -> bool` (feature-aware behavior).
+- New `Instrument` APIs: `try_set_isin(&str) -> Result<(), DomainError>`, `try_with_isin(&str) -> Result<Self, DomainError>`, and `set_isin_unchecked(String)`.
 
 ### Changed
 
@@ -45,6 +54,10 @@ All notable changes to this project will be documented in this file.
   - Register overlays via `set_currency_metadata("XAU", "Gold", N)`.
 - Feature forwarding: `panicking-money-ops` is provided by `paft-money` and forwarded by the facade.
 
+- ISIN normalization: inputs are always scrubbed to uppercase ASCII alphanumerics and must not be empty. With `isin-validate` enabled, the cleaned value is additionally validated using the `isin` crate. Invalid inputs return `DomainError::InvalidIsin` from `try_new`/`try_set_isin`.
+- ISIN-aware deserialization: `Instrument` now normalizes/validates the optional `isin` field during `Deserialize`, ensuring the `isin-validate` feature applies to incoming JSON as well.
+- Docs and examples updated to use `Instrument::try_new(...).expect("valid instrument")` where appropriate.
+
 ### Migration notes
 
 - Replace imports:
@@ -56,6 +69,11 @@ All notable changes to this project will be documented in this file.
 - Pattern match ISO currencies as `Currency::Iso(IsoCurrency::XXX)`.
 - For metals/funds (ISO-None), register a domain-appropriate scale; absence yields `MetadataNotFound`.
 - If you handle parse errors for currencies, update matches to `paft_money::MoneyParseError` variants.
+
+- Replace `Instrument::new(...)` with `Instrument::try_new(...)`. Handle the `Result` with `?`, `expect`, or a match. Example: `let inst = Instrument::try_new("AAPL", AssetKind::Equity, Some(figi), Some("US0378331005"), Some(Exchange::NASDAQ))?;`.
+- Update call sites passing a FIGI: use borrowed strings, e.g., replace `Some("BBG000B9XRY4".to_string())` with `Some("BBG000B9XRY4")`.
+- Enable `features = ["isin-validate"]` on `paft` or `paft-domain` to require checksum validation. Without it, values are still scrubbed to uppercase ASCII alphanumerics and must be non-empty, but no checksum is enforced.
+- If you match on `DomainError`, add a case for `InvalidIsin` when using ISIN-aware constructors or setters.
 
 ## [0.2.0] - 2025-09-19
 
