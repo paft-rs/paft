@@ -74,9 +74,11 @@ pub enum Exchange {
     /// Warsaw Stock Exchange
     WSE,
     /// Prague Stock Exchange
-    PSE,
+    #[allow(non_camel_case_types)]
+    PSE_CZ,
     /// Budapest Stock Exchange
-    BSE,
+    #[allow(non_camel_case_types)]
+    BSE_HU,
     /// Moscow Exchange
     MOEX,
     /// Istanbul Stock Exchange
@@ -86,7 +88,7 @@ pub enum Exchange {
     /// Tel Aviv Stock Exchange
     TASE,
     /// Bombay Stock Exchange
-    BseIndia,
+    BSE,
     /// National Stock Exchange of India
     NSE,
     /// Korea Exchange
@@ -98,7 +100,7 @@ pub enum Exchange {
     /// Bursa Malaysia
     KLSE,
     /// Philippine Stock Exchange
-    PsePhil,
+    PSE,
     /// Indonesia Stock Exchange
     IDX,
     /// Ho Chi Minh Stock Exchange
@@ -154,8 +156,8 @@ impl Exchange {
                 | Self::STO
                 | Self::CPH
                 | Self::WSE
-                | Self::PSE
-                | Self::BSE
+                | Self::PSE_CZ
+                | Self::BSE_HU
         )
     }
 
@@ -188,19 +190,19 @@ impl Exchange {
             Self::STO => "Stockholm Stock Exchange",
             Self::CPH => "Copenhagen Stock Exchange",
             Self::WSE => "Warsaw Stock Exchange",
-            Self::PSE => "Prague Stock Exchange",
-            Self::BSE => "Budapest Stock Exchange",
+            Self::PSE_CZ => "Prague Stock Exchange",
+            Self::BSE_HU => "Budapest Stock Exchange",
             Self::MOEX => "Moscow Exchange",
             Self::BIST => "Istanbul Stock Exchange",
             Self::JSE => "Johannesburg Stock Exchange",
             Self::TASE => "Tel Aviv Stock Exchange",
-            Self::BseIndia => "Bombay Stock Exchange",
+            Self::BSE => "Bombay Stock Exchange",
             Self::NSE => "National Stock Exchange of India",
             Self::KRX => "Korea Exchange",
             Self::SGX => "Singapore Exchange",
             Self::SET => "Stock Exchange of Thailand",
             Self::KLSE => "Bursa Malaysia",
-            Self::PsePhil => "Philippine Stock Exchange",
+            Self::PSE => "Philippine Stock Exchange",
             Self::IDX => "Indonesia Stock Exchange",
             Self::HOSE => "Ho Chi Minh Stock Exchange",
             Self::Other(code) => code.as_ref(),
@@ -237,28 +239,27 @@ crate::string_enum_with_code!(
         "STO" => Exchange::STO,
         "CPH" => Exchange::CPH,
         "WSE" => Exchange::WSE,
-        "PSE_CZ" => Exchange::PSE,
-        "BSE" => Exchange::BSE,
+        "PSE_CZ" => Exchange::PSE_CZ,
+        "BSE_HU" => Exchange::BSE_HU,
         "MOEX" => Exchange::MOEX,
         "BIST" => Exchange::BIST,
         "JSE" => Exchange::JSE,
         "TASE" => Exchange::TASE,
-        "BSE_IND" => Exchange::BseIndia,
+        "BSE" => Exchange::BSE,
         "NSE" => Exchange::NSE,
         "KRX" => Exchange::KRX,
         "SGX" => Exchange::SGX,
         "SET" => Exchange::SET,
         "KLSE" => Exchange::KLSE,
-        "PSE_PH" => Exchange::PsePhil,
+        "PSE" => Exchange::PSE,
         "IDX" => Exchange::IDX,
         "HOSE" => Exchange::HOSE
     },
     {
         // Provider aliases
         "EURONEXT_PARIS" => Exchange::EPA,
-        "PSE" => Exchange::PSE,
-        "BOMBAY" => Exchange::BseIndia,
-        "BSE_INDIA" => Exchange::BseIndia
+        "BOMBAY" => Exchange::BSE,
+        "BSE_INDIA" => Exchange::BSE
     }
 );
 

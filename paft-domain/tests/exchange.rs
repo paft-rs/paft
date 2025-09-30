@@ -35,10 +35,10 @@ fn exchange_other_values_uppercase_and_round_trip() {
 #[test]
 fn exchange_is_european_checks_geography() {
     assert!(Exchange::Euronext.is_european_exchange());
-    assert!(Exchange::BSE.is_european_exchange()); // Budapest
-    assert!(Exchange::PSE.is_european_exchange()); // Prague
-    assert!(!Exchange::BseIndia.is_european_exchange());
-    assert!(!Exchange::PsePhil.is_european_exchange());
+    assert!(Exchange::BSE_HU.is_european_exchange()); // Budapest
+    assert!(Exchange::PSE_CZ.is_european_exchange()); // Prague
+    assert!(!Exchange::BSE.is_european_exchange());
+    assert!(!Exchange::PSE.is_european_exchange());
 }
 
 #[allow(clippy::too_many_lines)]
@@ -197,14 +197,14 @@ fn cases() -> Vec<Case> {
             aliases: &[],
         },
         Case {
-            variant: PSE,
+            variant: PSE_CZ,
             canonical: "PSE_CZ",
             full_name: "Prague Stock Exchange",
-            aliases: &["PSE"],
+            aliases: &[],
         },
         Case {
-            variant: BSE,
-            canonical: "BSE",
+            variant: BSE_HU,
+            canonical: "BSE_HU",
             full_name: "Budapest Stock Exchange",
             aliases: &[],
         },
@@ -233,8 +233,8 @@ fn cases() -> Vec<Case> {
             aliases: &[],
         },
         Case {
-            variant: BseIndia,
-            canonical: "BSE_IND",
+            variant: BSE,
+            canonical: "BSE",
             full_name: "Bombay Stock Exchange",
             aliases: &["BOMBAY", "BSE INDIA"],
         },
@@ -269,8 +269,8 @@ fn cases() -> Vec<Case> {
             aliases: &[],
         },
         Case {
-            variant: PsePhil,
-            canonical: "PSE_PH",
+            variant: PSE,
+            canonical: "PSE",
             full_name: "Philippine Stock Exchange",
             aliases: &[],
         },
