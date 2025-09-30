@@ -55,6 +55,7 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
                 assert_eq!(value, (*input).to_string());
             }
             DomainError::InvalidPeriodFormat { .. } => unreachable!(),
+            DomainError::InvalidIsin { .. } => unreachable!(),
         }
     }
 }

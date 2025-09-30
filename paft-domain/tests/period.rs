@@ -66,6 +66,7 @@ fn period_invalid_matches_raise_error() {
                 assert_eq!(format, invalid);
             }
             DomainError::InvalidExchangeValue { .. } => unreachable!(),
+            DomainError::InvalidIsin { .. } => unreachable!(),
         }
     }
 }

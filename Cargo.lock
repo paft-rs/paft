@@ -1223,6 +1223,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "isin"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19bcf2544150282ebe712b4615813c1986bb014564928b1c4a4a567402d6bf02"
+
+[[package]]
 name = "iso_country"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1530,6 +1536,7 @@ name = "paft-domain"
 version = "0.3.0"
 dependencies = [
  "chrono",
+ "isin",
  "paft-core",
  "paft-money",
  "paft-utils",

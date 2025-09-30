@@ -49,13 +49,14 @@ fn run_example() {
 
     // Example 2: Professional data provider (all identifiers)
     println!("2. Professional Data Provider (All Identifiers):");
-    let professional_instrument = Instrument::new(
+    let professional_instrument = Instrument::try_new(
         "AAPL",
         AssetKind::Equity,
         Some("BBG000B9XRY4".to_string()), // FIGI
-        Some("US0378331005".to_string()), // ISIN
+        Some("US0378331005"),             // ISIN
         Some(Exchange::NASDAQ),
-    );
+    )
+    .expect("valid professional instrument");
 
     println!("   Symbol: {}", professional_instrument.symbol());
     println!("   FIGI: {:?}", professional_instrument.figi());
@@ -75,13 +76,14 @@ fn run_example() {
 
     // Example 3: European provider (ISIN + symbol + exchange)
     println!("3. European Provider (ISIN + Symbol + Exchange):");
-    let european_instrument = Instrument::new(
+    let european_instrument = Instrument::try_new(
         "ASML",
         AssetKind::Equity,
-        None,                             // No FIGI
-        Some("NL0010273215".to_string()), // ISIN
+        None,                 // No FIGI
+        Some("NL0010273215"), // ISIN
         Some(Exchange::Euronext),
-    );
+    )
+    .expect("valid european instrument");
 
     println!("   Symbol: {}", european_instrument.symbol());
     println!("   FIGI: {:?}", european_instrument.figi());

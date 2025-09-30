@@ -55,13 +55,14 @@ use paft::{
 };
 
 // Create instruments with different levels of identification
-let apple = Instrument::new(
+let apple = Instrument::try_new(
     "AAPL",
     AssetKind::Equity,
     Some("BBG000B9XRY4".to_string()), // FIGI (best)
-    Some("US0378331005".to_string()), // ISIN  
+    Some("US0378331005"),            // ISIN
     Some(Exchange::NASDAQ),
-);
+)
+.expect("valid instrument");
 
 let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto);
 

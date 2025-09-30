@@ -1,8 +1,50 @@
 //! Instrument identifier and asset classification domain types.
 
 use super::Exchange;
+use crate::DomainError;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, str::FromStr};
+
+fn scrub_isin(s: &str) -> String {
+    s.chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect::<String>()
+}
+
+#[cfg(feature = "isin-validate")]
+fn normalize_isin(input: &str) -> Result<String, DomainError> {
+    let cleaned = scrub_isin(input);
+    match ::isin::parse_loose(&cleaned) {
+        Ok(_) => Ok(cleaned.trim().to_ascii_uppercase()),
+        Err(_) => Err(DomainError::InvalidIsin {
+            value: input.to_string(),
+        }),
+    }
+}
+
+#[cfg(not(feature = "isin-validate"))]
+fn normalize_isin(input: &str) -> Result<String, DomainError> {
+    Ok(input.trim().to_ascii_uppercase())
+}
+
+#[cfg(feature = "isin-validate")]
+/// Returns `true` if the input parses as a valid ISIN after separators are scrubbed.
+pub fn is_valid_isin(s: &str) -> bool {
+    let cleaned = scrub_isin(s);
+    ::isin::parse_loose(&cleaned).is_ok()
+}
+
+#[cfg(not(feature = "isin-validate"))]
+/// Returns `true` when the scrubbed input still contains ASCII alphanumeric characters.
+pub fn is_valid_isin(s: &str) -> bool {
+    let cleaned = scrub_isin(s);
+    !cleaned.is_empty()
+}
+
+/// Normalizes an ISIN and applies validation based on the active feature configuration.
+pub fn normalize_isin_strict(s: &str) -> Result<String, DomainError> {
+    normalize_isin(s)
+}
 
 /// Kinds of financial instruments
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -122,22 +164,48 @@ pub struct Instrument {
 }
 
 impl Instrument {
-    /// Construct a new `Instrument` with all available identifiers.
-    /// This is the primary constructor for creating instruments with complete identification.
-    pub fn new(
+    /// `set_isin_unchecked` bypasses normalization/validation in all configurations.
+    pub fn set_isin_unchecked(&mut self, isin: impl Into<String>) {
+        self.isin = Some(isin.into());
+    }
+
+    /// When the `isin-validate` feature is enabled, values are validated and normalized; invalid values cause an error.
+    /// When the feature is disabled, values are only uppercased/trimmed and always accepted.
+    pub fn try_set_isin(&mut self, isin: &str) -> Result<(), DomainError> {
+        let normalized = normalize_isin(isin)?;
+        self.isin = Some(normalized);
+        Ok(())
+    }
+
+    /// Try to set the ISIN while consuming and returning the instrument.
+    pub fn try_with_isin(mut self, isin: &str) -> Result<Self, DomainError> {
+        self.try_set_isin(isin)?;
+        Ok(self)
+    }
+
+    /// Construct a new `Instrument` with validation-aware ISIN handling.
+    /// When the `isin-validate` feature is enabled, values are validated and normalized; invalid values cause an error.
+    /// When the feature is disabled, values are only uppercased/trimmed and always accepted.
+    pub fn try_new(
         symbol: impl Into<String>,
         kind: AssetKind,
         figi: Option<String>,
-        isin: Option<String>,
+        isin: Option<&str>,
         exchange: Option<Exchange>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, DomainError> {
+        let mut instrument = Self {
             figi,
-            isin,
+            isin: None,
             symbol: symbol.into(),
             exchange,
             kind,
+        };
+
+        if let Some(isin_value) = isin {
+            instrument.try_set_isin(isin_value)?;
         }
+
+        Ok(instrument)
     }
 
     /// Construct a new `Instrument` with just a symbol and kind (backward compatibility).

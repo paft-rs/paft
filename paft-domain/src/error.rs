@@ -20,4 +20,11 @@ pub enum DomainError {
         /// The invalid exchange token.
         value: String,
     },
+
+    /// Invalid ISIN encountered while parsing or validating.
+    #[error("Invalid ISIN: '{value}'")]
+    InvalidIsin {
+        /// The original invalid ISIN input.
+        value: String,
+    },
 }

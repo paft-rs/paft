@@ -19,6 +19,4 @@ pub use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
 pub use paft_utils::{Canonical, CanonicalError, StringCode, canonicalize};
 
-pub use paft_core::{
-    impl_display_via_code, string_enum_closed_with_code, string_enum_with_code,
-};
+pub use paft_core::{impl_display_via_code, string_enum_closed_with_code, string_enum_with_code};

@@ -25,13 +25,14 @@ fn end_to_end_workflow() {
         .unwrap();
 
     // 2. Create an instrument from search results
-    let instrument = Instrument::new(
+    let instrument = Instrument::try_new(
         "AAPL",
         AssetKind::Equity,
         Some("BBG000B9XRY4".to_string()),
         None,
         Some(Exchange::NASDAQ),
-    );
+    )
+    .expect("valid instrument");
     assert_eq!(instrument.symbol(), "AAPL");
     assert_eq!(instrument.kind(), &AssetKind::Equity);
 
@@ -251,13 +252,14 @@ fn asset_kind_workflow() {
 
     // Test that each asset kind can be used in an instrument
     for asset_kind in asset_kinds {
-        let instrument = Instrument::new(
+        let instrument = Instrument::try_new(
             "TEST",
             asset_kind,
             Some("BBG000B9XRY7".to_string()),
             None,
             Some(Exchange::try_from_str("TEST").unwrap()),
-        );
+        )
+        .expect("valid instrument for asset kind");
         assert_eq!(instrument.kind(), &asset_kind);
 
         // Test serialization
