@@ -6,58 +6,55 @@ All notable changes to this project will be documented in this file.
 
 ### Highlights
 
-- Split money/currency and utilities into dedicated crates for clearer boundaries and optionality:
+- Split money/currency and shared utilities into dedicated crates for clearer boundaries and optionality:
   - `paft-money`: `Money`, `Currency`, `ExchangeRate`, errors, and currency helpers
   - `paft-utils`: canonical string utilities and dataframe traits
-- Facade updated to expose a `money` module and to re-export dataframe traits from `paft-utils`.
-- Currency now backed by `iso_currency` for ISO 4217; combined with `rust_decimal` in `paft-money` for a robust money type that supports fiat, crypto, and provider-specific codes.
-- Most users can keep using the `paft` facade; advanced users can depend on `paft-money` directly for a smaller, focused dependency graph.
+  - `paft-domain`: core domain types (`Exchange`, `Instrument`, `MarketState`, `Period`) and macro re-exports
+- Facade (`paft`) adds a `money` module and re-exports dataframe traits; domain types are behind `feature = "domain"`.
+- Currency now backed by `iso_currency` for ISO 4217; combined with `rust_decimal` (default) or `bigdecimal` (opt-in) in `paft-money` for a robust money type supporting fiat, crypto, and provider-specific codes.
+- Most users can keep using the `paft` facade; advanced users can depend on `paft-money`/`paft-utils` directly for a smaller dependency graph.
 
 ### Breaking changes
 
-- Moved from `paft-core` to `paft-money`:
-  - `Money`, `Currency`, `ExchangeRate`, `MoneyError`, `MinorUnitError`
-  - Helpers: `try_normalize_currency_code`, `currency_metadata`, `set_currency_metadata`, `clear_currency_metadata`
-- Removed `paft-core::domain::string_canonical` (moved to `paft-utils`; re-exported via `paft_core::domain::{Canonical, canonicalize, StringCode}`).
-- DataFrame traits moved to `paft-utils`:
-  - Use `paft_utils::dataframe::{ToDataFrame, ToDataFrameVec}` (also re-exported via `paft_core::dataframe`).
-- `paft` facade now exposes `paft::money::{Currency, Money, ExchangeRate, ...}`; prelude routes these through the new module.
-- `Currency` ISO support now uses `iso_currency::Currency` for its ISO variant: match as `Currency::Iso(IsoCurrency::USD)` instead of any prior ad-hoc ISO representation.
-- Currency parse errors now originate from `paft-money` (`paft_money::MoneyParseError`), not `paft-core`.
+- Types moved from `paft-core`:
+  - To `paft-money`: `Money`, `Currency`, `ExchangeRate`, `MoneyError`, `MinorUnitError`, and helpers `try_normalize_currency_code`, `currency_metadata`, `set_currency_metadata`, `clear_currency_metadata`.
+  - To `paft-utils`: canonical string utilities (`Canonical`, `StringCode`, `canonicalize`).
+  - To `paft-domain`: surface domain enums/structs and macro re-exports.
+- `string_canonical` is no longer under `paft-core::domain`; import from `paft-utils` (or via `paft-domain`/facade).
+- DataFrame traits now live in `paft-utils`; `paft-core` re-exports them under `paft_core::dataframe` when the `dataframe` feature is enabled.
+- The `paft` facade now exposes `paft::money::{Currency, Money, ExchangeRate, ...}` and re-exports `IsoCurrency`.
+- Currency parse errors now originate from `paft-money` (`paft_money::MoneyParseError`).
 
 ### Added
 
-- New crates: `paft-money`, `paft-utils` (added to workspace members).
+- New crates: `paft-money`, `paft-utils`, `paft-domain` (workspace members).
 - `AssetKind` and `MarketState` now implement `Copy`.
 - `SearchRequest::kind()` is `const` and returns by value.
 - ISO 4217 integration via `iso_currency` across currency parsing, display names, and exponents.
 
 ### Changed
 
-- Workspace: Version bumped to 0.3.0; `df-derive` updated to 0.1.1.
-- DataFrame feature wiring: `paft-core`'s `dataframe` feature now depends on `paft-utils/dataframe`; all crates import traits from `paft_utils::dataframe`.
+- Workspace version bumped to 0.3.0; `df-derive` updated to 0.1.1.
+- DataFrame feature wiring: `paft-core`'s `dataframe` feature now depends on `paft-utils/dataframe`; crates import traits from `paft_utils::dataframe`.
 - `paft` facade: new `money` namespace; dataframe re-exports now come from `paft-utils`.
-- README: examples and docs reference `paft_money::{Money, Currency}`.
-- paft-money: ISO-None → metadata overlay. `Currency::decimal_places()` now:
-  - Uses the ISO exponent when present.
-  - If ISO is silent (e.g., `XAU`, `XDR`), looks up the metadata registry by ISO code.
-  - If metadata exists, uses that scale; otherwise returns `MoneyError::MetadataNotFound`.
-  - Removed `MoneyError::IsoExponentUnavailable`.
+- `paft-domain::Exchange` canonical tokens clarified: `Exchange::BSE` now maps to Bombay (`"BSE"`), `Exchange::PSE` to the Philippines (`"PSE"`), dedicated `Exchange::PSE_CZ` / `Exchange::BSE_HU` variants cover Prague/Budapest, and legacy `BSE_IND` / `PSE_PH` canonical strings plus the Prague `"PSE"` alias were removed.
+- `paft-money` policy for ISO currencies without an exponent:
+  - Use the ISO exponent when present.
+  - If ISO is silent (e.g., `XAU`, `XDR`), consult the metadata registry by ISO code.
+  - If metadata exists, use that scale; otherwise return `MoneyError::MetadataNotFound`.
   - Register overlays via `set_currency_metadata("XAU", "Gold", N)`.
-- Features: `panicking-money-ops` now forwards to `paft-money`.
+- Feature forwarding: `panicking-money-ops` is provided by `paft-money` and forwarded by the facade.
 
 ### Migration notes
 
 - Replace imports:
-  - `paft_core::domain::{Money, Currency, ExchangeRate, MoneyError, MinorUnitError, try_normalize_currency_code, currency_metadata, set_currency_metadata, clear_currency_metadata}` → `paft_money::{...}` (or `paft::money::{...}` via facade)
-  - `paft_core::dataframe::{ToDataFrame, ToDataFrameVec}` → `paft_utils::dataframe::{...}` (or `paft::core::dataframe::{...}` via facade)
-  - `paft_core::domain::string_canonical::Canonical` → `paft_core::domain::Canonical` or `paft_utils::Canonical`
+  - `paft_core::{Money, Currency, ExchangeRate, MoneyError, MinorUnitError, try_normalize_currency_code, currency_metadata, set_currency_metadata, clear_currency_metadata}` → `paft_money::{...}` (or `paft::money::{...}` via facade)
+  - DataFrame traits: `paft_core::dataframe::{ToDataFrame, ToDataFrameVec}` → `paft_utils::dataframe::{...}` (or `paft::core::dataframe::{...}` via facade)
+  - Canonical strings: `paft_core::domain::string_canonical::*` → `paft_utils::*` (or `paft::domain::{Canonical, canonicalize, StringCode}`)
 - If you use the facade prelude, most downstream code continues to compile; prefer `paft::prelude::{Currency, Money}`.
 - Where you previously cloned `AssetKind`, you can now copy it.
-- Pattern matching on ISO currencies should use `Currency::Iso(IsoCurrency::XXX)`.
-- For metals/funds (ISO-None), register a domain-appropriate scale:
-  - Example defaults: `XAU` 3 or 6 dp; `XDR` 6 dp; `XAG`/`XPT` often 3 dp.
-  - Use `set_currency_metadata("CODE", "Name", decimals)`; absence will yield `MetadataNotFound`.
+- Pattern match ISO currencies as `Currency::Iso(IsoCurrency::XXX)`.
+- For metals/funds (ISO-None), register a domain-appropriate scale; absence yields `MetadataNotFound`.
 - If you handle parse errors for currencies, update matches to `paft_money::MoneyParseError` variants.
 
 ## [0.2.0] - 2025-09-19
