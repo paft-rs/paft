@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 use paft_core::error::PaftError;
-use paft_domain::Canonical;
+use paft_domain::{Canonical, Isin};
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
 
@@ -117,7 +117,8 @@ pub struct CompanyProfile {
     /// Business summary.
     pub summary: Option<String>,
     /// International Securities Identification Number.
-    pub isin: Option<String>,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub isin: Option<Isin>,
 }
 
 /// Fund profile details.
@@ -132,7 +133,8 @@ pub struct FundProfile {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub kind: FundKind,
     /// International Securities Identification Number.
-    pub isin: Option<String>,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub isin: Option<Isin>,
 }
 
 /// Union of supported profile kinds.
@@ -147,10 +149,10 @@ pub enum Profile {
 impl Profile {
     /// Returns the ISIN for the company or fund, if available.
     #[must_use]
-    pub fn isin(&self) -> Option<&str> {
+    pub fn isin(&self) -> Option<&Isin> {
         match self {
-            Self::Company(c) => c.isin.as_deref(),
-            Self::Fund(f) => f.isin.as_deref(),
+            Self::Company(c) => c.isin.as_ref(),
+            Self::Fund(f) => f.isin.as_ref(),
         }
     }
 }

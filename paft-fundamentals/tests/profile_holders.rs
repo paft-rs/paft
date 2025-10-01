@@ -1,4 +1,5 @@
 use iso_currency::Currency as IsoCurrency;
+use paft_domain::Isin;
 use paft_fundamentals::profile::{Address, CompanyProfile, FundKind, FundProfile, Profile};
 use paft_money::{Currency, Decimal, Money};
 use serde_json::{from_str, to_string};
@@ -13,9 +14,9 @@ fn profile_isin_accessor() {
         website: None,
         address: None,
         summary: None,
-        isin: Some("US0000000001".into()),
+        isin: Some(Isin::new("US0000000001").unwrap()),
     });
-    assert_eq!(company.isin(), Some("US0000000001"));
+    assert_eq!(company.isin().map(AsRef::as_ref), Some("US0000000001"));
 
     let fund = Profile::Fund(FundProfile {
         name: "Index".into(),
