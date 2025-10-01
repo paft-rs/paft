@@ -59,8 +59,14 @@ fn run_example() {
     .expect("valid professional instrument");
 
     println!("   Symbol: {}", professional_instrument.symbol());
-    println!("   FIGI: {:?}", professional_instrument.figi());
-    println!("   ISIN: {:?}", professional_instrument.isin());
+    println!(
+        "   FIGI: {}",
+        professional_instrument.figi_str().unwrap_or("-")
+    );
+    println!(
+        "   ISIN: {}",
+        professional_instrument.isin_str().unwrap_or("-")
+    );
     println!(
         "   Exchange: {}",
         professional_instrument
@@ -86,8 +92,8 @@ fn run_example() {
     .expect("valid european instrument");
 
     println!("   Symbol: {}", european_instrument.symbol());
-    println!("   FIGI: {:?}", european_instrument.figi());
-    println!("   ISIN: {:?}", european_instrument.isin());
+    println!("   FIGI: {}", european_instrument.figi_str().unwrap_or("-"));
+    println!("   ISIN: {}", european_instrument.isin_str().unwrap_or("-"));
     println!(
         "   Exchange: {}",
         european_instrument.exchange().map_or("-", Exchange::code)
@@ -104,8 +110,8 @@ fn run_example() {
     let minimal_instrument = Instrument::from_symbol("BTC-USD", AssetKind::Crypto);
 
     println!("   Symbol: {}", minimal_instrument.symbol());
-    println!("   FIGI: {:?}", minimal_instrument.figi());
-    println!("   ISIN: {:?}", minimal_instrument.isin());
+    println!("   FIGI: {}", minimal_instrument.figi_str().unwrap_or("-"));
+    println!("   ISIN: {}", minimal_instrument.isin_str().unwrap_or("-"));
     println!(
         "   Exchange: {}",
         minimal_instrument.exchange().map_or("-", Exchange::code)

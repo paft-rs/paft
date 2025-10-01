@@ -7,8 +7,8 @@
 pub use crate::core::PaftError;
 #[cfg(feature = "domain")]
 pub use crate::domain::{
-    AssetKind, Canonical, CanonicalError, DomainError, Exchange, Instrument, MarketState, Period,
-    StringCode, canonicalize,
+    AssetKind, Canonical, CanonicalError, DomainError, Exchange, Figi, Instrument, Isin,
+    MarketState, Period, StringCode, canonicalize,
 };
 pub use crate::money::{
     Currency, clear_currency_metadata, currency_metadata, set_currency_metadata,

@@ -13,8 +13,8 @@ pub mod core {
 #[cfg(feature = "domain")]
 pub mod domain {
     pub use paft_domain::{
-        AssetKind, Canonical, CanonicalError, DomainError, Exchange, Instrument, MarketState,
-        Period, StringCode, canonicalize,
+        AssetKind, Canonical, CanonicalError, DomainError, Exchange, Figi, Instrument, Isin,
+        MarketState, Period, StringCode, canonicalize,
     };
     #[cfg(feature = "dataframe")]
     pub use paft_domain::{ToDataFrame, ToDataFrameVec};
