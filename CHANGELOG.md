@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.0] - 2025-09-25
+## [0.3.0] - Unreleased
 
 ### Highlights
 
@@ -26,7 +26,7 @@ All notable changes to this project will be documented in this file.
 - The `paft` facade now exposes `paft::money::{Currency, Money, ExchangeRate, ...}` and re-exports `IsoCurrency`.
 - Currency parse errors now originate from `paft-money` (`paft_money::MoneyParseError`).
 - `paft-domain::Instrument::new(...)` is replaced by `Instrument::try_new(...) -> Result<Instrument, DomainError>`.
-- `Instrument::try_new` signature change: the `figi` parameter is now `Option<&str>` (was `Option<String>`). Internally it is stored as `String`.
+- `Instrument::try_new` signature change: the `figi` parameter is now `Option<&str>` (was `Option<String>`). Internally identifiers are stored as typed newtypes (`Figi`/`Isin`), not `String`.
 
 ### Added
 
@@ -37,9 +37,11 @@ All notable changes to this project will be documented in this file.
 
 - Optional ISIN validation in `paft-domain` behind `feature = "isin-validate"`; validation is provided by the new optional dependency `isin`.
 - Facade (`paft`) forwards `isin-validate` to `paft-domain` so you can enable it at the top level.
-- New error variant: `DomainError::InvalidIsin`.
-- ISIN helpers in `paft-domain::instrument`: `normalize_isin_strict(&str) -> Result<String, DomainError>` and `is_valid_isin(&str) -> bool` (feature-aware behavior).
-- New `Instrument` APIs: `try_set_isin(&str) -> Result<(), DomainError>`, `try_with_isin(&str) -> Result<Self, DomainError>`, and `set_isin_unchecked(String)`.
+- New re-exported identifier newtypes: `paft-domain::identifiers::{Isin, Figi}` with optional checksum validation and transparent serde support.
+- Facade (`paft`) forwards a new `figi-validate` feature to `paft-domain` for consistent FIGI validation across the stack.
+- New error variants: `DomainError::InvalidIsin` and `DomainError::InvalidFigi`.
+- ISIN parsing now flows entirely through the `Isin` newtype; legacy `instrument` helper functions were removed in favor of the constructor-based API.
+- New `Instrument` APIs: `try_set_isin(&str) -> Result<(), DomainError>`, `try_with_isin(&str) -> Result<Self, DomainError>`, `try_set_figi(&str) -> Result<(), DomainError>`, and `try_with_figi(&str) -> Result<Self, DomainError>`.
 
 ### Changed
 
@@ -57,6 +59,7 @@ All notable changes to this project will be documented in this file.
 - ISIN normalization: inputs are always scrubbed to uppercase ASCII alphanumerics and must not be empty. With `isin-validate` enabled, the cleaned value is additionally validated using the `isin` crate. Invalid inputs return `DomainError::InvalidIsin` from `try_new`/`try_set_isin`.
 - ISIN-aware deserialization: `Instrument` now normalizes/validates the optional `isin` field during `Deserialize`, ensuring the `isin-validate` feature applies to incoming JSON as well.
 - Docs and examples updated to use `Instrument::try_new(...).expect("valid instrument")` where appropriate.
+- `Instrument` now stores typed identifiers (`Option<Figi>` / `Option<Isin>`), and profile structs (`CompanyProfile`, `FundProfile`) adopt `Option<Isin>`.
 
 ### Migration notes
 
@@ -73,7 +76,9 @@ All notable changes to this project will be documented in this file.
 - Replace `Instrument::new(...)` with `Instrument::try_new(...)`. Handle the `Result` with `?`, `expect`, or a match. Example: `let inst = Instrument::try_new("AAPL", AssetKind::Equity, Some(figi), Some("US0378331005"), Some(Exchange::NASDAQ))?;`.
 - Update call sites passing a FIGI: use borrowed strings, e.g., replace `Some("BBG000B9XRY4".to_string())` with `Some("BBG000B9XRY4")`.
 - Enable `features = ["isin-validate"]` on `paft` or `paft-domain` to require checksum validation. Without it, values are still scrubbed to uppercase ASCII alphanumerics and must be non-empty, but no checksum is enforced.
-- If you match on `DomainError`, add a case for `InvalidIsin` when using ISIN-aware constructors or setters.
+- Identifiers are now strongly typed: `Instrument::figi()` / `Instrument::isin()` return `Option<&Figi>` / `Option<&Isin>`. Use `figi_str()` / `isin_str()` (or `map(AsRef::as_ref)`) when you need `&str` slices.
+- Construct identifiers with `Figi::new(...)` / `Isin::new(...)` (or the new `Instrument::try_set_*` / `try_with_*` helpers). Profile structs (`CompanyProfile`, `FundProfile`) now expect `Option<Isin>`.
+- If you match on `DomainError`, add cases for `InvalidIsin` and `InvalidFigi` when using the new typed identifiers.
 
 ## [0.2.0] - 2025-09-19
 
@@ -140,6 +145,6 @@ All notable changes to this project will be documented in this file.
 
 - Initial public release.
 
-[0.3.0]: https://github.com/paft-rs/paft/compare/v0.2.0...v0.3.0
+[0.3.0]: https://github.com/paft-rs/paft/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/paft-rs/paft/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/paft-rs/paft/releases/tag/v0.1.0

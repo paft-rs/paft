@@ -40,6 +40,13 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `full`: convenience bundle for `domain`, `market`, `fundamentals`, and `dataframe`.
 - `panicking-money-ops`: re-enables `Money` arithmetic operators that panic on mismatched currencies (see below).
 - `isin-validate`: forwards to `paft-domain/isin-validate`, enabling ISIN checksum validation and normalization everywhere (including deserialization).
+- `figi-validate`: forwards to `paft-domain/figi-validate`, enabling FIGI checksum validation in constructors and serde.
+
+## Migration Notes
+
+- `Instrument::figi` and `Instrument::isin` are now typed as `Option<Figi>` / `Option<Isin>`. Use `Figi::new("...")` and `Isin::new("...")` to construct validated identifiers, and call `figi_str()` / `isin_str()` when you need a borrowed `&str`.
+- `CompanyProfile::isin` and `FundProfile::isin` now store `Option<Isin>`; update struct literals to pass `Isin::new(..)?` and adjust deserialization expectations accordingly.
+- The new identifier newtypes are `#[serde(transparent)]`, so existing JSON payloads continue to operate with plain strings while gaining validation where enabled.
 
 ## What's Included
 
