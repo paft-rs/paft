@@ -27,4 +27,11 @@ pub enum DomainError {
         /// The original invalid ISIN input.
         value: String,
     },
+
+    /// Invalid FIGI encountered while parsing or validating.
+    #[error("Invalid FIGI: '{value}'")]
+    InvalidFigi {
+        /// The original invalid FIGI input.
+        value: String,
+    },
 }

@@ -67,6 +67,7 @@ fn period_invalid_matches_raise_error() {
             }
             DomainError::InvalidExchangeValue { .. } => unreachable!(),
             DomainError::InvalidIsin { .. } => unreachable!(),
+            DomainError::InvalidFigi { .. } => unreachable!(),
         }
     }
 }

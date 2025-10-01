@@ -1,73 +1,12 @@
 //! Instrument identifier and asset classification domain types.
 
 use super::Exchange;
-use crate::DomainError;
-use serde::{
-    Deserialize, Serialize,
-    de::{self, Deserializer},
+use crate::{
+    DomainError,
+    identifiers::{Figi, Isin},
 };
+use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, str::FromStr};
-
-fn scrub_isin(s: &str) -> String {
-    s.chars()
-        .filter(|c| c.is_ascii_alphanumeric())
-        .collect::<String>()
-}
-
-#[cfg(feature = "isin-validate")]
-fn normalize_isin(input: &str) -> Result<String, DomainError> {
-    let cleaned = scrub_isin(input);
-    match ::isin::parse_loose(&cleaned) {
-        Ok(_) => Ok(cleaned.to_ascii_uppercase()),
-        Err(_) => Err(DomainError::InvalidIsin {
-            value: input.to_string(),
-        }),
-    }
-}
-
-#[cfg(not(feature = "isin-validate"))]
-fn normalize_isin(input: &str) -> Result<String, DomainError> {
-    let cleaned = scrub_isin(input);
-    if cleaned.is_empty() {
-        return Err(DomainError::InvalidIsin {
-            value: input.to_string(),
-        });
-    }
-
-    Ok(cleaned.to_ascii_uppercase())
-}
-
-fn deserialize_isin<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let raw = Option::<String>::deserialize(deserializer)?;
-    if let Some(value) = raw {
-        let normalized = normalize_isin(&value).map_err(de::Error::custom)?;
-        Ok(Some(normalized))
-    } else {
-        Ok(None)
-    }
-}
-
-#[cfg(feature = "isin-validate")]
-/// Returns `true` if the input parses as a valid ISIN after separators are scrubbed.
-pub fn is_valid_isin(s: &str) -> bool {
-    let cleaned = scrub_isin(s);
-    ::isin::parse_loose(&cleaned).is_ok()
-}
-
-#[cfg(not(feature = "isin-validate"))]
-/// Returns `true` when the scrubbed input still contains ASCII alphanumeric characters.
-pub fn is_valid_isin(s: &str) -> bool {
-    let cleaned = scrub_isin(s);
-    !cleaned.is_empty()
-}
-
-/// Normalizes an ISIN and applies validation when the `isin-validate` feature is enabled; without the feature, the value is scrubbed to uppercase ASCII alphanumerics and must not be empty.
-pub fn normalize_isin_strict(s: &str) -> Result<String, DomainError> {
-    normalize_isin(s)
-}
 
 /// Kinds of financial instruments
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -179,31 +118,36 @@ impl AssetKind {
 /// better identifiers when available.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Instrument {
-    figi: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_isin")]
-    isin: Option<String>,
+    figi: Option<Figi>,
+    isin: Option<Isin>,
     symbol: String,
     exchange: Option<Exchange>,
     kind: AssetKind,
 }
 
 impl Instrument {
-    /// `set_isin_unchecked` bypasses normalization/validation in all configurations.
-    pub fn set_isin_unchecked(&mut self, isin: impl Into<String>) {
-        self.isin = Some(isin.into());
-    }
-
     /// When the `isin-validate` feature is enabled, values are validated and normalized; invalid values cause an error.
     /// When the feature is disabled, values are scrubbed to ASCII alphanumerics, uppercased, and must not be empty.
     pub fn try_set_isin(&mut self, isin: &str) -> Result<(), DomainError> {
-        let normalized = normalize_isin(isin)?;
-        self.isin = Some(normalized);
+        self.isin = Some(Isin::new(isin)?);
+        Ok(())
+    }
+
+    /// Try to set the FIGI while ensuring validation.
+    pub fn try_set_figi(&mut self, figi: &str) -> Result<(), DomainError> {
+        self.figi = Some(Figi::new(figi)?);
         Ok(())
     }
 
     /// Try to set the ISIN while consuming and returning the instrument.
     pub fn try_with_isin(mut self, isin: &str) -> Result<Self, DomainError> {
         self.try_set_isin(isin)?;
+        Ok(self)
+    }
+
+    /// Try to set the FIGI while consuming and returning the instrument.
+    pub fn try_with_figi(mut self, figi: &str) -> Result<Self, DomainError> {
+        self.try_set_figi(figi)?;
         Ok(self)
     }
 
@@ -218,13 +162,16 @@ impl Instrument {
         exchange: Option<Exchange>,
     ) -> Result<Self, DomainError> {
         let mut instrument = Self {
-            figi: figi.map(String::from),
+            figi: None,
             isin: None,
             symbol: symbol.into(),
             exchange,
             kind,
         };
 
+        if let Some(figi_value) = figi {
+            instrument.try_set_figi(figi_value)?;
+        }
         if let Some(isin_value) = isin {
             instrument.try_set_isin(isin_value)?;
         }
@@ -279,10 +226,10 @@ impl Instrument {
     #[must_use]
     pub fn unique_key(&self) -> Cow<'_, str> {
         if let Some(figi) = &self.figi {
-            return Cow::Borrowed(figi);
+            return Cow::Borrowed(figi.as_ref());
         }
         if let Some(isin) = &self.isin {
-            return Cow::Borrowed(isin);
+            return Cow::Borrowed(isin.as_ref());
         }
         if let Some(exchange) = &self.exchange {
             return Cow::Owned(format!("{}@{}", self.symbol, exchange.code()));
@@ -298,14 +245,26 @@ impl Instrument {
 
     /// Returns the FIGI identifier if available.
     #[must_use]
-    pub fn figi(&self) -> Option<&str> {
-        self.figi.as_deref()
+    pub fn figi(&self) -> Option<&Figi> {
+        self.figi.as_ref()
+    }
+
+    /// Returns the FIGI as a string slice if available.
+    #[must_use]
+    pub fn figi_str(&self) -> Option<&str> {
+        self.figi.as_ref().map(AsRef::as_ref)
     }
 
     /// Returns the ISIN identifier if available.
     #[must_use]
-    pub fn isin(&self) -> Option<&str> {
-        self.isin.as_deref()
+    pub fn isin(&self) -> Option<&Isin> {
+        self.isin.as_ref()
+    }
+
+    /// Returns the ISIN as a string slice if available.
+    #[must_use]
+    pub fn isin_str(&self) -> Option<&str> {
+        self.isin.as_ref().map(AsRef::as_ref)
     }
 
     /// Returns the ticker symbol.

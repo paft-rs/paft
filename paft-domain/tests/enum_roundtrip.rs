@@ -56,6 +56,7 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
             }
             DomainError::InvalidPeriodFormat { .. } => unreachable!(),
             DomainError::InvalidIsin { .. } => unreachable!(),
+            DomainError::InvalidFigi { .. } => unreachable!(),
         }
     }
 }

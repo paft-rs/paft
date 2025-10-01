@@ -1,20 +1,15 @@
 #[cfg(feature = "isin-validate")]
 mod feature_enabled {
-    use paft_domain::{
-        AssetKind, DomainError, Instrument, instrument::is_valid_isin,
-        instrument::normalize_isin_strict,
-    };
+    use paft_domain::{AssetKind, DomainError, Instrument, Isin};
 
     #[test]
     fn try_set_isin_accepts_clean_value() {
         let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
         instrument.try_set_isin("US0378331005").expect("valid ISIN");
-        assert_eq!(instrument.isin(), Some("US0378331005"));
-        assert!(is_valid_isin("US0378331005"));
-        assert_eq!(
-            normalize_isin_strict("us0378331005").expect("valid normalization"),
-            "US0378331005"
-        );
+        assert_eq!(instrument.isin_str(), Some("US0378331005"));
+        assert!(Isin::new("US0378331005").is_ok());
+        let normalized = Isin::new("us0378331005").expect("valid normalization");
+        assert_eq!(normalized.as_ref(), "US0378331005");
     }
 
     #[test]
@@ -43,7 +38,7 @@ mod feature_enabled {
         }"#;
 
         let instrument: Instrument = serde_json::from_str(json).expect("valid loose ISIN");
-        assert_eq!(instrument.isin(), Some("US0378331005"));
+        assert_eq!(instrument.isin_str(), Some("US0378331005"));
     }
 
     #[test]
@@ -52,8 +47,8 @@ mod feature_enabled {
         instrument
             .try_set_isin("us-037833-1005 ")
             .expect("normalized ISIN");
-        assert_eq!(instrument.isin(), Some("US0378331005"));
-        assert!(is_valid_isin("us-037833-1005 "));
+        assert_eq!(instrument.isin_str(), Some("US0378331005"));
+        assert!(Isin::new("us-037833-1005 ").is_ok());
     }
 
     #[test]
@@ -74,23 +69,16 @@ mod feature_enabled {
                 }
             );
             assert!(matches!(
-                normalize_isin_strict(value),
+                Isin::new(value),
                 Err(DomainError::InvalidIsin { .. })
             ));
         }
-    }
-
-    #[test]
-    fn set_isin_unchecked_bypasses_validation() {
-        let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
-        instrument.set_isin_unchecked("raw-value");
-        assert_eq!(instrument.isin(), Some("raw-value"));
     }
 }
 
 #[cfg(not(feature = "isin-validate"))]
 mod feature_disabled {
-    use paft_domain::{AssetKind, Instrument, instrument::is_valid_isin};
+    use paft_domain::{AssetKind, DomainError, Instrument, Isin};
 
     #[test]
     fn try_set_isin_scrubs_and_uppercases() {
@@ -98,7 +86,7 @@ mod feature_disabled {
         instrument
             .try_set_isin(" us-037833-1005 ")
             .expect("feature disabled scrubs separators and allows value");
-        assert_eq!(instrument.isin(), Some("US0378331005"));
+        assert_eq!(instrument.isin_str(), Some("US0378331005"));
     }
 
     #[test]
@@ -107,7 +95,7 @@ mod feature_disabled {
         instrument
             .try_set_isin("invalid!!!")
             .expect("feature disabled accepts non-empty forms");
-        assert_eq!(instrument.isin(), Some("INVALID"));
+        assert_eq!(instrument.isin_str(), Some("INVALID"));
     }
 
     #[test]
@@ -124,17 +112,13 @@ mod feature_disabled {
     }
 
     #[test]
-    fn set_isin_unchecked_remains_raw() {
-        let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
-        instrument.set_isin_unchecked(" raw-value ");
-        assert_eq!(instrument.isin(), Some(" raw-value "));
-    }
-
-    #[test]
-    fn is_valid_isin_checks_for_non_empty_scrubbed_content() {
-        assert!(is_valid_isin("US0378331005"));
-        assert!(is_valid_isin("us-037833-1005"));
-        assert!(!is_valid_isin("   ---   "));
+    fn isin_new_checks_for_non_empty_scrubbed_content() {
+        assert!(Isin::new("US0378331005").is_ok());
+        assert!(Isin::new("us-037833-1005").is_ok());
+        assert!(matches!(
+            Isin::new("   ---   "),
+            Err(DomainError::InvalidIsin { .. })
+        ));
     }
 
     #[test]
@@ -149,7 +133,7 @@ mod feature_disabled {
 
         let instrument: Instrument =
             serde_json::from_str(json).expect("feature disabled normalization");
-        assert_eq!(instrument.isin(), Some("US0378331005"));
+        assert_eq!(instrument.isin_str(), Some("US0378331005"));
     }
 
     #[test]

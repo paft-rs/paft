@@ -4,12 +4,14 @@
 
 pub mod error;
 pub mod exchange;
+pub mod identifiers;
 pub mod instrument;
 pub mod market_state;
 pub mod period;
 
 pub use error::DomainError;
 pub use exchange::Exchange;
+pub use identifiers::{Figi, Isin};
 pub use instrument::{AssetKind, Instrument};
 pub use market_state::MarketState;
 pub use period::Period;

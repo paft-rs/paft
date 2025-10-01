@@ -28,6 +28,8 @@ bigdecimal = ["paft-money/bigdecimal"]
 
 dataframe = ["paft-utils/dataframe", "paft-money/dataframe"]
 isin-validate = ["dep:isin"]
+figi-validate = []
+ident-validate = ["isin-validate", "figi-validate"]
 
 [dev-dependencies]
 serde_json = { workspace = true }
