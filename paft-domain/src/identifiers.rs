@@ -21,7 +21,7 @@ fn invalid_figi(value: &str) -> DomainError {
 fn scrub_isin(input: &str) -> String {
     input
         .chars()
-        .filter(|c| c.is_ascii_alphanumeric())
+        .filter(char::is_ascii_alphanumeric)
         .collect::<String>()
 }
 
@@ -119,6 +119,11 @@ pub struct Isin(String);
 
 impl Isin {
     /// Construct a new validated ISIN.
+    ///
+    /// # Errors
+    /// Returns `DomainError::InvalidIsin` when `value` is empty, malformed,
+    /// or fails normalization/validation according to the active
+    /// `isin-validate` feature.
     pub fn new(value: &str) -> Result<Self, DomainError> {
         let normalized = normalize_isin(value)?;
         Ok(Self(normalized))
@@ -165,7 +170,7 @@ impl<'de> Deserialize<'de> for Isin {
         D: Deserializer<'de>,
     {
         let raw = String::deserialize(deserializer)?;
-        Isin::new(&raw).map_err(de::Error::custom)
+        Self::new(&raw).map_err(de::Error::custom)
     }
 }
 
@@ -176,6 +181,11 @@ pub struct Figi(String);
 
 impl Figi {
     /// Construct a new validated FIGI.
+    ///
+    /// # Errors
+    /// Returns `DomainError::InvalidFigi` when `value` is empty, not exactly
+    /// 12 ASCII alphanumeric characters, or—when the `figi-validate` feature
+    /// is enabled—if the checksum is invalid.
     pub fn new(value: &str) -> Result<Self, DomainError> {
         let normalized = normalize_figi(value)?;
         Ok(Self(normalized))
@@ -222,6 +232,6 @@ impl<'de> Deserialize<'de> for Figi {
         D: Deserializer<'de>,
     {
         let raw = String::deserialize(deserializer)?;
-        Figi::new(&raw).map_err(de::Error::custom)
+        Self::new(&raw).map_err(de::Error::custom)
     }
 }

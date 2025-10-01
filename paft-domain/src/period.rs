@@ -82,7 +82,7 @@ pub enum Period {
 impl Period {
     /// Internal: establish a stable ordering precedence across variants.
     /// Date < Quarter < Year < Other
-    fn type_rank(&self) -> u8 {
+    const fn type_rank(&self) -> u8 {
         match self {
             Self::Date(_) => 0,
             Self::Quarter { .. } => 1,
@@ -147,7 +147,7 @@ impl Period {
     pub fn next_quarter(&self) -> Option<Self> {
         match self {
             Self::Date(d) => {
-                let (y, q) = Self::quarter_for_date(d);
+                let (y, q) = Self::quarter_for_date(*d);
                 let (ny, nq) = Self::increment_quarter(y, q);
                 Some(Self::Quarter {
                     year: ny,
@@ -179,8 +179,7 @@ impl Period {
     pub fn year_end(&self) -> Option<NaiveDate> {
         let y = match self {
             Self::Date(d) => d.year(),
-            Self::Quarter { year, .. } => *year,
-            Self::Year { year } => *year,
+            Self::Quarter { year, .. } | Self::Year { year } => *year,
             Self::Other(_) => return None,
         };
         NaiveDate::from_ymd_opt(y, 12, 31)
@@ -216,7 +215,7 @@ impl Period {
             ) => ay == by && aq == bq,
             (Self::Quarter { year, quarter }, Self::Date(d))
             | (Self::Date(d), Self::Quarter { year, quarter }) => {
-                let (dy, dq) = Self::quarter_for_date(d);
+                let (dy, dq) = Self::quarter_for_date(*d);
                 dy == *year && dq == *quarter
             }
 
@@ -226,7 +225,7 @@ impl Period {
         }
     }
 
-    fn quarter_for_date(d: &NaiveDate) -> (i32, u8) {
+    fn quarter_for_date(d: NaiveDate) -> (i32, u8) {
         let y = d.year();
         let m = d.month();
         let q = match m {
@@ -238,7 +237,7 @@ impl Period {
         (y, q)
     }
 
-    fn increment_quarter(year: i32, quarter: u8) -> (i32, u8) {
+    const fn increment_quarter(year: i32, quarter: u8) -> (i32, u8) {
         if quarter < 4 {
             (year, quarter + 1)
         } else {

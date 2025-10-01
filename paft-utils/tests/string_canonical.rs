@@ -41,8 +41,7 @@ fn canonical_try_new_rejects_all_separator_inputs() {
         let CanonicalError::InvalidCanonicalToken { value } = err;
         assert_eq!(
             value, input,
-            "Failed to reject all-separator input: {}",
-            input
+            "Failed to reject all-separator input: {input}"
         );
     }
 }
@@ -78,8 +77,7 @@ fn canonical_try_new_rejects_all_non_ascii_inputs() {
         let CanonicalError::InvalidCanonicalToken { value } = err;
         assert_eq!(
             value, input,
-            "Failed to reject all-non-ASCII input: {}",
-            input
+            "Failed to reject all-non-ASCII input: {input}"
         );
     }
 }
@@ -125,8 +123,7 @@ fn canonical_roundtrip_property() {
             assert_eq!(
                 canonical_str,
                 canonicalize_result.as_ref(),
-                "Round-trip failed for input: {:?}",
-                input
+                "Round-trip failed for input: {input:?}"
             );
         }
         // If Canonical creation fails, canonicalize should produce empty string
@@ -134,8 +131,7 @@ fn canonical_roundtrip_property() {
             let canonicalize_result = canonicalize(input);
             assert!(
                 canonicalize_result.as_ref().is_empty(),
-                "Canonical creation failed but canonicalize produced non-empty result for input: {:?}",
-                input
+                "Canonical creation failed but canonicalize produced non-empty result for input: {input:?}"
             );
         }
     }
@@ -185,13 +181,11 @@ fn canonicalize_idempotent_property() {
                 result_str
                     .chars()
                     .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_'),
-                "canonicalize result should only contain A-Z, 0-9, and underscores: {:?}",
-                result_str
+                "canonicalize result should only contain A-Z, 0-9, and underscores: {result_str:?}"
             );
             assert!(
                 !result_str.starts_with('_') && !result_str.ends_with('_'),
-                "canonicalize result should not start or end with underscore: {:?}",
-                result_str
+                "canonicalize result should not start or end with underscore: {result_str:?}"
             );
 
             // Second canonicalization should return borrowed if input was already canonical
@@ -200,10 +194,9 @@ fn canonicalize_idempotent_property() {
             if c1.as_ref() == input {
                 match c2 {
                     std::borrow::Cow::Borrowed(_) => {} // Expected for already canonical
-                    std::borrow::Cow::Owned(_) => panic!(
-                        "Expected borrowed result for already canonical input: {:?}",
-                        input
-                    ),
+                    std::borrow::Cow::Owned(_) => {
+                        panic!("Expected borrowed result for already canonical input: {input:?}")
+                    }
                 }
             }
         }
@@ -212,8 +205,7 @@ fn canonicalize_idempotent_property() {
         let c2 = canonicalize(c1.as_ref());
         assert_eq!(
             c1, c2,
-            "canonicalize is not idempotent for input: {:?}",
-            input
+            "canonicalize is not idempotent for input: {input:?}"
         );
     }
 }
@@ -280,15 +272,13 @@ fn canonicalize_and_canonical_try_new_are_consistent() {
             Ok(_) => {
                 assert!(
                     !canonicalize_is_empty,
-                    "Canonical::try_new succeeded but canonicalize produced empty for: {:?}",
-                    input
+                    "Canonical::try_new succeeded but canonicalize produced empty for: {input:?}"
                 );
             }
             Err(_) => {
                 assert!(
                     canonicalize_is_empty,
-                    "Canonical::try_new failed but canonicalize produced non-empty for: {:?}",
-                    input
+                    "Canonical::try_new failed but canonicalize produced non-empty for: {input:?}"
                 );
             }
         }
@@ -420,8 +410,7 @@ fn canonicalize_is_idempotent() {
         // Should be equal
         assert_eq!(
             once, twice,
-            "canonicalize is not idempotent for input: {:?}",
-            input
+            "canonicalize is not idempotent for input: {input:?}"
         );
 
         // The borrowing behavior can legitimately change between calls
@@ -458,8 +447,7 @@ fn canonicalize_result_is_canonical() {
         // canonicalize should be idempotent: canonicalize(canonicalize(x)) == canonicalize(x)
         assert_eq!(
             once, twice,
-            "canonicalize is not idempotent for input: {:?}",
-            input
+            "canonicalize is not idempotent for input: {input:?}"
         );
 
         // Since it's idempotent, the result must be canonical (for non-empty results)
@@ -476,7 +464,7 @@ fn canonicalize_result_is_canonical() {
                 match &once {
                     Cow::Borrowed(_) => {} // Expected for already canonical
                     Cow::Owned(_) => {
-                        panic!("Already canonical input {:?} should return borrowed", input)
+                        panic!("Already canonical input {input:?} should return borrowed")
                     }
                 }
             }
@@ -543,11 +531,7 @@ fn canonicalize_sanity_properties() {
 
         // Idempotency: canonicalize(canonicalize(x).as_ref()) == canonicalize(x)
         let double_result = canonicalize(result.as_ref());
-        assert_eq!(
-            result, double_result,
-            "Not idempotent for input: {:?}",
-            input
-        );
+        assert_eq!(result, double_result, "Not idempotent for input: {input:?}");
 
         // Fast-path correctness: is_canonical(x) ⇒ canonicalize(x).is_borrowed()
         // (except empty → still Owned empty)
@@ -559,16 +543,12 @@ fn canonicalize_sanity_properties() {
                 && !input.ends_with('_')
                 && !input.contains("__");
             match &result {
-                Cow::Borrowed(_) => assert!(
-                    expected_borrowed,
-                    "Unexpected borrow for input: {:?}",
-                    input
-                ),
-                Cow::Owned(_) => assert!(
-                    !expected_borrowed,
-                    "Unexpected owned for input: {:?}",
-                    input
-                ),
+                Cow::Borrowed(_) => {
+                    assert!(expected_borrowed, "Unexpected borrow for input: {input:?}");
+                }
+                Cow::Owned(_) => {
+                    assert!(!expected_borrowed, "Unexpected owned for input: {input:?}");
+                }
             }
         }
 
@@ -576,13 +556,11 @@ fn canonicalize_sanity_properties() {
         match Canonical::try_new(input) {
             Ok(_) => assert!(
                 !result.as_ref().is_empty(),
-                "Canonical::try_new succeeded but canonicalize produced empty for: {:?}",
-                input
+                "Canonical::try_new succeeded but canonicalize produced empty for: {input:?}"
             ),
             Err(_) => assert!(
                 result.as_ref().is_empty(),
-                "Canonical::try_new failed but canonicalize produced non-empty for: {:?}",
-                input
+                "Canonical::try_new failed but canonicalize produced non-empty for: {input:?}"
             ),
         }
     }
@@ -612,7 +590,7 @@ fn canonicalize_handles_mixed_canonical_and_non_canonical() {
             match result {
                 std::borrow::Cow::Borrowed(s) => assert_eq!(s, input),
                 std::borrow::Cow::Owned(_) => {
-                    panic!("Expected borrowed result for canonical input: {}", input)
+                    panic!("Expected borrowed result for canonical input: {input}")
                 }
             }
         } else {
@@ -620,7 +598,7 @@ fn canonicalize_handles_mixed_canonical_and_non_canonical() {
             match result {
                 std::borrow::Cow::Owned(s) => assert_eq!(s, expected),
                 std::borrow::Cow::Borrowed(_) => {
-                    panic!("Expected owned result for non-canonical input: {}", input)
+                    panic!("Expected owned result for non-canonical input: {input}")
                 }
             }
         }

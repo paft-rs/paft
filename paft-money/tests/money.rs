@@ -262,14 +262,14 @@ fn test_money_display() {
         Currency::Iso(IsoCurrency::USD),
     )
     .unwrap();
-    assert_eq!(format!("{}", usd), "123.45 USD");
+    assert_eq!(format!("{usd}"), "123.45 USD");
 
     let eur = Money::new(
         Decimal::from_str("99.99").unwrap(),
         Currency::Iso(IsoCurrency::EUR),
     )
     .unwrap();
-    assert_eq!(format!("{}", eur), "99.99 EUR");
+    assert_eq!(format!("{eur}"), "99.99 EUR");
 
     // Test with trailing zeros removed
     let jpy = Money::new(
@@ -277,7 +277,7 @@ fn test_money_display() {
         Currency::Iso(IsoCurrency::JPY),
     )
     .unwrap();
-    assert_eq!(format!("{}", jpy), "100 JPY");
+    assert_eq!(format!("{jpy}"), "100 JPY");
 }
 
 #[cfg(all(feature = "dataframe", not(feature = "bigdecimal")))]

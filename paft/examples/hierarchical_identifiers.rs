@@ -25,6 +25,7 @@ fn main() {
 }
 
 #[cfg(feature = "domain")]
+#[allow(clippy::too_many_lines)]
 fn run_example() {
     println!("=== Hierarchical Identifier Examples ===\n");
 

@@ -128,24 +128,40 @@ pub struct Instrument {
 impl Instrument {
     /// When the `isin-validate` feature is enabled, values are validated and normalized; invalid values cause an error.
     /// When the feature is disabled, values are scrubbed to ASCII alphanumerics, uppercased, and must not be empty.
+    ///
+    /// # Errors
+    /// Returns `DomainError::InvalidIsin` when `isin` is empty, malformed,
+    /// or fails normalization/validation according to the active
+    /// `isin-validate` feature.
     pub fn try_set_isin(&mut self, isin: &str) -> Result<(), DomainError> {
         self.isin = Some(Isin::new(isin)?);
         Ok(())
     }
 
     /// Try to set the FIGI while ensuring validation.
+    ///
+    /// # Errors
+    /// Returns `DomainError::InvalidFigi` when `figi` is empty, not exactly
+    /// 12 ASCII alphanumeric characters, or—when the `figi-validate`
+    /// feature is enabled—if the checksum is invalid.
     pub fn try_set_figi(&mut self, figi: &str) -> Result<(), DomainError> {
         self.figi = Some(Figi::new(figi)?);
         Ok(())
     }
 
     /// Try to set the ISIN while consuming and returning the instrument.
+    ///
+    /// # Errors
+    /// Propagates `DomainError::InvalidIsin` from [`Isin::new`].
     pub fn try_with_isin(mut self, isin: &str) -> Result<Self, DomainError> {
         self.try_set_isin(isin)?;
         Ok(self)
     }
 
     /// Try to set the FIGI while consuming and returning the instrument.
+    ///
+    /// # Errors
+    /// Propagates `DomainError::InvalidFigi` from [`Figi::new`].
     pub fn try_with_figi(mut self, figi: &str) -> Result<Self, DomainError> {
         self.try_set_figi(figi)?;
         Ok(self)
@@ -154,6 +170,11 @@ impl Instrument {
     /// Construct a new `Instrument` with validation-aware ISIN handling.
     /// When the `isin-validate` feature is enabled, values are validated and normalized; invalid values cause an error.
     /// When the feature is disabled, values are scrubbed to ASCII alphanumerics, uppercased, and must not be empty.
+    ///
+    /// # Errors
+    /// Returns `DomainError::InvalidFigi` or `DomainError::InvalidIsin` if
+    /// the provided identifiers fail validation/normalization according to
+    /// the active features.
     pub fn try_new(
         symbol: impl Into<String>,
         kind: AssetKind,
@@ -245,7 +266,7 @@ impl Instrument {
 
     /// Returns the FIGI identifier if available.
     #[must_use]
-    pub fn figi(&self) -> Option<&Figi> {
+    pub const fn figi(&self) -> Option<&Figi> {
         self.figi.as_ref()
     }
 
@@ -257,7 +278,7 @@ impl Instrument {
 
     /// Returns the ISIN identifier if available.
     #[must_use]
-    pub fn isin(&self) -> Option<&Isin> {
+    pub const fn isin(&self) -> Option<&Isin> {
         self.isin.as_ref()
     }
 

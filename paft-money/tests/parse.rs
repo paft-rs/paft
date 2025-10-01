@@ -46,7 +46,7 @@ fn parse_high_precision_bigdecimal_mode() {
 #[test]
 fn parse_high_precision_rust_decimal_mode() {
     let m = Money::from_str("12345678901234567890.123456789012345678", Currency::ETH).unwrap();
-    eprintln!("m: {:?}", m);
+    eprintln!("m: {m:?}");
     eprintln!("m.amount(): {:?}", m.amount());
     eprintln!(
         "Decimal::from_str(\"12345678901234567890.123456789012345678\"): {:?}",

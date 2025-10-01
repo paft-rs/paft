@@ -149,7 +149,7 @@ pub enum Profile {
 impl Profile {
     /// Returns the ISIN for the company or fund, if available.
     #[must_use]
-    pub fn isin(&self) -> Option<&Isin> {
+    pub const fn isin(&self) -> Option<&Isin> {
         match self {
             Self::Company(c) => c.isin.as_ref(),
             Self::Fund(f) => f.isin.as_ref(),
