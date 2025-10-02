@@ -1,4 +1,33 @@
 //! Unified public API for the paft workspace.
+//!
+//! This facade crate aggregates the `paft-*` ecosystem into a single
+//! dependency with coherent feature flags and a convenient `prelude` for
+//! common imports.
+//!
+//! - Enable `domain`, `market`, `fundamentals` to pick the areas you need
+//! - Select `rust-decimal` (default) or `bigdecimal` for money precision
+//! - Add `dataframe` to export models to `polars`
+//!
+//! # Quickstart
+//! ```rust
+//! use paft::prelude::*;
+//!
+//! // Construct an instrument with identifiers
+//! let aapl = Instrument::try_new(
+//!     "AAPL",
+//!     AssetKind::Equity,
+//!     Some("BBG000B9XRY4"),
+//!     Some("US0378331005"),
+//!     Some(Exchange::NASDAQ),
+//! ).unwrap();
+//! assert!(aapl.is_globally_identified());
+//!
+//! // Build a validated history request
+//! let req = HistoryRequest::try_from_range(Range::M1, Interval::D1).unwrap();
+//! assert_eq!(req.interval(), Interval::D1);
+//! ```
+//!
+//! See the crate README for install instructions and feature details.
 #![warn(missing_docs)]
 
 pub mod error;

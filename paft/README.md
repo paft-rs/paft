@@ -71,9 +71,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 ### Basic Usage
 
 ```rust
-use paft::{
-    AssetKind, Currency, Exchange, Instrument, IsoCurrency, MarketState, Money, Quote,
-};
+use paft::prelude::*;
 
 // Create instruments with different levels of identification
 let apple = Instrument::try_new(
@@ -91,11 +89,10 @@ let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto);
 let quote = Quote {
     symbol: "AAPL".to_string(),
     shortname: Some("Apple Inc.".to_string()),
-    price: Some(Money::new(Decimal::new(19012, 2), Currency::Iso(IsoCurrency::USD))),
-    previous_close: Some(Money::new(Decimal::new(18996, 2), Currency::Iso(IsoCurrency::USD))),
+    price: Some(Money::from_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
+    previous_close: Some(Money::from_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
     exchange: Some(Exchange::NASDAQ),
     market_state: Some(MarketState::Regular),
-    ..Default::default()
 };
 ```
 
@@ -120,11 +117,10 @@ if let Some(figi) = apple.figi() {
 ### Historical Data
 
 ```rust
-use paft::{HistoryRequest, Range, Interval};
+use paft::prelude::*;
 
-// Request 6 months of daily data
-let request = HistoryRequest::try_from_range(Range::M6, Interval::D1)?;
-request.validate()?;
+// Request 6 months of daily data (validated in constructor)
+let request = HistoryRequest::try_from_range(Range::M6, Interval::D1).unwrap();
 ```
 
 ### DataFrame Integration
@@ -137,7 +133,7 @@ paft = { version = "0.3.0", features = ["dataframe"] }
 ```
 
 ```rust
-use paft::ToDataFrame;
+use paft::prelude::*;
 
 let quotes = vec![quote1, quote2, quote3];
 let df = quotes.to_dataframe()?;
@@ -176,7 +172,7 @@ untrusted data, keep this feature disabled and use the `try_*` APIs.
 paft uses extensible enums with `Other(String)` variants to gracefully handle unknown provider values:
 
 ```rust
-use paft::{Currency, Exchange, IsoCurrency};
+use paft::prelude::*;
 
 // Handle unknown currencies from providers
 match currency {
@@ -192,7 +188,7 @@ match currency {
 }
 
 // Same pattern for exchanges, asset types, etc.
-let exchange = Exchange::Other("BATS".to_string()); // Unknown exchange
+let exchange: Exchange = "BATS".parse().unwrap(); // Unknown exchange handled via Other
 ```
 
 This pattern ensures your code never breaks when providers return new or unexpected values.
