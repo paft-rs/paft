@@ -6,7 +6,7 @@ license.workspace = true
 authors.workspace = true
 description = "Utility helpers shared across the paft workspace."
 repository.workspace = true
-readme = "../README.md"
+readme = "README.md"
 keywords = ["finance", "data", "utils", "serde"]
 categories = ["finance", "data-structures"]
 
