@@ -301,3 +301,11 @@ Inspired by the need for standardized financial data types in the Rust ecosystem
 - **Providers**: Build your adapter using our [integration guidelines](#building-provider-crates)
 
 Together, we're building the future of financial data in Rust—standardized, interoperable, and developer-friendly.
+
+## Projects Using paft
+
+The following open-source projects use paft types in their public APIs:
+
+- yfinance-rs — Ergonomic Yahoo Finance client built on paft types: [`gramistella/yfinance-rs`](https://github.com/gramistella/yfinance-rs) (also on crates.io as `yfinance-rs`).
+
+Want to add your project? Open a PR to include it here.
