@@ -26,7 +26,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-hack
       - run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - run: cargo hack nextest run --workspace --ignore-unknown-features ${{ matrix.args }} --locked
+      - run: cargo hack nextest run --workspace --all-targets --ignore-unknown-features ${{ matrix.args }} --no-tests pass
 
   publish:
     needs: test
