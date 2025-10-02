@@ -40,8 +40,84 @@
 //! always uses 64-bit integers and therefore remains capped at 18 decimal
 //! places so that `10^scale` fits inside an `i128` when performing
 //! conversions.
+//!
+//! # Quickstart
+//!
+//! Create money in ISO currencies, add and subtract safely, serialize with
+//! stable representations, and convert via explicit exchange rates.
+//!
+//! ```rust
+//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::{Currency, Money};
+//! # fn run() -> Result<(), paft_money::MoneyError> {
+//! let price = Money::from_str("12.34", Currency::Iso(IsoCurrency::USD))?;
+//! let tax   = Money::from_str("1.23",  Currency::Iso(IsoCurrency::USD))?;
+//! let total = price.try_add(&tax)?;
+//! assert_eq!(total.format(), "13.57 USD");
+//!
+//! // Cross-currency addition is rejected
+//! let eur = Money::from_str("5", Currency::Iso(IsoCurrency::EUR))?;
+//! assert!(price.try_add(&eur).is_err());
+//! # Ok(()) } run().unwrap();
+//! ```
+//!
+//! # Currency conversion
+//!
+//! Use an [`ExchangeRate`] to convert with explicit rounding.
+//!
+//! ```rust
+//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::{Currency, Money, ExchangeRate, Decimal, RoundingStrategy};
+//! # fn run() -> Result<(), paft_money::MoneyError> {
+//! let usd = Money::from_str("10.00", Currency::Iso(IsoCurrency::USD))?;
+//! let rate = ExchangeRate::new(
+//!     Currency::Iso(IsoCurrency::USD),
+//!     Currency::Iso(IsoCurrency::EUR),
+//!     Decimal::from(9) / Decimal::from(10), // 1 USD = 0.9 EUR
+//! )?;
+//! let eur = usd.try_convert_with(&rate, RoundingStrategy::MidpointAwayFromZero)?;
+//! assert_eq!(eur.currency().code(), "EUR");
+//! # Ok(()) } run().unwrap();
+//! ```
+//!
+//! # Serde
+//!
+//! Amounts serialize as strings (to avoid exponent notation); currencies serialize
+//! as their codes. Example:
+//!
+//! ```rust
+//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::{Currency, Money};
+//! let usd = Money::from_str("12.34", Currency::Iso(IsoCurrency::USD)).unwrap();
+//! let json = serde_json::to_string(&usd).unwrap();
+//! assert_eq!(json, "{\"amount\":\"12.34\",\"currency\":\"USD\"}");
+//! ```
+//!
+//! # Currency metadata overlays
+//!
+//! For ISO codes without a prescribed minor-unit exponent (e.g., `XAU`, `XDR`),
+//! register a scale so that rounding and minor-unit conversions are well-defined:
+//!
+//! ```rust
+//! # use paft_money::set_currency_metadata;
+//! set_currency_metadata("XAU", "Gold", 3).unwrap();
+//! set_currency_metadata("XDR", "SDR", 6).unwrap();
+//! ```
+//!
+//! # Feature flags
+//!
+//! - `rust-decimal` (default): fixed-size fast decimals with up to 28 fractional digits.
+//! - `bigdecimal`: arbitrary precision decimals (slower, allocates for large values).
+//! - `dataframe`: enables `serde`/`polars`/`df-derive` integration for dataframes.
+//! - `panicking-money-ops`: implements `Add`/`Sub`/`Mul`/`Div` for `Money` that
+//!   assert on invalid operations. Prefer the `try_*` methods for fallible APIs.
+//!
+//! Regardless of backend, serde and the high-level API remain stable; see
+//! [`MAX_DECIMAL_PRECISION`] and [`MAX_MINOR_UNIT_DECIMALS`] for limits that
+//! affect scaling and minor-unit conversions.
 
 #![warn(missing_docs)]
+#![allow(clippy::cargo_common_metadata)]
 
 pub mod currency;
 pub mod currency_utils;
