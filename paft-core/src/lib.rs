@@ -1,4 +1,34 @@
 //! Core infrastructure utilities for the paft ecosystem.
+//!
+//! This crate provides:
+//! - Workspace-wide error type [`PaftError`]
+//! - Macros for canonical string enums (open/closed) and `Display` via `code()`
+//! - Reusable serde helpers for common timestamp encodings
+//! - Optional re-exports for lightweight dataframe traits
+//!
+//! # Quickstart
+//! ```rust
+//! use paft_core::{PaftError, string_enum_closed_with_code, impl_display_via_code};
+//!
+//! // Define a closed string enum with canonical codes and parsing
+//! #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+//! enum Side { Buy, Sell }
+//! paft_core::string_enum_closed_with_code!(
+//!     Side, "Side",
+//!     { "BUY" => Side::Buy, "SELL" => Side::Sell }
+//! );
+//! paft_core::impl_display_via_code!(Side);
+//!
+//! assert_eq!(Side::Buy.code(), "BUY");
+//! assert_eq!("sell".parse::<Side>().unwrap(), Side::Sell);
+//! assert!(matches!("".parse::<Side>(), Err(PaftError::InvalidEnumValue { .. })));
+//! ```
+//!
+//! # Feature flags
+//! - `dataframe`: re-export dataframe traits from `paft-utils`
+//!
+//! # Serde helpers
+//! See [`serde_helpers`] for helpers like `ts_seconds_vec` and `ts_seconds_option`.
 #![warn(missing_docs)]
 
 /// Error definitions shared across crates.
