@@ -1,4 +1,4 @@
-//! Example demonstrating how to properly handle the Other(String) extensible enum pattern
+//! Example demonstrating how to properly handle the Other(Canonical) extensible enum pattern
 //! in paft. This example shows best practices for consuming paft types that use the
 //! extensible enum pattern.
 

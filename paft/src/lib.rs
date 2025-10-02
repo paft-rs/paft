@@ -1,12 +1,13 @@
 //! Unified public API for the paft workspace.
 //!
-//! This facade crate aggregates the `paft-*` ecosystem into a single
-//! dependency with coherent feature flags and a convenient `prelude` for
-//! common imports.
+//! This facade crate aggregates the `paft-*` ecosystem into a single dependency
+//! with coherent feature flags and a convenient `prelude` for common imports.
 //!
-//! - Enable `domain`, `market`, `fundamentals` to pick the areas you need
-//! - Select `rust-decimal` (default) or `bigdecimal` for money precision
-//! - Add `dataframe` to export models to `polars`
+//! Features
+//! - `domain`, `market`, `fundamentals`: opt into domain areas you need
+//! - `rust-decimal` (default) | `bigdecimal`: choose the money backend
+//! - `dataframe`: enable `DataFrame` export via Polars helpers
+//! - `panicking-money-ops`: opt‑in operator overloading for `Money` that panics on invalid input
 //!
 //! # Quickstart
 //! ```rust
@@ -27,7 +28,7 @@
 //! assert_eq!(req.interval(), Interval::D1);
 //! ```
 //!
-//! See the crate README for install instructions and feature details.
+//! See the crate README for installation instructions and feature details.
 #![warn(missing_docs)]
 
 pub mod error;

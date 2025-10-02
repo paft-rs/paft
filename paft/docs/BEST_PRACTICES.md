@@ -47,18 +47,10 @@ Many paft enums provide helper methods to check for canonical variants:
 
 ```rust
 fn analyze_asset(asset: AssetKind) {
-    if asset.is_canonical() {
-        // Safe to use exhaustive matching
-        match asset {
-            AssetKind::Equity => println!("Stock analysis"),
-            AssetKind::Crypto => println!("Crypto analysis"),
-            _ => unreachable!(), // Safe because is_canonical() returned true
-        }
-    } else {
-        // Handle unknown asset types
-        if let AssetKind::Other(unknown_type) = asset {
-            println!("Unknown asset type: {}", unknown_type);
-        }
+    match asset {
+        AssetKind::Equity => println!("Stock analysis"),
+        AssetKind::Crypto => println!("Crypto analysis"),
+        _ => println!("General analysis"),
     }
 }
 ```
@@ -79,9 +71,9 @@ fn normalize_currency(provider_code: &str) -> Currency {
         "BITCOIN" | "XBT" | "BTC" => Currency::BTC,
         "ETHEREUM" | "ETH" => Currency::ETH,
 
-        // Preserve other values as uppercase Other
+        // Preserve other values using the library parser
         _ => Currency::try_from_str(provider_code)
-            .unwrap_or_else(|_| Currency::Other(provider_code.trim().to_uppercase())),
+            .unwrap_or_else(|_| Currency::Other(paft_utils::Canonical::try_new(provider_code).unwrap())),
     }
 }
 ```
@@ -143,7 +135,7 @@ pub mod currency_utils {
     pub fn normalize_currency_code(code: &str) -> Currency {
         let trimmed = code.trim();
         if trimmed.is_empty() {
-            return Currency::Other("UNKNOWN".to_string());
+            return Currency::Other(paft_utils::Canonical::try_new("UNKNOWN").unwrap());
         }
         match trimmed.to_uppercase().as_ref() {
             "DOLLAR" | "US_DOLLAR" | "USD" => Currency::Iso(IsoCurrency::USD),
@@ -151,18 +143,21 @@ pub mod currency_utils {
             "POUND" | "GBP" => Currency::Iso(IsoCurrency::GBP),
             "BITCOIN" | "XBT" | "BTC" => Currency::BTC,
             "ETHEREUM" | "ETH" => Currency::ETH,
-            other => Currency::Other(other.to_string()),
+            other => Currency::Other(paft_utils::Canonical::try_new(other).unwrap()),
         }
     }
 
     /// Returns true if the currency is commonly used
     pub fn is_common_currency(currency: &Currency) -> bool {
-        match currency {
-            Currency::Iso(IsoCurrency::USD | IsoCurrency::EUR | IsoCurrency::GBP | IsoCurrency::JPY)
-            | Currency::BTC
-            | Currency::ETH => true,
-            Currency::Other(_) => false,
-        }
+        matches!(
+            currency,
+            Currency::Iso(IsoCurrency::USD)
+                | Currency::Iso(IsoCurrency::EUR)
+                | Currency::Iso(IsoCurrency::GBP)
+                | Currency::Iso(IsoCurrency::JPY)
+                | Currency::BTC
+                | Currency::ETH
+        )
     }
 }
 ```
@@ -177,14 +172,14 @@ pub mod currency_utils {
 /// - "EURO" -> Currency::Iso(IsoCurrency::EUR) (canonical)
 /// - "BITCOIN" -> BTC (canonical)
 /// 
-/// Unmapped values are preserved as Other(String) in uppercase
+/// Unmapped values are preserved as Other(Canonical) in uppercase
 impl From<AlphaVantageCurrency> for Currency {
     fn from(av_currency: AlphaVantageCurrency) -> Self {
         match av_currency.code.to_uppercase().as_ref() {
             "US_DOLLAR" => Currency::Iso(IsoCurrency::USD),
             "EURO" => Currency::Iso(IsoCurrency::EUR),
             "BITCOIN" => Currency::BTC,
-            _ => Currency::Other(av_currency.code.to_uppercase()),
+            _ => Currency::Other(paft_utils::Canonical::try_new(&av_currency.code).unwrap()),
         }
     }
 }
@@ -204,13 +199,13 @@ impl CurrencyProcessor {
             Currency::Iso(IsoCurrency::EUR) => Ok(CurrencyInfo::euro()),
             Currency::Other(code) => {
                 // Track unknown currencies for analysis
-                self.unknown_currencies.insert(code.clone());
+                self.unknown_currencies.insert(code.as_ref().to_string());
                 
                 // Log for monitoring
                 log::warn!("Unknown currency encountered: {}", code);
                 
                 // Return error or generic info based on your needs
-                Err(Error::UnsupportedCurrency(code))
+                Err(Error::UnsupportedCurrency(code.as_ref().to_string()))
             }
         }
     }
@@ -255,14 +250,14 @@ impl ProviderAdapter {
         self.currency_mappings
             .get(&provider_code.to_uppercase())
             .cloned()
-            .unwrap_or_else(|| Currency::Other(provider_code.to_uppercase()))
+            .unwrap_or_else(|| Currency::Other(paft_utils::Canonical::try_new(provider_code).unwrap()))
     }
     
     pub fn normalize_exchange(&self, provider_code: &str) -> Exchange {
         self.exchange_mappings
             .get(&provider_code.to_uppercase())
             .cloned()
-            .unwrap_or_else(|| Exchange::Other(provider_code.to_uppercase()))
+            .unwrap_or_else(|| Exchange::Other(paft_utils::Canonical::try_new(provider_code).unwrap()))
     }
 }
 ```
@@ -289,7 +284,7 @@ impl LazyProviderAdapter {
         self.get_mappings()
             .get(&provider_code.to_uppercase())
             .cloned()
-            .unwrap_or_else(|| Currency::Other(provider_code.to_uppercase()))
+            .unwrap_or_else(|| Currency::Other(paft_utils::Canonical::try_new(provider_code).unwrap()))
     }
 }
 ```
@@ -324,7 +319,7 @@ fn migrate_currency_code(code: &str) -> Currency {
     match code {
         "USD" => Currency::Iso(IsoCurrency::USD),
         "EUR" => Currency::Iso(IsoCurrency::EUR),
-        _ => Currency::Other(code.to_uppercase()),
+        _ => Currency::Other(paft_utils::Canonical::try_new(code).unwrap()),
     }
 }
 ```
@@ -340,7 +335,7 @@ impl CurrencyCompat {
     pub fn from_string(code: &str) -> Self {
         Self {
             currency: Currency::try_from_str(code)
-                .unwrap_or_else(|_| Currency::Other(code.trim().to_uppercase())),
+                .unwrap_or_else(|_| Currency::Other(paft_utils::Canonical::try_new(code).unwrap())),
         }
     }
     

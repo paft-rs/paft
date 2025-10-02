@@ -72,6 +72,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 
 ```rust
 use paft::prelude::*;
+use rust_decimal::Decimal;
 
 // Create instruments with different levels of identification
 let apple = Instrument::try_new(
@@ -169,7 +170,7 @@ untrusted data, keep this feature disabled and use the `try_*` APIs.
 
 ## Handling Unknown Values
 
-paft uses extensible enums with `Other(String)` variants to gracefully handle unknown provider values:
+paft uses extensible enums with `Other(Canonical)` variants to gracefully handle unknown provider values:
 
 ```rust
 use paft::prelude::*;
@@ -177,14 +178,11 @@ use paft::prelude::*;
 // Handle unknown currencies from providers
 match currency {
     Currency::Iso(IsoCurrency::USD) => "US Dollar",
-    Currency::Iso(IsoCurrency::EUR) => "Euro", 
-    Currency::Other(code) => {
-        // Graceful fallback for unknown currencies
-        match code.as_ref() {
-            "BTC" => "Bitcoin",
-            _ => "Unknown currency",
-        }
-    }
+    Currency::Iso(IsoCurrency::EUR) => "Euro",
+    Currency::Other(code) => match code.as_ref() {
+        "BTC" => "Bitcoin",
+        _ => "Unknown currency",
+    },
 }
 
 // Same pattern for exchanges, asset types, etc.
