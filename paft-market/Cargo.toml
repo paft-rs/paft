@@ -8,7 +8,7 @@ description = "Market data models and requests for paft."
 repository.workspace = true
 homepage = "https://github.com/paft-rs/paft"
 documentation = "https://docs.rs/paft-market"
-readme = "../README.md"
+readme = "README.md"
 keywords = ["finance", "market", "quotes", "historical", "serde"]
 categories = ["data-structures", "finance"]
 
