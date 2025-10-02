@@ -8,7 +8,7 @@ description = "Fundamentals data models and helpers for paft."
 repository.workspace = true
 homepage = "https://github.com/paft-rs/paft"
 documentation = "https://docs.rs/paft-fundamentals"
-readme = "../README.md"
+readme = "README.md"
 keywords = ["finance", "fundamentals", "esg", "holders", "serde"]
 categories = ["data-structures", "finance"]
 
