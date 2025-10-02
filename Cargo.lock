@@ -1516,6 +1516,7 @@ dependencies = [
  "polars",
  "rust_decimal",
  "serde_json",
+ "thiserror",
 ]
 
 [[package]]

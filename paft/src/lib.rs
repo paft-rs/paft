@@ -1,6 +1,9 @@
 //! Unified public API for the paft workspace.
 #![warn(missing_docs)]
 
+pub mod error;
+pub use error::{Error, Result};
+
 /// Namespaced access to `paft-core`.
 pub mod core {
     pub use paft_core::PaftError;

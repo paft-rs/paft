@@ -4,17 +4,17 @@
 //! and serde to ensure round-trip stability across providers.
 
 // Re-export core types via namespaced modules
-pub use crate::core::PaftError;
 #[cfg(feature = "domain")]
 pub use crate::domain::{
-    AssetKind, Canonical, CanonicalError, DomainError, Exchange, Figi, Instrument, Isin,
-    MarketState, Period, StringCode, canonicalize,
+    AssetKind, Canonical, Exchange, Figi, Instrument, Isin, MarketState, Period, StringCode,
+    canonicalize,
 };
 pub use crate::money::{
     Currency, clear_currency_metadata, currency_metadata, set_currency_metadata,
     try_normalize_currency_code,
 };
-pub use crate::money::{ExchangeRate, Money, MoneyError};
+pub use crate::money::{ExchangeRate, Money};
+pub use crate::{Error, Result};
 
 // Re-export dataframe traits
 #[cfg(feature = "dataframe")]
@@ -44,8 +44,6 @@ pub use crate::fundamentals::statements::{
 };
 
 // Re-export market types (flattened via namespace)
-#[cfg(feature = "market")]
-pub use crate::market::MarketError;
 #[cfg(feature = "market")]
 pub use crate::market::action::Action;
 #[cfg(feature = "market")]

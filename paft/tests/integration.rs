@@ -4,10 +4,10 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
 use iso_currency::Currency as IsoCurrency;
+use paft::market::MarketError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
-    Instrument, Interval, MarketError, MarketState, Money, Quote, QuoteUpdate, Range,
-    SearchRequest,
+    Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range, SearchRequest,
 };
 use paft_money::Decimal;
 use std::str::FromStr;

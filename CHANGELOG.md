@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Highlights
 
+- Unified error handling across the facade: new `paft::Error` enum and `paft::Result<T>` alias
+  aggregate errors from `paft-core`, `paft-domain` (feature = "domain"), `paft-market`
+  (feature = "market"), `paft-money` (`MoneyError`, `MoneyParseError`), and `paft-utils`
+  (`CanonicalError`).
 - Split money/currency and shared utilities into dedicated crates for clearer boundaries and optionality:
   - `paft-money`: `Money`, `Currency`, `ExchangeRate`, errors, and currency helpers
   - `paft-utils`: canonical string utilities and dataframe traits
@@ -28,6 +32,10 @@ All notable changes to this project will be documented in this file.
 - `paft-domain::Instrument::new(...)` is replaced by `Instrument::try_new(...) -> Result<Instrument, DomainError>`.
 - `Instrument::try_new` signature change: the `figi` parameter is now `Option<&str>` (was `Option<String>`). Internally identifiers are stored as typed newtypes (`Figi`/`Isin`), not `String`.
 
+- Facade prelude no longer exports individual error types (`PaftError`, `DomainError`,
+  `MarketError`, `MoneyError`, `CanonicalError`). Prefer the unified `paft::Error`, or import
+  specific errors from their namespaces (e.g., `paft::market::MarketError`).
+
 ### Added
 
 - New crates: `paft-money`, `paft-utils`, `paft-domain` (workspace members).
@@ -42,6 +50,9 @@ All notable changes to this project will be documented in this file.
 - New error variants: `DomainError::InvalidIsin` and `DomainError::InvalidFigi`.
 - ISIN parsing now flows entirely through the `Isin` newtype; legacy `instrument` helper functions were removed in favor of the constructor-based API.
 - New `Instrument` APIs: `try_set_isin(&str) -> Result<(), DomainError>`, `try_with_isin(&str) -> Result<Self, DomainError>`, `try_set_figi(&str) -> Result<(), DomainError>`, and `try_with_figi(&str) -> Result<Self, DomainError>`.
+
+- Facade (`paft`): new `error` module with `Error` enum and `Result<T>` alias.
+- Facade (`paft`): added direct dependency on `thiserror` to derive the unified error type.
 
 ### Changed
 
@@ -61,6 +72,10 @@ All notable changes to this project will be documented in this file.
 - Docs and examples updated to use `Instrument::try_new(...).expect("valid instrument")` where appropriate.
 - `Instrument` now stores typed identifiers (`Option<Figi>` / `Option<Isin>`), and profile structs (`CompanyProfile`, `FundProfile`) adopt `Option<Isin>`.
 
+- Facade (`paft`): moved unified error definitions to `paft/src/error.rs`; `lib.rs` re-exports
+  `Error` and `Result`. Prelude exports updated to remove individual error types, encouraging
+  `paft::{Error, Result}`.
+
 ### Migration notes
 
 - Replace imports:
@@ -72,6 +87,15 @@ All notable changes to this project will be documented in this file.
 - Pattern match ISO currencies as `Currency::Iso(IsoCurrency::XXX)`.
 - For metals/funds (ISO-None), register a domain-appropriate scale; absence yields `MetadataNotFound`.
 - If you handle parse errors for currencies, update matches to `paft_money::MoneyParseError` variants.
+
+- Prefer `use paft::{Error, Result};` across your application. The `?` operator will automatically
+  convert from `paft_core::PaftError`, `paft_domain::DomainError` (with `feature = "domain"`),
+  `paft_market::MarketError` (with `feature = "market"`), `paft_money::{MoneyError, MoneyParseError}`,
+  and `paft_utils::CanonicalError` into `paft::Error` via `From`.
+- If you need to match on a specific error type, import it from its namespace (e.g.,
+  `use paft::market::MarketError;`). The facade prelude no longer exports individual error types.
+- If you previously imported `paft::prelude::MarketError`, update imports to
+  `paft::market::MarketError` or pattern-match against `paft::Error`.
 
 - Replace `Instrument::new(...)` with `Instrument::try_new(...)`. Handle the `Result` with `?`, `expect`, or a match. Example: `let inst = Instrument::try_new("AAPL", AssetKind::Equity, Some(figi), Some("US0378331005"), Some(Exchange::NASDAQ))?;`.
 - Update call sites passing a FIGI: use borrowed strings, e.g., replace `Some("BBG000B9XRY4".to_string())` with `Some("BBG000B9XRY4")`.
