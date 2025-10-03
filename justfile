@@ -59,3 +59,7 @@ bench crate='':
 
 fmt:
   cargo fmt --all
+  
+docrs crate='':
+  RUSTDOCFLAGS="--cfg docsrs -Z unstable-options -Dwarnings" cargo +nightly hack -q doc {{ if crate != "" { "-p " + crate } else { "--workspace" } }} --ignore-unknown-features --no-default-features --features full,rust-decimal --no-deps
+  RUSTDOCFLAGS="--cfg docsrs -Z unstable-options -Dwarnings" cargo +nightly hack -q doc {{ if crate != "" { "-p " + crate } else { "--workspace" } }} --ignore-unknown-features --no-default-features --features full,bigdecimal --no-deps
