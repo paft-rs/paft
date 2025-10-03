@@ -81,8 +81,12 @@ fn analyze_data(quote: paft::Quote, history: paft::HistoryResponse) {
 - **Flexible Enums**: Type-safe enums with fallback variants for unknown values
 - **Comprehensive Validation**: Built-in request validation and error handling
 - **Serialization**: Full serde support for JSON, CSV, and other formats
+- **Unified Error**: Single `paft::Error` enum and `paft::Result<T>` unify errors across crates
 - **Feature Flags**:
   - `paft/dataframe`: Enables DataFrame helpers and derives through the facade
+  - `paft/isin-validate`: Enables ISIN checksum validation and normalization across domain models (forwards to `paft-domain`).
+  - `paft/figi-validate`: Enables FIGI checksum validation in constructors and serde (forwards to `paft-domain`).
+  - `paft/ident-validate`: Convenience flag that enables both ISIN and FIGI validation (forwards to `paft-domain`).
   - `paft/panicking-money-ops` (opt-in): Enables ergonomic arithmetic operators on `Money` that panic on currency mismatch or division by zero. By default, operator overloads are disabled and you should use the safe `try_add`, `try_sub`, and `try_div` methods instead.
 
   To enable panicking operators via the `paft` facade:
@@ -148,10 +152,13 @@ The paft ecosystem is designed around interoperable layers that work together to
 
 ### Core Crates
 
-- **`paft`** - Facade crate re-exporting standardized financial data types. This is what most users will depend on directly.
-- **`paft-core`** - Core domain types, errors, shared utilities, and serde helpers.
+- **`paft`** - Facade crate re-exporting standardized financial data types, unified error, and forwarded features. This is what most users will depend on directly.
+- **`paft-domain`** - Domain models (`Instrument`, `Exchange`, `Period`), typed identifiers (`Isin`, `Figi`), and related errors.
 - **`paft-market`** - Market data types, requests, and responses.
 - **`paft-fundamentals`** - Fundamentals types (financial statements, ESG, holders, analysis helpers).
+- **`paft-money`** - Currency and money primitives with ISO 4217 integration, safe arithmetic, and pluggable decimal backends.
+- **`paft-utils`** - Canonical string utilities and DataFrame traits used across the workspace.
+- **`paft-core`** - Infrastructure utilities and serde helpers used internally by the ecosystem.
 
 ### Ecosystem Layers
 
@@ -230,54 +237,17 @@ This approach allows provider crates to focus on their unique value-add (authent
 
 ## Contributing to the Ecosystem
 
-The paft ecosystem grows through community contributions across multiple dimensions:
+Contributions of all kinds are welcome:
 
-### Types of Contributions
+- Core/domain types and provider adapters
+- Documentation, examples, and tests
+- Performance and ergonomics improvements
 
-- **🏗️ Core Types**: Extend paft with new financial data structures
-- **🔌 Provider Crates**: Build adapters for data providers (generic providers, Bloomberg, etc.)
-- **📚 Documentation**: Improve guides, examples, and best practices
-- **🧪 Testing**: Add comprehensive test coverage and integration tests
-- **⚡ Performance**: Optimize serialization, validation, and DataFrame operations
-- **🎯 Applications**: Build showcase applications demonstrating paft's capabilities
+Get started:
 
-### Contribution Areas by Expertise
-
-**New to Financial Data?**
-
-- Documentation improvements
-- Example applications
-- Test coverage
-- Bug fixes
-
-**Financial Domain Expert?**
-
-- New financial data types
-- Provider integration patterns
-- Data validation logic
-- Industry best practices
-
-**Rust Performance Expert?**
-
-- Serialization optimizations
-- Memory usage improvements
-- Compilation time reductions
-- Benchmark development
-
-**Provider API Expert?**
-
-- Provider adapter crates
-- API mapping strategies
-- Rate limiting patterns
-- Authentication flows
-
-### Getting Started
-
-1. **Explore**: Read the [paft crate README](paft/README.md) and [documentation](paft/docs/)
-2. **Discuss**: Join conversations in [GitHub Discussions](https://github.com/paft-rs/paft/discussions)
-3. **Plan**: Open an issue to discuss significant changes
-4. **Build**: Fork, implement, test, and submit a pull request
-5. **Maintain**: Help maintain and evolve your contributions
+1. Read the [CONTRIBUTING.md](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md)
+2. Open an [issue](https://github.com/paft-rs/paft/issues) or start a [discussion](https://github.com/paft-rs/paft/discussions)
+3. Submit a pull request when ready
 
 ## Community
 
