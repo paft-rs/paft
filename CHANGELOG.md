@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- docs.rs: `paft-money` lib.rs should now build reliably on docs.rs.
+- docs.rs: `paft-money` lib.rs now builds reliably on docs.rs.
 
 ## [0.3.1] - 2025-10-3
 
