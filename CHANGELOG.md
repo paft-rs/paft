@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2025-10-3
+
+### Highlights
+
+- No functional changes; documentation-only release.
+
+### Changed
+
+- READMEs: refined wording and link formatting; examples now prefer the `paft` facade and reference version 0.3.1.
+
+### Fixed
+
+- docs.rs: `paft-money` documentation should now build reliably on docs.rs (added appropriate `cfg(docsrs)`/doc attribute handling and cleaned up doc comments).
+
+### Tooling
+
+- just: added a documentation generation command to mirror the docs.rs build locally.
+
 ## [0.3.0] - 2025-10-2
 
 ### Highlights
@@ -169,6 +187,7 @@ All notable changes to this project will be documented in this file.
 
 - Initial public release.
 
-[0.3.0]: https://github.com/paft-rs/paft/compare/v0.2.0...HEAD
+[0.3.1]: https://github.com/paft-rs/paft/compare/v0.2.0...v0.3.1
+[0.3.0]: https://github.com/paft-rs/paft/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/paft-rs/paft/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/paft-rs/paft/releases/tag/v0.1.0
