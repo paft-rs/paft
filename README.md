@@ -286,7 +286,7 @@ The paft ecosystem grows through community contributions across multiple dimensi
 
 ## License
 
-MIT License. See [crates.io](https://crates.io/crates/paft) for details.
+MIT License. See [LICENSE](https://github.com/paft-rs/paft/blob/main/LICENSE) for details.
 
 ## Acknowledgments
 

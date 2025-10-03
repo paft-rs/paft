@@ -10,7 +10,7 @@
 
 Standardized Rust types for financial data that work with any provider—Yahoo Finance, Bloomberg, Alpha Vantage, and more.
 
-> 🌟 **Ecosystem Overview**: For the bigger picture, vision, and contributor guidance, see the [workspace README](../README.md).
+> 🌟 **Ecosystem Overview**: For the bigger picture, vision, and contributor guidance, see the [workspace README](https://github.com/paft-rs/paft/blob/main/README.md).
 
 ## Quick Install
 
@@ -209,4 +209,4 @@ Keep the rule of thumb: *wire = code = Display; human prose = explicit helper*.
 
 ## License
 
-MIT License. See [crates.io](https://crates.io/crates/paft) for details.
+MIT License. See [LICENSE](https://github.com/paft-rs/paft/blob/main/LICENSE) for details.

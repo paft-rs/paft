@@ -102,7 +102,7 @@ When contributing to paft:
 
 ## Related Resources
 
-- [Main README](../README.md) - Quick start and overview
+- [Main README](https://github.com/paft-rs/paft/blob/main/README.md) - Quick start and overview
 - [Crates.io](https://crates.io/crates/paft) - Package information
 - [Documentation](https://docs.rs/paft) - API reference
 - [GitHub](https://github.com/paft-rs/paft) - Source code and issues

@@ -51,4 +51,5 @@ Links
 -----
 
 - API docs: https://docs.rs/paft-fundamentals
-- Workspace overview: ../README.md
+- Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
+- License: https://github.com/paft-rs/paft/blob/main/LICENSE
