@@ -12,9 +12,25 @@ Shared utilities for the paft workspace: canonical string helpers and optional D
 Install
 -------
 
+Prefer the facade crate for most applications:
+
 ```toml
 [dependencies]
-paft-utils = "0.3.0"
+paft = "0.3.1"
+```
+
+Advanced (direct dependency):
+
+```toml
+[dependencies]
+paft-utils = { version = "0.3.1", default-features = false }
+```
+
+With DataFrame helpers:
+
+```toml
+[dependencies]
+paft-utils = { version = "0.3.1", default-features = false, features = ["dataframe"] }
 ```
 
 Features

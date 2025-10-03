@@ -14,9 +14,25 @@ Core infrastructure utilities for the paft ecosystem.
 Install
 -------
 
+Prefer the facade crate for most applications:
+
 ```toml
 [dependencies]
-paft-core = "0.3.0"
+paft = "0.3.1"
+```
+
+Advanced (direct dependency, minimal):
+
+```toml
+[dependencies]
+paft-core = { version = "0.3.1", default-features = false }
+```
+
+With DataFrame helpers:
+
+```toml
+[dependencies]
+paft-core = { version = "0.3.1", default-features = false, features = ["dataframe"] }
 ```
 
 Features

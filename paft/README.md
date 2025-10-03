@@ -18,13 +18,13 @@ Standardized Rust types for financial data that work with any provider—Yahoo F
 [dependencies]
 # Basic installation with all supported data types
 # default = ["domain", "market", "fundamentals", "rust-decimal"]
-paft = "0.3.0"
+paft = "0.3.1"
 
 # Or, install with all features enabled
-paft = { version = "0.3.0", features = ["dataframe"] }
+paft = { version = "0.3.1", features = ["dataframe"] }
 
 # Or, customize your installation
-paft = { version = "0.3.0", default-features = false, features = ["fundamentals", "dataframe"] }
+paft = { version = "0.3.1", default-features = false, features = ["fundamentals", "dataframe"] }
 ```
 
 ## Feature Flags
@@ -41,6 +41,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `panicking-money-ops`: re-enables `Money` arithmetic operators that panic on mismatched currencies (see below).
 - `isin-validate`: forwards to `paft-domain/isin-validate`, enabling ISIN checksum validation and normalization everywhere (including deserialization).
 - `figi-validate`: forwards to `paft-domain/figi-validate`, enabling FIGI checksum validation in constructors and serde.
+- `ident-validate`: convenience flag that enables both ISIN and FIGI validation (forwards to `paft-domain`).
 
 ## Migration Notes
 
@@ -130,7 +131,7 @@ Enable DataFrame support for analysis:
 
 ```toml
 [dependencies]
-paft = { version = "0.3.0", features = ["dataframe"] }
+paft = { version = "0.3.1", features = ["dataframe"] }
 ```
 
 ```rust
@@ -157,7 +158,7 @@ If you explicitly want the ergonomic panicking operators, enable the
 
 ```toml
 [dependencies]
-paft = { version = "0.3.0", features = ["panicking-money-ops"] }
+paft = { version = "0.3.1", features = ["panicking-money-ops"] }
 ```
 
 Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic

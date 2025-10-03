@@ -14,9 +14,32 @@ Domain modeling primitives for the paft ecosystem: instruments, exchanges, perio
 Install
 -------
 
+Prefer the facade crate for most applications:
+
 ```toml
 [dependencies]
-paft-domain = "0.3.0"
+paft = "0.3.1"
+```
+
+Advanced (direct dependency, minimal):
+
+```toml
+[dependencies]
+paft-domain = { version = "0.3.1", default-features = false, features = ["rust-decimal"] }
+```
+
+Alternate decimal backend:
+
+```toml
+[dependencies]
+paft-domain = { version = "0.3.1", default-features = false, features = ["bigdecimal"] }
+```
+
+Enable identifiers and DataFrame helpers as needed:
+
+```toml
+[dependencies]
+paft-domain = { version = "0.3.1", default-features = false, features = ["rust-decimal", "ident-validate", "dataframe"] }
 ```
 
 Features

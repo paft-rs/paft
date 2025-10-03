@@ -15,9 +15,32 @@ Fundamentals data models for the paft ecosystem: financial statements, analysis,
 Install
 -------
 
+Prefer the facade crate for most applications:
+
 ```toml
 [dependencies]
-paft-fundamentals = "0.3.0"
+paft = "0.3.1"
+```
+
+Advanced (direct dependency, minimal):
+
+```toml
+[dependencies]
+paft-fundamentals = { version = "0.3.1", default-features = false, features = ["rust-decimal"] }
+```
+
+Alternate decimal backend:
+
+```toml
+[dependencies]
+paft-fundamentals = { version = "0.3.1", default-features = false, features = ["bigdecimal"] }
+```
+
+With DataFrame integration:
+
+```toml
+[dependencies]
+paft-fundamentals = { version = "0.3.1", default-features = false, features = ["rust-decimal", "dataframe"] }
 ```
 
 Features

@@ -14,9 +14,32 @@ Market data models and request builders for the paft ecosystem.
 Install
 -------
 
+Prefer the facade crate for most applications:
+
 ```toml
 [dependencies]
-paft-market = "0.3.0"
+paft = "0.3.1"
+```
+
+Advanced (direct dependency, minimal):
+
+```toml
+[dependencies]
+paft-market = { version = "0.3.1", default-features = false, features = ["rust-decimal"] }
+```
+
+Alternate decimal backend:
+
+```toml
+[dependencies]
+paft-market = { version = "0.3.1", default-features = false, features = ["bigdecimal"] }
+```
+
+With DataFrame integration:
+
+```toml
+[dependencies]
+paft-market = { version = "0.3.1", default-features = false, features = ["rust-decimal", "dataframe"] }
 ```
 
 Features
