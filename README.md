@@ -270,7 +270,7 @@ Inspired by the need for standardized financial data types in the Rust ecosystem
 - **Contributors**: Explore [contribution opportunities](#contributing-to-the-ecosystem)
 - **Providers**: Build your adapter using our [integration guidelines](#building-provider-crates)
 
-Together, we're building the future of financial data in Rust—standardized, interoperable, and developer-friendly.
+Together, we're building a standardized, interoperable, developer-friendly financial data ecosystem in Rust.
 
 ## Projects Using paft
 
