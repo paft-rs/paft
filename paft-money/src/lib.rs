@@ -116,6 +116,7 @@
 //! [`MAX_DECIMAL_PRECISION`] and [`MAX_MINOR_UNIT_DECIMALS`] for limits that
 //! affect scaling and minor-unit conversions.
 
+#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![warn(missing_docs)]
 #![allow(clippy::cargo_common_metadata)]
 

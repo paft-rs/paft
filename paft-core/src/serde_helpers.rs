@@ -6,10 +6,10 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-/// Serde helper for Vec<`DateTime`<Utc>> encoded as epoch seconds
+/// Serde helper for Vec<`DateTime`<`Utc`>> encoded as epoch seconds
 pub mod ts_seconds_vec {
     use super::{DateTime, Deserialize, Deserializer, Serialize, Serializer, Utc};
-    /// Serialize a vector of `DateTime<Utc>` as epoch seconds.
+    /// Serialize a vector of `DateTime<`Utc`>` as epoch seconds.
     ///
     /// # Errors
     /// This function delegates to the provided `serializer` and returns any
@@ -41,10 +41,10 @@ pub mod ts_seconds_vec {
     }
 }
 
-/// Serde helper for Option<`DateTime`<Utc>> encoded as epoch seconds
+/// Serde helper for Option<`DateTime`<`Utc`>> encoded as epoch seconds
 pub mod ts_seconds_option {
     use super::{DateTime, Deserialize, Deserializer, Serialize, Serializer, Utc};
-    /// Serialize an optional `DateTime<Utc>` as an optional epoch seconds value.
+    /// Serialize an optional `DateTime<`Utc`>` as an optional epoch seconds value.
     ///
     /// # Errors
     /// This function delegates to the provided `serializer` and returns any
