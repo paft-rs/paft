@@ -69,6 +69,8 @@ pub mod money {
         clear_currency_metadata, currency_metadata, set_currency_metadata,
         try_normalize_currency_code,
     };
+    #[cfg(feature = "money-formatting")]
+    pub use paft_money::{Locale, LocalizedMoney};
 }
 
 /// Namespaced access to `paft-fundamentals` (feature-gated).

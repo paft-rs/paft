@@ -1,8 +1,18 @@
 #[cfg(feature = "bigdecimal")]
 use paft_money::Money;
+use paft_money::currency_utils::CurrencyMetadata;
 use paft_money::{
     Currency, MinorUnitError, clear_currency_metadata, currency_metadata, set_currency_metadata,
 };
+
+use paft_money::Locale;
+fn call_set_metadata(
+    code: &str,
+    name: &str,
+    units: u8,
+) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
+    set_currency_metadata(code, name.to_string(), units, code.to_string(), true, Locale::EnUs)
+}
 
 #[test]
 fn test_currency_parsing_accepts_aliases_and_unknown() {
@@ -66,13 +76,13 @@ fn test_custom_currency_metadata_updates() {
 
     assert!(currency_metadata(code).is_none());
 
-    set_currency_metadata(code, "Custom Token", 9).expect("valid override");
+    call_set_metadata(code, "Custom Token", 9).expect("valid override");
     let currency = Currency::try_from_str(code).unwrap();
     assert_eq!(currency.decimal_places().unwrap(), 9);
     assert_eq!(currency_metadata(code).unwrap().minor_units, 9);
 
     // Updating metadata should override the precision
-    set_currency_metadata(code, "Custom Token", 4).expect("update override");
+    call_set_metadata(code, "Custom Token", 4).expect("update override");
     let currency = Currency::try_from_str(code).unwrap();
     assert_eq!(currency.decimal_places().unwrap(), 4);
     assert_eq!(currency_metadata(code).unwrap().minor_units, 4);
@@ -83,13 +93,13 @@ fn test_custom_currency_metadata_updates() {
 
 #[test]
 fn test_currency_metadata_rejects_overflowing_precision() {
-    let err = set_currency_metadata("overflow_minor", "Token", 19).unwrap_err();
+    let err = call_set_metadata("overflow_minor", "Token", 19).unwrap_err();
     assert!(matches!(
         err,
         MinorUnitError::ExceedsMinorUnitScale { decimals } if decimals == 19
     ));
 
-    let err = set_currency_metadata("overflow_decimal", "Token", 29).unwrap_err();
+    let err = call_set_metadata("overflow_decimal", "Token", 29).unwrap_err();
     if cfg!(feature = "bigdecimal") {
         assert!(matches!(
             err,
@@ -106,11 +116,11 @@ fn test_currency_metadata_rejects_overflowing_precision() {
 #[cfg(feature = "bigdecimal")]
 #[test]
 fn test_bigdecimal_accepts_large_magnitudes() {
-    set_currency_metadata("HP18", "High Precision", 18).expect("metadata accepted");
+    call_set_metadata("HP18", "High Precision", 18).expect("metadata accepted");
     let currency = Currency::try_from_str("HP18").unwrap();
 
     let amount = "123456789012345678901234567890.123456789012345678";
-    let money = Money::from_str(amount, currency).unwrap();
+    let money = Money::from_canonical_str(amount, currency).unwrap();
     assert_eq!(money.amount().to_string(), amount);
 
     clear_currency_metadata("HP18");
@@ -122,7 +132,7 @@ fn test_currency_metadata_accepts_boundary_precision() {
     clear_currency_metadata(code);
 
     // 18 is the highest supported minor-unit precision and should be accepted.
-    set_currency_metadata(code, "Boundary Token", 18).expect("18 decimals should be accepted");
+    call_set_metadata(code, "Boundary Token", 18).expect("18 decimals should be accepted");
     let currency = Currency::try_from_str(code).unwrap();
     assert_eq!(currency.decimal_places().unwrap(), 18);
     assert_eq!(currency_metadata(code).unwrap().minor_units, 18);
@@ -138,13 +148,13 @@ fn test_custom_currency_metadata_required() {
 
     assert!(currency_metadata(code).is_none());
 
-    set_currency_metadata(code, "Custom Token", 4).expect("metadata set");
+    call_set_metadata(code, "Custom Token", 4).expect("metadata set");
     let currency = Currency::try_from_str(code).unwrap();
     assert_eq!(currency.full_name().as_ref(), "Custom Token");
     assert_eq!(currency.decimal_places().unwrap(), 4);
 
     // Updating metadata should preserve the name.
-    set_currency_metadata(code, "Custom Token", 5).expect("override precision");
+    call_set_metadata(code, "Custom Token", 5).expect("override precision");
     let metadata = currency_metadata(code).expect("metadata present");
     assert_eq!(metadata.full_name.as_ref(), "Custom Token");
     assert_eq!(metadata.minor_units, 5);
@@ -174,8 +184,8 @@ fn test_iso_none_metadata_overlay_for_metals_and_funds() {
         paft_money::MoneyError::MetadataNotFound { ref currency } if currency == &xdr
     ));
 
-    set_currency_metadata("XAU", "Gold", 3).unwrap();
-    set_currency_metadata("XDR", "SDR", 6).unwrap();
+    call_set_metadata("XAU", "Gold", 3).unwrap();
+    call_set_metadata("XDR", "SDR", 6).unwrap();
 
     assert_eq!(xau.decimal_places().unwrap(), 3);
     assert_eq!(xdr.decimal_places().unwrap(), 6);

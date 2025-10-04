@@ -18,13 +18,13 @@ Standardized Rust types for financial data that work with any provider—Yahoo F
 [dependencies]
 # Basic installation with all supported data types
 # default = ["domain", "market", "fundamentals", "rust-decimal"]
-paft = "0.3.2"
+paft = "0.4.0"
 
 # Or, install with all features enabled
-paft = { version = "0.3.2", features = ["dataframe"] }
+paft = { version = "0.4.0", features = ["dataframe"] }
 
 # Or, customize your installation
-paft = { version = "0.3.2", default-features = false, features = ["fundamentals", "dataframe"] }
+paft = { version = "0.4.0", default-features = false, features = ["fundamentals", "dataframe"] }
 ```
 
 ## Feature Flags
@@ -39,6 +39,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `dataframe`: forwards DataFrame support from `paft-utils`, providing `ToDataFrame`/`ToDataFrameVec`.
 - `full`: convenience bundle for `domain`, `market`, `fundamentals`, and `dataframe`.
 - `panicking-money-ops`: re-enables `Money` arithmetic operators that panic on mismatched currencies (see below).
+- `money-formatting`: forwards to `paft-money/money-formatting` for locale-aware formatting and parsing APIs.
 - `isin-validate`: forwards to `paft-domain/isin-validate`, enabling ISIN checksum validation and normalization everywhere (including deserialization).
 - `figi-validate`: forwards to `paft-domain/figi-validate`, enabling FIGI checksum validation in constructors and serde.
 - `ident-validate`: convenience flag that enables both ISIN and FIGI validation (forwards to `paft-domain`).
@@ -91,8 +92,8 @@ let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto);
 let quote = Quote {
     symbol: "AAPL".to_string(),
     shortname: Some("Apple Inc.".to_string()),
-    price: Some(Money::from_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
-    previous_close: Some(Money::from_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
+    price: Some(Money::from_canonical_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
+    previous_close: Some(Money::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
     exchange: Some(Exchange::NASDAQ),
     market_state: Some(MarketState::Regular),
 };
@@ -131,7 +132,7 @@ Enable DataFrame support for analysis:
 
 ```toml
 [dependencies]
-paft = { version = "0.3.2", features = ["dataframe"] }
+paft = { version = "0.4.0", features = ["dataframe"] }
 ```
 
 ```rust
@@ -158,7 +159,7 @@ If you explicitly want the ergonomic panicking operators, enable the
 
 ```toml
 [dependencies]
-paft = { version = "0.3.2", features = ["panicking-money-ops"] }
+paft = { version = "0.4.0", features = ["panicking-money-ops"] }
 ```
 
 Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic

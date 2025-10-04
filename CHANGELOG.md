@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - Unreleased
+
+### Added
+
+- New feature flag `money-formatting` introducing locale-aware formatting and strict parsing for `Money`.
+- New `Locale` enum plus a `LocalizedMoney` builder (via `Money::localized(locale)`) for opt-in localized `Display`.
+- Currency metadata can store `symbol`, `symbol_first`, and `default_locale` (used only when `money-formatting` is enabled).
+- New explicit APIs: `Money::format_with_locale`, `Money::from_str_locale`, and `Money::from_default_locale_str`.
+
+### Changed (Breaking)
+
+- `set_currency_metadata` signature changed to require symbol, symbol_first, and default_locale (breaking change for direct callers).
+- Added a clearer canonical constructor `Money::from_canonical_str`; the older `Money::from_str` remains and is now deprecated.
+- When `money-formatting` is enabled:
+  - `MoneyError` gains extra variants for format/parse failures (`InvalidAmountFormat`, `InvalidGrouping`, `MismatchedCurrencyAffix`, `ScaleTooLarge`, `UnsupportedLocale`).
+  - `CurrencyMetadata` stores `symbol`, `symbol_first`, and `default_locale`; consequently `set_currency_metadata` accepts these extra fields.
+  - These changes are feature‑gated and do not affect existing users unless the feature is explicitly enabled.
+
+### Facade
+
+- `paft` exposes a `money-formatting` feature that forwards to `paft-money/money-formatting` and re-exports the new APIs.
+
+### Migration notes
+
+- Update all calls to `set_currency_metadata(code, name, units)` to `set_currency_metadata(code, name, units, symbol, symbol_first, default_locale)`.
+- Prefer `Money::from_canonical_str` over `Money::from_str` going forward.
+- To adopt localization, enable `money-formatting` and:
+  - Update calls to `set_currency_metadata(code, name, units)` to include `symbol`, `symbol_first`, and `default_locale`.
+  - Use `Money::format_with_locale` or `Money::localized(locale)` for rendering, and `Money::from_str_locale` (or `from_default_locale_str`) for parsing.
+
 ## [0.3.2] - 2025-10-3
 
 ### Fixed

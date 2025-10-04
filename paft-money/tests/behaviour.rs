@@ -22,9 +22,15 @@ fn dec(lit: &str) -> Decimal {
     decimal::parse_decimal(lit).expect("valid decimal literal")
 }
 
+fn set_metadata(code: &str, name: &str, units: u8) {
+    use paft_money::Locale;
+    paft_money::set_currency_metadata(code, name.to_string(), units, code.to_string(), true, Locale::EnUs)
+        .unwrap();
+}
+
 #[test]
 fn money_new_quantizes_to_currency_scale() {
-    paft_money::set_currency_metadata("TOK", "Token", 4).unwrap();
+    set_metadata("TOK", "Token", 4);
     let currency = Currency::try_from_str("TOK").unwrap();
 
     let money = Money::new(dec("1.23456"), currency.clone()).unwrap();
@@ -38,17 +44,17 @@ fn money_new_quantizes_to_currency_scale() {
 
 #[test]
 fn money_format_is_stable() {
-    let money = Money::from_str("123456.789", usd()).unwrap();
+    let money = Money::from_canonical_str("123456.789", usd()).unwrap();
     assert_eq!(money.format(), "123456.79 USD");
 
-    let negative = Money::from_str("-0.5", usd()).unwrap();
+    let negative = Money::from_canonical_str("-0.5", usd()).unwrap();
     assert_eq!(negative.format(), "-0.5 USD");
 }
 
 #[test]
 fn money_arithmetic_same_currency() {
-    let a = Money::from_str("10.00", usd()).unwrap();
-    let b = Money::from_str("2.50", usd()).unwrap();
+    let a = Money::from_canonical_str("10.00", usd()).unwrap();
+    let b = Money::from_canonical_str("2.50", usd()).unwrap();
 
     assert_eq!(a.try_add(&b).unwrap().amount(), dec("12.5"));
     assert_eq!(a.try_sub(&b).unwrap().amount(), dec("7.5"));
@@ -58,8 +64,8 @@ fn money_arithmetic_same_currency() {
 
 #[test]
 fn money_arithmetic_currency_mismatch_errors() {
-    let usd = Money::from_str("10.00", usd()).unwrap();
-    let eur = Money::from_str("10.00", Currency::Iso(IsoCurrency::EUR)).unwrap();
+    let usd = Money::from_canonical_str("10.00", usd()).unwrap();
+    let eur = Money::from_canonical_str("10.00", Currency::Iso(IsoCurrency::EUR)).unwrap();
 
     assert!(usd.try_add(&eur).is_err());
     assert!(usd.try_sub(&eur).is_err());
@@ -69,11 +75,11 @@ fn money_arithmetic_currency_mismatch_errors() {
 fn panicking_ops_mirror_try_semantics() {
     #[cfg(feature = "panicking-money-ops")]
     {
-        let a = Money::from_str("10.00", usd()).unwrap();
-        let b = Money::from_str("5.00", usd()).unwrap();
+        let a = Money::from_canonical_str("10.00", usd()).unwrap();
+        let b = Money::from_canonical_str("5.00", usd()).unwrap();
         assert_eq!((&a + &b).amount(), dec("15.0"));
 
-        let other = Money::from_str("1.00", Currency::Iso(IsoCurrency::EUR)).unwrap();
+        let other = Money::from_canonical_str("1.00", Currency::Iso(IsoCurrency::EUR)).unwrap();
         let result = std::panic::catch_unwind(|| &a + &other);
         assert!(result.is_err());
     }
@@ -100,13 +106,13 @@ fn exchange_rate_validation_and_inverse() {
 #[test]
 fn exchange_rate_conversion_respects_target_scale() {
     let usd_to_jpy = ExchangeRate::new(usd(), jpy(), dec("110.001")).unwrap();
-    let usd_money = Money::from_str("1.00", usd()).unwrap();
+    let usd_money = Money::from_canonical_str("1.00", usd()).unwrap();
     let jpy_money = usd_money.try_convert(&usd_to_jpy).unwrap();
     assert_eq!(jpy_money.currency(), &jpy());
     assert_eq!(jpy_money.amount(), dec("110"));
 
     let custom_rate = ExchangeRate::new(jpy(), usd(), dec("0.0089")).unwrap();
-    let jpy_value = Money::from_str("1", jpy()).unwrap();
+    let jpy_value = Money::from_canonical_str("1", jpy()).unwrap();
     let rounding = jpy_value
         .try_convert_with(&custom_rate, RoundingStrategy::ToZero)
         .unwrap();
@@ -115,12 +121,12 @@ fn exchange_rate_conversion_respects_target_scale() {
 
 #[test]
 fn exchange_rate_conversion_handles_boundary_scales() {
-    let eth_money = Money::from_str("1.000000000000000001", eth()).unwrap();
+    let eth_money = Money::from_canonical_str("1.000000000000000001", eth()).unwrap();
     let rate = ExchangeRate::new(eth(), usd(), dec("2000.123456")).unwrap();
     let usd_money = eth_money.try_convert(&rate).unwrap();
     assert_eq!(usd_money.currency(), &usd());
 
-    let xmr_money = Money::from_str("0.123456789012", xmr()).unwrap();
+    let xmr_money = Money::from_canonical_str("0.123456789012", xmr()).unwrap();
     let rate = ExchangeRate::new(xmr(), usd(), dec("150.123456")).unwrap();
     let converted = xmr_money.try_convert(&rate).unwrap();
     assert_eq!(converted.currency(), &usd());
@@ -128,7 +134,7 @@ fn exchange_rate_conversion_handles_boundary_scales() {
 
 #[test]
 fn serde_roundtrips_money_and_exchange_rate() {
-    let money = Money::from_str("123.45", usd()).unwrap();
+    let money = Money::from_canonical_str("123.45", usd()).unwrap();
     let value = to_value(&money).unwrap();
     assert_eq!(value, json!({"amount": "123.45", "currency": "USD"}));
     let parsed: Money = from_value(value).unwrap();
@@ -145,7 +151,7 @@ fn serde_roundtrips_money_and_exchange_rate() {
 fn currency_decimal_places_fallback_and_metadata() {
     let xau = Currency::Iso(IsoCurrency::XAU);
     assert!(xau.decimal_places().is_err());
-    paft_money::set_currency_metadata("XAU", "Gold", 3).unwrap();
+    set_metadata("XAU", "Gold", 3);
     assert_eq!(xau.decimal_places().unwrap(), 3);
     paft_money::clear_currency_metadata("XAU");
 }
@@ -168,7 +174,7 @@ fn currency_minor_unit_scale_limits() {
 
 #[test]
 fn money_equality_after_quantization() {
-    let a = Money::from_str("1.230", usd()).unwrap();
-    let b = Money::from_str("1.23", usd()).unwrap();
+    let a = Money::from_canonical_str("1.230", usd()).unwrap();
+    let b = Money::from_canonical_str("1.23", usd()).unwrap();
     assert_eq!(a, b);
 }

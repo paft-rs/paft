@@ -9,6 +9,10 @@ pub use crate::domain::{
     AssetKind, Canonical, Exchange, Figi, Instrument, Isin, MarketState, Period, StringCode,
     canonicalize,
 };
+#[cfg(feature = "money-formatting")]
+pub use crate::money::Locale;
+#[cfg(feature = "money-formatting")]
+pub use crate::money::LocalizedMoney;
 pub use crate::money::{
     Currency, clear_currency_metadata, currency_metadata, set_currency_metadata,
     try_normalize_currency_code,

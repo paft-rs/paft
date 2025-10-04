@@ -16,6 +16,7 @@ use paft_utils::canonicalize;
 
 use crate::currency::Currency;
 use crate::error::MoneyParseError;
+use crate::locale::Locale;
 
 /// Maximum precision supported by the active decimal backend for safe scaling operations.
 ///
@@ -39,6 +40,12 @@ pub struct CurrencyMetadata {
     pub full_name: Cow<'static, str>,
     /// Number of decimal places (minor units) for the currency.
     pub minor_units: u8,
+    /// Symbol used when rendering the currency.
+    pub symbol: Cow<'static, str>,
+    /// Whether the symbol is rendered before (`true`) or after (`false`) the amount.
+    pub symbol_first: bool,
+    /// Default locale used for grouping and separators when formatting.
+    pub default_locale: crate::locale::Locale,
 }
 
 /// Errors that can occur when configuring minor-unit overrides.
@@ -73,37 +80,69 @@ impl fmt::Display for MinorUnitError {
 
 impl std::error::Error for MinorUnitError {}
 
-/// Built-in metadata for commonly used non-ISO currency codes.
-const BUILTIN_CURRENCY_METADATA: &[(&str, &str, u8)] = &[
-    ("USDC", "USD Coin", 6),
-    ("USDT", "Tether", 6),
-    ("BNB", "BNB", 8),
-    ("ADA", "Cardano", 6),
-    ("SOL", "Solana", 9),
-    ("XRP", "XRP", 6),
-    ("DOT", "Polkadot", 10),
-    ("DOGE", "Dogecoin", 8),
-    ("AVAX", "Avalanche", 8),
-    ("LINK", "Chainlink", 8),
-    ("LTC", "Litecoin", 8),
-    ("MATIC", "Polygon", 8),
-    ("UNI", "Uniswap", 8),
+/// Built-in metadata for commonly used ISO and non-ISO currency codes.
+const BUILTIN_CURRENCY_METADATA: &[(&str, &str, u8, &str, bool, Locale)] = &[
+    (
+        "USD",
+        "United States Dollar",
+        2,
+        "\u{0024}",
+        true,
+        Locale::EnUs,
+    ),
+    ("EUR", "Euro", 2, "\u{20AC}", true, Locale::EnEu),
+    ("GBP", "Pound Sterling", 2, "\u{00A3}", true, Locale::EnUs),
+    ("JPY", "Japanese Yen", 0, "\u{00A5}", true, Locale::EnUs),
+    ("CHF", "Swiss Franc", 2, "CHF", true, Locale::EnUs),
+    ("INR", "Indian Rupee", 2, "\u{20B9}", true, Locale::EnIn),
+    (
+        "AED",
+        "UAE Dirham",
+        2,
+        "\u{062F}.\u{0625}",
+        false,
+        Locale::EnUs,
+    ),
+    ("BHD", "Bahraini Dinar", 3, "BD", true, Locale::EnUs),
+    ("BYN", "Belarusian Ruble", 2, "Br", false, Locale::EnBy),
+    ("BTC", "Bitcoin", 8, "\u{20BF}", true, Locale::EnUs),
+    ("ETH", "Ethereum", 18, "\u{039E}", true, Locale::EnUs),
+    ("XMR", "Monero", 12, "XMR", true, Locale::EnUs),
+    ("USDC", "USD Coin", 6, "USDC", true, Locale::EnUs),
+    ("USDT", "Tether", 6, "USDT", true, Locale::EnUs),
+    ("BNB", "BNB", 8, "BNB", true, Locale::EnUs),
+    ("ADA", "Cardano", 6, "ADA", true, Locale::EnUs),
+    ("SOL", "Solana", 9, "SOL", true, Locale::EnUs),
+    ("XRP", "XRP", 6, "XRP", true, Locale::EnUs),
+    ("DOT", "Polkadot", 10, "DOT", true, Locale::EnUs),
+    ("DOGE", "Dogecoin", 8, "DOGE", true, Locale::EnUs),
+    ("AVAX", "Avalanche", 8, "AVAX", true, Locale::EnUs),
+    ("LINK", "Chainlink", 8, "LINK", true, Locale::EnUs),
+    ("LTC", "Litecoin", 8, "LTC", true, Locale::EnUs),
+    ("MATIC", "Polygon", 8, "MATIC", true, Locale::EnUs),
+    ("UNI", "Uniswap", 8, "UNI", true, Locale::EnUs),
 ];
 
-static BUILTIN_METADATA: LazyLock<HashMap<String, CurrencyMetadata>> = LazyLock::new(|| {
+fn build_builtin_metadata() -> HashMap<String, CurrencyMetadata> {
     let mut map = HashMap::new();
-    for (code, full_name, decimals) in BUILTIN_CURRENCY_METADATA {
+    for (code, full_name, decimals, symbol, symbol_first, locale) in BUILTIN_CURRENCY_METADATA {
         let canonical = canonicalize(code).into_owned();
         map.insert(
             canonical,
             CurrencyMetadata {
                 full_name: Cow::Borrowed(*full_name),
                 minor_units: *decimals,
+                symbol: Cow::Borrowed(*symbol),
+                symbol_first: *symbol_first,
+                default_locale: *locale,
             },
         );
     }
     map
-});
+}
+
+static BUILTIN_METADATA: LazyLock<HashMap<String, CurrencyMetadata>> =
+    LazyLock::new(build_builtin_metadata);
 
 static CUSTOM_METADATA: LazyLock<RwLock<HashMap<String, CurrencyMetadata>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
@@ -124,6 +163,9 @@ pub fn set_currency_metadata(
     code: &str,
     full_name: impl Into<String>,
     minor_units: u8,
+    symbol: impl Into<String>,
+    symbol_first: bool,
+    default_locale: Locale,
 ) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
     #[cfg(not(feature = "bigdecimal"))]
     if minor_units > MAX_DECIMAL_PRECISION {
@@ -139,9 +181,13 @@ pub fn set_currency_metadata(
 
     let canonical = canonicalize(code);
     let full_name: String = full_name.into();
+    let symbol: String = symbol.into();
     let metadata = CurrencyMetadata {
         full_name: Cow::Owned(full_name),
         minor_units,
+        symbol: Cow::Owned(symbol),
+        symbol_first,
+        default_locale,
     };
 
     Ok(CUSTOM_METADATA

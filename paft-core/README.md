@@ -18,21 +18,21 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.3.2"
+paft = "0.4.0"
 ```
 
 Advanced (direct dependency, minimal):
 
 ```toml
 [dependencies]
-paft-core = { version = "0.3.2", default-features = false }
+paft-core = { version = "0.4.0", default-features = false }
 ```
 
 With DataFrame helpers:
 
 ```toml
 [dependencies]
-paft-core = { version = "0.3.2", default-features = false, features = ["dataframe"] }
+paft-core = { version = "0.4.0", default-features = false, features = ["dataframe"] }
 ```
 
 Features

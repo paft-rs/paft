@@ -9,6 +9,7 @@
 //! # Quickstart
 //! ```rust
 //! use paft_core::{PaftError, string_enum_closed_with_code, impl_display_via_code};
+//! # use std::str::FromStr;
 //!
 //! // Define a closed string enum with canonical codes and parsing
 //! #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

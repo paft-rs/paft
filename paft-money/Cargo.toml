@@ -29,6 +29,7 @@ default = ["rust-decimal"]
 rust-decimal = ["dep:rust_decimal"]
 bigdecimal = ["dep:bigdecimal", "dep:num-traits", "dep:num-bigint"]
 dataframe = ["polars", "df-derive", "paft-utils/dataframe"]
+money-formatting = []
 panicking-money-ops = []
 
 [dev-dependencies]

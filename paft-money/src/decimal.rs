@@ -189,3 +189,21 @@ pub fn from_minor_units(value: i128, scale: u32) -> Decimal {
 pub fn round_dp_with_strategy(value: &Decimal, scale: u32, strategy: RoundingStrategy) -> Decimal {
     backend::round_dp_with_strategy(value, scale, strategy)
 }
+
+/// Converts a decimal into a canonical string without scientific notation and
+/// without gratuitous trailing zeros.
+#[must_use]
+pub(crate) fn to_canonical_string(value: &Decimal) -> String {
+    let mut repr = value.to_string();
+    if let Some(dot) = repr.find('.') {
+        let mut end = repr.len();
+        while end > dot + 1 && repr.as_bytes()[end - 1] == b'0' {
+            end -= 1;
+        }
+        if end == dot + 1 {
+            end -= 1;
+        }
+        repr.truncate(end);
+    }
+    repr
+}

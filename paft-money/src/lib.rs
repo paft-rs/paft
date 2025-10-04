@@ -11,8 +11,18 @@
 //! Use [`set_currency_metadata`] to register a human-friendly name and scale:
 //! ```rust
 //! # use paft_money::set_currency_metadata;
-//! set_currency_metadata("XAU", "Gold", 3).unwrap();
-//! set_currency_metadata("XDR", "SDR", 6).unwrap();
+//! # #[cfg(feature = "money-formatting")]
+//! # {
+//! # use paft_money::Locale;
+//! set_currency_metadata("XAU", "Gold", 3, "XAU", true, Locale::EnUs).unwrap();
+//! set_currency_metadata("XDR", "SDR", 6, "XDR", true, Locale::EnUs).unwrap();
+//! # }
+//! # #[cfg(not(feature = "money-formatting"))]
+//! # {
+//! use paft_money::Locale;
+//! set_currency_metadata("XAU", "Gold", 3, "XAU", true, Locale::EnUs).unwrap();
+//! set_currency_metadata("XDR", "SDR", 6, "XDR", true, Locale::EnUs).unwrap();
+//! # }
 //! ```
 //!
 //! Using metals/funds (recommended defaults):
@@ -50,13 +60,13 @@
 //! # use iso_currency::Currency as IsoCurrency;
 //! # use paft_money::{Currency, Money};
 //! # fn run() -> Result<(), paft_money::MoneyError> {
-//! let price = Money::from_str("12.34", Currency::Iso(IsoCurrency::USD))?;
-//! let tax   = Money::from_str("1.23",  Currency::Iso(IsoCurrency::USD))?;
+//! let price = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD))?;
+//! let tax   = Money::from_canonical_str("1.23",  Currency::Iso(IsoCurrency::USD))?;
 //! let total = price.try_add(&tax)?;
 //! assert_eq!(total.format(), "13.57 USD");
 //!
 //! // Cross-currency addition is rejected
-//! let eur = Money::from_str("5", Currency::Iso(IsoCurrency::EUR))?;
+//! let eur = Money::from_canonical_str("5", Currency::Iso(IsoCurrency::EUR))?;
 //! assert!(price.try_add(&eur).is_err());
 //! # Ok(()) } run().unwrap();
 //! ```
@@ -69,7 +79,7 @@
 //! # use iso_currency::Currency as IsoCurrency;
 //! # use paft_money::{Currency, Money, ExchangeRate, Decimal, RoundingStrategy};
 //! # fn run() -> Result<(), paft_money::MoneyError> {
-//! let usd = Money::from_str("10.00", Currency::Iso(IsoCurrency::USD))?;
+//! let usd = Money::from_canonical_str("10.00", Currency::Iso(IsoCurrency::USD))?;
 //! let rate = ExchangeRate::new(
 //!     Currency::Iso(IsoCurrency::USD),
 //!     Currency::Iso(IsoCurrency::EUR),
@@ -88,7 +98,7 @@
 //! ```rust
 //! # use iso_currency::Currency as IsoCurrency;
 //! # use paft_money::{Currency, Money};
-//! let usd = Money::from_str("12.34", Currency::Iso(IsoCurrency::USD)).unwrap();
+//! let usd = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD)).unwrap();
 //! let json = serde_json::to_string(&usd).unwrap();
 //! assert_eq!(json, "{\"amount\":\"12.34\",\"currency\":\"USD\"}");
 //! ```
@@ -100,8 +110,18 @@
 //!
 //! ```rust
 //! # use paft_money::set_currency_metadata;
-//! set_currency_metadata("XAU", "Gold", 3).unwrap();
-//! set_currency_metadata("XDR", "SDR", 6).unwrap();
+//! # #[cfg(feature = "money-formatting")]
+//! # {
+//! # use paft_money::Locale;
+//! set_currency_metadata("XAU", "Gold", 3, "XAU", true, Locale::EnUs).unwrap();
+//! set_currency_metadata("XDR", "SDR", 6, "XDR", true, Locale::EnUs).unwrap();
+//! # }
+//! # #[cfg(not(feature = "money-formatting"))]
+//! # {
+//! use paft_money::Locale;
+//! set_currency_metadata("XAU", "Gold", 3, "XAU", true, Locale::EnUs).unwrap();
+//! set_currency_metadata("XDR", "SDR", 6, "XDR", true, Locale::EnUs).unwrap();
+//! # }
 //! ```
 //!
 //! # Feature flags
@@ -111,6 +131,28 @@
 //! - `dataframe`: enables `serde`/`polars`/`df-derive` integration for dataframes.
 //! - `panicking-money-ops`: implements `Add`/`Sub`/`Mul`/`Div` for `Money` that
 //!   assert on invalid operations. Prefer the `try_*` methods for fallible APIs.
+//! - `money-formatting`: opt-in locale-aware formatting and strict parsing for [`Money`].
+//!
+//! When `money-formatting` is enabled you opt into localized rendering explicitly:
+//! ```rust
+//! # #[cfg(feature = "money-formatting")] {
+//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::{Currency, Locale, Money};
+//! let eur = Money::from_canonical_str("1234.56", Currency::Iso(IsoCurrency::EUR)).unwrap();
+//! assert_eq!(format!("{eur}"), "1234.56 EUR"); // canonical display stays locale-neutral
+//! assert_eq!(eur.format_with_locale(Locale::EnEu).unwrap(), "€1.234,56");
+//! assert_eq!(
+//!     Money::from_str_locale("€1.234,56", Currency::Iso(IsoCurrency::EUR), Locale::EnEu)
+//!         .unwrap()
+//!         .format(),
+//!     "1234.56 EUR"
+//! );
+//! assert_eq!(
+//!     format!("{}", eur.localized(Locale::EnEu).with_code()),
+//!     "€1.234,56 EUR"
+//! );
+//! # }
+//! ```
 //!
 //! Regardless of backend, serde and the high-level API remain stable; see
 //! [`MAX_DECIMAL_PRECISION`] and [`MAX_MINOR_UNIT_DECIMALS`] for limits that
@@ -119,6 +161,12 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
 #![allow(clippy::cargo_common_metadata)]
+
+#[cfg(feature = "money-formatting")]
+mod format;
+mod locale;
+#[cfg(feature = "money-formatting")]
+mod parser;
 
 pub mod currency;
 pub mod currency_utils;
@@ -135,6 +183,9 @@ pub use currency_utils::{
 };
 pub use decimal::{Decimal, RoundingStrategy};
 pub use error::MoneyParseError;
+pub use locale::Locale;
+#[cfg(feature = "money-formatting")]
+pub use money::LocalizedMoney;
 pub use money::{ExchangeRate, Money, MoneyError};
 
 /// Re-export `iso_currency::Currency` for convenience.

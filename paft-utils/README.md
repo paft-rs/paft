@@ -16,21 +16,21 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.3.2"
+paft = "0.4.0"
 ```
 
 Advanced (direct dependency):
 
 ```toml
 [dependencies]
-paft-utils = { version = "0.3.2", default-features = false }
+paft-utils = { version = "0.4.0", default-features = false }
 ```
 
 With DataFrame helpers:
 
 ```toml
 [dependencies]
-paft-utils = { version = "0.3.2", default-features = false, features = ["dataframe"] }
+paft-utils = { version = "0.4.0", default-features = false, features = ["dataframe"] }
 ```
 
 Features
@@ -56,4 +56,3 @@ Links
 - API docs: https://docs.rs/paft-utils
 - Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
 - License: https://github.com/paft-rs/paft/blob/main/LICENSE
-

@@ -8,6 +8,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::IsoCurrency;
 use crate::currency_utils::{MAX_MINOR_UNIT_DECIMALS, currency_metadata};
 use crate::error::MoneyParseError;
+#[cfg(feature = "money-formatting")]
+use crate::locale::Locale;
 use crate::money::MoneyError;
 
 /// Currency enumeration with major currencies and extensible fallback.
@@ -134,6 +136,35 @@ impl Currency {
     #[must_use]
     pub const fn is_canonical(&self) -> bool {
         !matches!(self, Self::Other(_))
+    }
+
+    /// Returns the preferred currency symbol.
+    #[cfg(feature = "money-formatting")]
+    #[must_use]
+    pub fn symbol(&self) -> Option<Cow<'static, str>> {
+        if let Some(meta) = currency_metadata(self.code()) {
+            let symbol = meta.symbol.clone();
+            if symbol.is_empty() {
+                return None;
+            }
+            return Some(symbol);
+        }
+
+        Some(Cow::Owned(self.code().to_string()))
+    }
+
+    /// Returns whether the symbol should precede (`true`) or follow (`false`) the amount.
+    #[cfg(feature = "money-formatting")]
+    #[must_use]
+    pub fn symbol_first(&self) -> bool {
+        currency_metadata(self.code()).is_none_or(|meta| meta.symbol_first)
+    }
+
+    /// Returns the default locale for formatting this currency.
+    #[cfg(feature = "money-formatting")]
+    #[must_use]
+    pub fn default_locale(&self) -> Locale {
+        currency_metadata(self.code()).map_or(Locale::EnUs, |meta| meta.default_locale)
     }
 }
 
