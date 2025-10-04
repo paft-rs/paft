@@ -11,7 +11,14 @@ fn call_set_metadata(
     name: &str,
     units: u8,
 ) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
-    set_currency_metadata(code, name.to_string(), units, code.to_string(), true, Locale::EnUs)
+    set_currency_metadata(
+        code,
+        name.to_string(),
+        units,
+        code.to_string(),
+        true,
+        Locale::EnUs,
+    )
 }
 
 #[test]

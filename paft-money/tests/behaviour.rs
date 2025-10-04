@@ -24,8 +24,15 @@ fn dec(lit: &str) -> Decimal {
 
 fn set_metadata(code: &str, name: &str, units: u8) {
     use paft_money::Locale;
-    paft_money::set_currency_metadata(code, name.to_string(), units, code.to_string(), true, Locale::EnUs)
-        .unwrap();
+    paft_money::set_currency_metadata(
+        code,
+        name.to_string(),
+        units,
+        code.to_string(),
+        true,
+        Locale::EnUs,
+    )
+    .unwrap();
 }
 
 #[test]
