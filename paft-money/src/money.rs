@@ -271,12 +271,6 @@ impl Money {
         Self::new(amount, currency)
     }
 
-    /// Deprecated: use `from_canonical_str` for explicit canonical parsing.
-    #[deprecated(since = "0.3.3", note = "use from_canonical_str for explicit canonical parsing")]
-    pub fn from_str(amount: &str, currency: Currency) -> Result<Self, MoneyError> {
-        Self::from_canonical_str(amount, currency)
-    }
-
     /// Creates a new Money instance from an integer amount in the currency's minor units.
     ///
     /// # Errors

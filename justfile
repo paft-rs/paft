@@ -26,18 +26,6 @@ test crate='':
     --no-default-features --features full,bigdecimal,panicking-money-ops,money-formatting \
     --status-level none --final-status-level none --success-output never \
     --failure-output final --hide-progress-bar --no-tests pass
-  cargo hack -q nextest run {{ if crate != "" { "-p " + crate } else { "--workspace" } }} \
-    --all-targets \
-    --ignore-unknown-features \
-    --no-default-features --features full,rust-decimal,panicking-money-ops,money-formatting \
-    --status-level none --final-status-level none --success-output never \
-    --failure-output final --hide-progress-bar --no-tests pass
-  cargo hack -q nextest run {{ if crate != "" { "-p " + crate } else { "--workspace" } }} \
-    --all-targets \
-    --ignore-unknown-features \
-    --no-default-features --features full,bigdecimal,panicking-money-ops,money-formatting \
-    --status-level none --final-status-level none --success-output never \
-    --failure-output final --hide-progress-bar --no-tests pass
 
 # Test over every valid feature combo in the workspace. This takes way too long.
 test-powerset:
@@ -66,16 +54,6 @@ lint crate='':
     --all-targets \
     --ignore-unknown-features \
     --no-default-features --features full,bigdecimal,panicking-money-ops \
-    -- -W clippy::all -W clippy::cargo -W clippy::pedantic -W clippy::nursery -A clippy::multiple-crate-versions -D warnings
-  cargo hack clippy {{ if crate != "" { "-p " + crate } else { "--workspace" } }} \
-    --all-targets \
-    --ignore-unknown-features \
-    --no-default-features --features full,bigdecimal,panicking-money-ops,money-formatting \
-    -- -W clippy::all -W clippy::cargo -W clippy::pedantic -W clippy::nursery -A clippy::multiple-crate-versions -D warnings
-  cargo hack clippy {{ if crate != "" { "-p " + crate } else { "--workspace" } }} \
-    --all-targets \
-    --ignore-unknown-features \
-    --no-default-features --features full,rust-decimal,panicking-money-ops,money-formatting \
     -- -W clippy::all -W clippy::cargo -W clippy::pedantic -W clippy::nursery -A clippy::multiple-crate-versions -D warnings
   cargo hack clippy {{ if crate != "" { "-p " + crate } else { "--workspace" } }} \
     --all-targets \

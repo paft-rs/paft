@@ -18,6 +18,7 @@ pub enum Locale {
 
 /// Concrete formatting specification for a locale.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(feature = "money-formatting")]
 pub struct LocalFormat {
     /// Character inserted between digit groups in the integer part.
     pub group_separator: char,
@@ -27,6 +28,7 @@ pub struct LocalFormat {
     pub grouping: Vec<usize>,
 }
 
+#[cfg(feature = "money-formatting")]
 impl Locale {
     /// Maps a locale to its formatting implementation details.
     pub(crate) fn spec(self) -> LocalFormat {
