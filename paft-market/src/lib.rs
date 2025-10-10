@@ -40,7 +40,7 @@ pub use error::MarketError;
 pub use market::{
     action::Action,
     news::NewsArticle,
-    options::{OptionChain, OptionContract},
+    options::{OptionChain, OptionContract, OptionGreeks},
     quote::{Quote, QuoteUpdate},
 };
 pub use requests::history::{HistoryRequest, HistoryRequestBuilder, Interval, Range};

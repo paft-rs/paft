@@ -7,5 +7,5 @@ pub mod quote;
 
 pub use action::Action;
 pub use news::NewsArticle;
-pub use options::{OptionChain, OptionContract};
+pub use options::{OptionChain, OptionContract, OptionGreeks};
 pub use quote::{Quote, QuoteUpdate};

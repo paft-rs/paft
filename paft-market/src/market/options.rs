@@ -9,6 +9,22 @@ use paft_money::Money;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
+/// Primary first-order greeks for an option contract.
+pub struct OptionGreeks {
+    /// Dimensionless change in option price for a 1.0 change in underlying price.
+    pub delta: Option<f64>,
+    /// Change in `delta` per 1.0 change in underlying price (1/price units).
+    pub gamma: Option<f64>,
+    /// Change in option price per calendar day.
+    pub theta: Option<f64>,
+    /// Change in option price for a 1 percentage point (0.01) change in IV.
+    pub vega: Option<f64>,
+    /// Change in option price for a 1 percentage point (0.01) change in rate.
+    pub rho: Option<f64>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single option contract (call or put) at a given strike and expiration.
