@@ -28,7 +28,7 @@ fn end_to_end_workflow() {
     let instrument = Instrument::try_new(
         "AAPL",
         AssetKind::Equity,
-        Some("BBG000B9XRY1"),
+        Some("BBG000B9XRY4"),
         None,
         Some(Exchange::NASDAQ),
     )
@@ -255,7 +255,7 @@ fn asset_kind_workflow() {
         let instrument = Instrument::try_new(
             "TEST",
             asset_kind,
-            Some("BBG000B9XRY1"),
+            Some("BBG000B9XRY4"),
             None,
             Some(Exchange::try_from_str("TEST").unwrap()),
         )
