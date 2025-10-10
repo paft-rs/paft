@@ -84,7 +84,7 @@ fn figi_checksum_is_valid(value: &str) -> bool {
     let mut digits = Vec::with_capacity(22);
     for ch in body.chars() {
         if ch.is_ascii_digit() {
-            digits.push((ch as u8 - b'0') as u32);
+            digits.push(u32::from(ch as u8 - b'0'));
         } else if ch.is_ascii_uppercase() {
             let value = (ch as u32 - 'A' as u32) + 10;
             digits.push(value / 10);
@@ -109,7 +109,7 @@ fn figi_checksum_is_valid(value: &str) -> bool {
     }
 
     let expected = (10 - (sum % 10)) % 10;
-    expected == ((checksum_char - b'0') as u32)
+    expected == u32::from(checksum_char - b'0')
 }
 
 /// Opaque wrapper for validated ISIN values.
