@@ -5,8 +5,9 @@
 //! and an internal `Columnar` trait implemented by the derive macro
 //! to enable high-performance conversion for `&[T]`.
 
-#[cfg(feature = "dataframe")]
-use polars::prelude::*;
+use polars::frame::DataFrame;
+use polars::prelude::PolarsResult;
+use polars::datatypes::DataType;
 
 /// Trait for converting types to Polars `DataFrames`
 #[cfg(feature = "dataframe")]
