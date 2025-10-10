@@ -95,7 +95,7 @@ fn figi_checksum_is_valid(value: &str) -> bool {
     }
 
     let mut sum = 0u32;
-    let mut double = true;
+    let mut double = false;
     for digit in digits.iter().rev() {
         let mut val = *digit;
         if double {
