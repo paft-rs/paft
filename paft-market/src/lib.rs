@@ -44,7 +44,9 @@ pub use market::{
     quote::{Quote, QuoteUpdate},
 };
 pub use requests::history::{HistoryRequest, HistoryRequestBuilder, Interval, Range};
+pub use requests::options::{OptionChainRequest, OptionExpirationsRequest};
 pub use requests::search::SearchRequest;
 pub use responses::download::DownloadResponse;
 pub use responses::history::{Candle, HistoryMeta, HistoryResponse};
+pub use responses::options::OptionExpirationsResponse;
 pub use responses::search::{SearchResponse, SearchResult};

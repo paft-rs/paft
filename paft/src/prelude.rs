@@ -61,6 +61,8 @@ pub use crate::market::requests::history::{
     HistoryRequest, HistoryRequestBuilder, Interval, Range,
 };
 #[cfg(feature = "market")]
+pub use crate::market::requests::options::{OptionChainRequest, OptionExpirationsRequest};
+#[cfg(feature = "market")]
 pub use crate::market::requests::search::SearchRequest;
 #[cfg(feature = "market")]
 pub use crate::market::responses::download::DownloadResponse;
