@@ -24,7 +24,7 @@ iso_currency = { workspace = true }
 thiserror = { workspace = true }
 
 [features]
-default = ["domain", "market", "fundamentals", "aggregates", "rust-decimal"]
+default = ["domain", "market", "fundamentals", "rust-decimal"]
 
 rust-decimal = [
   "paft-money/rust-decimal",
