@@ -8,6 +8,7 @@ members = [
     "paft-utils",
     "paft-money",
     "paft-domain",
+    "paft-aggregates",
 ]
 
 [workspace.package]
@@ -20,14 +21,14 @@ repository = "https://github.com/paft-rs/paft"
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
 polars = "0.51"
-thiserror = "2.0"
+thiserror = "2.0.17"
 df-derive = { version = "0.1.1" }
-quote = "1.0"
-serde_json = "1.0"
-regex = "1.0"
+quote = "1.0.41"
+serde_json = "1.0.145"
+regex = "1.11.3"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = { version = "0.10", features = ["serde"] }
-rust_decimal = { version = "1.36", features = ["serde"] }
+rust_decimal = { version = "1.38", features = ["serde"] }
 bigdecimal = { version = "0.4", features = ["serde"] }
 num-bigint = "0.4"
 num-traits = "0.2"
@@ -40,3 +41,4 @@ paft-fundamentals = { path = "paft-fundamentals", version = "0.4.0", default-fea
 paft-money = { path = "paft-money", version = "0.4.0", default-features = false}
 paft-utils = { path = "paft-utils", version = "0.4.0", default-features = false }
 paft-domain = { path = "paft-domain", version = "0.4.0", default-features = false }
+paft-aggregates = { path = "paft-aggregates", version = "0.4.0", default-features = false }

@@ -1,0 +1,47 @@
+[package]
+name = "paft-aggregates"
+version.workspace = true
+edition = "2024"
+license.workspace = true
+authors.workspace = true
+description = "Aggregated info and reports built on paft primitives."
+repository.workspace = true
+readme = "README.md"
+keywords = ["finance", "market", "aggregates", "serde"]
+categories = ["data-structures", "finance"]
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+chrono = { workspace = true, features = ["serde"] }
+paft-domain = { workspace = true }
+paft-money  = { workspace = true }
+paft-market = { workspace = true }
+paft-fundamentals = { workspace = true }
+
+[features]
+default = ["rust-decimal"]
+
+# Forward decimal backend selection to dependencies
+rust-decimal = [
+  "paft-money/rust-decimal",
+  "paft-market/rust-decimal",
+  "paft-domain/rust-decimal",
+  "paft-fundamentals/rust-decimal",
+]
+bigdecimal = [
+  "paft-money/bigdecimal",
+  "paft-market/bigdecimal",
+  "paft-domain/bigdecimal",
+  "paft-fundamentals/bigdecimal",
+]
+
+# Optional: expose panicking money ops for tests/consumers
+panicking-money-ops = ["paft-money/panicking-money-ops"]
+
+# Placeholder for facade forwarding; this crate has no dataframe code
+dataframe = []
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+

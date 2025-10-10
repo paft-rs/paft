@@ -68,3 +68,7 @@ pub use crate::market::responses::download::DownloadResponse;
 pub use crate::market::responses::history::{Candle, HistoryMeta, HistoryResponse};
 #[cfg(feature = "market")]
 pub use crate::market::responses::search::{SearchResponse, SearchResult};
+
+// Re-export aggregates types
+#[cfg(feature = "aggregates")]
+pub use crate::aggregates::{DownloadReport, FastInfo, Info, InfoReport, SearchReport};

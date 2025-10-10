@@ -1,0 +1,45 @@
+paft-aggregates
+===============
+
+Aggregated snapshot and report models built on the paft primitives.
+
+[![Crates.io](https://img.shields.io/crates/v/paft-aggregates)](https://crates.io/crates/paft-aggregates)
+[![Docs.rs](https://docs.rs/paft-aggregates/badge.svg)](https://docs.rs/paft-aggregates)
+
+Install
+-------
+
+Prefer the facade crate for most applications:
+
+```toml
+[dependencies]
+paft = "0.4.0"
+```
+
+Advanced (direct dependency, minimal features):
+
+```toml
+[dependencies]
+paft-aggregates = { version = "0.4.0", default-features = false, features = ["rust-decimal"] }
+```
+
+What’s inside
+--------------
+
+- `info`: `FastInfo`, `Info` — lightweight instrument snapshots (identity, prices, ranges, and timestamp)
+- `reports`: `InfoReport`, `SearchReport`, `DownloadReport` — merge-friendly report envelopes with `warnings`
+
+This crate only defines data models and serde; it performs no network I/O.
+
+Features
+--------
+
+- `rust-decimal` (default) | `bigdecimal`: choose money backend via `paft-money` forwarding
+- `panicking-money-ops`: forwards to `paft-money` to enable panicking arithmetic operators
+
+Links
+-----
+
+- API docs: https://docs.rs/paft-aggregates
+- Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
+- License: https://github.com/paft-rs/paft/blob/main/LICENSE

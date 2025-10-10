@@ -18,32 +18,36 @@ paft-money = { workspace = true, default-features = false }
 paft-domain = { workspace = true, optional = true, default-features = false }
 paft-market = { workspace = true, optional = true, default-features = false }
 paft-fundamentals = { workspace = true, optional = true, default-features = false }
+paft-aggregates = { workspace = true, optional = true, default-features = false }
 paft-utils = { workspace = true }
 iso_currency = { workspace = true }
 thiserror = { workspace = true }
 
 [features]
-default = ["domain", "market", "fundamentals", "rust-decimal"]
+default = ["domain", "market", "fundamentals", "aggregates", "rust-decimal"]
 
 rust-decimal = [
   "paft-money/rust-decimal",
   "paft-domain?/rust-decimal",
   "paft-market?/rust-decimal",
   "paft-fundamentals?/rust-decimal",
+  "paft-aggregates?/rust-decimal",
 ]
 bigdecimal = [
   "paft-money/bigdecimal",
   "paft-domain?/bigdecimal",
   "paft-market?/bigdecimal",
   "paft-fundamentals?/bigdecimal",
+  "paft-aggregates?/bigdecimal",
 ]
 
 domain = ["dep:paft-domain"]
 market = ["dep:paft-market", "domain"]
 fundamentals = ["dep:paft-fundamentals", "domain"]
+aggregates = ["dep:paft-aggregates", "domain", "market", "fundamentals"]
 
-dataframe = ["paft-utils/dataframe", "paft-money/dataframe", "paft-core/dataframe", "paft-domain?/dataframe", "paft-market?/dataframe", "paft-fundamentals?/dataframe"]
-full = ["domain", "market", "fundamentals", "dataframe"]
+dataframe = ["paft-utils/dataframe", "paft-money/dataframe", "paft-core/dataframe", "paft-domain?/dataframe", "paft-market?/dataframe", "paft-fundamentals?/dataframe", "paft-aggregates?/dataframe"]
+full = ["domain", "market", "fundamentals", "aggregates", "dataframe"]
 panicking-money-ops = ["paft-money/panicking-money-ops"]
 money-formatting = ["paft-money/money-formatting"]
 

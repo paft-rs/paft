@@ -79,5 +79,11 @@ pub mod fundamentals {
     pub use paft_fundamentals::{analysis, esg, holders, profile, statements};
 }
 
+/// Namespaced access to `paft-aggregates` (feature-gated).
+#[cfg(feature = "aggregates")]
+pub mod aggregates {
+    pub use paft_aggregates::{DownloadReport, FastInfo, Info, InfoReport, SearchReport};
+}
+
 /// Frequently used types for convenient imports.
 pub mod prelude;
