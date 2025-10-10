@@ -20,7 +20,7 @@ repository = "https://github.com/paft-rs/paft"
 
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
-polars = "0.51"
+polars = { version = "0.51", default-features = false }
 thiserror = "2.0.17"
 df-derive = { version = "0.1.1" }
 quote = "1.0.41"
@@ -33,6 +33,7 @@ bigdecimal = { version = "0.4", features = ["serde"] }
 num-bigint = "0.4"
 num-traits = "0.2"
 iso_currency = "0.5"
+bitflags = { version = "2", features = ["serde"] }
 
 # Local crates
 paft-core = { path = "paft-core", version = "0.4.0", default-features = false }

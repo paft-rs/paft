@@ -22,7 +22,7 @@ num-traits = { workspace = true, optional = true }
 num-bigint = { workspace = true, optional = true }
 paft-utils = { workspace = true }
 df-derive = { workspace = true, optional = true }
-polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde", "regex", "timezones", "diagonal_concat", "json", "rolling_window", "dtype-decimal"], optional = true }
+polars = { workspace = true, features = ["dtype-decimal"], optional = true }
 
 [features]
 default = ["rust-decimal"]

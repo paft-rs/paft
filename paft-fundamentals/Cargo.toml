@@ -22,7 +22,7 @@ paft-domain = { workspace = true }
 paft-money = { workspace = true, default-features = false }
 paft-utils = { workspace = true }
 iso_currency = { workspace = true }
-polars = { workspace = true, features = ["lazy", "strings", "temporal", "serde", "regex", "timezones", "diagonal_concat", "json", "rolling_window"], optional = true }
+polars = { workspace = true, optional = true }
 df-derive = { workspace = true, optional = true }
 
 [features]
