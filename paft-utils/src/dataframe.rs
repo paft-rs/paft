@@ -6,11 +6,11 @@
 //! to enable high-performance conversion for `&[T]`.
 
 #[cfg(feature = "dataframe")]
+use polars::datatypes::DataType;
+#[cfg(feature = "dataframe")]
 use polars::frame::DataFrame;
 #[cfg(feature = "dataframe")]
 use polars::prelude::PolarsResult;
-#[cfg(feature = "dataframe")]
-use polars::datatypes::DataType;
 
 /// Trait for converting types to Polars `DataFrames`
 #[cfg(feature = "dataframe")]
