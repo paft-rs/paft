@@ -182,11 +182,11 @@ pub use currency_utils::{
     currency_metadata, set_currency_metadata, try_normalize_currency_code,
 };
 pub use decimal::{Decimal, RoundingStrategy};
-pub use error::MoneyParseError;
+pub use error::{MoneyError, MoneyParseError};
 pub use locale::Locale;
 #[cfg(feature = "money-formatting")]
 pub use money::LocalizedMoney;
-pub use money::{ExchangeRate, Money, MoneyError};
+pub use money::{ExchangeRate, Money};
 
 /// Re-export `iso_currency::Currency` for convenience.
 pub use iso_currency::Currency as IsoCurrency;

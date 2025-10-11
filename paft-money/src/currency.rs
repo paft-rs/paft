@@ -7,10 +7,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::IsoCurrency;
 use crate::currency_utils::{MAX_MINOR_UNIT_DECIMALS, currency_metadata};
-use crate::error::MoneyParseError;
+use crate::error::{MoneyError, MoneyParseError};
 #[cfg(feature = "money-formatting")]
 use crate::locale::Locale;
-use crate::money::MoneyError;
 
 /// Currency enumeration with major currencies and extensible fallback.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
