@@ -157,6 +157,7 @@
 //! affect scaling and minor-unit conversions.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![allow(clippy::cargo_common_metadata)]
 

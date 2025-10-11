@@ -30,6 +30,7 @@
 //!
 //! # Serde helpers
 //! See [`serde_helpers`] for helpers like `ts_seconds_vec` and `ts_seconds_option`.
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 /// Error definitions shared across crates.

@@ -39,6 +39,7 @@
 //! # Serde
 //! All models serialize with stable, human-readable representations; dataframe
 //! support emits string codes for enums.
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 pub mod analysis;

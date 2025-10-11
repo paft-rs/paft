@@ -29,6 +29,7 @@
 //! ```
 //!
 //! See the crate README for installation instructions and feature details.
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 pub mod error;

@@ -41,6 +41,7 @@
 //! - `isin-validate`: strict ISIN normalization/validation
 //! - `figi-validate`: strict FIGI checksum validation
 
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 pub mod error;

@@ -28,6 +28,7 @@
 //! # Serde
 //! All models serialize with stable, human-readable representations suitable for
 //! storage and transport. Dataframe support emits string codes for enums.
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 pub mod error;

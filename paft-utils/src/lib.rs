@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 //! Shared utility helpers used across the paft workspace.

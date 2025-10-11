@@ -7,6 +7,7 @@
 //! use paft_aggregates::{DownloadReport, InfoReport, SearchReport};
 //! ```
 
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 pub mod info;
