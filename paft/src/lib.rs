@@ -1,11 +1,11 @@
 //! Unified public API for the paft workspace.
 //!
-//! This facade crate aggregates the `paft-*` ecosystem into a single dependency
+//! This facade crate aggregates the `paft` ecosystem into a single dependency
 //! with coherent feature flags and a convenient `prelude` for common imports.
 //!
 //! Features
 //! - `domain`, `market`, `fundamentals`: opt into domain areas you need
-//! - `rust-decimal` (default) | `bigdecimal`: choose the money backend
+//! - `bigdecimal`: Change the money backend from `rust_decimal` to `bigdecimal`
 //! - `dataframe`: enable `DataFrame` export via Polars helpers
 //! - `panicking-money-ops`: opt‑in operator overloading for `Money` that panics on invalid input
 //!
@@ -37,7 +37,6 @@ pub use error::{Error, Result};
 /// Namespaced access to `paft-core`.
 pub mod core {
     pub use paft_core::PaftError;
-    pub use paft_core::error;
     #[cfg(feature = "dataframe")]
     pub use paft_utils::dataframe;
 }
