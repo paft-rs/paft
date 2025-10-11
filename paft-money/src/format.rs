@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
 use crate::decimal::{self, Decimal, RoundingStrategy};
-use crate::locale::{LocalFormat, Locale};
 use crate::error::MoneyError;
+use crate::locale::{LocalFormat, Locale};
 
 /// Elements that can be positioned when rendering a formatted string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

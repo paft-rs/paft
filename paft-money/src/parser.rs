@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use crate::currency::Currency;
 use crate::decimal::{self, Decimal};
-use crate::locale::{LocalFormat, Locale};
 use crate::error::MoneyError;
+use crate::locale::{LocalFormat, Locale};
 
 /// Parses a human-formatted money string using locale information.
 pub fn parse_localized_str(
