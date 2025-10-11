@@ -55,3 +55,7 @@ chrono = { workspace = true }
 chrono-tz = { workspace = true }
 rust_decimal = { workspace = true }
 polars = { workspace = true, features = ["timezones"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
