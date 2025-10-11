@@ -1,6 +1,9 @@
-use thiserror::Error;
-use crate::decimal::Decimal;
 use crate::currency::Currency;
+use crate::decimal::Decimal;
+use thiserror::Error;
+
+#[cfg(feature = "money-formatting")]
+use crate::locale::Locale;
 
 /// Errors emitted by the paft-money crate.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]

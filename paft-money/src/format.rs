@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
-use crate::decimal::{self, RoundingStrategy};
+use crate::decimal::{self, Decimal, RoundingStrategy};
 use crate::locale::{LocalFormat, Locale};
-use crate::money::MoneyError;
+use crate::error::MoneyError;
 
 /// Elements that can be positioned when rendering a formatted string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,17 +47,17 @@ impl<'a> Params<'a> {
 
 /// Formatting engine for locale-aware rendering.
 pub struct Formatter<'a> {
-    value: Cow<'a, str>,
+    value: Decimal,
     format: LocalFormat,
     params: Params<'a>,
 }
 
 impl<'a> Formatter<'a> {
-    /// Creates a new formatter for the provided canonical string.
+    /// Creates a new formatter for the provided Decimal value.
     #[allow(clippy::missing_const_for_fn)]
-    pub fn new(value: &'a str, locale: Locale, params: Params<'a>) -> Self {
+    pub fn new(value: Decimal, locale: Locale, params: Params<'a>) -> Self {
         Self {
-            value: Cow::Borrowed(value),
+            value,
             format: locale.spec(),
             params,
         }
@@ -65,35 +65,35 @@ impl<'a> Formatter<'a> {
 
     /// Emits the formatted string according to the locale and params.
     pub fn format(mut self) -> Result<String, MoneyError> {
+        // 1) Round once for display if requested
         if let Some(scale) = self.params.rounding_digits {
-            let parsed = decimal::parse_decimal(self.value.as_ref())
-                .ok_or(MoneyError::InvalidAmountFormat)?;
-            let rounded = decimal::round_dp_with_strategy(
-                &parsed,
+            self.value = decimal::round_dp_with_strategy(
+                &self.value,
                 scale,
                 RoundingStrategy::MidpointNearestEven,
             );
-            self.value = Cow::Owned(decimal::to_canonical_string(&rounded));
         }
 
-        let mut raw = self.value.as_ref();
-        let mut negative = false;
-        if let Some(stripped) = raw.strip_prefix('-') {
-            negative = true;
-            raw = stripped;
+        // 2) Build canonical string, then pad fraction to requested digits
+        let mut canonical = decimal::to_canonical_string(&self.value);
+
+        // detect sign on the rounded value
+        let mut negative = canonical.starts_with('-');
+        if negative {
+            canonical.remove(0);
         }
 
-        if negative && is_zero(raw) {
+        // treat -0 as +0
+        if self.value == decimal::zero() {
             negative = false;
         }
 
-        if raw.is_empty() {
-            raw = "0";
+        if canonical.is_empty() {
+            canonical.push('0');
         }
-
-        let (mut integer, mut fraction) = match raw.split_once('.') {
-            Some((int, frac)) => (int.to_string(), frac.to_string()),
-            None => (raw.to_string(), String::new()),
+        let (mut integer, mut fraction) = match canonical.split_once('.') {
+            Some((i, f)) => (i.to_string(), f.to_string()),
+            None => (canonical, String::new()),
         };
 
         if integer.is_empty() {
@@ -123,30 +123,29 @@ impl<'a> Formatter<'a> {
         let symbol = self.params.symbol.as_ref().map_or("", Cow::as_ref);
         let code = self.params.code.as_ref().map_or("", Cow::as_ref);
 
-        let mut output = String::new();
+        let mut out = String::new();
         for item in &self.params.positions {
             match item {
                 FormatItem::Sign => {
                     if negative {
-                        output.push('-');
+                        out.push('-');
                     }
                 }
                 FormatItem::Symbol => {
                     if !symbol.is_empty() {
-                        output.push_str(symbol);
+                        out.push_str(symbol);
                     }
                 }
-                FormatItem::Amount => output.push_str(&amount),
+                FormatItem::Amount => out.push_str(&amount),
                 FormatItem::Code => {
                     if !code.is_empty() {
-                        output.push_str(code);
+                        out.push_str(code);
                     }
                 }
-                FormatItem::Space => output.push(' '),
+                FormatItem::Space => out.push(' '),
             }
         }
-
-        Ok(output)
+        Ok(out)
     }
 }
 
@@ -187,8 +186,4 @@ fn apply_grouping(value: &str, grouping: &[usize], separator: char) -> String {
     }
 
     output
-}
-
-fn is_zero(raw: &str) -> bool {
-    raw.chars().all(|c| c == '0' || c == '.')
 }

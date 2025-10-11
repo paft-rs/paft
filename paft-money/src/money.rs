@@ -19,7 +19,6 @@ use crate::currency::Currency;
 #[cfg(not(feature = "bigdecimal"))]
 use crate::currency_utils::MAX_DECIMAL_PRECISION;
 use crate::currency_utils::MAX_MINOR_UNIT_DECIMALS;
-use crate::error::MoneyParseError;
 #[cfg(feature = "money-formatting")]
 use crate::format::{FormatItem, Formatter, Params};
 #[cfg(feature = "money-formatting")]
@@ -265,8 +264,12 @@ impl Money {
 
     /// Renders the numeric portion with custom fraction digits (no symbol or code).
     ///
+    /// The `fraction_digits` parameter allows any number of digits and will pad with zeros
+    /// or round as needed. This is useful for UI sliders, CSV exports, and other cases
+    /// where you need flexible display precision beyond the currency's natural scale.
+    ///
     /// # Errors
-    /// Returns [`MoneyError::InvalidAmountFormat`] when the digits exceed the allowed scale.
+    /// Returns [`MoneyError::InvalidAmountFormat`] when rounding fails (rare).
     #[cfg(feature = "money-formatting")]
     pub fn amount_string_with_locale(
         &self,
@@ -449,19 +452,15 @@ impl Money {
             positions.push(FormatItem::Code);
         }
 
-        let rounded = decimal::round_dp_with_strategy(
-            &copy_decimal(&self.amount),
-            rounding_digits,
-            RoundingStrategy::MidpointNearestEven,
-        );
-        let canonical = decimal::to_canonical_string(&rounded);
-
         let mut params = Params::new(positions);
         params.rounding_digits = Some(rounding_digits);
         params.symbol = symbol;
         params.code = code;
 
-        Formatter::new(&canonical, locale, params).format()
+        // clone the amount once (cheap in rust-decimal; explicit clone in bigdecimal)
+        let amount = copy_decimal(&self.amount);
+
+        Formatter::new(amount, locale, params).format()
     }
 
     fn round_amount(mut amount: Decimal, currency: &Currency) -> Result<Decimal, MoneyError> {
