@@ -25,7 +25,7 @@ Advanced (direct dependency, minimal):
 
 ```toml
 [dependencies]
-paft-domain = { version = "0.4.0", default-features = false, features = ["rust-decimal"] }
+paft-domain = { version = "0.4.0", default-features = false }
 ```
 
 Alternate decimal backend:
@@ -39,13 +39,13 @@ Enable identifiers and DataFrame helpers as needed:
 
 ```toml
 [dependencies]
-paft-domain = { version = "0.4.0", default-features = false, features = ["rust-decimal", "ident-validate", "dataframe"] }
+paft-domain = { version = "0.4.0", default-features = false, features = ["ident-validate", "dataframe"] }
 ```
 
 Features
 --------
 
-- `rust-decimal` (default) | `bigdecimal`: choose the money backend via `paft-money`
+- `bigdecimal`: change money backend from `rust_decimal` to `bigdecimal` via `paft-money`
 - `dataframe`: enable DataFrame traits for Polars integration
 - `isin-validate`: strict ISIN normalization/validation
 - `figi-validate`: strict FIGI checksum validation

@@ -20,7 +20,7 @@ Advanced (direct dependency, minimal features):
 
 ```toml
 [dependencies]
-paft-aggregates = { version = "0.4.0", default-features = false, features = ["rust-decimal"] }
+paft-aggregates = { version = "0.4.0", default-features = false }
 ```
 
 What’s inside
@@ -34,7 +34,7 @@ This crate only defines data models and serde; it performs no network I/O.
 Features
 --------
 
-- `rust-decimal` (default) | `bigdecimal`: choose money backend via `paft-money` forwarding
+- `bigdecimal`: change money backend from `rust_decimal` to `bigdecimal` via `paft-money`
 - `panicking-money-ops`: forwards to `paft-money` to enable panicking arithmetic operators
 
 Links

@@ -26,7 +26,7 @@ Advanced (direct dependency, minimal):
 
 ```toml
 [dependencies]
-paft-fundamentals = { version = "0.4.0", default-features = false, features = ["rust-decimal"] }
+paft-fundamentals = { version = "0.4.0", default-features = false }
 ```
 
 Alternate decimal backend:
@@ -40,13 +40,13 @@ With DataFrame integration:
 
 ```toml
 [dependencies]
-paft-fundamentals = { version = "0.4.0", default-features = false, features = ["rust-decimal", "dataframe"] }
+paft-fundamentals = { version = "0.4.0", default-features = false, features = ["dataframe"] }
 ```
 
 Features
 --------
 
-- `rust-decimal` (default) | `bigdecimal`: money backend via `paft-money`
+- `bigdecimal`: change money backend from `rust_decimal` to `bigdecimal` via `paft-money`
 - `dataframe`: Polars integration (`ToDataFrame`/`ToDataFrameVec`)
 
 Quickstart
