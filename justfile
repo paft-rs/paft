@@ -1,9 +1,7 @@
 # Fast checks - runs in ~1-4 compilations, catches most issues early
 test:
   @echo "Running fast test suite..."
-  # Test with rust-decimal (most common backend)
   cargo nextest run --workspace --no-default-features --features "full,rust-decimal,dataframe,panicking-money-ops,ident-validate"
-  # Test with bigdecimal (alternate backend) - minimal features to save time
   cargo nextest run -p paft-money -p paft-domain -p paft-market -p paft-fundamentals --no-default-features --features "bigdecimal"
 
 # Fast lint - mirrors the fast test strategy
