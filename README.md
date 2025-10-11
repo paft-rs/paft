@@ -65,15 +65,20 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 
 ### Core Types
 
-- **Instruments**: `Instrument`, `AssetKind` (Equity, Crypto, Fund, Index, etc.)
-- **Market Data**: `Quote`, `Candle`, `MarketState`
-- **Historical Data**: `HistoryRequest`, `HistoryResponse`, `Interval`, `Range`
-- **Money & Currency**: `paft_money::Money`, `paft_money::Currency`
-- **Fundamentals**: `CompanyProfile`, `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`
-- **Options**: `OptionContract`, `OptionChain`
-- **News & Search**: `NewsArticle`, `SearchResult`
-- **ESG**: `EsgScores`, `EsgInvolvement`
-- **Holders**: `InstitutionalHolder`, `InsiderTransaction`
+- **Instruments & Identifiers**: `Instrument`, `AssetKind`, `Exchange`, `Isin`, `Figi`, `Period`
+- **Market Data**: `Quote`, `QuoteUpdate`, `Candle`, `Action`, `MarketState`
+- **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `Interval`, `Range`
+- **Money & Currency**: `Money`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
+- **Fundamentals – Profile**: `CompanyProfile`, `FundProfile`, `FundKind`, `Profile`, `Address`, `ShareCount`
+- **Fundamentals – Statements**: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`, `Calendar`
+- **Fundamentals – Analysis**: `AnalysisSummary`, `Earnings`, `EarningsYear`, `EarningsQuarter`, `EarningsQuarterEps`, `EarningsTrendRow`, `PriceTarget`, `RecommendationAction`, `RecommendationGrade`, `RecommendationRow`, `RecommendationSummary`, `UpgradeDowngradeRow`
+- **Fundamentals – ESG**: `EsgScores`, `EsgInvolvement`, `EsgSummary`
+- **Fundamentals – Holders**: `InstitutionalHolder`, `InsiderTransaction`, `InsiderPosition`, `InsiderRosterHolder`, `MajorHolder`, `NetSharePurchaseActivity`, `TransactionType`
+- **Options**: `OptionContract`, `OptionChain`, `OptionChainRequest`, `OptionExpirationsRequest`
+- **News & Search**: `NewsArticle`, `SearchRequest`, `SearchResponse`, `SearchResult`
+- **Downloads**: `DownloadResponse`
+- **Aggregates** (with `paft/aggregates`): `FastInfo`, `Info`, `InfoReport`, `SearchReport`, `DownloadReport`
+- **Errors**: `Error`, `Result`
 
 ### Advanced Features
 
