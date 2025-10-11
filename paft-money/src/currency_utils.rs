@@ -29,7 +29,7 @@ pub const MAX_DECIMAL_PRECISION: u8 = 28;
 pub const MAX_DECIMAL_PRECISION: u8 = u8::MAX;
 /// Maximum precision that can be converted into an `i64` minor-unit scale (10^18).
 ///
-/// This is bounded by `10_i128.pow(scale)` fitting into an `i128`, ensuring minor-unit
+/// This is bounded by `10_i64.pow(scale)` fitting into an `i64`, ensuring minor-unit
 /// conversions remain safe regardless of backend precision.
 pub const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
 
