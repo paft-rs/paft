@@ -11,6 +11,16 @@ All notable changes to this project will be documented in this file.
 - Currency metadata can store `symbol`, `symbol_first`, and `default_locale` (used only when `money-formatting` is enabled).
 - New explicit APIs: `Money::format_with_locale`, `Money::from_str_locale`, and `Money::from_default_locale_str`.
 
+- New crate `paft-aggregates` with summary and reporting types:
+  - `FastInfo`, `Info` (instrument snapshot models)
+  - `InfoReport`, `SearchReport`, `DownloadReport` (lightweight report containers)
+
+- Market options module:
+  - Types: `OptionGreeks`, `OptionContract`, `OptionChain`
+  - Requests: `OptionExpirationsRequest`, `OptionChainRequest`
+  - Response: `OptionExpirationsResponse`
+  - DataFrame integration for options types when the `dataframe` feature is enabled
+
 ### Changed (Breaking)
 
 - `set_currency_metadata` signature changed to require symbol, symbol_first, and default_locale (breaking change for direct callers).
@@ -20,9 +30,21 @@ All notable changes to this project will be documented in this file.
   - `CurrencyMetadata` stores `symbol`, `symbol_first`, and `default_locale`; consequently `set_currency_metadata` accepts these extra fields.
   - These changes are feature‑gated and do not affect existing users unless the feature is explicitly enabled.
 
+### Changed
+
+- DataFrame wiring: consolidated conditional Polars imports across crates for more consistent `dataframe` behavior.
+- Polars optimization: reduced enabled Polars features to speed up compile times and cut binary size:
+  - Workspace pins `polars` with `default-features = false`.
+  - `paft-market` enables only `dtype-datetime` and `dtype-decimal` when `dataframe` is on.
+  - `paft-money` enables only `dtype-decimal` when `dataframe` is on.
+
 ### Facade
 
 - `paft` exposes a `money-formatting` feature that forwards to `paft-money/money-formatting` and re-exports the new APIs.
+- `paft` re-exports market options models and requests/responses from `paft-market`:
+  - `OptionGreeks`, `OptionContract`, `OptionChain`
+  - `OptionExpirationsRequest`, `OptionChainRequest`, `OptionExpirationsResponse`
+- New `aggregates` feature on the facade forwards to `paft-aggregates` and re-exports: `FastInfo`, `Info`, `InfoReport`, `SearchReport`, `DownloadReport` (disabled by default).
 
 ### Migration notes
 
@@ -31,6 +53,17 @@ All notable changes to this project will be documented in this file.
 - To adopt localization, enable `money-formatting` and:
   - Update calls to `set_currency_metadata(code, name, units)` to include `symbol`, `symbol_first`, and `default_locale`.
   - Use `Money::format_with_locale` or `Money::localized(locale)` for rendering, and `Money::from_str_locale` (or `from_default_locale_str`) for parsing.
+
+### Fixed
+
+- FIGI checksum validation corrected (parity and computation) in `paft-domain`; examples/tests updated accordingly.
+- Updated `paft` unified error wiring to reference the `paft-money::MoneyError` consistently.
+- Documentation for `MAX_MINOR_UNIT_DECIMALS` now reflects the actual i64 precision limit.
+
+### Tooling
+
+- CI now uses the workspace `justfile` with install actions for tools; reduced custom setup.
+- `just` DX: reworked recipes; test command now succeeds when a crate has no tests.
 
 ## [0.3.2] - 2025-10-3
 
@@ -223,6 +256,7 @@ All notable changes to this project will be documented in this file.
 
 - Initial public release.
 
+[0.4.0]: https://github.com/paft-rs/paft/compare/v0.3.2...HEAD
 [0.3.2]: https://github.com/paft-rs/paft/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/paft-rs/paft/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/paft-rs/paft/compare/v0.2.0...v0.3.0
