@@ -22,7 +22,7 @@ pub enum Error {
 
     /// Error originating from `paft-money` operations.
     #[error(transparent)]
-    Money(#[from] paft_money::money::MoneyError),
+    Money(#[from] paft_money::MoneyError),
 
     /// Error originating from parsing money/currency values.
     #[error(transparent)]
