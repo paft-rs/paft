@@ -6,19 +6,18 @@ clippy_flags := '-W clippy::all -W clippy::cargo -W clippy::pedantic -W clippy::
 # Fast checks - runs in ~1-4 compilations, catches most issues early
 test crate='':
   @echo "Running fast test suite..."
-  cargo nextest run {{ if crate != "" { "-p " + crate } else { "--workspace" } }} --no-default-features --features "rust-decimal,dataframe"
-  cargo nextest run {{ if crate != "" { "-p " + crate } else { "--workspace" } }} --no-default-features --features "bigdecimal"
+  cargo nextest run {{ if crate != "" { "-p " + crate } else { "--workspace" } }} --all-features --all-targets
 
 # Fast lint - mirrors the fast test strategy
 lint:
   @echo "Running fast lint..."
-  cargo clippy --workspace --no-default-features --features "full,rust-decimal,dataframe,panicking-money-ops,ident-validate" \
+  cargo clippy --workspace --all-features --all-targets \
     -- {{ clippy_flags }}
 
 # Exhaustive testing strategy
 test-full:
   @echo "Running exhaustive test suite..."
-  @echo "Step 1/2: Testing all workspace crates (84 permutations)..."
+  @echo "Step 1/2: Testing all workspace crates..."
   @just test-powerset
   @echo "Step 2/2: Testing paft facade with key configurations..."
   @just test-paft-critical
@@ -26,7 +25,7 @@ test-full:
 # Exhaustive linting strategy  
 lint-full:
   @echo "Running exhaustive lint suite..."
-  @echo "Step 1/2: Linting all workspace crates (84 permutations)..."
+  @echo "Step 1/2: Linting all workspace crates..."
   @just lint-powerset
   @echo "Step 2/2: Linting paft facade with key configurations..."
   @just lint-paft-critical
@@ -49,21 +48,14 @@ test-powerset crate='':
   cargo hack nextest run --workspace "${EXCLUDE_FLAGS[@]}" \
     --all-targets \
     --feature-powerset \
-    --mutually-exclusive-features rust-decimal,bigdecimal \
-    --at-least-one-of rust-decimal,bigdecimal \
-    --exclude-no-default-features \
     --no-tests pass
 
 # Test paft facade with critical feature combinations
 test-paft-critical:
-  cargo nextest run -p paft --no-default-features \
-    --features "full,rust-decimal,dataframe,panicking-money-ops,money-formatting,ident-validate"
-  cargo nextest run -p paft --no-default-features \
-    --features "full,bigdecimal,dataframe,panicking-money-ops,money-formatting,ident-validate"
-  cargo nextest run -p paft --no-tests pass --no-default-features --features "domain,rust-decimal"
-  cargo nextest run -p paft --no-default-features --features "full,rust-decimal"
+  cargo nextest run -p paft --all-targets --all-features
+  cargo nextest run -p paft --all-targets
 
-# Lint all workspace crates except paft with feature powerset (84 permutations)
+# Lint all workspace crates except paft with feature powerset
 lint-powerset crate='':
   #!/usr/bin/env bash
   EXCLUDES=''
@@ -79,30 +71,17 @@ lint-powerset crate='':
   cargo hack clippy --workspace "${EXCLUDE_FLAGS[@]}" \
     --all-targets \
     --feature-powerset \
-    --mutually-exclusive-features rust-decimal,bigdecimal \
-    --at-least-one-of rust-decimal,bigdecimal \
-    --exclude-no-default-features \
     -- {{ clippy_flags }}
 
 # Lint paft facade with critical feature combinations
 lint-paft-critical:
-  cargo clippy -p paft --no-default-features \
-    --features "full,rust-decimal,dataframe,panicking-money-ops,money-formatting,ident-validate" \
-    -- {{ clippy_flags }}
-  cargo clippy -p paft --no-default-features \
-    --features "full,bigdecimal,dataframe,panicking-money-ops,money-formatting,ident-validate" \
-    -- {{ clippy_flags }}
-  cargo clippy -p paft --no-default-features --features "domain,rust-decimal" \
-    -- {{ clippy_flags }}
-  cargo clippy -p paft --no-default-features --features "full,rust-decimal" \
-    -- {{ clippy_flags }}
-
-# Run benchmarks (useful for performance regression testing)
+  cargo clippy -p paft --all-targets --all-features -- {{ clippy_flags }}
+  cargo clippy -p paft --all-targets -- {{ clippy_flags }}
+  
+# Run benchmarks
 bench crate='':
   cargo bench {{ if crate != "" { "-p " + crate } else { "--workspace" } }} \
-    --no-default-features --features "full,rust-decimal,panicking-money-ops"
-  cargo bench {{ if crate != "" { "-p " + crate } else { "--workspace" } }} \
-    --no-default-features --features "full,bigdecimal,panicking-money-ops"
+    --all-features
 
 # Format all code
 fmt:
@@ -112,7 +91,4 @@ fmt:
 docrs crate='':
   RUSTDOCFLAGS="--cfg docsrs -Z unstable-options -Dwarnings" \
     cargo +nightly doc {{ if crate != "" { "-p " + crate } else { "--workspace" } }} \
-    --no-default-features --features "full,rust-decimal" --no-deps
-  RUSTDOCFLAGS="--cfg docsrs -Z unstable-options -Dwarnings" \
-    cargo +nightly doc {{ if crate != "" { "-p " + crate } else { "--workspace" } }} \
-    --no-default-features --features "full,bigdecimal" --no-deps
+    --all-features --no-deps
