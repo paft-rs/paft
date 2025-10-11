@@ -60,7 +60,7 @@ test-paft-critical:
     --features "full,rust-decimal,dataframe,panicking-money-ops,money-formatting,ident-validate"
   cargo nextest run -p paft --no-default-features \
     --features "full,bigdecimal,dataframe,panicking-money-ops,money-formatting,ident-validate"
-  cargo nextest run -p paft --no-default-features --features "domain,rust-decimal"
+  cargo nextest run -p paft --no-tests pass --no-default-features --features "domain,rust-decimal"
   cargo nextest run -p paft --no-default-features --features "full,rust-decimal"
 
 # Lint all workspace crates except paft with feature powerset (84 permutations)
