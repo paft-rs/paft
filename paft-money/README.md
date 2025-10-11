@@ -8,7 +8,7 @@ Currency and money primitives for the paft ecosystem.
 
 - `Currency` with ISO 4217 integration and extensible fallback
 - `Money` with safe arithmetic and explicit conversions via `ExchangeRate`
-- Backend-agnostic decimals (`rust-decimal` by default or `bigdecimal`)
+- Backend-agnostic decimals (default `rust_decimal`, optional `bigdecimal` feature)
 - Runtime currency metadata overlays for non-ISO minor units (e.g., `XAU`, `XDR`)
 
 Install
@@ -21,32 +21,31 @@ Prefer the facade crate for most applications:
 paft = "0.4.0"
 ```
 
-Advanced (direct dependency, minimal):
+Advanced (direct dependency, default backend):
 
 ```toml
 [dependencies]
-paft-money = { version = "0.4.0", default-features = false, features = ["rust-decimal"] }
+paft-money = "0.4.0"
 ```
 
 Alternate decimal backend:
 
 ```toml
 [dependencies]
-paft-money = { version = "0.4.0", default-features = false, features = ["bigdecimal"] }
+paft-money = { version = "0.4.0", features = ["bigdecimal"] }
 ```
 
 With DataFrame integration or panicking ops:
 
 ```toml
 [dependencies]
-paft-money = { version = "0.4.0", default-features = false, features = ["rust-decimal", "dataframe", "panicking-money-ops"] }
+paft-money = { version = "0.4.0", features = ["dataframe", "panicking-money-ops"] }
 ```
 
 Features
 --------
 
-- `rust-decimal` (default): fast, fixed-size decimals (up to 28 fractional digits)
-- `bigdecimal`: arbitrary precision decimals
+- `bigdecimal`: switch to arbitrary precision decimals
 - `dataframe`: Polars integration (`ToDataFrame`/`ToDataFrameVec`)
 - `panicking-money-ops`: opt-in operator overloading that panics on invalid operations
 - `money-formatting`: locale-aware formatting and strict parsing for `Money`

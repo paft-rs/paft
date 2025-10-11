@@ -19,15 +19,9 @@ paft-market = { workspace = true }
 paft-fundamentals = { workspace = true }
 
 [features]
-default = ["rust-decimal"]
+default = []
 
-# Forward decimal backend selection to dependencies
-rust-decimal = [
-  "paft-money/rust-decimal",
-  "paft-market/rust-decimal",
-  "paft-domain/rust-decimal",
-  "paft-fundamentals/rust-decimal",
-]
+# rust-decimal feature removed; rust_decimal backend is implied by default
 bigdecimal = [
   "paft-money/bigdecimal",
   "paft-market/bigdecimal",

@@ -35,13 +35,12 @@
 //! # Decimal backend
 //!
 //! The crate exposes a backend-agnostic [`Decimal`] type alongside
-//! [`RoundingStrategy`]. By default the optional `rust-decimal` feature is
-//! enabled, providing 28 fractional digits of precision with a fast fixed-size
-//! representation. Alternatively enabling the `bigdecimal` feature (and
-//! disabling the default) switches the backend to
+//! [`RoundingStrategy`]. By default it uses
+//! [`rust_decimal`](https://docs.rs/rust_decimal) providing 28 fractional
+//! digits of precision with a fast fixed-size representation. Alternatively,
+//! enabling the `bigdecimal` feature switches the backend to
 //! [`bigdecimal`](https://docs.rs/bigdecimal) for effectively unbounded
-//! precision backed by big integers. Enabling both features simultaneously is a
-//! compile-time error, and at least one backend must be selected.
+//! precision backed by big integers.
 //!
 //! The public API, serde representation (amounts encoded as strings, currencies
 //! as ISO codes), and `DataFrame` integration remain stable across backends. The
@@ -126,8 +125,7 @@
 //!
 //! # Feature flags
 //!
-//! - `rust-decimal` (default): fixed-size fast decimals with up to 28 fractional digits.
-//! - `bigdecimal`: arbitrary precision decimals (slower, allocates for large values).
+//! - `bigdecimal`: switch to arbitrary precision decimals (slower, allocates for large values).
 //! - `dataframe`: enables `serde`/`polars`/`df-derive` integration for dataframes.
 //! - `panicking-money-ops`: implements `Add`/`Sub`/`Mul`/`Div` for `Money` that
 //!   assert on invalid operations. Prefer the `try_*` methods for fallible APIs.

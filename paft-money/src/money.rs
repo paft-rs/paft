@@ -29,7 +29,7 @@ use crate::parser;
 #[inline]
 #[allow(clippy::missing_const_for_fn)]
 fn copy_decimal(value: &Decimal) -> Decimal {
-    #[cfg(feature = "rust-decimal")]
+    #[cfg(not(feature = "bigdecimal"))]
     {
         *value
     }
@@ -150,7 +150,7 @@ impl Money {
     /// Returns the amount as a [`Decimal`].
     ///
     /// The value is cloned from the internal representation. Cloning is a
-    /// cheap copy with the default `rust-decimal` backend, but incurs an
+    /// cheap copy with the default backend, but incurs an
     /// allocation proportional to the number of digits when the `bigdecimal`
     /// feature is enabled.
     #[must_use]

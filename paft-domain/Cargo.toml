@@ -21,9 +21,9 @@ paft-core = { workspace = true }
 isin = { version = "0.1", optional = true, default-features = false }
 
 [features]
-default = ["rust-decimal"]
+default = []
 
-rust-decimal = ["paft-money/rust-decimal"]
+# rust-decimal feature removed; rust_decimal backend is implied by default
 bigdecimal = ["paft-money/bigdecimal"]
 
 dataframe = ["paft-utils/dataframe", "paft-money/dataframe"]

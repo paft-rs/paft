@@ -2,16 +2,6 @@
 
 use std::str::FromStr;
 
-#[cfg(all(feature = "rust-decimal", feature = "bigdecimal"))]
-compile_error!(
-    "features `rust-decimal` and `bigdecimal` are mutually exclusive; enable only one backend"
-);
-
-#[cfg(not(any(feature = "rust-decimal", feature = "bigdecimal")))]
-compile_error!(
-    "at least one decimal backend feature (`rust-decimal` or `bigdecimal`) must be enabled"
-);
-
 /// Rounding strategy supported by money operations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RoundingStrategy {
@@ -31,7 +21,7 @@ pub enum RoundingStrategy {
     ToPositiveInfinity,
 }
 
-#[cfg(all(feature = "rust-decimal", not(feature = "bigdecimal")))]
+#[cfg(not(feature = "bigdecimal"))]
 mod backend {
     use super::{FromStr, RoundingStrategy};
 
@@ -79,7 +69,7 @@ mod backend {
     }
 }
 
-#[cfg(all(feature = "bigdecimal", not(feature = "rust-decimal")))]
+#[cfg(feature = "bigdecimal")]
 mod backend {
     use super::{FromStr, RoundingStrategy};
 
@@ -132,10 +122,6 @@ pub use backend::{Decimal, ToPrimitive};
 /// notation is rejected so both decimal backends share identical parsing
 /// semantics.
 #[must_use]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(any(feature = "rust-decimal", feature = "bigdecimal")))
-)]
 pub fn parse_decimal(value: &str) -> Option<Decimal> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
@@ -150,10 +136,6 @@ pub fn parse_decimal(value: &str) -> Option<Decimal> {
 
 /// Returns the zero value for the active decimal backend.
 #[must_use]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(any(feature = "rust-decimal", feature = "bigdecimal")))
-)]
 #[allow(clippy::missing_const_for_fn)]
 pub fn zero() -> Decimal {
     backend::zero()
@@ -161,10 +143,6 @@ pub fn zero() -> Decimal {
 
 /// Returns the one value for the active decimal backend.
 #[must_use]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(any(feature = "rust-decimal", feature = "bigdecimal")))
-)]
 #[allow(clippy::missing_const_for_fn)]
 pub fn one() -> Decimal {
     backend::one()
@@ -172,20 +150,12 @@ pub fn one() -> Decimal {
 
 /// Builds a decimal from an integer count of minor units and the provided scale.
 #[must_use]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(any(feature = "rust-decimal", feature = "bigdecimal")))
-)]
 pub fn from_minor_units(value: i128, scale: u32) -> Decimal {
     backend::from_minor_units(value, scale)
 }
 
 /// Rounds a decimal to the requested scale using a rounding strategy.
 #[must_use]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(any(feature = "rust-decimal", feature = "bigdecimal")))
-)]
 pub fn round_dp_with_strategy(value: &Decimal, scale: u32, strategy: RoundingStrategy) -> Decimal {
     backend::round_dp_with_strategy(value, scale, strategy)
 }

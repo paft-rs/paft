@@ -26,9 +26,9 @@ polars = { workspace = true, optional = true }
 df-derive = { workspace = true, optional = true }
 
 [features]
-default = ["rust-decimal"]
+default = []
 
-rust-decimal = ["paft-money/rust-decimal"]
+# rust-decimal feature removed; rust_decimal backend is implied by default
 bigdecimal = ["paft-money/bigdecimal"]
 
 dataframe = ["polars", "df-derive", "paft-utils/dataframe", "paft-core/dataframe", "paft-domain/dataframe", "paft-money/dataframe"]

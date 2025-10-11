@@ -16,7 +16,7 @@ categories = ["finance", "data-structures"]
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 iso_currency = { workspace = true }
-rust_decimal = { workspace = true, optional = true }
+rust_decimal = { workspace = true }
 bigdecimal = { workspace = true, optional = true }
 num-traits = { workspace = true, optional = true }
 num-bigint = { workspace = true, optional = true }
@@ -25,8 +25,6 @@ df-derive = { workspace = true, optional = true }
 polars = { workspace = true, features = ["dtype-decimal"], optional = true }
 
 [features]
-default = ["rust-decimal"]
-rust-decimal = ["dep:rust_decimal"]
 bigdecimal = ["dep:bigdecimal", "dep:num-traits", "dep:num-bigint"]
 dataframe = ["polars", "df-derive", "paft-utils/dataframe"]
 money-formatting = []

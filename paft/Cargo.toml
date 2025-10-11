@@ -24,15 +24,9 @@ iso_currency = { workspace = true }
 thiserror = { workspace = true }
 
 [features]
-default = ["domain", "market", "fundamentals", "rust-decimal"]
+default = ["domain", "market", "fundamentals"]
 
-rust-decimal = [
-  "paft-money/rust-decimal",
-  "paft-domain?/rust-decimal",
-  "paft-market?/rust-decimal",
-  "paft-fundamentals?/rust-decimal",
-  "paft-aggregates?/rust-decimal",
-]
+# rust-decimal feature removed; rust_decimal backend is implied by default
 bigdecimal = [
   "paft-money/bigdecimal",
   "paft-domain?/bigdecimal",
