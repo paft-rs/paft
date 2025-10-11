@@ -27,6 +27,9 @@ pub struct Candle {
     pub low: Money,
     /// Close or adjusted close depending on provider and request.
     pub close: Money,
+    /// Original unadjusted close price, if available.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub close_unadj: Option<paft_money::Money>,
     /// Volume if available.
     pub volume: Option<u64>,
 }
@@ -53,6 +56,4 @@ pub struct HistoryResponse {
     pub adjusted: bool,
     /// Optional metadata including timezone.
     pub meta: Option<HistoryMeta>,
-    /// Original unadjusted close prices when adjusted close is provided.
-    pub unadjusted_close: Option<Vec<Money>>,
 }

@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 ### Changed (Breaking)
 
 - `set_currency_metadata` signature changed to require symbol, symbol_first, and default_locale (breaking change for direct callers).
+- Market history: moved `unadjusted_close` from `HistoryResponse` to `Candle.close_unadj` for better data organization.
 - Removed `Money::from_str` and replaced it with the new, more explicit `Money::from_canonical_str`
 - When `money-formatting` is enabled:
   - `MoneyError` gains extra variants for format/parse failures (`InvalidAmountFormat`, `InvalidGrouping`, `MismatchedCurrencyAffix`, `ScaleTooLarge`, `UnsupportedLocale`).
@@ -32,6 +33,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added `#![forbid(unsafe_code)]` to all crates to prevent unsafe code usage across the workspace.
 - DataFrame wiring: consolidated conditional Polars imports across crates for more consistent `dataframe` behavior.
 - Polars optimization: reduced enabled Polars features to speed up compile times and cut binary size:
   - Workspace pins `polars` with `default-features = false`.
