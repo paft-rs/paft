@@ -24,7 +24,7 @@ All notable changes to this project will be documented in this file.
 ### Changed (Breaking)
 
 - `set_currency_metadata` signature changed to require symbol, symbol_first, and default_locale (breaking change for direct callers).
-- Added a clearer canonical constructor `Money::from_canonical_str`; the older `Money::from_str` remains and is now deprecated.
+- Removed `Money::from_str` and replaced it with the new, more explicit `Money::from_canonical_str`
 - When `money-formatting` is enabled:
   - `MoneyError` gains extra variants for format/parse failures (`InvalidAmountFormat`, `InvalidGrouping`, `MismatchedCurrencyAffix`, `ScaleTooLarge`, `UnsupportedLocale`).
   - `CurrencyMetadata` stores `symbol`, `symbol_first`, and `default_locale`; consequently `set_currency_metadata` accepts these extra fields.
@@ -37,6 +37,10 @@ All notable changes to this project will be documented in this file.
   - Workspace pins `polars` with `default-features = false`.
   - `paft-market` enables only `dtype-datetime` and `dtype-decimal` when `dataframe` is on.
   - `paft-money` enables only `dtype-decimal` when `dataframe` is on.
+- Decimal backend selection in `paft-money` simplified:
+  - `rust_decimal` is now the implicit default (the explicit `rust_decimal` feature was removed).
+  - To use `bigdecimal`, enable the `bigdecimal` feature.
+  - Enabling `bigdecimal` currently still pulls `rust_decimal` transitively; the previous compile error from enabling both backends is gone.
 
 ### Facade
 
@@ -49,10 +53,12 @@ All notable changes to this project will be documented in this file.
 ### Migration notes
 
 - Update all calls to `set_currency_metadata(code, name, units)` to `set_currency_metadata(code, name, units, symbol, symbol_first, default_locale)`.
-- Prefer `Money::from_canonical_str` over `Money::from_str` going forward.
+- Use `Money::from_canonical_str` over `Money::from_str` going forward.
 - To adopt localization, enable `money-formatting` and:
   - Update calls to `set_currency_metadata(code, name, units)` to include `symbol`, `symbol_first`, and `default_locale`.
   - Use `Money::format_with_locale` or `Money::localized(locale)` for rendering, and `Money::from_str_locale` (or `from_default_locale_str`) for parsing.
+
+- Cargo features: remove any explicit `paft-money/rust_decimal` feature flag; `rust_decimal` is now implicit. To use `bigdecimal`, enable `paft-money/bigdecimal`. Enabling `bigdecimal` is sufficient; there is no longer a separate `rust_decimal` feature to toggle.
 
 ### Fixed
 
@@ -63,7 +69,7 @@ All notable changes to this project will be documented in this file.
 ### Tooling
 
 - CI now uses the workspace `justfile` with install actions for tools; reduced custom setup.
-- `just` DX: reworked recipes; test command now succeeds when a crate has no tests.
+- `just`: simplified recipes by removing explicit decimal-backend toggles (now relies on implicit `rust_decimal`); CI/test matrix is smaller and easier to maintain.
 
 ## [0.3.2] - 2025-10-3
 
