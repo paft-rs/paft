@@ -31,22 +31,22 @@ The financial data ecosystem is fragmented. Every provider—Yahoo Finance, Alph
 Imagine a future where financial data providers expose standardized types:
 
 ```rust
-use paft::prelude::{Quote, HistoryResponse, Interval, Range};
+use paft::prelude::{HistoryResponse, Interval, Quote, Range, Result};
 
 // Each provider has their own API, but returns standardized paft types
-async fn analyze_with_generic_provider(symbol: &str) -> Result<(), Box<dyn std::error::Error>> {
+async fn analyze_with_generic_provider(symbol: &str) -> Result<()> {
     let provider = GenericProvider::new();
-    let quote = provider.get_quote(symbol).await?; // Returns paft::Quote
-    let history = provider.get_history(symbol, Range::M6, Interval::D1).await?; // Returns paft::HistoryResponse
+    let quote = provider.get_quote(symbol).await?; // Returns paft::market::market::quote::Quote
+    let history = provider.get_history(symbol, Range::M6, Interval::D1).await?; // Returns paft::market::responses::history::HistoryResponse
     
     analyze_data(quote, history);
     Ok(())
 }
 
-async fn analyze_with_alpha_vantage(symbol: &str) -> Result<(), Box<dyn std::error::Error>> {
+async fn analyze_with_alpha_vantage(symbol: &str) -> Result<()> {
     let av = AlphaVantage::new("your-api-key");
-    let quote = av.get_quote(symbol).await?; // Returns paft::Quote
-    let history = av.get_daily(symbol, Range::M6).await?; // Returns paft::HistoryResponse
+    let quote = av.get_quote(symbol).await?; // Returns paft::market::market::quote::Quote
+    let history = av.get_daily(symbol, Range::M6).await?; // Returns paft::market::responses::history::HistoryResponse
     
     analyze_data(quote, history); // Same analysis function works!
     Ok(())
