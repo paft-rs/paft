@@ -32,8 +32,8 @@ jobs:
         run: cargo install cargo-hack
 
       - name: Install cargo-nextest
-        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
+        uses: taiki-e/install-action@nextest
+        
       - name: Install just
         uses: taiki-e/install-action@just
 
