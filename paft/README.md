@@ -16,15 +16,23 @@ Standardized Rust types for financial data that work with any provider—Yahoo F
 
 ```toml
 [dependencies]
-# Basic installation with all supported data types
-# default = ["domain", "market", "fundamentals", "rust-decimal"]
+# Basic installation with default feature set (domain + market + fundamentals)
 paft = "0.4.0"
 
-# Or, install with all features enabled
+# Or, add optional analysis helpers (Polars DataFrame support)
 paft = { version = "0.4.0", features = ["dataframe"] }
+
+# Or, opt into aggregates/reporting models as well
+paft = { version = "0.4.0", features = ["aggregates"] }
+
+# Or, enable the full bundle of features
+paft = { version = "0.4.0", features = ["full"] }
 
 # Or, customize your installation
 paft = { version = "0.4.0", default-features = false, features = ["fundamentals", "dataframe"] }
+
+# Switch the money backend to BigDecimal (default is rust_decimal)
+paft = { version = "0.4.0", features = ["bigdecimal"] }
 ```
 
 ## Feature Flags
@@ -141,6 +149,28 @@ use paft::prelude::*;
 let quotes = vec![quote1, quote2, quote3];
 let df = quotes.to_dataframe()?;
 println!("Average price: {:.2}", df.column("price")?.mean()?);
+```
+
+### Locale-aware money formatting and parsing
+
+Enable the `money-formatting` feature to opt into locale-aware `Display` and strict parsing:
+
+```toml
+[dependencies]
+paft = { version = "0.4.0", features = ["money-formatting"] }
+```
+
+```rust
+use paft::money::{Currency, IsoCurrency, Money, Locale};
+
+let m = Money::from_canonical_str("1234.56", Currency::Iso(IsoCurrency::USD))?;
+let us = m.format_with_locale(Locale::EnUs)?;
+let de = m.format_with_locale(Locale::EnEu)?;
+assert_eq!(us, "$1,234.56");
+assert_eq!(de, "$1.234,56");
+
+// Strict parsing
+let parsed = Money::from_str_locale("$1,234.56", Currency::Iso(IsoCurrency::USD), Locale::EnUs)?;
 ```
 
 ### Money operators and safety
