@@ -31,7 +31,7 @@ The financial data ecosystem is fragmented. Every provider—Yahoo Finance, Alph
 Imagine a future where financial data providers expose standardized types:
 
 ```rust
-use paft::{Quote, HistoryRequest, Interval, Range};
+use paft::prelude::{Quote, HistoryResponse, Interval, Range};
 
 // Each provider has their own API, but returns standardized paft types
 async fn analyze_with_generic_provider(symbol: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -53,9 +53,9 @@ async fn analyze_with_alpha_vantage(symbol: &str) -> Result<(), Box<dyn std::err
 }
 
 // Your analysis logic works with any provider's paft types
-fn analyze_data(quote: paft::Quote, history: paft::HistoryResponse) {
-    println!("Current price: ${:.2}", quote.price.as_ref().map(|p| p.amount).unwrap_or_default());
-    println!("6-month high: ${:.2}", history.candles.iter().map(|c| c.high).max().unwrap_or_default());
+fn analyze_data(quote: Quote, history: HistoryResponse) {
+    println!("Current price: ${:.2}", quote.price.as_ref().map(|p| p.amount()).unwrap_or_default());
+    println!("6-month high: ${:.2}", history.candles.iter().map(|c| c.high.amount()).max().unwrap_or_default());
 }
 ```
 
