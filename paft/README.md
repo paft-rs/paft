@@ -34,10 +34,10 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `domain` *(default)*: exposes instrument, exchange, period, and other domain models.
 - `market` *(default, enables `domain`)*: markets and history types such as `Quote`, `Candle`, and `HistoryRequest`.
 - `fundamentals` *(default, enables `domain`)*: fundamentals, ESG, and ownership data structures.
-- `rust-decimal` *(default)*: uses `rust_decimal` as the money backend; mutually exclusive with `bigdecimal`.
+- `aggregates`: exposes aggregated snapshot and report models like `Info` and `InfoReport`.
 - `bigdecimal`: swaps the money backend to `BigDecimal` when you require arbitrary precision.
 - `dataframe`: forwards DataFrame support from `paft-utils`, providing `ToDataFrame`/`ToDataFrameVec`.
-- `full`: convenience bundle for `domain`, `market`, `fundamentals`, and `dataframe`.
+- `full`: convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, and `dataframe`.
 - `panicking-money-ops`: re-enables `Money` arithmetic operators that panic on mismatched currencies (see below).
 - `money-formatting`: forwards to `paft-money/money-formatting` for locale-aware formatting and parsing APIs.
 - `isin-validate`: forwards to `paft-domain/isin-validate`, enabling ISIN checksum validation and normalization everywhere (including deserialization).
