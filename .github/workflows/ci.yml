@@ -1,16 +1,13 @@
+# .github/workflows/ci.yml
 name: CI
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - '**/*.md'
+    branches: [main]
+    paths-ignore: ['**/*.md']
   pull_request:
-    branches:
-      - main
-    paths-ignore:
-      - '**/*.md'
+    branches: [main]
+    paths-ignore: ['**/*.md']
   workflow_dispatch:
 
 permissions:
@@ -19,13 +16,6 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - features: "rust-decimal"
-            args: "--no-default-features --features full,rust-decimal,panicking-money-ops"
-          - features: "bigdecimal"
-            args: "--no-default-features --features full,bigdecimal,panicking-money-ops"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,13 +34,14 @@ jobs:
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
 
-      - name: Run clippy (${{ matrix.features }})
-        run: cargo hack clippy --workspace --all-targets --ignore-unknown-features ${{ matrix.args }} -- -D warnings
+      - name: Install just
+        uses: taiki-e/install-action@just
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run tests (${{ matrix.features }})
-        run: cargo hack nextest run --workspace --all-targets --ignore-unknown-features ${{ matrix.args }} --locked --status-level none --final-status-level none --success-output never --failure-output final --hide-progress-bar --no-tests pass
-
-
+      - name: Run lints
+        run: just lint
+      
+      - name: Run tests
+        run: just test
