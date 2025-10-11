@@ -14,9 +14,9 @@ fn profile_isin_accessor() {
         website: None,
         address: None,
         summary: None,
-        isin: Some(Isin::new("US0000000001").unwrap()),
+        isin: Some(Isin::new("US0378331005").unwrap()),
     });
-    assert_eq!(company.isin().map(AsRef::as_ref), Some("US0000000001"));
+    assert_eq!(company.isin().map(AsRef::as_ref), Some("US0378331005"));
 
     let fund = Profile::Fund(FundProfile {
         name: "Index".into(),
