@@ -30,6 +30,7 @@ fn candle_serialization() {
             Currency::Iso(IsoCurrency::USD),
         )
         .unwrap(),
+        close_unadj: None,
         volume: Some(1_000_000),
     };
 
@@ -62,6 +63,7 @@ fn candle_with_none_volume() {
             Currency::Iso(IsoCurrency::USD),
         )
         .unwrap(),
+        close_unadj: None,
         volume: None,
     };
 
@@ -163,6 +165,7 @@ fn responses_smoke() {
             Currency::Iso(IsoCurrency::USD),
         )
         .unwrap(),
+        close_unadj: None,
         volume: Some(1_000_000),
     }];
 
@@ -176,7 +179,6 @@ fn responses_smoke() {
         actions: vec![],
         adjusted: false,
         meta: Some(meta),
-        unadjusted_close: None,
     };
 
     assert_eq!(response.candles.len(), 1);
@@ -211,11 +213,11 @@ fn complex_nested_serialization() {
                 Currency::Iso(IsoCurrency::USD),
             )
             .unwrap(),
+            close_unadj: None,
             volume: Some(1_000_000),
         }],
         actions: vec![],
         adjusted: false,
-        unadjusted_close: None,
     };
 
     let json = serde_json::to_string(&response).unwrap();

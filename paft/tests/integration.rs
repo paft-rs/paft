@@ -68,6 +68,7 @@ fn end_to_end_workflow() {
             Currency::Iso(IsoCurrency::USD),
         )
         .unwrap(),
+        close_unadj: None,
         volume: Some(1_000_000),
     };
 
@@ -90,13 +91,6 @@ fn end_to_end_workflow() {
         actions: vec![action],
         adjusted: true,
         meta: Some(meta),
-        unadjusted_close: Some(vec![
-            Money::new(
-                Decimal::from_str("105.0").unwrap(),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ]),
     };
 
     // 5. Create a quote
@@ -369,7 +363,6 @@ fn action_types_workflow() {
             actions: vec![action],
             adjusted: false,
             meta: None,
-            unadjusted_close: None,
         };
 
         let json = serde_json::to_string(&history_response).unwrap();

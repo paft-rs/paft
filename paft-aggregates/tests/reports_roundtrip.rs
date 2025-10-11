@@ -50,6 +50,7 @@ fn download_report_roundtrip() {
         high: Money::from_canonical_str("2.00", usd.clone()).unwrap(),
         low: Money::from_canonical_str("0.50", usd.clone()).unwrap(),
         close: Money::from_canonical_str("1.50", usd).unwrap(),
+        close_unadj: None,
         volume: Some(1000),
     };
     let history = HistoryResponse {
@@ -64,7 +65,6 @@ fn download_report_roundtrip() {
             timezone: None,
             utc_offset_seconds: Some(0),
         }),
-        unadjusted_close: None,
     };
     let report = DownloadReport {
         history: Some(history),
