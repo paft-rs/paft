@@ -32,23 +32,12 @@ fn scrub_isin(input: &str) -> String {
         .collect::<String>()
 }
 
-#[cfg(feature = "isin-validate")]
 fn normalize_isin(input: &str) -> Result<String, DomainError> {
     let cleaned = scrub_isin(input);
     match ::isin::parse_loose(&cleaned) {
         Ok(_) => Ok(cleaned.to_ascii_uppercase()),
         Err(_) => Err(invalid_isin(input)),
     }
-}
-
-#[cfg(not(feature = "isin-validate"))]
-fn normalize_isin(input: &str) -> Result<String, DomainError> {
-    let cleaned = scrub_isin(input);
-    if cleaned.is_empty() {
-        return Err(invalid_isin(input));
-    }
-
-    Ok(cleaned.to_ascii_uppercase())
 }
 
 fn normalize_figi(input: &str) -> Result<String, DomainError> {
@@ -66,11 +55,8 @@ fn normalize_figi(input: &str) -> Result<String, DomainError> {
         return Err(invalid_figi(input));
     }
 
-    #[cfg(feature = "figi-validate")]
-    {
-        if !figi_checksum_is_valid(&normalized) {
-            return Err(invalid_figi(input));
-        }
+    if !figi_checksum_is_valid(&normalized) {
+        return Err(invalid_figi(input));
     }
 
     Ok(normalized)
@@ -102,7 +88,6 @@ fn normalize_symbol(input: &str) -> Result<String, DomainError> {
     Ok(normalized)
 }
 
-#[cfg(feature = "figi-validate")]
 fn figi_checksum_is_valid(value: &str) -> bool {
     if value.len() != 12 {
         return false;
@@ -155,8 +140,7 @@ impl Isin {
     ///
     /// # Errors
     /// Returns `DomainError::InvalidIsin` when `value` is empty, malformed,
-    /// or fails normalization/validation according to the active
-    /// `isin-validate` feature.
+    /// or fails checksum validation after normalization.
     pub fn new(value: &str) -> Result<Self, DomainError> {
         let normalized = normalize_isin(value)?;
         Ok(Self(normalized))
@@ -217,8 +201,7 @@ impl Figi {
     ///
     /// # Errors
     /// Returns `DomainError::InvalidFigi` when `value` is empty, not exactly
-    /// 12 ASCII alphanumeric characters, or—when the `figi-validate` feature
-    /// is enabled—if the checksum is invalid.
+    /// 12 ASCII alphanumeric characters, or fails the checksum.
     pub fn new(value: &str) -> Result<Self, DomainError> {
         let normalized = normalize_figi(value)?;
         Ok(Self(normalized))

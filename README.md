@@ -83,15 +83,13 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 ### Advanced Features
 
 - **DataFrame Support**: Optional Polars integration with `ToDataFrame` trait (via `df-derive` proc-macros; enable with the `dataframe` feature)
+- **Validated Identifiers**: `Isin` and `Figi` now always enforce checksum validation; invalid identifiers fail at construction and during serde.
 - **Flexible Enums**: Type-safe enums with fallback variants for unknown values
 - **Comprehensive Validation**: Built-in request validation and error handling
 - **Serialization**: Full serde support for JSON, CSV, and other formats
 - **Unified Error**: Single `paft::Error` enum and `paft::Result<T>` unify errors across crates
 - **Feature Flags**:
   - `paft/dataframe`: Enables DataFrame helpers and derives through the facade
-  - `paft/isin-validate`: Enables ISIN checksum validation and normalization across domain models (forwards to `paft-domain`).
-  - `paft/figi-validate`: Enables FIGI checksum validation in constructors and serde (forwards to `paft-domain`).
-  - `paft/ident-validate`: Convenience flag that enables both ISIN and FIGI validation (forwards to `paft-domain`).
   - `paft/panicking-money-ops` (opt-in): Enables ergonomic arithmetic operators on `Money` that panic on currency mismatch or division by zero. By default, operator overloads are disabled and you should use the safe `try_add`, `try_sub`, and `try_div` methods instead.
   - `paft/money-formatting` (opt-in): Locale‑aware money formatting and strict parsing APIs (re‑exports `Locale`/`LocalizedMoney`).
   - `paft/aggregates` (opt-in): Aggregated snapshot and reporting types (`FastInfo`, `Info`, `InfoReport`, `SearchReport`, `DownloadReport`).

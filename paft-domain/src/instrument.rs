@@ -129,13 +129,9 @@ pub struct Instrument {
 }
 
 impl Instrument {
-    /// When the `isin-validate` feature is enabled, values are validated and normalized; invalid values cause an error.
-    /// When the feature is disabled, values are scrubbed to ASCII alphanumerics, uppercased, and must not be empty.
-    ///
     /// # Errors
     /// Returns `DomainError::InvalidIsin` when `isin` is empty, malformed,
-    /// or fails normalization/validation according to the active
-    /// `isin-validate` feature.
+    /// or fails normalization/validation.
     pub fn try_set_isin(&mut self, isin: &str) -> Result<(), DomainError> {
         self.isin = Some(Isin::new(isin)?);
         Ok(())
@@ -145,8 +141,7 @@ impl Instrument {
     ///
     /// # Errors
     /// Returns `DomainError::InvalidFigi` when `figi` is empty, not exactly
-    /// 12 ASCII alphanumeric characters, or—when the `figi-validate`
-    /// feature is enabled—if the checksum is invalid.
+    /// 12 ASCII alphanumeric characters, or fails the checksum.
     pub fn try_set_figi(&mut self, figi: &str) -> Result<(), DomainError> {
         self.figi = Some(Figi::new(figi)?);
         Ok(())
@@ -170,14 +165,10 @@ impl Instrument {
         Ok(self)
     }
 
-    /// Construct a new `Instrument` with validation-aware ISIN handling.
-    /// When the `isin-validate` feature is enabled, values are validated and normalized; invalid values cause an error.
-    /// When the feature is disabled, values are scrubbed to ASCII alphanumerics, uppercased, and must not be empty.
-    ///
     /// # Errors
     /// Returns `DomainError::InvalidSymbol`, `DomainError::InvalidFigi`, or
     /// `DomainError::InvalidIsin` if the provided identifiers fail
-    /// validation/normalization according to the active features.
+    /// validation/normalization.
     pub fn try_new(
         symbol: impl AsRef<str>,
         kind: AssetKind,

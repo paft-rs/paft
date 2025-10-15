@@ -16,6 +16,10 @@ All notable changes to this project will be documented in this file.
   - New JSON shape: `{ "response": { "history": {SYMBOL: HistoryResponse} }, "warnings": [...] }`.
   - Update consumers to access per‑symbol data via `report.response.unwrap().history.get("SYM")` (or pattern match safely).
 
+- Identifiers: `Isin` and `Figi` constructors (and serde) now always enforce checksum validation.
+  - Removed the `isin-validate`, `figi-validate`, and `ident-validate` Cargo features from `paft` and `paft-domain`; validation is unconditional.
+  - The `isin` crate is now a required dependency; invalid placeholders must be scrubbed or stored outside the typed identifiers.
+
 - New `paft_domain::Symbol` newtype replaces raw strings for instrument symbols across the workspace.
   - Canonicalization trims, uppercases ASCII letters, forbids whitespace/control chars, enforces 1–64 byte length, and preserves punctuation/numerics verbatim.
   - `Symbol` implements `Display`, `FromStr`, `TryFrom<String>`, `AsRef<str>`, serde (transparent), and helpers `as_str()/len()/is_empty()`.

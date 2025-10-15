@@ -45,10 +45,6 @@ full = ["domain", "market", "fundamentals", "aggregates", "dataframe"]
 panicking-money-ops = ["paft-money/panicking-money-ops"]
 money-formatting = ["paft-money/money-formatting"]
 
-isin-validate = ["domain", "paft-domain?/isin-validate"]
-figi-validate = ["domain", "paft-domain?/figi-validate"]
-ident-validate = ["domain", "paft-domain?/ident-validate"]
-
 [dev-dependencies]
 serde_json = { workspace = true }
 chrono = { workspace = true }

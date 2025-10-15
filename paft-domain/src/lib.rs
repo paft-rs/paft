@@ -40,8 +40,6 @@
 //! - `rust-decimal` (default): use `paft-money` with `rust-decimal`
 //! - `bigdecimal`: use `paft-money` with `bigdecimal`
 //! - `dataframe`: enable `paft-utils` dataframe traits for convenient export
-//! - `isin-validate`: strict ISIN normalization/validation
-//! - `figi-validate`: strict FIGI checksum validation
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

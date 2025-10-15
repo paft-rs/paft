@@ -6,7 +6,7 @@ Domain modeling primitives for the paft ecosystem: instruments, exchanges, perio
 [![Crates.io](https://img.shields.io/crates/v/paft-domain)](https://crates.io/crates/paft-domain)
 [![Docs.rs](https://docs.rs/paft-domain/badge.svg)](https://docs.rs/paft-domain)
 
-- Strongly-typed identifiers (`Isin`, `Figi`) with optional validation
+- Strongly-typed identifiers (`Isin`, `Figi`) with enforced validation
 - `Instrument` with hierarchical identifiers (FIGI → ISIN → Symbol@Exchange → Symbol)
 - Canonical, serde-stable enums (`Exchange`, `AssetKind`, `MarketState`)
 - `Period` parsing for quarters, years, and dates with a canonical wire format
@@ -35,11 +35,11 @@ Alternate decimal backend:
 paft-domain = { version = "0.4.0", default-features = false, features = ["bigdecimal"] }
 ```
 
-Enable identifiers and DataFrame helpers as needed:
+Enable DataFrame helpers as needed:
 
 ```toml
 [dependencies]
-paft-domain = { version = "0.4.0", default-features = false, features = ["ident-validate", "dataframe"] }
+paft-domain = { version = "0.4.0", default-features = false, features = ["dataframe"] }
 ```
 
 Features
@@ -47,9 +47,6 @@ Features
 
 - `bigdecimal`: change money backend from `rust_decimal` to `bigdecimal` via `paft-money`
 - `dataframe`: enable DataFrame traits for Polars integration
-- `isin-validate`: strict ISIN normalization/validation
-- `figi-validate`: strict FIGI checksum validation
-- `ident-validate`: convenience feature enabling both validations
 
 Quickstart
 ----------

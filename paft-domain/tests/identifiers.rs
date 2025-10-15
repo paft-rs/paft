@@ -17,38 +17,28 @@ fn isin_serde_roundtrip() {
     assert_eq!(back, isin);
 }
 
-#[cfg(feature = "isin-validate")]
-mod isin_strict {
-    use super::*;
-
-    #[test]
-    fn rejects_bad_checksum() {
-        let err = Isin::new("US0378331006").expect_err("checksum should fail");
-        assert!(matches!(err, DomainError::InvalidIsin { .. }));
-    }
-
-    #[test]
-    fn accepts_loose_input_with_scrubbing() {
-        let isin = Isin::new(" us-037833-1005 \t").expect("valid loose input");
-        assert_eq!(isin.as_ref(), "US0378331005");
-    }
+#[test]
+fn isin_rejects_bad_checksum() {
+    let err = Isin::new("US0378331006").expect_err("checksum should fail");
+    assert!(matches!(err, DomainError::InvalidIsin { .. }));
 }
 
-#[cfg(not(feature = "isin-validate"))]
-mod isin_lenient {
-    use super::*;
+#[test]
+fn isin_accepts_loose_input_with_scrubbing() {
+    let isin = Isin::new(" us-037833-1005 \t").expect("valid loose input");
+    assert_eq!(isin.as_ref(), "US0378331005");
+}
 
-    #[test]
-    fn accepts_non_empty_scrubbed_input() {
-        let isin = Isin::new(" invalid-value ").expect("scrubbed value allowed");
-        assert_eq!(isin.as_ref(), "INVALIDVALUE");
-    }
+#[test]
+fn isin_rejects_non_isin_content() {
+    let err = Isin::new(" invalid-value ").expect_err("non-isin values are rejected");
+    assert!(matches!(err, DomainError::InvalidIsin { .. }));
+}
 
-    #[test]
-    fn rejects_empty_after_scrub() {
-        let err = Isin::new(" --- ").expect_err("scrubbed empty should fail");
-        assert!(matches!(err, DomainError::InvalidIsin { .. }));
-    }
+#[test]
+fn isin_rejects_empty_after_scrub() {
+    let err = Isin::new(" --- ").expect_err("scrubbed empty should fail");
+    assert!(matches!(err, DomainError::InvalidIsin { .. }));
 }
 
 #[test]
@@ -151,24 +141,8 @@ fn symbol_serde_roundtrip() {
     assert_eq!(back, symbol);
 }
 
-#[cfg(feature = "figi-validate")]
-mod figi_strict {
-    use super::*;
-
-    #[test]
-    fn rejects_bad_checksum() {
-        let err = Figi::new("BBG000B9XRY5").expect_err("checksum should fail");
-        assert!(matches!(err, DomainError::InvalidFigi { .. }));
-    }
-}
-
-#[cfg(not(feature = "figi-validate"))]
-mod figi_lenient {
-    use super::*;
-
-    #[test]
-    fn allows_unchecked_checksum() {
-        let figi = Figi::new("BBG000B9XRY5").expect("checksum ignored without feature");
-        assert_eq!(figi.as_ref(), "BBG000B9XRY5");
-    }
+#[test]
+fn figi_rejects_bad_checksum() {
+    let err = Figi::new("BBG000B9XRY5").expect_err("checksum should fail");
+    assert!(matches!(err, DomainError::InvalidFigi { .. }));
 }
