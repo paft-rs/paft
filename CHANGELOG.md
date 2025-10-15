@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [0.5.0] - Unreleased
 
 ### Changed (Breaking)
 
@@ -304,7 +304,8 @@ All notable changes to this project will be documented in this file.
 
 - Initial public release.
 
-[0.4.0]: https://github.com/paft-rs/paft/compare/v0.3.2...HEAD
+[0.5.0]: https://github.com/paft-rs/paft/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/paft-rs/paft/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/paft-rs/paft/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/paft-rs/paft/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/paft-rs/paft/compare/v0.2.0...v0.3.0
