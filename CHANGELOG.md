@@ -2,45 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.5.0] - Unreleased
+## [0.5.0] - 2025-10-16
 
-### Changed (Breaking)
+This release tightens identifier validation across the entire workspace and introduces a canonical `Symbol` type so downstream crates receive normalized, provider-agnostic instrument identifiers. Market download payloads were also reshaped to make per-symbol adjustments explicit.
 
-- Market Downloads: `paft_market::DownloadResponse` now wraps per-symbol `HistoryResponse`.
+### Highlights
+
+- Canonical `paft_domain::Symbol` replaces raw strings for instrument symbols and propagates through market, aggregate, and facade APIs.
+- `Isin` and `Figi` now always validate checksums—no feature flags required—improving correctness at the serde boundary.
+- Market downloads surface complete per-symbol `HistoryResponse` values, eliminating ambiguity around adjustment flags.
+
+### Breaking Changes
+
+- Market downloads: `paft_market::DownloadResponse` now wraps per-symbol `HistoryResponse`.
   - Old shape: `{ "series": {SYM: [Candle, ...]}, "meta": {SYM: HistoryMeta?}, "actions": {SYM: [Action, ...]}, "adjusted": bool }`.
   - New shape: `{ "history": {SYM: HistoryResponse} }`.
-  - Rationale: `adjusted` can legitimately differ by symbol; per-symbol `HistoryResponse` captures actual outcomes.
+  - Rationale: `adjusted` can legitimately differ by symbol; a scoped `HistoryResponse` captures the exact outcome.
 
 - Aggregates: `paft-aggregates::DownloadReport` now wraps `paft_market::DownloadResponse` as `response`.
   - Removed the old `history: Option<HistoryResponse>` field and legacy JSON shape `{ "history": { ... }, "warnings": [...] }`.
   - New JSON shape: `{ "response": { "history": {SYMBOL: HistoryResponse} }, "warnings": [...] }`.
-  - Update consumers to access per‑symbol data via `report.response.unwrap().history.get("SYM")` (or pattern match safely).
+  - Update consumers to access per-symbol data via `report.response.unwrap().history.get("SYM")` (or pattern match safely).
 
-- Identifiers: `Isin` and `Figi` constructors (and serde) now always enforce checksum validation.
-  - Removed the `isin-validate`, `figi-validate`, and `ident-validate` Cargo features from `paft` and `paft-domain`; validation is unconditional.
-  - The `isin` crate is now a required dependency; invalid placeholders must be scrubbed or stored outside the typed identifiers.
+- Identifier validation is unconditional.
+  - Removed the `isin-validate`, `figi-validate`, and `ident-validate` Cargo features from `paft` and `paft-domain`.
+  - The `isin` crate is now a required dependency.
 
-- New `paft_domain::Symbol` newtype replaces raw strings for instrument symbols across the workspace.
+- `paft_domain::Symbol` newtype replaces raw strings for instrument symbols.
   - Canonicalization trims, uppercases ASCII letters, forbids whitespace/control chars, enforces 1–64 byte length, and preserves punctuation/numerics verbatim.
-  - `Symbol` implements `Display`, `FromStr`, `TryFrom<String>`, `AsRef<str>`, serde (transparent), and helpers `as_str()/len()/is_empty()`.
-  - `Symbol` equality/hash operate on the canonical string, guaranteeing `"aapl" == "AAPL"` post-normalization.
+  - Implements `Display`, `FromStr`, `TryFrom<String>`, `AsRef<str>`, serde (transparent), and helpers `as_str()/len()/is_empty()`.
+  - Equality/hash operate on the canonical string, guaranteeing `"aapl" == "AAPL"` post-normalization.
 
 - `paft_domain::DomainError` gains `InvalidSymbol { value: String }` and is now marked `#[non_exhaustive]`.
-  - Match arms over `DomainError` must include a wildcard (or be future-proofed) to compile.
+  - Match arms over `DomainError` must include a wildcard (or otherwise account for future variants) to compile.
 
-- `paft_domain::Instrument`
-  - Stores `Symbol` (instead of `String`); `symbol()` returns `&Symbol` and a new `symbol_str()` helper exposes `&str`.
-  - `Instrument::from_symbol`/`from_symbol_and_exchange` now return `Result<Self, DomainError>` to propagate symbol validation.
-  - `Instrument::try_new` validates the incoming symbol and continues to accept optional FIGI/ISIN.
+- `paft_domain::Instrument` now stores `Symbol`.
+  - `symbol()` returns `&Symbol`; new `symbol_str()` helper exposes `&str`.
+  - `Instrument::from_symbol`/`from_symbol_and_exchange` return `Result<Self, DomainError>` to propagate symbol validation.
+  - `Instrument::try_new` validates the incoming symbol while continuing to accept optional FIGI/ISIN.
   - `unique_key()` still emits the canonical symbol string, so downstream formatting remains unchanged.
 
-- Workspace symbol usages migrated to `Symbol` (all serde shapes remain strings because the type is `#[serde(transparent)]`). Highlights:
+### Other Changes
+
+- Workspace symbol usages migrated to `Symbol` (serde wire shapes remain strings because the type is `#[serde(transparent)]`).
   - Market requests/responses: `OptionExpirationsRequest.symbol`, `OptionChainRequest.symbol`, `Quote.symbol`, `QuoteUpdate.symbol`, `OptionContract.contract_symbol`, `SearchResult.symbol`, and `DownloadResponse.history: HashMap<Symbol, HistoryResponse>`.
   - Aggregates: `FastInfo.symbol`, `Info.symbol`, `InfoReport.symbol` now use `Symbol`.
   - Tests/examples/README updated to construct validated symbols via `Symbol::new(...)` and handle `Result` from the adjusted constructors.
   - All affected structs retain `#[cfg_attr(feature = "dataframe", df_derive(as_string))]` to keep DataFrame output identical.
 
-- Facade (`paft`) re-exports `Symbol` through the `domain` module and `prelude`, ensuring downstream crates get the new type when upgrading.
+- Facade (`paft`) re-exports `Symbol` through the `domain` module and `prelude`, ensuring downstream crates pick up the new type by default.
 
 ## [0.4.0] - 2025-10-11
 
@@ -304,7 +314,7 @@ All notable changes to this project will be documented in this file.
 
 - Initial public release.
 
-[0.5.0]: https://github.com/paft-rs/paft/compare/v0.4.0...HEAD
+[0.5.0]: https://github.com/paft-rs/paft/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/paft-rs/paft/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/paft-rs/paft/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/paft-rs/paft/compare/v0.3.0...v0.3.1
