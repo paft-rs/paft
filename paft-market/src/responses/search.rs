@@ -8,7 +8,6 @@ use paft_domain::{AssetKind, Exchange, Symbol};
 /// A single search result item.
 pub struct SearchResult {
     /// Symbol identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub symbol: Symbol,
     /// Display name.
     pub name: Option<String>,

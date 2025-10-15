@@ -303,7 +303,7 @@ impl Instrument {
 
     /// Returns the canonical instrument symbol.
     #[must_use]
-    pub fn symbol(&self) -> &Symbol {
+    pub const fn symbol(&self) -> &Symbol {
         &self.symbol
     }
 

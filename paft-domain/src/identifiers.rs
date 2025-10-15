@@ -308,7 +308,7 @@ impl Symbol {
 
     /// Returns the byte length of the canonical symbol.
     #[must_use]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.0.len()
     }
 
@@ -326,7 +326,7 @@ impl Symbol {
 impl Default for Symbol {
     fn default() -> Self {
         // Safe unwrap: "DEFAULT" satisfies all invariants.
-        Symbol::new("DEFAULT").expect("static default symbol is valid")
+        Self::new("DEFAULT").expect("static default symbol is valid")
     }
 }
 

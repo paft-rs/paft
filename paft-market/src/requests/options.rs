@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 /// Request to retrieve option expiration dates for the given underlying symbol.
 pub struct OptionExpirationsRequest {
     /// Underlying symbol identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub symbol: Symbol,
 }
 
@@ -16,7 +15,6 @@ pub struct OptionExpirationsRequest {
 /// Request to retrieve an option chain for an underlying symbol and expiration date.
 pub struct OptionChainRequest {
     /// Underlying symbol identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub symbol: Symbol,
     /// Option expiration date (naive date in the exchange's calendar).
     pub expiration: NaiveDate,
