@@ -3,7 +3,7 @@
 use super::Exchange;
 use crate::{
     DomainError,
-    identifiers::{Figi, Isin},
+    identifiers::{Figi, Isin, Symbol},
 };
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, str::FromStr};
@@ -116,11 +116,14 @@ impl AssetKind {
 /// with symbol-based identification. The hierarchical approach allows providers to
 /// populate the identifiers they have access to, while encouraging the use of
 /// better identifiers when available.
+///
+/// Symbol values are canonicalized into the [`Symbol`] newtype, preserving casing
+/// and punctuation semantics required by upstream data sources.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Instrument {
     figi: Option<Figi>,
     isin: Option<Isin>,
-    symbol: String,
+    symbol: Symbol,
     exchange: Option<Exchange>,
     kind: AssetKind,
 }
@@ -172,20 +175,21 @@ impl Instrument {
     /// When the feature is disabled, values are scrubbed to ASCII alphanumerics, uppercased, and must not be empty.
     ///
     /// # Errors
-    /// Returns `DomainError::InvalidFigi` or `DomainError::InvalidIsin` if
-    /// the provided identifiers fail validation/normalization according to
-    /// the active features.
+    /// Returns `DomainError::InvalidSymbol`, `DomainError::InvalidFigi`, or
+    /// `DomainError::InvalidIsin` if the provided identifiers fail
+    /// validation/normalization according to the active features.
     pub fn try_new(
-        symbol: impl Into<String>,
+        symbol: impl AsRef<str>,
         kind: AssetKind,
         figi: Option<&str>,
         isin: Option<&str>,
         exchange: Option<Exchange>,
     ) -> Result<Self, DomainError> {
+        let symbol = Symbol::new(symbol.as_ref())?;
         let mut instrument = Self {
             figi: None,
             isin: None,
-            symbol: symbol.into(),
+            symbol,
             exchange,
             kind,
         };
@@ -202,30 +206,36 @@ impl Instrument {
 
     /// Construct a new `Instrument` with just a symbol and kind (backward compatibility).
     /// This is useful for providers that only have basic symbol information.
-    pub fn from_symbol(symbol: impl Into<String>, kind: AssetKind) -> Self {
-        Self {
+    ///
+    /// # Errors
+    /// Returns `DomainError::InvalidSymbol` if the provided symbol violates canonical invariants.
+    pub fn from_symbol(symbol: impl AsRef<str>, kind: AssetKind) -> Result<Self, DomainError> {
+        Ok(Self {
             figi: None,
             isin: None,
-            symbol: symbol.into(),
+            symbol: Symbol::new(symbol.as_ref())?,
             exchange: None,
             kind,
-        }
+        })
     }
 
     /// Construct a new `Instrument` with symbol, exchange, and kind.
     /// This is useful for providers that have exchange information but no global identifiers.
+    ///
+    /// # Errors
+    /// Returns `DomainError::InvalidSymbol` if the provided symbol violates canonical invariants.
     pub fn from_symbol_and_exchange(
-        symbol: impl Into<String>,
+        symbol: impl AsRef<str>,
         exchange: Exchange,
         kind: AssetKind,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, DomainError> {
+        Ok(Self {
             figi: None,
             isin: None,
-            symbol: symbol.into(),
+            symbol: Symbol::new(symbol.as_ref())?,
             exchange: Some(exchange),
             kind,
-        }
+        })
     }
 
     /// Returns the best available unique identifier for this instrument.
@@ -233,12 +243,15 @@ impl Instrument {
     /// Priority order:
     /// 1. FIGI (if available)
     /// 2. ISIN (if available)
-    /// 3. Symbol + Exchange (if exchange is available)
-    /// 4. Symbol only (fallback)
+    /// 3. `SYMBOL@EXCHANGE` (if the exchange is available)
+    /// 4. Symbol only (fallback; ambiguous across venues/data vendors)
     ///
     /// This method returns a `Cow<str>` to avoid unnecessary allocations:
     /// - Returns `Cow::Borrowed` for FIGI, ISIN, and symbol-only cases
     /// - Returns `Cow::Owned` only for the symbol@exchange case that requires formatting
+    ///
+    /// Bare symbols are not globally unique; callers should prefer FIGI/ISIN
+    /// when present and treat the symbol fallback as legacy.
     ///
     /// # Future compatibility
     /// The `symbol@exchange` fallback currently uses the exchange display code (e.g. `NASDAQ`).
@@ -255,7 +268,7 @@ impl Instrument {
         if let Some(exchange) = &self.exchange {
             return Cow::Owned(format!("{}@{}", self.symbol, exchange.code()));
         }
-        Cow::Borrowed(&self.symbol)
+        Cow::Borrowed(self.symbol.as_str())
     }
 
     /// Returns true if this instrument has a globally unique identifier (FIGI or ISIN).
@@ -288,10 +301,16 @@ impl Instrument {
         self.isin.as_ref().map(AsRef::as_ref)
     }
 
-    /// Returns the ticker symbol.
+    /// Returns the canonical instrument symbol.
     #[must_use]
-    pub fn symbol(&self) -> &str {
+    pub fn symbol(&self) -> &Symbol {
         &self.symbol
+    }
+
+    /// Returns the ticker symbol as a string slice.
+    #[must_use]
+    pub fn symbol_str(&self) -> &str {
+        self.symbol.as_str()
     }
 
     /// Returns the exchange if available.

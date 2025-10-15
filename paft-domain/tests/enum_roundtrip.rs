@@ -54,9 +54,7 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
             DomainError::InvalidExchangeValue { value } => {
                 assert_eq!(value, (*input).to_string());
             }
-            DomainError::InvalidPeriodFormat { .. }
-            | DomainError::InvalidIsin { .. }
-            | DomainError::InvalidFigi { .. } => unreachable!(),
+            other => panic!("unexpected error variant: {other:?}"),
         }
     }
 }

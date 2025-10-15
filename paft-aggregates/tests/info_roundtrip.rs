@@ -1,6 +1,6 @@
 use chrono::{NaiveDate, TimeZone, Utc};
 use paft_aggregates::{FastInfo, Info};
-use paft_domain::{Exchange, Isin, MarketState};
+use paft_domain::{Exchange, Isin, MarketState, Symbol};
 use paft_money::IsoCurrency;
 use paft_money::{Currency, Money};
 
@@ -8,7 +8,7 @@ use paft_money::{Currency, Money};
 fn fast_info_roundtrip() {
     let usd = Currency::Iso(IsoCurrency::USD);
     let fast = FastInfo {
-        symbol: "AAPL".to_string(),
+        symbol: Symbol::new("AAPL").unwrap(),
         name: Some("Apple Inc.".to_string()),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -26,7 +26,7 @@ fn fast_info_roundtrip() {
 fn info_roundtrip() {
     let usd = Currency::Iso(IsoCurrency::USD);
     let info = Info {
-        symbol: "MSFT".to_string(),
+        symbol: Symbol::new("MSFT").unwrap(),
         name: Some("Microsoft Corporation".to_string()),
         isin: Some(Isin::new("US5949181045").unwrap()),
         exchange: Some(Exchange::NASDAQ),

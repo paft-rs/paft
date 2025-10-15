@@ -65,9 +65,7 @@ fn period_invalid_matches_raise_error() {
             DomainError::InvalidPeriodFormat { format } => {
                 assert_eq!(format, invalid);
             }
-            DomainError::InvalidExchangeValue { .. }
-            | DomainError::InvalidIsin { .. }
-            | DomainError::InvalidFigi { .. } => unreachable!(),
+            other => panic!("unexpected error variant: {other:?}"),
         }
     }
 }

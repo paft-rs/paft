@@ -1,8 +1,8 @@
 //! Core domain types for the paft ecosystem.
 //!
 //! This crate defines strongly-typed primitives for instruments, exchanges,
-//! market sessions, identifiers, and financial periods used across the paft
-//! ecosystem. Types are designed to be:
+//! market sessions, identifiers (including an opaque `Symbol`), and financial
+//! periods used across the paft ecosystem. Types are designed to be:
 //! - Canonical and stable in string form (for serde, display, and storage)
 //! - Liberal in what they accept when parsing (aliases, case-insensitivity),
 //!   strict and consistent in emission
@@ -11,15 +11,17 @@
 //! # Quickstart
 //!
 //! ```rust
-//! use paft_domain::{Instrument, AssetKind, Exchange, Period};
+//! use paft_domain::{AssetKind, Exchange, Instrument, Period, Symbol};
 //!
 //! // Create an instrument from a symbol and kind
+//! let symbol = Symbol::new("AAPL").unwrap();
 //! let aapl = Instrument::from_symbol_and_exchange(
-//!     "AAPL",
+//!     symbol.as_str(),
 //!     Exchange::NASDAQ,
 //!     AssetKind::Equity,
-//! );
-//! assert_eq!(aapl.symbol(), "AAPL");
+//! )
+//! .unwrap();
+//! assert_eq!(aapl.symbol().as_str(), symbol.as_str());
 //! assert!(aapl.exchange().is_some());
 //!
 //! // Parse financial periods from flexible inputs and get canonical form
@@ -53,7 +55,7 @@ pub mod period;
 
 pub use error::DomainError;
 pub use exchange::Exchange;
-pub use identifiers::{Figi, Isin};
+pub use identifiers::{Figi, Isin, Symbol};
 pub use instrument::{AssetKind, Instrument};
 pub use market_state::MarketState;
 pub use period::Period;

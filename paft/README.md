@@ -94,11 +94,12 @@ let apple = Instrument::try_new(
 )
 .expect("valid instrument");
 
-let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto);
+let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto)
+    .expect("valid crypto symbol");
 
 // Create market data
 let quote = Quote {
-    symbol: "AAPL".to_string(),
+    symbol: Symbol::new("AAPL").unwrap(),
     shortname: Some("Apple Inc.".to_string()),
     price: Some(Money::from_canonical_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
     previous_close: Some(Money::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),

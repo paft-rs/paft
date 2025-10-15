@@ -1,6 +1,6 @@
 #![cfg(feature = "dataframe")]
 use iso_currency::Currency as IsoCurrency;
-use paft_domain::Exchange;
+use paft_domain::{Exchange, Symbol};
 use paft_market::market::quote::Quote;
 use paft_money::{Currency, Decimal, Money};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
@@ -8,7 +8,7 @@ use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 #[test]
 fn vec_quote_to_dataframe_smoke() {
     let quotes = [Quote {
-        symbol: "AAPL".to_string(),
+        symbol: Symbol::new("AAPL").unwrap(),
         shortname: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
@@ -26,7 +26,7 @@ fn vec_quote_to_dataframe_smoke() {
 #[test]
 fn quote_to_dataframe_smoke() {
     let quote = Quote {
-        symbol: "AAPL".to_string(),
+        symbol: Symbol::new("AAPL").unwrap(),
         shortname: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
@@ -46,7 +46,7 @@ fn quote_to_dataframe_smoke() {
 fn quote_update_to_dataframe_smoke() {
     use paft_market::market::quote::QuoteUpdate;
     let update = QuoteUpdate {
-        symbol: "AAPL".to_string(),
+        symbol: Symbol::new("AAPL").unwrap(),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),

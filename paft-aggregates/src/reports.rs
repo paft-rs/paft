@@ -5,6 +5,7 @@
 //! storage, or user-facing reporting.
 
 use super::Info;
+use paft_domain::Symbol;
 use paft_market::responses::download::DownloadResponse;
 use paft_market::responses::search::SearchResponse;
 use serde::{Deserialize, Serialize};
@@ -16,7 +17,7 @@ use serde::{Deserialize, Serialize};
 /// available, and any non-fatal warnings encountered during processing.
 pub struct InfoReport {
     /// Requested symbol.
-    pub symbol: String,
+    pub symbol: Symbol,
     /// Snapshot payload, if successfully resolved.
     pub info: Option<Info>,
     /// Non-fatal issues encountered while building the report.

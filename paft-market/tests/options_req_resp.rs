@@ -1,11 +1,12 @@
 use chrono::NaiveDate;
+use paft_domain::Symbol;
 use paft_market::requests::options::{OptionChainRequest, OptionExpirationsRequest};
 use paft_market::responses::options::OptionExpirationsResponse;
 
 #[test]
 fn option_expirations_request_roundtrip() {
     let req = OptionExpirationsRequest {
-        symbol: "AAPL".to_string(),
+        symbol: Symbol::new("AAPL").unwrap(),
     };
     let json = serde_json::to_string(&req).unwrap();
     let de: OptionExpirationsRequest = serde_json::from_str(&json).unwrap();
@@ -15,7 +16,7 @@ fn option_expirations_request_roundtrip() {
 #[test]
 fn option_chain_request_roundtrip() {
     let req = OptionChainRequest {
-        symbol: "AAPL".to_string(),
+        symbol: Symbol::new("AAPL").unwrap(),
         expiration: NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
     };
     let json = serde_json::to_string(&req).unwrap();

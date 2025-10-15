@@ -32,7 +32,8 @@ fn run_example() {
     // Example 1: Generic provider (basic symbol + exchange)
     println!("1. Generic Provider (Symbol + Exchange):");
     let generic_instrument =
-        Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity);
+        Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
+            .expect("valid NASDAQ symbol");
 
     println!("   Symbol: {}", generic_instrument.symbol());
     println!(
@@ -108,7 +109,8 @@ fn run_example() {
 
     // Example 4: Minimal provider (symbol only)
     println!("4. Minimal Provider (Symbol Only):");
-    let minimal_instrument = Instrument::from_symbol("BTC-USD", AssetKind::Crypto);
+    let minimal_instrument =
+        Instrument::from_symbol("BTC-USD", AssetKind::Crypto).expect("valid crypto symbol");
 
     println!("   Symbol: {}", minimal_instrument.symbol());
     println!("   FIGI: {}", minimal_instrument.figi_str().unwrap_or("-"));

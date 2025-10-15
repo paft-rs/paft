@@ -4,6 +4,7 @@ use thiserror::Error;
 
 /// Errors produced by domain models.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DomainError {
     /// Invalid period format provided for parsing.
     #[error(
@@ -32,6 +33,13 @@ pub enum DomainError {
     #[error("Invalid FIGI: '{value}'")]
     InvalidFigi {
         /// The original invalid FIGI input.
+        value: String,
+    },
+
+    /// Invalid symbol encountered while parsing or validating.
+    #[error("Invalid symbol: '{value}'")]
+    InvalidSymbol {
+        /// The original invalid symbol input.
         value: String,
     },
 }

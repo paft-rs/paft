@@ -2,13 +2,14 @@
 
 use serde::{Deserialize, Serialize};
 
-use paft_domain::{AssetKind, Exchange};
+use paft_domain::{AssetKind, Exchange, Symbol};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// A single search result item.
 pub struct SearchResult {
     /// Symbol identifier.
-    pub symbol: String,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub symbol: Symbol,
     /// Display name.
     pub name: Option<String>,
     /// Exchange identifier with canonical variants and extensible fallback.

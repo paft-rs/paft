@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
+use paft_domain::Symbol;
 use paft_money::Money;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
@@ -30,7 +31,8 @@ pub struct OptionGreeks {
 /// A single option contract (call or put) at a given strike and expiration.
 pub struct OptionContract {
     /// Provider-specific contract identifier.
-    pub contract_symbol: String,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub contract_symbol: Symbol,
     /// Strike price of the contract.
     pub strike: Money,
     /// Last traded price.

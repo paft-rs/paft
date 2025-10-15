@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
-use paft_domain::{Exchange, MarketState};
+use paft_domain::{Exchange, MarketState, Symbol};
 use paft_money::Money;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
@@ -15,7 +15,8 @@ use paft_utils::dataframe::ToDataFrame;
 /// Snapshot quote data for a symbol at a single point in time.
 pub struct Quote {
     /// Symbol identifier.
-    pub symbol: String,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub symbol: Symbol,
     /// Short display name.
     pub shortname: Option<String>,
     /// Market price.
@@ -35,7 +36,8 @@ pub struct Quote {
 /// Incremental update for a symbol during streaming sessions.
 pub struct QuoteUpdate {
     /// Symbol identifier.
-    pub symbol: String,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub symbol: Symbol,
     /// Last traded price, if present.
     pub price: Option<Money>,
     /// Previous close price.

@@ -7,7 +7,7 @@
 #[cfg(feature = "domain")]
 pub use crate::domain::{
     AssetKind, Canonical, Exchange, Figi, Instrument, Isin, MarketState, Period, StringCode,
-    canonicalize,
+    Symbol, canonicalize,
 };
 #[cfg(feature = "money-formatting")]
 pub use crate::money::Locale;

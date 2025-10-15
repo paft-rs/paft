@@ -1,4 +1,4 @@
-use paft_domain::{DomainError, Figi, Isin};
+use paft_domain::{DomainError, Figi, Isin, Symbol};
 use serde_json::{from_str, to_string};
 
 #[test]
@@ -77,6 +77,78 @@ fn figi_rejects_invalid_length() {
 fn figi_rejects_non_alphanumeric() {
     let err = Figi::new("BBG000B9XRY!").expect_err("non-alphanumeric fails");
     assert!(matches!(err, DomainError::InvalidFigi { .. }));
+}
+
+#[test]
+fn symbol_accepts_and_canonicalizes_variety() {
+    let cases = [
+        ("AAPL", "AAPL"),
+        ("brk.b", "BRK.B"),
+        ("rds/a", "RDS/A"),
+        ("bac.pra", "BAC.PRA"),
+        ("^gspc", "^GSPC"),
+        ("es=f", "ES=F"),
+        ("eurusd=x", "EURUSD=X"),
+        ("btc-usd", "BTC-USD"),
+        ("gs2c.de", "GS2C.DE"),
+        ("vod.l", "VOD.L"),
+        ("ry.to", "RY.TO"),
+        ("0700.hk", "0700.HK"),
+        ("7203.t", "7203.T"),
+        ("600519.ss", "600519.SS"),
+        ("aapl240118c00180000", "AAPL240118C00180000"),
+    ];
+
+    for (input, expected) in cases {
+        let symbol = Symbol::new(input).unwrap();
+        assert_eq!(symbol.as_str(), expected);
+    }
+}
+
+#[test]
+fn symbol_rejects_invalid_inputs() {
+    let reject_cases = [
+        "",
+        "   ",
+        "AAPL US",
+        "AAPL\tUS",
+        "AAPL\nUS",
+        "\u{7f}AAPL",
+        "AAPL\u{1f}",
+    ];
+
+    for input in reject_cases {
+        let err = Symbol::new(input).expect_err("invalid symbol should be rejected");
+        assert!(matches!(err, DomainError::InvalidSymbol { .. }));
+    }
+
+    let overlong = "a".repeat(65);
+    let err = Symbol::new(&overlong).expect_err("overlong symbol should be rejected");
+    assert!(matches!(err, DomainError::InvalidSymbol { .. }));
+}
+
+#[test]
+fn symbol_equality_is_case_insensitive() {
+    let lower = Symbol::new("aapl").unwrap();
+    let upper = Symbol::new("AAPL").unwrap();
+    assert_eq!(lower, upper);
+}
+
+#[test]
+fn symbol_len_and_display() {
+    let symbol = Symbol::new(" brk.b ").unwrap();
+    assert_eq!(symbol.len(), 5);
+    assert_eq!(symbol.to_string(), "BRK.B");
+    assert!(!symbol.is_empty());
+}
+
+#[test]
+fn symbol_serde_roundtrip() {
+    let symbol = Symbol::new("ES=F").unwrap();
+    let json = to_string(&symbol).unwrap();
+    assert_eq!(json, "\"ES=F\"");
+    let back: Symbol = from_str(&json).unwrap();
+    assert_eq!(back, symbol);
 }
 
 #[cfg(feature = "figi-validate")]

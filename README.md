@@ -228,7 +228,7 @@ impl GenericProvider {
 impl GenericQuoteWire {
     fn into_paft_quote(self, symbol: &str) -> paft::Quote {
         paft::Quote {
-            symbol: symbol.to_string(),
+            symbol: paft::Symbol::new(symbol).expect("validated upstream"),
             price: self.regularMarketPrice.map(|amount| 
                 paft::Money::new(amount.into(), paft::Currency::Iso(paft::IsoCurrency::USD))
             ),

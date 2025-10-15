@@ -10,7 +10,7 @@
 //!   fundamentals.
 
 use chrono::{DateTime, NaiveDate, Utc};
-use paft_domain::{Exchange, Isin, MarketState};
+use paft_domain::{Exchange, Isin, MarketState, Symbol};
 use paft_money::{Currency, Money};
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 /// extended snapshots, see [`Info`].
 pub struct FastInfo {
     /// Primary trading symbol/ticker as provided by the data source.
-    pub symbol: String,
+    pub symbol: Symbol,
     /// Human-friendly instrument name.
     pub name: Option<String>,
     /// Primary listing exchange, if known.
@@ -45,7 +45,7 @@ pub struct FastInfo {
 pub struct Info {
     // Identity
     /// Primary trading symbol/ticker as provided by the data source.
-    pub symbol: String,
+    pub symbol: Symbol,
     /// Human-friendly instrument name.
     pub name: Option<String>,
     /// International Securities Identification Number.

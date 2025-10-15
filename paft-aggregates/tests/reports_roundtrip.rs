@@ -1,6 +1,6 @@
 use chrono::{TimeZone, Utc};
 use paft_aggregates::{DownloadReport, Info, InfoReport, SearchReport};
-use paft_domain::{AssetKind, Exchange};
+use paft_domain::{AssetKind, Exchange, Symbol};
 use paft_market::market::action::Action;
 use paft_market::responses::download::DownloadResponse;
 use paft_market::responses::history::{Candle, HistoryMeta, HistoryResponse};
@@ -11,9 +11,9 @@ use paft_money::{Currency, Money};
 #[test]
 fn info_report_roundtrip() {
     let report = InfoReport {
-        symbol: "AAPL".into(),
+        symbol: Symbol::new("AAPL").unwrap(),
         info: Some(Info {
-            symbol: "AAPL".into(),
+            symbol: Symbol::new("AAPL").unwrap(),
             ..Default::default()
         }),
         warnings: vec!["Incomplete dataset".into()],
@@ -27,7 +27,7 @@ fn info_report_roundtrip() {
 fn search_report_roundtrip() {
     let response = SearchResponse {
         results: vec![SearchResult {
-            symbol: "AAPL".into(),
+            symbol: Symbol::new("AAPL").unwrap(),
             name: Some("Apple".into()),
             exchange: Some(Exchange::NASDAQ),
             kind: AssetKind::Equity,
@@ -90,9 +90,9 @@ fn download_report_roundtrip() {
         meta: None,
     };
 
-    let mut history = HashMap::new();
-    history.insert("AAPL".to_string(), aapl_history);
-    history.insert("MSFT".to_string(), msft_history);
+    let mut history: HashMap<Symbol, HistoryResponse> = HashMap::new();
+    history.insert(Symbol::new("AAPL").unwrap(), aapl_history);
+    history.insert(Symbol::new("MSFT").unwrap(), msft_history);
 
     let response = DownloadResponse { history };
 

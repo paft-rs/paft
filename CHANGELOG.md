@@ -16,6 +16,28 @@ All notable changes to this project will be documented in this file.
   - New JSON shape: `{ "response": { "history": {SYMBOL: HistoryResponse} }, "warnings": [...] }`.
   - Update consumers to access per‑symbol data via `report.response.unwrap().history.get("SYM")` (or pattern match safely).
 
+- New `paft_domain::Symbol` newtype replaces raw strings for instrument symbols across the workspace.
+  - Canonicalization trims, uppercases ASCII letters, forbids whitespace/control chars, enforces 1–64 byte length, and preserves punctuation/numerics verbatim.
+  - `Symbol` implements `Display`, `FromStr`, `TryFrom<String>`, `AsRef<str>`, serde (transparent), and helpers `as_str()/len()/is_empty()`.
+  - `Symbol` equality/hash operate on the canonical string, guaranteeing `"aapl" == "AAPL"` post-normalization.
+
+- `paft_domain::DomainError` gains `InvalidSymbol { value: String }` and is now marked `#[non_exhaustive]`.
+  - Match arms over `DomainError` must include a wildcard (or be future-proofed) to compile.
+
+- `paft_domain::Instrument`
+  - Stores `Symbol` (instead of `String`); `symbol()` returns `&Symbol` and a new `symbol_str()` helper exposes `&str`.
+  - `Instrument::from_symbol`/`from_symbol_and_exchange` now return `Result<Self, DomainError>` to propagate symbol validation.
+  - `Instrument::try_new` validates the incoming symbol and continues to accept optional FIGI/ISIN.
+  - `unique_key()` still emits the canonical symbol string, so downstream formatting remains unchanged.
+
+- Workspace symbol usages migrated to `Symbol` (all serde shapes remain strings because the type is `#[serde(transparent)]`). Highlights:
+  - Market requests/responses: `OptionExpirationsRequest.symbol`, `OptionChainRequest.symbol`, `Quote.symbol`, `QuoteUpdate.symbol`, `OptionContract.contract_symbol`, `SearchResult.symbol`, and `DownloadResponse.history: HashMap<Symbol, HistoryResponse>`.
+  - Aggregates: `FastInfo.symbol`, `Info.symbol`, `InfoReport.symbol` now use `Symbol`.
+  - Tests/examples/README updated to construct validated symbols via `Symbol::new(...)` and handle `Result` from the adjusted constructors.
+  - All affected structs retain `#[cfg_attr(feature = "dataframe", df_derive(as_string))]` to keep DataFrame output identical.
+
+- Facade (`paft`) re-exports `Symbol` through the `domain` module and `prelude`, ensuring downstream crates get the new type when upgrading.
+
 ## [0.4.0] - 2025-10-11
 
 ### Added

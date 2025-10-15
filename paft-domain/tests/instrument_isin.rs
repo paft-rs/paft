@@ -4,7 +4,8 @@ mod feature_enabled {
 
     #[test]
     fn try_set_isin_accepts_clean_value() {
-        let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
+        let mut instrument =
+            Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
         instrument.try_set_isin("US0378331005").expect("valid ISIN");
         assert_eq!(instrument.isin_str(), Some("US0378331005"));
         assert!(Isin::new("US0378331005").is_ok());
@@ -43,7 +44,8 @@ mod feature_enabled {
 
     #[test]
     fn try_set_isin_normalizes_loose_input() {
-        let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
+        let mut instrument =
+            Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
         instrument
             .try_set_isin("us-037833-1005 ")
             .expect("normalized ISIN");
@@ -60,7 +62,8 @@ mod feature_enabled {
         ];
 
         for value in invalid_inputs {
-            let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
+            let mut instrument =
+                Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
             let err = instrument.try_set_isin(value).expect_err("invalid ISIN");
             assert_eq!(
                 err,
@@ -82,7 +85,8 @@ mod feature_disabled {
 
     #[test]
     fn try_set_isin_scrubs_and_uppercases() {
-        let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
+        let mut instrument =
+            Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
         instrument
             .try_set_isin(" us-037833-1005 ")
             .expect("feature disabled scrubs separators and allows value");
@@ -91,7 +95,8 @@ mod feature_disabled {
 
     #[test]
     fn try_set_isin_accepts_non_empty_values() {
-        let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
+        let mut instrument =
+            Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
         instrument
             .try_set_isin("invalid!!!")
             .expect("feature disabled accepts non-empty forms");
@@ -100,7 +105,8 @@ mod feature_disabled {
 
     #[test]
     fn try_set_isin_rejects_empty_after_scrub() {
-        let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity);
+        let mut instrument =
+            Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
         let err = instrument
             .try_set_isin("   ---   ")
             .expect_err("scrubbed empty strings are rejected");
