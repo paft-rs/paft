@@ -102,7 +102,7 @@ fn deserialize_rejects_empty_after_scrub() {
         "kind": "EQUITY"
     }"#;
 
-    let err = serde_json::from_str::<Instrument>(json)
-        .expect_err("empty after scrub should be rejected");
+    let err =
+        serde_json::from_str::<Instrument>(json).expect_err("empty after scrub should be rejected");
     assert!(err.to_string().contains("Invalid ISIN"));
 }
