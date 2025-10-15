@@ -28,8 +28,7 @@ What’s inside
 
 - `info`: `FastInfo`, `Info` — lightweight instrument snapshots (identity, prices, ranges, and timestamp)
 - `reports`: `InfoReport`, `SearchReport`, `DownloadReport` — merge-friendly report envelopes with `warnings`
-
-This crate only defines data models and serde; it performs no network I/O.
+  - `DownloadReport` now wraps a per-symbol `DownloadResponse` (`history: { SYM: HistoryResponse }`)
 
 Features
 --------
@@ -40,6 +39,6 @@ Features
 Links
 -----
 
-- API docs: https://docs.rs/paft-aggregates
-- Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
-- License: https://github.com/paft-rs/paft/blob/main/LICENSE
+- API docs: [docs.rs/paft-aggregates](https://docs.rs/paft-aggregates)
+- Workspace overview: [GitHub: workspace README](https://github.com/paft-rs/paft/blob/main/README.md)
+- License: [GitHub: LICENSE](https://github.com/paft-rs/paft/blob/main/LICENSE)

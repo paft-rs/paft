@@ -5,7 +5,7 @@
 //! storage, or user-facing reporting.
 
 use super::Info;
-use paft_market::responses::history::HistoryResponse;
+use paft_market::responses::download::DownloadResponse;
 use paft_market::responses::search::SearchResponse;
 use serde::{Deserialize, Serialize};
 
@@ -38,11 +38,11 @@ pub struct SearchReport {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Summary of historical data download.
 ///
-/// Includes the `history` payload when present and any `warnings` captured
-/// during retrieval or normalization.
+/// Wraps a per-symbol [`DownloadResponse`] payload when present and any
+/// `warnings` captured during retrieval or normalization.
 pub struct DownloadReport {
-    /// Historical series payload.
-    pub history: Option<HistoryResponse>,
+    /// Per-symbol aggregated download payload.
+    pub response: Option<DownloadResponse>,
     /// Non-fatal issues encountered while building the report.
     pub warnings: Vec<String>,
 }
