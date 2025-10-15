@@ -52,8 +52,9 @@ test-powerset crate='':
 
 # Test paft facade with critical feature combinations
 test-paft-critical:
-  cargo nextest run -p paft --all-targets --all-features
+  cargo nextest run -p paft --all-targets --no-default-features --no-tests pass
   cargo nextest run -p paft --all-targets
+  cargo nextest run -p paft --all-targets --all-features
 
 # Lint all workspace crates except paft with feature powerset
 lint-powerset crate='':
@@ -75,6 +76,7 @@ lint-powerset crate='':
 
 # Lint paft facade with critical feature combinations
 lint-paft-critical:
+  cargo clippy -p paft --all-targets --no-default-features -- {{ clippy_flags }}
   cargo clippy -p paft --all-targets --all-features -- {{ clippy_flags }}
   cargo clippy -p paft --all-targets -- {{ clippy_flags }}
   
