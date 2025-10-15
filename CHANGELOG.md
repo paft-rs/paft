@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Changed (Breaking)
+
+- Market Downloads: `paft_market::DownloadResponse` now wraps per-symbol `HistoryResponse`.
+  - Old shape: `{ "series": {SYM: [Candle, ...]}, "meta": {SYM: HistoryMeta?}, "actions": {SYM: [Action, ...]}, "adjusted": bool }`.
+  - New shape: `{ "history": {SYM: HistoryResponse} }`.
+  - Rationale: `adjusted` can legitimately differ by symbol; per-symbol `HistoryResponse` captures actual outcomes.
+
+- Aggregates: `paft-aggregates::DownloadReport` now wraps `paft_market::DownloadResponse` as `response`.
+  - Removed the old `history: Option<HistoryResponse>` field and legacy JSON shape `{ "history": { ... }, "warnings": [...] }`.
+  - New JSON shape: `{ "response": { "history": {SYMBOL: HistoryResponse} }, "warnings": [...] }`.
+  - Update consumers to access per‑symbol data via `report.response.unwrap().history.get("SYM")` (or pattern match safely).
+
 ## [0.4.0] - 2025-10-11
 
 ### Added
