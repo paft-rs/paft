@@ -12,7 +12,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.5.1"
 authors = ["G. Ramistella <heydays_micron_7m@icloud.com>"]
 edition = "2024"
 license = "MIT"
@@ -37,10 +37,10 @@ bitflags = { version = "2", features = ["serde"] }
 isin = { version = "0.1", default-features = false }
 
 # Local crates
-paft-core = { path = "paft-core", version = "0.5.0", default-features = false }
-paft-market = { path = "paft-market", version = "0.5.0", default-features = false }
-paft-fundamentals = { path = "paft-fundamentals", version = "0.5.0", default-features = false }
-paft-money = { path = "paft-money", version = "0.5.0", default-features = false}
-paft-utils = { path = "paft-utils", version = "0.5.0", default-features = false }
-paft-domain = { path = "paft-domain", version = "0.5.0", default-features = false }
-paft-aggregates = { path = "paft-aggregates", version = "0.5.0", default-features = false }
+paft-core = { path = "paft-core", version = "0.5.1", default-features = false }
+paft-market = { path = "paft-market", version = "0.5.1", default-features = false }
+paft-fundamentals = { path = "paft-fundamentals", version = "0.5.1", default-features = false }
+paft-money = { path = "paft-money", version = "0.5.1", default-features = false}
+paft-utils = { path = "paft-utils", version = "0.5.1", default-features = false }
+paft-domain = { path = "paft-domain", version = "0.5.1", default-features = false }
+paft-aggregates = { path = "paft-aggregates", version = "0.5.1", default-features = false }
