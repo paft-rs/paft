@@ -17,18 +17,18 @@ lint:
 # Exhaustive testing strategy
 test-full:
   @echo "Running exhaustive test suite..."
-  @echo "Step 1/2: Testing all workspace crates..."
-  @just test-powerset
-  @echo "Step 2/2: Testing paft facade with key configurations..."
+  @echo "Step 1/2: Testing paft facade with key configurations..."
   @just test-paft-critical
+  @echo "Step 2/2: Testing all workspace crates..."
+  @just test-powerset
 
 # Exhaustive linting strategy  
 lint-full:
   @echo "Running exhaustive lint suite..."
-  @echo "Step 1/2: Linting all workspace crates..."
-  @just lint-powerset
-  @echo "Step 2/2: Linting paft facade with key configurations..."
+  @echo "Step 1/2: Linting paft facade with key configurations..."
   @just lint-paft-critical
+  @echo "Step 2/2: Linting all workspace crates..."
+  @just lint-powerset
 
 # === Internal recipes ===
 
