@@ -1454,7 +1454,6 @@ dependencies = [
  "paft-market",
  "paft-money",
  "paft-utils",
- "polars",
  "rust_decimal",
  "serde_json",
  "thiserror",
@@ -1466,7 +1465,6 @@ version = "0.5.0"
 dependencies = [
  "chrono",
  "paft-domain",
- "paft-fundamentals",
  "paft-market",
  "paft-money",
  "serde",
@@ -1478,11 +1476,7 @@ name = "paft-core"
 version = "0.5.0"
 dependencies = [
  "chrono",
- "iso_currency",
- "paft-utils",
- "regex",
  "serde",
- "serde_json",
  "thiserror",
 ]
 
@@ -1506,7 +1500,6 @@ name = "paft-fundamentals"
 version = "0.5.0"
 dependencies = [
  "chrono",
- "chrono-tz",
  "df-derive",
  "iso_currency",
  "paft-core",
@@ -1838,7 +1831,6 @@ dependencies = [
  "blake3",
  "bytes",
  "chrono",
- "chrono-tz",
  "fast-float2",
  "fs4",
  "futures",
@@ -1878,7 +1870,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b26d1a04292a82183c8eba94fdf1584f200bfac5ac2f4a6c5652c8c8ed3bb41c"
 dependencies = [
  "chrono",
- "chrono-tz",
  "fallible-streaming-iterator",
  "hashbrown 0.15.5",
  "indexmap",

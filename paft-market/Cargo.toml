@@ -32,7 +32,7 @@ default = []
 # rust-decimal feature removed; rust_decimal backend is implied by default
 bigdecimal = ["paft-money/bigdecimal"]
 
-dataframe = ["paft-utils/dataframe", "polars", "df-derive", "paft-core/dataframe", "paft-domain/dataframe", "paft-money/dataframe"]
+dataframe = ["paft-utils/dataframe", "polars", "df-derive", "paft-domain/dataframe", "paft-money/dataframe"]
 
 [dev-dependencies]
 rust_decimal = { workspace = true }

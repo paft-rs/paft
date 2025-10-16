@@ -16,7 +16,6 @@ categories = ["data-structures", "finance"]
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 chrono = { workspace = true }
-chrono-tz = { workspace = true }
 paft-core = { workspace = true }
 paft-domain = { workspace = true }
 paft-money = { workspace = true, default-features = false }
@@ -31,7 +30,7 @@ default = []
 # rust-decimal feature removed; rust_decimal backend is implied by default
 bigdecimal = ["paft-money/bigdecimal"]
 
-dataframe = ["polars", "df-derive", "paft-utils/dataframe", "paft-core/dataframe", "paft-domain/dataframe", "paft-money/dataframe"]
+dataframe = ["polars", "df-derive", "paft-utils/dataframe", "paft-domain/dataframe", "paft-money/dataframe"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

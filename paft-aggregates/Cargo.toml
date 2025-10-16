@@ -16,7 +16,6 @@ chrono = { workspace = true, features = ["serde"] }
 paft-domain = { workspace = true }
 paft-money  = { workspace = true }
 paft-market = { workspace = true }
-paft-fundamentals = { workspace = true }
 
 [features]
 default = []
@@ -25,8 +24,6 @@ default = []
 bigdecimal = [
   "paft-money/bigdecimal",
   "paft-market/bigdecimal",
-  "paft-domain/bigdecimal",
-  "paft-fundamentals/bigdecimal",
 ]
 
 # Optional: expose panicking money ops for tests/consumers

@@ -38,12 +38,6 @@ pub mod error;
 /// Private serde helper modules for custom serialization patterns.
 pub mod serde_helpers;
 
-#[cfg(feature = "dataframe")]
-/// Re-export `DataFrame` conversion traits from `paft-utils`
-pub mod dataframe {
-    pub use paft_utils::dataframe::*;
-}
-
 /// Internal macro exports for string-backed enums used across the paft workspace.
 /// These remain public for crate interoperability but are not covered by semver guarantees.
 #[doc(hidden)]
@@ -294,6 +288,3 @@ macro_rules! string_enum_closed_with_code {
 }
 
 pub use error::PaftError;
-
-#[cfg(feature = "dataframe")]
-pub use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};

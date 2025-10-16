@@ -16,16 +16,14 @@ thiserror = { workspace = true }
 regex = { workspace = true }
 chrono = { workspace = true }
 paft-utils = { workspace = true }
-paft-money = { workspace = true, default-features = false }
 paft-core = { workspace = true }
-isin = { version = "0.1", default-features = false }
+isin = { workspace = true }
 
 [features]
 default = []
 
-# rust-decimal feature removed; rust_decimal backend is implied by default
-bigdecimal = ["paft-money/bigdecimal"]
+dataframe = ["paft-utils/dataframe"]
 
-dataframe = ["paft-utils/dataframe", "paft-money/dataframe"]
 [dev-dependencies]
 serde_json = { workspace = true }
+paft-money = { workspace = true }

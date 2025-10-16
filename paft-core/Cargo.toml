@@ -16,13 +16,6 @@ categories = ["data-structures", "finance"]
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 chrono = { workspace = true }
-regex = { workspace = true }
-paft-utils = { workspace = true }
 
 [features]
 default = []
-dataframe = ["paft-utils/dataframe"]
-
-[dev-dependencies]
-serde_json = { workspace = true }
-iso_currency = { workspace = true }
