@@ -13,14 +13,14 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.5.0"
+paft = "0.5.1"
 ```
 
 Advanced (direct dependency, minimal features):
 
 ```toml
 [dependencies]
-paft-aggregates = { version = "0.5.0", default-features = false }
+paft-aggregates = { version = "0.5.1", default-features = false }
 ```
 
 What’s inside

@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2025-10-16
+
+### Changed
+
+- Trimmed unused dependencies and tightened workspace dependency management to reduce compile times and the feature surface:
+  - Promoted `isin` to a workspace-managed dependency.
+  - Removed unused deps like `chrono-tz`, `regex`, and dev-only `polars` where no longer needed.
+  - Pruned redundant cross-crate links (e.g., `paft-aggregates` no longer depends on `paft-fundamentals`).
+
+- Simplified the feature graph around DataFrame integration:
+  - Removed the `paft-core` `dataframe` feature and its re-exports.
+  - DataFrame support now remains via `paft-utils` and the domain/market/fundamentals crates behind `feature = "dataframe"`.
+  - The `paft` facade's `dataframe` feature continues to work and forwards to those crates.
+
+### Tooling
+
+- `just`: reordered `test-full`/`lint-full` steps to run facade-critical checks first for faster feedback, then full powerset.
+
+### Compatibility
+
+- No public API changes for the `paft` facade; typical users are unaffected.
+- Direct consumers of internal crates who imported `paft_core::dataframe::*` should import from `paft_utils::dataframe::*` (or via crates that enable `dataframe`). No migration is required when using the `paft` facade.
+
 ## [0.5.0] - 2025-10-16
 
 This release tightens identifier validation across the entire workspace and introduces a canonical `Symbol` type so downstream crates receive normalized, provider-agnostic instrument identifiers. Market download payloads were also reshaped to make per-symbol adjustments explicit.
@@ -314,6 +337,7 @@ This release tightens identifier validation across the entire workspace and intr
 
 - Initial public release.
 
+[0.5.1]: https://github.com/paft-rs/paft/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/paft-rs/paft/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/paft-rs/paft/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/paft-rs/paft/compare/v0.3.1...v0.3.2

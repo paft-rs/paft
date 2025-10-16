@@ -18,27 +18,26 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.5.0"
+paft = "0.5.1"
 ```
 
 Advanced (direct dependency, minimal):
 
 ```toml
 [dependencies]
-paft-core = { version = "0.5.0", default-features = false }
+paft-core = { version = "0.5.1", default-features = false }
 ```
 
-With DataFrame helpers:
-
+With serde helpers only (no optional features available in this crate):
 ```toml
 [dependencies]
-paft-core = { version = "0.5.0", default-features = false, features = ["dataframe"] }
+paft-core = { version = "0.5.1", default-features = false }
 ```
 
 Features
 --------
 
-- `dataframe`: Re-exports `ToDataFrame`/`ToDataFrameVec` traits from `paft-utils`.
+This crate does not expose optional features as of 0.5.1. DataFrame traits now live in `paft-utils` and are forwarded by consumer crates (or the `paft` facade) via their own `dataframe` features.
 
 Quickstart
 ----------

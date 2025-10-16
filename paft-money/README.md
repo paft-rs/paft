@@ -18,28 +18,28 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.5.0"
+paft = "0.5.1"
 ```
 
 Advanced (direct dependency, default backend):
 
 ```toml
 [dependencies]
-paft-money = "0.5.0"
+paft-money = "0.5.1"
 ```
 
 Alternate decimal backend:
 
 ```toml
 [dependencies]
-paft-money = { version = "0.5.0", features = ["bigdecimal"] }
+paft-money = { version = "0.5.1", features = ["bigdecimal"] }
 ```
 
 With DataFrame integration or panicking ops:
 
 ```toml
 [dependencies]
-paft-money = { version = "0.5.0", features = ["dataframe", "panicking-money-ops"] }
+paft-money = { version = "0.5.1", features = ["dataframe", "panicking-money-ops"] }
 ```
 
 Features

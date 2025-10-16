@@ -18,28 +18,28 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.5.0"
+paft = "0.5.1"
 ```
 
 Advanced (direct dependency, minimal):
 
 ```toml
 [dependencies]
-paft-market = { version = "0.5.0", default-features = false }
+paft-market = { version = "0.5.1", default-features = false }
 ```
 
 Alternate decimal backend:
 
 ```toml
 [dependencies]
-paft-market = { version = "0.5.0", default-features = false, features = ["bigdecimal"] }
+paft-market = { version = "0.5.1", default-features = false, features = ["bigdecimal"] }
 ```
 
 With DataFrame integration:
 
 ```toml
 [dependencies]
-paft-market = { version = "0.5.0", default-features = false, features = ["dataframe"] }
+paft-market = { version = "0.5.1", default-features = false, features = ["dataframe"] }
 ```
 
 Features
