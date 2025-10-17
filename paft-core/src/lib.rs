@@ -25,9 +25,6 @@
 //! assert!(matches!("".parse::<Side>(), Err(PaftError::InvalidEnumValue { .. })));
 //! ```
 //!
-//! # Feature flags
-//! - `dataframe`: re-export dataframe traits from `paft-utils`
-//!
 //! # Serde helpers
 //! See [`serde_helpers`] for helpers like `ts_seconds_vec` and `ts_seconds_option`.
 #![forbid(unsafe_code)]
