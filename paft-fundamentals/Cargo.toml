@@ -21,7 +21,7 @@ paft-domain = { workspace = true }
 paft-money = { workspace = true, default-features = false }
 paft-utils = { workspace = true }
 iso_currency = { workspace = true }
-polars = { workspace = true, optional = true }
+polars = { workspace = true, optional = true, features = ["dtype-datetime"] }
 df-derive = { workspace = true, optional = true }
 
 [features]

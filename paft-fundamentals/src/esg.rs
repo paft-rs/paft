@@ -2,7 +2,11 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "dataframe")]
+use df_derive::ToDataFrame;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// ESG involvement details for controversial activities or sectors.
 pub struct EsgInvolvement {
     /// Involvement category.
@@ -12,6 +16,7 @@ pub struct EsgInvolvement {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// ESG scores summary.
 pub struct EsgScores {
     /// Environmental score.

@@ -16,13 +16,15 @@ thiserror = { workspace = true }
 regex = { workspace = true }
 chrono = { workspace = true }
 paft-utils = { workspace = true }
+polars = { workspace = true, optional = true }
+df-derive = { workspace = true, optional = true }
 paft-core = { workspace = true }
 isin = { workspace = true }
 
 [features]
 default = []
 
-dataframe = ["paft-utils/dataframe"]
+dataframe = ["polars", "df-derive", "paft-utils/dataframe"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

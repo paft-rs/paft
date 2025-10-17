@@ -16,6 +16,9 @@ chrono = { workspace = true, features = ["serde"] }
 paft-domain = { workspace = true }
 paft-money  = { workspace = true }
 paft-market = { workspace = true }
+paft-utils = { workspace = true, optional = true }
+polars = { workspace = true, optional = true }
+df-derive = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -30,9 +33,16 @@ bigdecimal = [
 panicking-money-ops = ["paft-money/panicking-money-ops"]
 
 # Placeholder for facade forwarding; this crate has no dataframe code
-dataframe = []
+dataframe = [
+  "polars",
+  "df-derive",
+  "paft-domain/dataframe",
+  "paft-market/dataframe",
+  "paft-money/dataframe",
+  "paft-utils/dataframe",
+  "paft-utils",
+]
 
 [dev-dependencies]
 serde_json = { workspace = true }
-
-
+iso_currency = { workspace = true }

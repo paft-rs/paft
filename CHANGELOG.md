@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [0.5.1] - 2025-10-16
 
+### Added
+
+- DataFrame integration now covers additional core models behind `feature = "dataframe"`:
+  - Market search results (`paft_market::responses::search::SearchResult`).
+  - Fundamentals ESG types (`paft_fundamentals::esg::EsgScores`, `EsgInvolvement`) and profiles (`paft_fundamentals::profile::Profile`).
+  - Market corporate actions (`paft_market::market::action::Action`).
+  - Domain instruments (`paft_domain::instrument::Instrument`) and aggregate snapshots (`paft_aggregates::info::{FastInfo, Info}`).
+- Added targeted tests in the market, fundamentals, domain, aggregates, and money crates to ensure the new conversions (and previously derived ones) round-trip into Polars `DataFrame`s.
+
 ### Changed
 
 - Trimmed unused dependencies and tightened workspace dependency management to reduce compile times and the feature surface:

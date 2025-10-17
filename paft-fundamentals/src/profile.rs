@@ -9,7 +9,7 @@ use df_derive::ToDataFrame;
 use paft_core::error::PaftError;
 use paft_domain::{Canonical, Isin};
 #[cfg(feature = "dataframe")]
-use paft_utils::dataframe::ToDataFrame;
+use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 
 /// Fund types with canonical variants and extensible fallback.
 ///
@@ -154,6 +154,79 @@ impl Profile {
             Self::Company(c) => c.isin.as_ref(),
             Self::Fund(f) => f.isin.as_ref(),
         }
+    }
+}
+
+#[cfg(feature = "dataframe")]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
+struct ProfileRow {
+    pub profile_type: String,
+    pub name: String,
+    pub sector: Option<String>,
+    pub industry: Option<String>,
+    pub website: Option<String>,
+    pub address: Option<Address>,
+    pub summary: Option<String>,
+    pub family: Option<String>,
+    pub fund_kind: Option<String>,
+    pub isin: Option<String>,
+}
+
+#[cfg(feature = "dataframe")]
+impl From<&Profile> for ProfileRow {
+    fn from(profile: &Profile) -> Self {
+        match profile {
+            Profile::Company(company) => Self {
+                profile_type: "Company".to_string(),
+                name: company.name.clone(),
+                sector: company.sector.clone(),
+                industry: company.industry.clone(),
+                website: company.website.clone(),
+                address: company.address.clone(),
+                summary: company.summary.clone(),
+                family: None,
+                fund_kind: None,
+                isin: company.isin.as_ref().map(ToString::to_string),
+            },
+            Profile::Fund(fund) => Self {
+                profile_type: "Fund".to_string(),
+                name: fund.name.clone(),
+                sector: None,
+                industry: None,
+                website: None,
+                address: None,
+                summary: None,
+                family: fund.family.clone(),
+                fund_kind: Some(fund.kind.to_string()),
+                isin: fund.isin.as_ref().map(ToString::to_string),
+            },
+        }
+    }
+}
+
+#[cfg(feature = "dataframe")]
+impl ToDataFrame for Profile {
+    fn to_dataframe(&self) -> polars::prelude::PolarsResult<polars::prelude::DataFrame> {
+        ProfileRow::from(self).to_dataframe()
+    }
+
+    fn empty_dataframe() -> polars::prelude::PolarsResult<polars::prelude::DataFrame> {
+        ProfileRow::empty_dataframe()
+    }
+
+    fn schema() -> polars::prelude::PolarsResult<Vec<(&'static str, polars::datatypes::DataType)>> {
+        ProfileRow::schema()
+    }
+}
+
+#[cfg(feature = "dataframe")]
+impl Columnar for Profile {
+    fn columnar_to_dataframe(
+        items: &[Self],
+    ) -> polars::prelude::PolarsResult<polars::prelude::DataFrame> {
+        let rows: Vec<ProfileRow> = items.iter().map(ProfileRow::from).collect();
+        rows.as_slice().to_dataframe()
     }
 }
 

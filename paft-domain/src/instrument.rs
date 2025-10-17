@@ -8,6 +8,9 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, str::FromStr};
 
+#[cfg(feature = "dataframe")]
+use df_derive::ToDataFrame;
+
 /// Kinds of financial instruments
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -120,11 +123,17 @@ impl AssetKind {
 /// Symbol values are canonicalized into the [`Symbol`] newtype, preserving casing
 /// and punctuation semantics required by upstream data sources.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct Instrument {
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     figi: Option<Figi>,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     isin: Option<Isin>,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     symbol: Symbol,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     exchange: Option<Exchange>,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     kind: AssetKind,
 }
 

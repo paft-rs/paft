@@ -1464,9 +1464,13 @@ name = "paft-aggregates"
 version = "0.5.1"
 dependencies = [
  "chrono",
+ "df-derive",
+ "iso_currency",
  "paft-domain",
  "paft-market",
  "paft-money",
+ "paft-utils",
+ "polars",
  "serde",
  "serde_json",
 ]
@@ -1485,10 +1489,12 @@ name = "paft-domain"
 version = "0.5.1"
 dependencies = [
  "chrono",
+ "df-derive",
  "isin",
  "paft-core",
  "paft-money",
  "paft-utils",
+ "polars",
  "regex",
  "serde",
  "serde_json",

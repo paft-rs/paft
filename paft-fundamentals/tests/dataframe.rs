@@ -9,15 +9,16 @@ use paft_fundamentals::{
         RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate,
         RevisionPoint, TrendPoint, UpgradeDowngradeRow,
     },
+    esg::{EsgInvolvement, EsgScores},
     holders::{
         InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, MajorHolder,
         NetSharePurchaseActivity, TransactionType,
     },
-    profile::{Address, CompanyProfile, FundKind, FundProfile, ShareCount},
+    profile::{Address, CompanyProfile, FundKind, FundProfile, Profile, ShareCount},
     statements::{BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow},
 };
 use paft_money::{Decimal, Money};
-use paft_utils::dataframe::ToDataFrame;
+use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
 fn usd(amount: i64) -> Money {
     Money::new(
@@ -498,4 +499,66 @@ fn share_count_to_dataframe() {
 
     let df = shares.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
+}
+
+#[test]
+fn esg_scores_to_dataframe() {
+    let scores = EsgScores {
+        environmental: Some(55.0),
+        social: Some(60.5),
+        governance: Some(70.2),
+    };
+
+    let df = scores.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+}
+
+#[test]
+fn esg_involvement_vec_to_dataframe() {
+    let involvement = [
+        EsgInvolvement {
+            category: "Thermal Coal".to_string(),
+            score: Some(0.1),
+        },
+        EsgInvolvement {
+            category: "Renewables".to_string(),
+            score: Some(0.8),
+        },
+    ];
+
+    let df = involvement.as_slice().to_dataframe().unwrap();
+    assert_eq!(df.height(), 2);
+}
+
+#[test]
+fn profile_vec_to_dataframe() {
+    let company = Profile::Company(CompanyProfile {
+        name: "Apple Inc.".to_string(),
+        sector: Some("Technology".to_string()),
+        industry: Some("Consumer Electronics".to_string()),
+        website: Some("https://apple.com".to_string()),
+        address: Some(Address {
+            street1: Some("1 Infinite Loop".to_string()),
+            street2: None,
+            city: Some("Cupertino".to_string()),
+            state: Some("CA".to_string()),
+            country: Some("US".to_string()),
+            zip: Some("95014".to_string()),
+        }),
+        summary: Some("Designs and markets consumer electronics.".to_string()),
+        isin: Some(Isin::new("US0378331005").unwrap()),
+    });
+
+    let fund = Profile::Fund(FundProfile {
+        name: "Index Fund".to_string(),
+        family: Some("Example Funds".to_string()),
+        kind: FundKind::IndexFund,
+        isin: Some(Isin::new("US4642872000").unwrap()),
+    });
+
+    let profiles = [company, fund];
+    let df = profiles.as_slice().to_dataframe().unwrap();
+    assert_eq!(df.height(), 2);
+    let columns = df.get_column_names();
+    assert!(columns.iter().any(|c| c.as_str() == "profile_type"));
 }

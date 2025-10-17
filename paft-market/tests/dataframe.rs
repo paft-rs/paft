@@ -2,14 +2,18 @@
 use chrono::{NaiveDate, TimeZone, Utc};
 use chrono_tz::UTC as TzUtc;
 use iso_currency::Currency as IsoCurrency;
-use paft_domain::{Exchange, Symbol};
+use paft_domain::{AssetKind, Exchange, Symbol};
 use paft_market::{
     market::{
+        action::Action,
         news::NewsArticle,
         options::{OptionChain, OptionContract, OptionGreeks},
         quote::Quote,
     },
-    responses::history::{Candle, HistoryMeta},
+    responses::{
+        history::{Candle, HistoryMeta},
+        search::SearchResult,
+    },
 };
 use paft_money::{Currency, Decimal, Money};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
@@ -20,6 +24,19 @@ fn usd(amount: i64) -> Money {
 
 fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
     Utc.timestamp_opt(secs, 0).unwrap()
+}
+
+#[test]
+fn search_result_to_dataframe() {
+    let result = SearchResult {
+        symbol: Symbol::new("AAPL").unwrap(),
+        name: Some("Apple Inc.".to_string()),
+        exchange: Some(Exchange::NASDAQ),
+        kind: AssetKind::Equity,
+    };
+
+    let df = result.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
 }
 
 #[test]
@@ -170,4 +187,28 @@ fn history_meta_to_dataframe() {
 
     let df = meta.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
+}
+
+#[test]
+fn actions_to_dataframe() {
+    let actions = [
+        Action::Dividend {
+            ts: sample_ts(1_700_000_000),
+            amount: usd(1),
+        },
+        Action::Split {
+            ts: sample_ts(1_600_000_000),
+            numerator: 2,
+            denominator: 1,
+        },
+        Action::CapitalGain {
+            ts: sample_ts(1_650_000_000),
+            gain: usd(3),
+        },
+    ];
+
+    let df = actions.to_dataframe().unwrap();
+    assert_eq!(df.height(), 3);
+    let columns = df.get_column_names();
+    assert!(columns.iter().any(|c| c.as_str() == "action_type"));
 }

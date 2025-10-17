@@ -10,25 +10,34 @@
 //!   fundamentals.
 
 use chrono::{DateTime, NaiveDate, Utc};
+#[cfg(feature = "dataframe")]
+use df_derive::ToDataFrame;
 use paft_domain::{Exchange, Isin, MarketState, Symbol};
 use paft_money::{Currency, Money};
+#[cfg(feature = "dataframe")]
+use paft_utils::dataframe::ToDataFrame;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Lightweight snapshot of commonly requested fields for an instrument.
 ///
 /// Prefer `FastInfo` for list views and latency-sensitive paths. For
 /// extended snapshots, see [`Info`].
 pub struct FastInfo {
     /// Primary trading symbol/ticker as provided by the data source.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub symbol: Symbol,
     /// Human-friendly instrument name.
     pub name: Option<String>,
     /// Primary listing exchange, if known.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub exchange: Option<Exchange>,
     /// Current market session state (for example: Pre, Regular, Post).
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub market_state: Option<MarketState>,
     /// Quote currency used for monetary values in this snapshot.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub currency: Option<Currency>,
     /// Most recent traded/quoted price.
     pub last: Option<Money>,
@@ -37,6 +46,7 @@ pub struct FastInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Detailed instrument profile and market snapshot.
 ///
 /// Includes identification fields, real-time snapshot metrics, intraday and
@@ -45,18 +55,23 @@ pub struct FastInfo {
 pub struct Info {
     // Identity
     /// Primary trading symbol/ticker as provided by the data source.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub symbol: Symbol,
     /// Human-friendly instrument name.
     pub name: Option<String>,
     /// International Securities Identification Number.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub isin: Option<Isin>,
     /// Primary listing exchange, if known.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub exchange: Option<Exchange>,
 
     // Market snapshot
     /// Current market session state (for example: Pre, Regular, Post).
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub market_state: Option<MarketState>,
     /// Quote currency for all monetary values in this snapshot.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub currency: Option<Currency>,
     /// Most recent traded/quoted price.
     pub last: Option<Money>,
@@ -95,6 +110,7 @@ pub struct Info {
     /// Dividend yield as a fraction (for example: `0.025` = 2.5%).
     pub dividend_yield: Option<f64>, // 0.025 = 2.5%
     /// Most recent ex-dividend date.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub ex_dividend_date: Option<NaiveDate>,
 
     // Timestamp of snapshot
