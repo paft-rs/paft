@@ -60,6 +60,7 @@ impl SearchRequestBuilder {
     /// # Errors
     /// Returns `MarketError::EmptySearchQuery` if the query is empty/whitespace,
     /// or `MarketError::InvalidSearchLimit(0)` if a zero limit is provided.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn build(self) -> Result<SearchRequest, MarketError> {
         // Validate request invariants
         if self.query.trim().is_empty() {
@@ -91,6 +92,10 @@ impl SearchRequest {
     ///
     /// # Errors
     /// Propagates errors from `SearchRequestBuilder::build`.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(query), err)
+    )]
     pub fn new(query: impl Into<String>) -> Result<Self, MarketError> {
         Self::builder(query).build()
     }

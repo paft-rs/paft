@@ -141,6 +141,10 @@ impl Instrument {
     /// # Errors
     /// Returns `DomainError::InvalidIsin` when `isin` is empty, malformed,
     /// or fails normalization/validation.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self), err)
+    )]
     pub fn try_set_isin(&mut self, isin: &str) -> Result<(), DomainError> {
         self.isin = Some(Isin::new(isin)?);
         Ok(())
@@ -151,6 +155,10 @@ impl Instrument {
     /// # Errors
     /// Returns `DomainError::InvalidFigi` when `figi` is empty, not exactly
     /// 12 ASCII alphanumeric characters, or fails the checksum.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self), err)
+    )]
     pub fn try_set_figi(&mut self, figi: &str) -> Result<(), DomainError> {
         self.figi = Some(Figi::new(figi)?);
         Ok(())
@@ -160,6 +168,10 @@ impl Instrument {
     ///
     /// # Errors
     /// Propagates `DomainError::InvalidIsin` from [`Isin::new`].
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self), err)
+    )]
     pub fn try_with_isin(mut self, isin: &str) -> Result<Self, DomainError> {
         self.try_set_isin(isin)?;
         Ok(self)
@@ -169,6 +181,10 @@ impl Instrument {
     ///
     /// # Errors
     /// Propagates `DomainError::InvalidFigi` from [`Figi::new`].
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self), err)
+    )]
     pub fn try_with_figi(mut self, figi: &str) -> Result<Self, DomainError> {
         self.try_set_figi(figi)?;
         Ok(self)
@@ -178,6 +194,10 @@ impl Instrument {
     /// Returns `DomainError::InvalidSymbol`, `DomainError::InvalidFigi`, or
     /// `DomainError::InvalidIsin` if the provided identifiers fail
     /// validation/normalization.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(symbol), err)
+    )]
     pub fn try_new(
         symbol: impl AsRef<str>,
         kind: AssetKind,
@@ -209,6 +229,10 @@ impl Instrument {
     ///
     /// # Errors
     /// Returns `DomainError::InvalidSymbol` if the provided symbol violates canonical invariants.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(symbol), err)
+    )]
     pub fn from_symbol(symbol: impl AsRef<str>, kind: AssetKind) -> Result<Self, DomainError> {
         Ok(Self {
             figi: None,
@@ -224,6 +248,10 @@ impl Instrument {
     ///
     /// # Errors
     /// Returns `DomainError::InvalidSymbol` if the provided symbol violates canonical invariants.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(symbol), err)
+    )]
     pub fn from_symbol_and_exchange(
         symbol: impl AsRef<str>,
         exchange: Exchange,

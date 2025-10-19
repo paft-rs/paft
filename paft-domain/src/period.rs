@@ -388,6 +388,7 @@ impl<'de> Deserialize<'de> for Period {
 impl std::str::FromStr for Period {
     type Err = DomainError;
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim();
 

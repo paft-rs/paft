@@ -20,9 +20,12 @@ polars = { workspace = true, optional = true }
 df-derive = { workspace = true, optional = true }
 paft-core = { workspace = true }
 isin = { workspace = true }
+tracing = { workspace = true, optional = true }
 
 [features]
 default = []
+
+tracing = ["dep:tracing"]
 
 dataframe = ["polars", "df-derive", "paft-utils/dataframe"]
 

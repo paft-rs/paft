@@ -141,6 +141,7 @@ impl Isin {
     /// # Errors
     /// Returns `DomainError::InvalidIsin` when `value` is empty, malformed,
     /// or fails checksum validation after normalization.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn new(value: &str) -> Result<Self, DomainError> {
         let normalized = normalize_isin(value)?;
         Ok(Self(normalized))
@@ -202,6 +203,7 @@ impl Figi {
     /// # Errors
     /// Returns `DomainError::InvalidFigi` when `value` is empty, not exactly
     /// 12 ASCII alphanumeric characters, or fails the checksum.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn new(value: &str) -> Result<Self, DomainError> {
         let normalized = normalize_figi(value)?;
         Ok(Self(normalized))
@@ -278,6 +280,7 @@ impl Symbol {
     ///
     /// # Errors
     /// Returns `DomainError::InvalidSymbol` when invariants are violated.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn new(value: &str) -> Result<Self, DomainError> {
         let normalized = normalize_symbol(value)?;
         Ok(Self(normalized))

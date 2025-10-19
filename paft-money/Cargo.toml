@@ -23,12 +23,15 @@ num-bigint = { workspace = true, optional = true }
 paft-utils = { workspace = true }
 df-derive = { workspace = true, optional = true }
 polars = { workspace = true, features = ["dtype-decimal"], optional = true }
+tracing = { workspace = true, optional = true }
 
 [features]
 bigdecimal = ["dep:bigdecimal", "dep:num-traits", "dep:num-bigint"]
 dataframe = ["polars", "df-derive", "paft-utils/dataframe"]
 money-formatting = []
 panicking-money-ops = []
+
+tracing = ["dep:tracing"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

@@ -22,6 +22,7 @@ paft-aggregates = { workspace = true, optional = true, default-features = false 
 paft-utils = { workspace = true }
 iso_currency = { workspace = true }
 thiserror = { workspace = true }
+tracing = { workspace = true, optional = true }
 
 [features]
 default = ["domain", "market", "fundamentals"]
@@ -37,6 +38,14 @@ domain = ["dep:paft-domain"]
 market = ["dep:paft-market", "domain"]
 fundamentals = ["dep:paft-fundamentals", "domain"]
 aggregates = ["dep:paft-aggregates", "domain", "market", "fundamentals"]
+
+tracing = [
+  "dep:tracing",
+  "paft-domain/tracing",
+  "paft-money/tracing",
+  "paft-market/tracing",
+  "paft-fundamentals/tracing"
+]
 
 dataframe = [
   "paft-utils/dataframe", 

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2025-10-17
+
+### Added
+
+- Optional, feature-gated `tracing` instrumentation across crates:
+  - Domain: identifier constructors, `Period::from_str`, `Exchange::try_from_str`, instrument helpers
+  - Money: constructors, arithmetic ops, localized parser, `currency_utils::set_currency_metadata`
+  - Market: `HistoryRequestBuilder::build`, `SearchRequestBuilder::build`, `SearchRequest::new`
+  - Fundamentals: enum `try_from_str` methods, `TrendPoint::try_new_str`, `RevisionPoint::try_new_str`
+- Workspace-level `tracing` feature wiring (no default subscriber)
+
 ## [0.5.1] - 2025-10-17
 
 ### Added

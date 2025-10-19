@@ -159,6 +159,10 @@ pub fn try_normalize_currency_code(code: &str) -> Result<Currency, MoneyParseErr
 ///
 /// # Errors
 /// Returns a `MinorUnitError` when the requested precision exceeds supported limits.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(level = "debug", skip(full_name, symbol), err)
+)]
 pub fn set_currency_metadata(
     code: &str,
     full_name: impl Into<String>,

@@ -51,6 +51,7 @@ impl FundKind {
     ///
     /// # Errors
     /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
         Self::from_str(input)
     }

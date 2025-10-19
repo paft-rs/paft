@@ -6,6 +6,7 @@ use crate::error::MoneyError;
 use crate::locale::{LocalFormat, Locale};
 
 /// Parses a human-formatted money string using locale information.
+#[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
 pub fn parse_localized_str(
     input: &str,
     currency: &Currency,

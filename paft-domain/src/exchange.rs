@@ -115,6 +115,7 @@ impl Exchange {
     /// # Errors
     ///
     /// Returns an error if `input` is empty or contains only whitespace.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn try_from_str(input: &str) -> Result<Self, DomainError> {
         let trimmed = input.trim();
         if trimmed.is_empty() {

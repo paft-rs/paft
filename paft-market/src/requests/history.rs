@@ -232,6 +232,7 @@ impl HistoryRequestBuilder {
     ///
     /// # Errors
     /// Returns `MarketError::InvalidPeriod` when a `Period { start, end }` has `start >= end`.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn build(self) -> Result<HistoryRequest, MarketError> {
         // Validate period constraints
         if let TimeSpec::Period { start, end } = &self.time_spec

@@ -49,6 +49,7 @@ impl RecommendationGrade {
     ///
     /// # Errors
     /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
         Self::from_str(input)
     }
@@ -115,6 +116,7 @@ impl RecommendationAction {
     ///
     /// # Errors
     /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
         Self::from_str(input)
     }
@@ -349,6 +351,7 @@ impl TrendPoint {
     ///
     /// # Errors
     /// Returns an error if the period string cannot be parsed.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn try_new_str(period: &str, value: Money) -> Result<Self, DomainError> {
         Ok(Self {
             period: period.parse()?,
@@ -442,6 +445,7 @@ impl RevisionPoint {
     ///
     /// # Errors
     /// Returns an error if the period string cannot be parsed.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn try_new_str(period: &str, up: u32, down: u32) -> Result<Self, DomainError> {
         Ok(Self {
             period: period.parse()?,

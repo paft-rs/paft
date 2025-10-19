@@ -25,6 +25,7 @@ polars = { workspace = true, features = ["dtype-datetime","dtype-decimal"], opti
 iso_currency = { workspace = true }
 bitflags = { workspace = true }
 thiserror = { workspace = true }
+tracing = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -33,6 +34,8 @@ default = []
 bigdecimal = ["paft-money/bigdecimal"]
 
 dataframe = ["paft-utils/dataframe", "polars", "df-derive", "paft-domain/dataframe", "paft-money/dataframe"]
+
+tracing = ["dep:tracing"]
 
 [dev-dependencies]
 rust_decimal = { workspace = true }

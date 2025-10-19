@@ -131,6 +131,7 @@ impl Money {
     ///
     /// # Errors
     /// Returns `MoneyError::MetadataNotFound` when metadata is not registered for a custom currency.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn new(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
         let rounded = Self::round_amount(amount, &currency)?;
         Ok(Self {
@@ -185,6 +186,7 @@ impl Money {
     /// Leading and trailing whitespace is ignored and an optional leading `+`
     /// sign is supported. Scientific notation is rejected so that behaviour is
     /// consistent across decimal backends.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_canonical_str(amount: &str, currency: Currency) -> Result<Self, MoneyError> {
         let amount = decimal::parse_decimal(amount).ok_or(MoneyError::InvalidDecimal)?;
         Self::new(amount, currency)
@@ -195,6 +197,7 @@ impl Money {
     /// # Errors
     /// Returns `MoneyError::ConversionError` when the currency precision exceeds supported limits
     /// (currently 18 decimal places to keep `10^scale` within `i128`).
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_minor_units(minor_units: i128, currency: Currency) -> Result<Self, MoneyError> {
         let decimals = Self::decimals_for_currency(&currency)?;
         let scale = Self::ensure_scale_within_limits(decimals)?;
@@ -283,6 +286,10 @@ impl Money {
     ///
     /// # Errors
     /// Returns `MoneyError::CurrencyMismatch` when the operands use different currencies.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self, rhs), err)
+    )]
     pub fn try_add(&self, rhs: &Self) -> Result<Self, MoneyError> {
         if self.currency != rhs.currency {
             return Err(MoneyError::CurrencyMismatch {
@@ -300,6 +307,10 @@ impl Money {
     ///
     /// # Errors
     /// Returns `MoneyError::CurrencyMismatch` when the operands use different currencies.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self, rhs), err)
+    )]
     pub fn try_sub(&self, rhs: &Self) -> Result<Self, MoneyError> {
         if self.currency != rhs.currency {
             return Err(MoneyError::CurrencyMismatch {
@@ -317,6 +328,10 @@ impl Money {
     ///
     /// # Errors
     /// Returns `MoneyError::MetadataNotFound` when metadata is missing for the currency.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self, rhs), err)
+    )]
     pub fn try_mul(&self, rhs: Decimal) -> Result<Self, MoneyError> {
         Self::new(copy_decimal(&self.amount) * rhs, self.currency.clone())
     }
@@ -325,6 +340,10 @@ impl Money {
     ///
     /// # Errors
     /// Returns `MoneyError::DivisionByZero` when `rhs` is zero.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self, rhs), err)
+    )]
     pub fn try_div(&self, rhs: Decimal) -> Result<Self, MoneyError> {
         if rhs == decimal::zero() {
             return Err(MoneyError::DivisionByZero);
@@ -336,6 +355,10 @@ impl Money {
     ///
     /// # Errors
     /// Returns `MoneyError::IncompatibleExchangeRate` when the exchange rate does not match the money's currency.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self, rate), err)
+    )]
     pub fn try_convert_with(
         &self,
         rate: &ExchangeRate,
