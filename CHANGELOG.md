@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file.
   - Fundamentals: enum `try_from_str` methods, `TrendPoint::try_new_str`, `RevisionPoint::try_new_str`
 - Workspace-level `tracing` feature wiring (no default subscriber)
 
+### Documentation
+
+- Root README now includes an "Observability (tracing)" section.
+
 ## [0.5.1] - 2025-10-17
 
 ### Added
