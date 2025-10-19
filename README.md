@@ -100,7 +100,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 
   ```toml
   [dependencies]
-  paft = { version = "0.5.1", features = ["panicking-money-ops"] }
+  paft = { version = "0.5.2", features = ["panicking-money-ops"] }
   ```
 
   Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic
