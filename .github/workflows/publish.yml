@@ -45,3 +45,21 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish --workspace
+
+  # Create GitHub release
+  create-release:
+      needs: test
+      runs-on: ubuntu-latest
+      permissions:
+        contents: write
+        pull-requests: read
+      if: github.event.inputs.dry_run != 'true'
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v5
+  
+        - name: Create GitHub Releases based on changelog
+          uses: taiki-e/create-gh-release-action@v1.9.1
+          with:
+            changelog: CHANGELOG.md
+            token: ${{ secrets.GITHUB_TOKEN }}

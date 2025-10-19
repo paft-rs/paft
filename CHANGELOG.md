@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Automated release changelog generation in GitHub Actions using `taiki-e/create-gh-release-action`.
+
 - Optional, feature-gated `tracing` instrumentation across crates:
   - Domain: identifier constructors, `Period::from_str`, `Exchange::try_from_str`, instrument helpers
   - Money: constructors, arithmetic ops, localized parser, `currency_utils::set_currency_metadata`
