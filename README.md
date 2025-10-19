@@ -111,6 +111,23 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   absolutely sure all arithmetic uses matching currencies. For external or
   untrusted data, keep this feature disabled and use the `try_*` APIs.
 
+## Observability (tracing)
+
+paft ships with optional, feature-gated instrumentation using the `tracing` crate. This adds spans and error events around fallible constructors and validators across the workspace. The feature is off by default and no subscriber is bundled.
+
+- Zero-cost when disabled (no code generated)
+- Light overhead when enabled; spans are annotated at `debug` level and include `err` on failures
+- The `paft/tracing` feature propagates to member crates to enable instrumentation everywhere at once
+
+### What’s instrumented
+
+- `paft-domain`: `Isin::new`, `Figi::new`, `Symbol::new`, `Period::from_str`, `Exchange::try_from_str`, `Instrument` fallible helpers
+- `paft-money`: `Money::{new, from_canonical_str, from_minor_units}`, arithmetic ops (`try_add`, `try_sub`, `try_mul`, `try_div`, `try_convert_with`), parser, `currency_utils::set_currency_metadata`
+- `paft-market`: `HistoryRequestBuilder::build`, `SearchRequestBuilder::build`, `SearchRequest::new`
+- `paft-fundamentals`: enum `try_from_str` and `TrendPoint/RevisionPoint::try_new_str`
+
+Note: For large arguments we use `skip(...)` to avoid logging entire structs (e.g., `self`, `rhs`, exchange rates). If you need additional fields, attach them in your application spans.
+
 ## What's NOT Included (Yet)
 
 **Important**: paft currently focuses on **market data and fundamental analysis**, not trading execution. If you're building backtesting systems, trading bots, or portfolio management tools, you'll need additional types that paft doesn't provide yet:
