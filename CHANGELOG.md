@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-10-21
+
 ### Breaking Change
 
 - Market: `paft_market::responses::download::DownloadResponse` JSON shape changed from `{ "history": {SYM: HistoryResponse} }` to `{ "entries": [{ instrument, history }] }`, keyed by full `Instrument` identity (supports dual-listed symbols). Migrate symbol lookups by iterating `iter_by_symbol()` and collecting as needed.
@@ -17,7 +19,7 @@ All notable changes to this project will be documented in this file.
 
 - Documented the `tracing` feature flag in the workspace and `paft` READMEs, including scope and zero-cost when disabled.
 - Added `borsa` to the Projects Using paft section
--. Updated `paft-aggregates/README.md` to describe `DownloadResponse` as an entry list and recommend `iter_by_symbol()` for symbol-centric access.
+- Updated `paft-aggregates/README.md` to describe `DownloadResponse` as an entry list and recommend `iter_by_symbol()` for symbol-centric access.
 
 ## [0.5.2] - 2025-10-19
 
