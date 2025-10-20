@@ -13,14 +13,14 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.5.2"
+paft = "0.6.0"
 ```
 
 Advanced (direct dependency, minimal features):
 
 ```toml
 [dependencies]
-paft-aggregates = { version = "0.5.2", default-features = false }
+paft-aggregates = { version = "0.6.0", default-features = false }
 ```
 
 What’s inside
@@ -28,7 +28,7 @@ What’s inside
 
 - `info`: `FastInfo`, `Info` — lightweight instrument snapshots (identity, prices, ranges, and timestamp)
 - `reports`: `InfoReport`, `SearchReport`, `DownloadReport` — merge-friendly report envelopes with `warnings`
-  - `DownloadReport` now wraps a per-symbol `DownloadResponse` (`history: { SYM: HistoryResponse }`)
+  - `DownloadReport` wraps a `DownloadResponse` modeled as an array of entries `{ instrument, history }`. For symbol-centric access, iterate with `iter_by_symbol()` and collect as needed.
 
 Features
 --------

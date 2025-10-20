@@ -1,8 +1,8 @@
 use chrono::{TimeZone, Utc};
 use paft_aggregates::{DownloadReport, Info, InfoReport, SearchReport};
-use paft_domain::{AssetKind, Exchange, Symbol};
+use paft_domain::{AssetKind, Exchange, Instrument, Symbol};
 use paft_market::market::action::Action;
-use paft_market::responses::download::DownloadResponse;
+use paft_market::responses::download::{DownloadEntry, DownloadResponse};
 use paft_market::responses::history::{Candle, HistoryMeta, HistoryResponse};
 use paft_market::responses::search::{SearchResponse, SearchResult};
 use paft_money::IsoCurrency;
@@ -44,8 +44,6 @@ fn search_report_roundtrip() {
 
 #[test]
 fn download_report_roundtrip() {
-    use std::collections::HashMap;
-
     let usd = Currency::Iso(IsoCurrency::USD);
     let base_ts = Utc.timestamp_opt(1_700_000_000, 0).unwrap();
 
@@ -90,15 +88,75 @@ fn download_report_roundtrip() {
         meta: None,
     };
 
-    let mut history: HashMap<Symbol, HistoryResponse> = HashMap::new();
-    history.insert(Symbol::new("AAPL").unwrap(), aapl_history);
-    history.insert(Symbol::new("MSFT").unwrap(), msft_history);
+    let entries = vec![
+        DownloadEntry {
+            instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+            history: aapl_history,
+        },
+        DownloadEntry {
+            instrument: Instrument::from_symbol("MSFT", AssetKind::Equity).unwrap(),
+            history: msft_history,
+        },
+    ];
 
-    let response = DownloadResponse { history };
+    let response = DownloadResponse { entries };
 
     let report = DownloadReport {
         response: Some(response),
         warnings: vec!["Note".into()],
+    };
+
+    let json = serde_json::to_string(&report).unwrap();
+    let back: DownloadReport = serde_json::from_str(&json).unwrap();
+    assert_eq!(back, report);
+}
+
+#[test]
+fn download_report_roundtrip_dual_listed() {
+    let usd = Currency::Iso(IsoCurrency::USD);
+    let base_ts = Utc.timestamp_opt(1_700_000_000, 0).unwrap();
+
+    let candle = Candle {
+        ts: base_ts,
+        open: Money::from_canonical_str("1.00", usd.clone()).unwrap(),
+        high: Money::from_canonical_str("2.00", usd.clone()).unwrap(),
+        low: Money::from_canonical_str("0.50", usd.clone()).unwrap(),
+        close: Money::from_canonical_str("1.50", usd).unwrap(),
+        close_unadj: None,
+        volume: Some(1000),
+    };
+
+    let payload = HistoryResponse {
+        candles: vec![candle],
+        actions: vec![],
+        adjusted: true,
+        meta: None,
+    };
+
+    let entries = vec![
+        DownloadEntry {
+            instrument: Instrument::from_symbol_and_exchange(
+                "AAPL",
+                Exchange::NASDAQ,
+                AssetKind::Equity,
+            )
+            .unwrap(),
+            history: payload.clone(),
+        },
+        DownloadEntry {
+            instrument: Instrument::from_symbol_and_exchange(
+                "AAPL",
+                Exchange::LSE,
+                AssetKind::Equity,
+            )
+            .unwrap(),
+            history: payload,
+        },
+    ];
+
+    let report = DownloadReport {
+        response: Some(DownloadResponse { entries }),
+        warnings: vec![],
     };
 
     let json = serde_json::to_string(&report).unwrap();

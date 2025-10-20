@@ -39,10 +39,10 @@ pub struct SearchReport {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Summary of historical data download.
 ///
-/// Wraps a per-symbol [`DownloadResponse`] payload when present and any
-/// `warnings` captured during retrieval or normalization.
+/// Wraps a [`DownloadResponse`] payload when present and any `warnings`
+/// captured during retrieval or normalization.
 pub struct DownloadReport {
-    /// Per-symbol aggregated download payload.
+    /// Aggregated download payload.
     pub response: Option<DownloadResponse>,
     /// Non-fatal issues encountered while building the report.
     pub warnings: Vec<String>,
