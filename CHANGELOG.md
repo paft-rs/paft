@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Documentation
 
 - Documented the `tracing` feature flag in the workspace and `paft` READMEs, including scope and zero-cost when disabled.
+- Added `borsa` to the Projects Using paft section
 
 ## [0.5.2] - 2025-10-19
 
