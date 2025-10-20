@@ -48,6 +48,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `full`: convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, and `dataframe`.
 - `panicking-money-ops`: re-enables `Money` arithmetic operators that panic on mismatched currencies (see below).
 - `money-formatting`: forwards to `paft-money/money-formatting` for locale-aware formatting and parsing APIs.
+- `tracing`: enables lightweight instrumentation via the `tracing` crate; zero‑cost when disabled; adds spans/events in constructors and validators across the workspace.
 
 ## Migration Notes
 

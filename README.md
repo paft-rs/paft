@@ -94,6 +94,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   - `paft/money-formatting` (opt-in): Locale‑aware money formatting and strict parsing APIs (re‑exports `Locale`/`LocalizedMoney`).
   - `paft/aggregates` (opt-in): Aggregated snapshot and reporting types (`FastInfo`, `Info`, `InfoReport`, `SearchReport`, `DownloadReport`).
   - `paft/bigdecimal` (opt-in): Switches the money backend to `BigDecimal`; `rust_decimal` is the implicit default.
+  - `paft/tracing` (opt-in): Enables instrumentation via `tracing` across the workspace; zero-cost when disabled; no subscriber bundled; propagates to member crates.
   - `paft/full`: Convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, and `dataframe`.
 
   To enable panicking operators via the `paft` facade:

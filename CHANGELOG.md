@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Dependencies
+### Documentation
 
-- Bump `actions/checkout` to `v5`.
+- Documented the `tracing` feature flag in the workspace and `paft` READMEs, including scope and zero-cost when disabled.
 
 ## [0.5.2] - 2025-10-19
 
