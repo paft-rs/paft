@@ -22,7 +22,7 @@ pub struct DownloadResponse {
 }
 
 impl DownloadResponse {
-    /// Zero-copy iterator over entries as (&Instrument, &HistoryResponse).
+    /// Zero-copy iterator over entries as (&Instrument, &`HistoryResponse`).
     pub fn iter(&self) -> impl Iterator<Item = (&Instrument, &HistoryResponse)> + '_ {
         self.entries
             .iter()
