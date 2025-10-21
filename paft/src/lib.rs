@@ -82,7 +82,7 @@ pub mod fundamentals {
 /// Namespaced access to `paft-aggregates` (feature-gated).
 #[cfg(feature = "aggregates")]
 pub mod aggregates {
-    pub use paft_aggregates::{DownloadReport, FastInfo, Info, InfoReport, SearchReport};
+    pub use paft_aggregates::{FastInfo, Info};
 }
 
 /// Frequently used types for convenient imports.
