@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file.
 
 - `DownloadResponse::iter()` and `iter_by_symbol()` helpers for zero-copy traversal of entries.
 
+### Migration notes
+
+- Market downloads: iterate entries via `iter()` or `iter_by_symbol()`; construct maps as needed.
+
 ### Documentation
 
 - Documented the `tracing` feature flag in the workspace and `paft` READMEs, including scope and zero-cost when disabled.
