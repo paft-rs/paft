@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Breaking Change
 
 - Market: `paft_market::responses::download::DownloadResponse` JSON shape changed from `{ "history": {SYM: HistoryResponse} }` to `{ "entries": [{ instrument, history }] }`, keyed by full `Instrument` identity (supports dual-listed symbols). Migrate symbol lookups by iterating `iter_by_symbol()` and collecting as needed.
-- Aggregates: `paft_aggregates::DownloadReport.response` continues to wrap `DownloadResponse`; update consumers to traverse entries instead of indexing a map.
+- Aggregates: Removed the report envelopes (`InfoReport`, `SearchReport`, `DownloadReport`) from `paft-aggregates`.
 
 ### Added
 
@@ -19,7 +19,7 @@ All notable changes to this project will be documented in this file.
 
 - Documented the `tracing` feature flag in the workspace and `paft` READMEs, including scope and zero-cost when disabled.
 - Added `borsa` to the Projects Using paft section
-- Updated `paft-aggregates/README.md` to describe `DownloadResponse` as an entry list and recommend `iter_by_symbol()` for symbol-centric access.
+- Updated `paft-aggregates/README.md` and workspace READMEs to reflect removal of report envelopes (`InfoReport`, `SearchReport`, `DownloadReport`) and to describe `paft-aggregates` as snapshots only (`FastInfo`, `Info`).
 
 ## [0.5.2] - 2025-10-19
 

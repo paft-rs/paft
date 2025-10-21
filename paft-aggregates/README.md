@@ -1,7 +1,7 @@
 paft-aggregates
 ===============
 
-Aggregated snapshot and report models built on the paft primitives.
+Aggregated snapshot models built on the paft primitives.
 
 [![Crates.io](https://img.shields.io/crates/v/paft-aggregates)](https://crates.io/crates/paft-aggregates)
 [![Docs.rs](https://docs.rs/paft-aggregates/badge.svg)](https://docs.rs/paft-aggregates)
@@ -27,8 +27,6 @@ What’s inside
 --------------
 
 - `info`: `FastInfo`, `Info` — lightweight instrument snapshots (identity, prices, ranges, and timestamp)
-- `reports`: `InfoReport`, `SearchReport`, `DownloadReport` — merge-friendly report envelopes with `warnings`
-  - `DownloadReport` wraps a `DownloadResponse` modeled as an array of entries `{ instrument, history }`. For symbol-centric access, iterate with `iter_by_symbol()` and collect as needed.
 
 Features
 --------

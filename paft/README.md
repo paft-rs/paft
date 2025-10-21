@@ -22,7 +22,7 @@ paft = "0.6.0"
 # Or, add optional analysis helpers (Polars DataFrame support)
 paft = { version = "0.6.0", features = ["dataframe"] }
 
-# Or, opt into aggregates/reporting models as well
+# Or, opt into aggregates snapshot models as well
 paft = { version = "0.6.0", features = ["aggregates"] }
 
 # Or, enable the full bundle of features
@@ -42,7 +42,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `domain` *(default)*: exposes instrument, exchange, period, and other domain models.
 - `market` *(default, enables `domain`)*: markets and history types such as `Quote`, `Candle`, and `HistoryRequest`.
 - `fundamentals` *(default, enables `domain`)*: fundamentals, ESG, and ownership data structures.
-- `aggregates`: exposes aggregated snapshot and report models like `Info` and `InfoReport`.
+- `aggregates`: exposes aggregated snapshot models like `FastInfo` and `Info`.
 - `bigdecimal`: swaps the money backend to `BigDecimal` when you require arbitrary precision.
 - `dataframe`: forwards DataFrame support from `paft-utils`, providing `ToDataFrame`/`ToDataFrameVec`.
 - `full`: convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, and `dataframe`.

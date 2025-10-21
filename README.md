@@ -77,7 +77,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 - **Options**: `OptionContract`, `OptionChain`, `OptionChainRequest`, `OptionExpirationsRequest`
 - **News & Search**: `NewsArticle`, `SearchRequest`, `SearchResponse`, `SearchResult`
 - **Downloads**: `DownloadResponse`
-- **Aggregates** (with `paft/aggregates`): `FastInfo`, `Info`, `InfoReport`, `SearchReport`, `DownloadReport`
+- **Aggregates** (with `paft/aggregates`): `FastInfo`, `Info`
 - **Errors**: `Error`, `Result`
 
 ### Advanced Features
@@ -92,7 +92,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   - `paft/dataframe`: Enables DataFrame helpers and derives through the facade
   - `paft/panicking-money-ops` (opt-in): Enables ergonomic arithmetic operators on `Money` that panic on currency mismatch or division by zero. By default, operator overloads are disabled and you should use the safe `try_add`, `try_sub`, and `try_div` methods instead.
   - `paft/money-formatting` (opt-in): Locale‑aware money formatting and strict parsing APIs (re‑exports `Locale`/`LocalizedMoney`).
-  - `paft/aggregates` (opt-in): Aggregated snapshot and reporting types (`FastInfo`, `Info`, `InfoReport`, `SearchReport`, `DownloadReport`).
+- `paft/aggregates` (opt-in): Aggregated snapshot types (`FastInfo`, `Info`).
   - `paft/bigdecimal` (opt-in): Switches the money backend to `BigDecimal`; `rust_decimal` is the implicit default.
   - `paft/tracing` (opt-in): Enables instrumentation via `tracing` across the workspace; zero-cost when disabled; no subscriber bundled; propagates to member crates.
   - `paft/full`: Convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, and `dataframe`.
@@ -181,7 +181,7 @@ The paft ecosystem is designed around interoperable layers that work together to
 - **`paft-domain`** - Domain models (`Instrument`, `Exchange`, `Period`), typed identifiers (`Isin`, `Figi`), and related errors.
 - **`paft-market`** - Market data types, requests, and responses.
 - **`paft-fundamentals`** - Fundamentals types (financial statements, ESG, holders, analysis helpers).
-- **`paft-aggregates`** - Aggregated snapshot and reporting types for rollups, search, and downloads.
+- **`paft-aggregates`** - Aggregated snapshot types for instrument rollups.
 - **`paft-money`** - Currency and money primitives with ISO 4217 integration, safe arithmetic, and pluggable decimal backends.
 - **`paft-utils`** - Canonical string utilities and DataFrame traits used across the workspace.
 - **`paft-core`** - Infrastructure utilities and serde helpers used internally by the ecosystem.
