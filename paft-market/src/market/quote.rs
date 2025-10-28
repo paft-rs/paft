@@ -23,6 +23,8 @@ pub struct Quote {
     pub price: Option<Money>,
     /// Previous close price.
     pub previous_close: Option<Money>,
+    /// Day volume.
+    pub day_volume: Option<u64>,
     /// Exchange identifier with canonical variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub exchange: Option<Exchange>,
@@ -42,6 +44,8 @@ pub struct QuoteUpdate {
     pub price: Option<Money>,
     /// Previous close price.
     pub previous_close: Option<Money>,
+    /// Volume traded since the previous update.
+    pub volume: Option<u64>,
     /// Event timestamp (Unix seconds).
     #[serde(with = "chrono::serde::ts_seconds")]
     pub ts: DateTime<Utc>,

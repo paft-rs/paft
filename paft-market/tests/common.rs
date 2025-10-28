@@ -16,6 +16,7 @@ pub fn build_quote() -> paft_market::market::quote::Quote {
         previous_close: Some(
             Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     }
@@ -34,6 +35,7 @@ fn quote_construction_smoke() {
             )
             .unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };

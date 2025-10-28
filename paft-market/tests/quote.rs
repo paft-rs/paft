@@ -22,6 +22,7 @@ fn quote_construction() {
             )
             .unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -53,6 +54,7 @@ fn quote_minimal_construction() {
         shortname: None,
         price: None,
         previous_close: None,
+        day_volume: None,
         exchange: None,
         market_state: None,
     };
@@ -77,6 +79,7 @@ fn quote_clone() {
             )
             .unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -98,6 +101,7 @@ fn quote_debug_formatting() {
             )
             .unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -121,6 +125,7 @@ fn quote_currency_consistency() {
             )
             .unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -144,6 +149,7 @@ fn quote_currency_none() {
         shortname: Some("Apple Inc.".to_string()),
         price: None, // No price fields
         previous_close: None,
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -163,6 +169,7 @@ fn quote_money_fields() {
         previous_close: Some(
             Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),
         ),
+        day_volume: None,
         exchange: None,
         market_state: None,
     };
@@ -186,6 +193,7 @@ fn quote_money_fields() {
         shortname: None,
         price: None,
         previous_close: None,
+        day_volume: None,
         exchange: None,
         market_state: None,
     };
@@ -211,6 +219,7 @@ fn quote_update_construction() {
             )
             .unwrap(),
         ),
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
 
@@ -238,6 +247,7 @@ fn quote_update_partial_fields() {
         symbol: Symbol::new("AAPL").unwrap(),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: None,
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
 
@@ -262,6 +272,7 @@ fn quote_update_clone() {
             )
             .unwrap(),
         ),
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
 
@@ -281,6 +292,7 @@ fn quote_update_debug_formatting() {
             )
             .unwrap(),
         ),
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
 
@@ -306,6 +318,7 @@ fn quote_serialization() {
             )
             .unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -324,6 +337,7 @@ fn quote_with_none_fields() {
         previous_close: Some(
             Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),
         ),
+        day_volume: None,
         exchange: None,
         market_state: None,
     };
@@ -345,6 +359,7 @@ fn quote_update_serialization() {
             )
             .unwrap(),
         ),
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
 
@@ -359,6 +374,7 @@ fn quote_update_with_none_fields() {
         symbol: Symbol::new("AAPL").unwrap(),
         price: None,
         previous_close: None,
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
 
@@ -386,6 +402,7 @@ fn serialization_roundtrip_preserves_precision() {
             )
             .unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };

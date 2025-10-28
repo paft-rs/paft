@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.0] - 2025-10-28
+
+### Breaking Change
+
+- Market quotes: added `day_volume` to `paft_market::market::quote::Quote` and `volume` to
+  `paft_market::market::quote::QuoteUpdate` to surface intraday volumes.
+
 ## [0.6.0] - 2025-10-21
 
 ### Breaking Change
@@ -393,3 +400,4 @@ This release tightens identifier validation across the entire workspace and intr
 [0.3.0]: https://github.com/paft-rs/paft/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/paft-rs/paft/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/paft-rs/paft/releases/tag/v0.1.0
+ [0.7.0]: https://github.com/paft-rs/paft/compare/v0.6.0...v0.7.0

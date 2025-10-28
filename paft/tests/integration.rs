@@ -101,6 +101,7 @@ fn end_to_end_workflow() {
         previous_close: Some(
             Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -112,6 +113,7 @@ fn end_to_end_workflow() {
         previous_close: Some(
             Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap(),
         ),
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_260, 0).unwrap(),
     };
 
@@ -209,6 +211,7 @@ fn serialization_workflow() {
             )
             .unwrap(),
         ),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };

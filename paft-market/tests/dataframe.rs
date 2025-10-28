@@ -46,6 +46,7 @@ fn vec_quote_to_dataframe_smoke() {
         shortname: Some("Apple Inc.".to_string()),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: None,
     }];
@@ -62,6 +63,7 @@ fn quote_to_dataframe_smoke() {
         shortname: Some("Apple Inc.".to_string()),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
+        day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: None,
     };
@@ -79,6 +81,7 @@ fn quote_update_to_dataframe_smoke() {
         symbol: Symbol::new("AAPL").unwrap(),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
+        volume: None,
         ts: chrono::DateTime::from_timestamp(0, 0).unwrap(),
     };
 
