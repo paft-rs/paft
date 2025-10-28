@@ -20,6 +20,7 @@ fn fast_info_to_dataframe() {
         currency: Some(Currency::Iso(IsoCurrency::USD)),
         last: Some(usd(150)),
         previous_close: Some(usd(145)),
+        volume: Some(1_234_567),
     };
 
     let df = info.to_dataframe().unwrap();
@@ -52,6 +53,9 @@ fn info_vec_to_dataframe() {
         pe_ttm: Some(25.0),
         dividend_yield: Some(0.015),
         ex_dividend_date: Some(NaiveDate::from_ymd_opt(2024, 3, 1).unwrap()),
+        price_target: None,
+        recommendation_summary: None,
+        esg_scores: None,
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
     };
 

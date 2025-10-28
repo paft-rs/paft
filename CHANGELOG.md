@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 - Market search: `SearchRequest` gains optional `lang` and `region` parameters to control
   language of results and region scoping. Builder now supports `.lang("en")` and
   `.region("US")`; getters `lang()`/`region()` return `Option<&str>`.
+- Aggregates: `paft_aggregates::info::FastInfo` adds a new `volume: Option<u64>` field.
+- Aggregates: `paft_aggregates::info::Info` adds new fields `price_target: Option<PriceTarget>`,
+  `recommendation_summary: Option<RecommendationSummary>`, and `esg_scores: Option<EsgScores>`.
 
 ## [0.6.0] - 2025-10-21
 

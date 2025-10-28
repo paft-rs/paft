@@ -1468,6 +1468,7 @@ dependencies = [
  "df-derive",
  "iso_currency",
  "paft-domain",
+ "paft-fundamentals",
  "paft-market",
  "paft-money",
  "paft-utils",

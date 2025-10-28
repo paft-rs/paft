@@ -16,6 +16,7 @@ chrono = { workspace = true, features = ["serde"] }
 paft-domain = { workspace = true }
 paft-money  = { workspace = true }
 paft-market = { workspace = true }
+paft-fundamentals = { workspace = true }
 paft-utils = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
 df-derive = { workspace = true, optional = true }
@@ -38,6 +39,7 @@ dataframe = [
   "df-derive",
   "paft-domain/dataframe",
   "paft-market/dataframe",
+  "paft-fundamentals/dataframe",
   "paft-money/dataframe",
   "paft-utils/dataframe",
   "paft-utils",

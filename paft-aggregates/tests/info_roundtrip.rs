@@ -15,6 +15,7 @@ fn fast_info_roundtrip() {
         currency: Some(usd.clone()),
         last: Some(Money::from_canonical_str("170.12", usd.clone()).unwrap()),
         previous_close: Some(Money::from_canonical_str("169.50", usd).unwrap()),
+        volume: Some(12_345_678),
     };
 
     let json = serde_json::to_string(&fast).unwrap();
@@ -49,6 +50,9 @@ fn info_roundtrip() {
         pe_ttm: Some(38.4),
         dividend_yield: Some(0.008),
         ex_dividend_date: Some(NaiveDate::from_ymd_opt(2024, 11, 14).unwrap()),
+        price_target: None,
+        recommendation_summary: None,
+        esg_scores: None,
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
     };
 

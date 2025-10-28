@@ -13,6 +13,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 use paft_domain::{Exchange, Isin, MarketState, Symbol};
+use paft_fundamentals::{EsgScores, PriceTarget, RecommendationSummary};
 use paft_money::{Currency, Money};
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
@@ -43,6 +44,8 @@ pub struct FastInfo {
     pub last: Option<Money>,
     /// Previous session's official close price.
     pub previous_close: Option<Money>,
+    /// Today's trading volume.
+    pub volume: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -112,6 +115,14 @@ pub struct Info {
     /// Most recent ex-dividend date.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub ex_dividend_date: Option<NaiveDate>,
+
+    // Analyst coverage & ESG
+    /// Analyst price target summary.
+    pub price_target: Option<PriceTarget>,
+    /// Latest recommendation summary.
+    pub recommendation_summary: Option<RecommendationSummary>,
+    /// ESG scores (environmental, social, governance).
+    pub esg_scores: Option<EsgScores>,
 
     // Timestamp of snapshot
     #[serde(with = "chrono::serde::ts_seconds_option")]
