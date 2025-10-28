@@ -17,6 +17,10 @@ pub struct SearchRequest {
     kind: Option<AssetKind>,
     /// Optional maximum number of results to return after routing/merge.
     limit: Option<usize>,
+    /// Optional ISO language code (e.g., "en", "fr").
+    lang: Option<String>,
+    /// Optional region code to scope results (e.g., "US", "EU").
+    region: Option<String>,
 }
 
 /// Builder for creating validated `SearchRequest` instances.
@@ -25,6 +29,8 @@ pub struct SearchRequestBuilder {
     query: String,
     kind: Option<AssetKind>,
     limit: Option<usize>,
+    lang: Option<String>,
+    region: Option<String>,
 }
 
 impl SearchRequestBuilder {
@@ -34,6 +40,8 @@ impl SearchRequestBuilder {
             query: query.into(),
             kind: None,
             limit: None,
+            lang: None,
+            region: None,
         }
     }
 
@@ -48,6 +56,20 @@ impl SearchRequestBuilder {
     #[must_use]
     pub const fn limit(mut self, limit: usize) -> Self {
         self.limit = Some(limit);
+        self
+    }
+
+    /// Set the preferred language for search results.
+    #[must_use]
+    pub fn lang(mut self, lang: impl Into<String>) -> Self {
+        self.lang = Some(lang.into());
+        self
+    }
+
+    /// Set the region to scope search results.
+    #[must_use]
+    pub fn region(mut self, region: impl Into<String>) -> Self {
+        self.region = Some(region.into());
         self
     }
 
@@ -76,6 +98,8 @@ impl SearchRequestBuilder {
             query: self.query,
             kind: self.kind,
             limit: self.limit,
+            lang: self.lang,
+            region: self.region,
         })
     }
 }
@@ -116,5 +140,17 @@ impl SearchRequest {
     #[must_use]
     pub const fn limit(&self) -> Option<usize> {
         self.limit
+    }
+
+    /// Get the language if set.
+    #[must_use]
+    pub fn lang(&self) -> Option<&str> {
+        self.lang.as_deref()
+    }
+
+    /// Get the region if set.
+    #[must_use]
+    pub fn region(&self) -> Option<&str> {
+        self.region.as_deref()
     }
 }

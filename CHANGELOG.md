@@ -10,6 +10,9 @@ All notable changes to this project will be documented in this file.
 
 - Market quotes: added `day_volume` to `paft_market::market::quote::Quote` and `volume` to
   `paft_market::market::quote::QuoteUpdate` to surface intraday volumes.
+- Market search: `SearchRequest` gains optional `lang` and `region` parameters to control
+  language of results and region scoping. Builder now supports `.lang("en")` and
+  `.region("US")`; getters `lang()`/`region()` return `Option<&str>`.
 
 ## [0.6.0] - 2025-10-21
 
