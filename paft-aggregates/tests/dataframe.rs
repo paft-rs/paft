@@ -59,7 +59,7 @@ fn info_vec_to_dataframe() {
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
     };
 
-    let infos = vec![
+    let infos = [
         base.clone(),
         Info {
             name: Some("Alt".to_string()),

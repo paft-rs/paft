@@ -22,7 +22,7 @@ fn instrument_to_dataframe() {
 
 #[test]
 fn instruments_vec_to_dataframe() {
-    let instruments = vec![
+    let instruments = [
         Instrument::try_new(
             "AAPL",
             AssetKind::Equity,
