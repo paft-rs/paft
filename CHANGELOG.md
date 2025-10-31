@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.1] - 2025-10-28
+
+### Added
+
+- Domain: `paft_domain::identifiers::Symbol` now implements `PartialOrd` and `Ord`, enabling use in sorted collections and ordered comparisons.
+
 ## [0.7.0] - 2025-10-28
 
 ### Breaking Change
@@ -397,6 +403,7 @@ This release tightens identifier validation across the entire workspace and intr
 
 - Initial public release.
 
+[0.7.1]: https://github.com/paft-rs/paft/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/paft-rs/paft/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/paft-rs/paft/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/paft-rs/paft/compare/v0.5.1...v0.5.2

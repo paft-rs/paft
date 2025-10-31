@@ -261,7 +261,7 @@ impl<'de> Deserialize<'de> for Figi {
 /// numerics are preserved verbatim so that provider-specific conventions
 /// (class suffixes, exchange codes, contract metadata, etc.) round-trip without
 /// transformation.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
 #[serde(transparent)]
 pub struct Symbol(String);
 
