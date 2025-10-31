@@ -17,22 +17,22 @@ Standardized Rust types for financial data that work with any provider—Yahoo F
 ```toml
 [dependencies]
 # Basic installation with default feature set (domain + market + fundamentals)
-paft = "0.7.0"
+paft = "0.7.1"
 
 # Or, add optional analysis helpers (Polars DataFrame support)
-paft = { version = "0.7.0", features = ["dataframe"] }
+paft = { version = "0.7.1", features = ["dataframe"] }
 
 # Or, opt into aggregates snapshot models as well
-paft = { version = "0.7.0", features = ["aggregates"] }
+paft = { version = "0.7.1", features = ["aggregates"] }
 
 # Or, enable the full bundle of features
-paft = { version = "0.7.0", features = ["full"] }
+paft = { version = "0.7.1", features = ["full"] }
 
 # Or, customize your installation
-paft = { version = "0.7.0", default-features = false, features = ["fundamentals", "dataframe"] }
+paft = { version = "0.7.1", default-features = false, features = ["fundamentals", "dataframe"] }
 
 # Switch the money backend to BigDecimal (default is rust_decimal)
-paft = { version = "0.7.0", features = ["bigdecimal"] }
+paft = { version = "0.7.1", features = ["bigdecimal"] }
 ```
 
 ## Feature Flags
@@ -140,7 +140,7 @@ Enable DataFrame support for analysis:
 
 ```toml
 [dependencies]
-paft = { version = "0.7.0", features = ["dataframe"] }
+paft = { version = "0.7.1", features = ["dataframe"] }
 ```
 
 ```rust
@@ -157,7 +157,7 @@ Enable the `money-formatting` feature to opt into locale-aware `Display` and str
 
 ```toml
 [dependencies]
-paft = { version = "0.7.0", features = ["money-formatting"] }
+paft = { version = "0.7.1", features = ["money-formatting"] }
 ```
 
 ```rust
@@ -189,7 +189,7 @@ If you explicitly want the ergonomic panicking operators, enable the
 
 ```toml
 [dependencies]
-paft = { version = "0.7.0", features = ["panicking-money-ops"] }
+paft = { version = "0.7.1", features = ["panicking-money-ops"] }
 ```
 
 Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic

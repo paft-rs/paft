@@ -1442,7 +1442,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "paft"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -1462,7 +1462,7 @@ dependencies = [
 
 [[package]]
 name = "paft-aggregates"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "chrono",
  "df-derive",
@@ -1479,7 +1479,7 @@ dependencies = [
 
 [[package]]
 name = "paft-core"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "chrono",
  "serde",
@@ -1488,7 +1488,7 @@ dependencies = [
 
 [[package]]
 name = "paft-domain"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "chrono",
  "df-derive",
@@ -1506,7 +1506,7 @@ dependencies = [
 
 [[package]]
 name = "paft-fundamentals"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "chrono",
  "df-derive",
@@ -1525,7 +1525,7 @@ dependencies = [
 
 [[package]]
 name = "paft-market"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "bitflags",
  "chrono",
@@ -1546,7 +1546,7 @@ dependencies = [
 
 [[package]]
 name = "paft-money"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "bigdecimal",
  "df-derive",
@@ -1564,7 +1564,7 @@ dependencies = [
 
 [[package]]
 name = "paft-utils"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "polars",
  "thiserror",
