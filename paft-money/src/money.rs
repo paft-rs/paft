@@ -3,6 +3,7 @@
 use crate::decimal::{self, Decimal, RoundingStrategy, ToPrimitive};
 use crate::error::MoneyError;
 use serde::{Deserialize, Serialize};
+use std::hash::{Hash, Hasher};
 #[cfg(feature = "panicking-money-ops")]
 use std::ops::{Add, Div, Mul, Sub};
 
@@ -120,6 +121,15 @@ pub struct Money {
     /// The currency.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     currency: Currency,
+}
+
+impl Hash for Money {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Hash currency directly
+        self.currency.hash(state);
+        // Hash a canonical numeric representation so equivalent scales collide
+        decimal::to_canonical_string(&self.amount).hash(state);
+    }
 }
 
 impl Money {

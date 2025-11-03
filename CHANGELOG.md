@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.2] - 2025-11-03
+
+### Added
+
+- Money: implement `Hash` for `paft_money::Money` using currency and canonicalized amount.
+- Market: derive `Hash` for `paft_market::market::action::Action`.
+  - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
+
 ## [0.7.1] - 2025-10-31
 
 ### Added
@@ -403,6 +411,7 @@ This release tightens identifier validation across the entire workspace and intr
 
 - Initial public release.
 
+[0.7.2]: https://github.com/paft-rs/paft/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/paft-rs/paft/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/paft-rs/paft/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/paft-rs/paft/compare/v0.5.2...v0.6.0

@@ -9,7 +9,7 @@ use paft_money::Money;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 /// Corporate action attached to a history series.
 pub enum Action {
     /// Cash dividend.
