@@ -12,6 +12,11 @@ All notable changes to this project will be documented in this file.
 - Market: derive `Hash` for `paft_market::market::action::Action`.
   - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
 
+### Dependencies
+
+- Bump df-derive to v0.1.2
+- Bump polars to v0.52.0
+
 ## [0.7.1] - 2025-10-31
 
 ### Added
