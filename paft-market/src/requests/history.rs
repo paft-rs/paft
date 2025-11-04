@@ -37,13 +37,37 @@ pub enum Range {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Supported resolution intervals.
 pub enum Interval {
+    /// 1 second
+    I1s,
+    /// 2 seconds
+    I2s,
+    /// 3 seconds
+    I3s,
+    /// 5 seconds
+    I5s,
+    /// 6 seconds
+    I6s,
+    /// 10 seconds
+    I10s,
+    /// 15 seconds
+    I15s,
+    /// 30 seconds
+    I30s,
+    /// 90 seconds
+    I90s,
     /// 1 minute
     #[default]
     I1m,
     /// 2 minutes
     I2m,
+    /// 3 minutes
+    I3m,
     /// 5 minutes
     I5m,
+    /// 6 minutes
+    I6m,
+    /// 10 minutes
+    I10m,
     /// 15 minutes
     I15m,
     /// 30 minutes
@@ -52,6 +76,18 @@ pub enum Interval {
     I90m,
     /// 1 hour
     I1h,
+    /// 2 hours
+    I2h,
+    /// 3 hours
+    I3h,
+    /// 4 hours
+    I4h,
+    /// 6 hours
+    I6h,
+    /// 8 hours
+    I8h,
+    /// 12 hours
+    I12h,
     /// 1 day
     D1,
     /// 5 days (provider-dependent)
@@ -62,28 +98,105 @@ pub enum Interval {
     M1,
     /// 3 months
     M3,
+    /// 6 months
+    M6,
+    /// 1 year
+    Y1,
+    /// 2 years
+    Y2,
+    /// 5 years
+    Y5,
+    /// 10 years
+    Y10,
 }
 
 impl Interval {
     /// Is this an intraday interval?
     #[must_use]
     pub const fn is_intraday(self) -> bool {
-        use Interval::{I1h, I1m, I2m, I5m, I15m, I30m, I90m};
-        matches!(self, I1m | I2m | I5m | I15m | I30m | I90m | I1h)
+        matches!(
+            self,
+            Self::I1s
+                | Self::I2s
+                | Self::I3s
+                | Self::I5s
+                | Self::I6s
+                | Self::I10s
+                | Self::I15s
+                | Self::I30s
+                | Self::I90s
+                | Self::I1m
+                | Self::I2m
+                | Self::I3m
+                | Self::I5m
+                | Self::I6m
+                | Self::I10m
+                | Self::I15m
+                | Self::I30m
+                | Self::I90m
+                | Self::I1h
+                | Self::I2h
+                | Self::I3h
+                | Self::I4h
+                | Self::I6h
+                | Self::I8h
+                | Self::I12h
+        )
     }
 
     /// Returns the interval length in minutes for intraday, otherwise None.
     #[must_use]
     pub const fn minutes(self) -> Option<i64> {
-        use Interval::{I1h, I1m, I2m, I5m, I15m, I30m, I90m};
         match self {
-            I1m => Some(1),
-            I2m => Some(2),
-            I5m => Some(5),
-            I15m => Some(15),
-            I30m => Some(30),
-            I1h => Some(60),
-            I90m => Some(90),
+            Self::I1m => Some(1),
+            Self::I2m => Some(2),
+            Self::I3m => Some(3),
+            Self::I5m => Some(5),
+            Self::I6m => Some(6),
+            Self::I10m => Some(10),
+            Self::I15m => Some(15),
+            Self::I30m => Some(30),
+            Self::I90m => Some(90),
+            Self::I1h => Some(60),
+            Self::I2h => Some(120),
+            Self::I3h => Some(180),
+            Self::I4h => Some(240),
+            Self::I6h => Some(360),
+            Self::I8h => Some(480),
+            Self::I12h => Some(720),
+            _ => None,
+        }
+    }
+
+    /// Returns the interval length in seconds for intraday, otherwise None.
+    #[must_use]
+    pub const fn seconds(self) -> Option<i64> {
+        match self {
+            Self::I1s => Some(1),
+            Self::I2s => Some(2),
+            Self::I3s => Some(3),
+            Self::I5s => Some(5),
+            Self::I6s => Some(6),
+            Self::I10s => Some(10),
+            Self::I15s => Some(15),
+            Self::I30s => Some(30),
+            Self::I90s => Some(90),
+            Self::I1m => Some(60),
+            Self::I2m => Some(120),
+            Self::I3m => Some(180),
+            Self::I5m => Some(300),
+            Self::I6m => Some(360),
+            Self::I10m => Some(600),
+            Self::I15m => Some(900),
+            Self::I30m => Some(1_800),
+            Self::I90m => Some(5_400),
+            Self::I1h => Some(3_600),
+            Self::I2h => Some(7_200),
+            Self::I3h => Some(10_800),
+            Self::I4h => Some(14_400),
+            Self::I6h => Some(21_600),
+            Self::I8h => Some(28_800),
+            Self::I12h => Some(43_200),
             _ => None,
         }
     }
