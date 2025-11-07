@@ -20,9 +20,9 @@ repository = "https://github.com/paft-rs/paft"
 
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
-polars = { version = "0.52", default-features = false }
+polars = { version = "0.51", default-features = false }
 thiserror = "2.0.17"
-df-derive = { version = "0.1.2" }
+df-derive = { version = "0.1.1" }
 quote = "1.0.41"
 serde_json = "1.0.145"
 regex = "1.12.2"
