@@ -1460,6 +1460,7 @@ dependencies = [
  "paft-fundamentals",
  "paft-market",
  "paft-money",
+ "paft-polymarket",
  "paft-utils",
  "rust_decimal",
  "serde_json",
@@ -1567,6 +1568,20 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tracing",
+]
+
+[[package]]
+name = "paft-polymarket"
+version = "0.8.0"
+dependencies = [
+ "chrono",
+ "df-derive",
+ "paft-core",
+ "paft-domain",
+ "paft-money",
+ "paft-utils",
+ "polars",
+ "serde",
 ]
 
 [[package]]

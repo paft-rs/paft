@@ -6,6 +6,9 @@ license.workspace = true
 authors.workspace = true
 description = "Polymarket.com data models and helpers for paft."
 repository.workspace = true
+readme = "README.md"
+keywords = ["finance", "polymarket", "prediction-markets", "serde"]
+categories = ["data-structures", "finance"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
@@ -14,3 +17,20 @@ paft-core = { workspace = true }
 paft-domain = { workspace = true }
 paft-money = { workspace = true }
 paft-utils = { workspace = true }
+df-derive = { workspace = true, optional = true }
+polars = { workspace = true, optional = true }
+
+[features]
+default = []
+
+dataframe = [
+  "polars",
+  "df-derive",
+  "paft-utils/dataframe",
+  "paft-domain/dataframe",
+  "paft-money/dataframe",
+]
+
+bigdecimal = [
+  "paft-money/bigdecimal",
+]

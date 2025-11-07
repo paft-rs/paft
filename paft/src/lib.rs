@@ -85,5 +85,11 @@ pub mod aggregates {
     pub use paft_aggregates::{FastInfo, Info};
 }
 
+/// Namespaced access to `paft-polymarket` (feature-gated).
+#[cfg(feature = "polymarket")]
+pub mod polymarket {
+    pub use paft_polymarket::{Market, Token};
+}
+
 /// Frequently used types for convenient imports.
 pub mod prelude;

@@ -76,3 +76,6 @@ pub use crate::market::responses::search::{SearchResponse, SearchResult};
 // Re-export aggregates snapshot types
 #[cfg(feature = "aggregates")]
 pub use crate::aggregates::{FastInfo, Info};
+
+#[cfg(feature = "polymarket")]
+pub use crate::polymarket::{Market, Token};
