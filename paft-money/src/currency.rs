@@ -22,6 +22,8 @@ pub enum Currency {
     ETH,
     /// Monero (non-ISO)
     XMR,
+    /// USDC
+    USDC,
     /// Unknown or provider-specific currency
     Other(Canonical),
 }
@@ -84,6 +86,7 @@ impl Currency {
             Self::ETH => Ok(18),
             Self::XMR => Ok(12),
             Self::BTC => Ok(8),
+            Self::USDC => Ok(6),
             Self::Other(code) => currency_metadata(code.as_ref())
                 .map(|meta| meta.minor_units)
                 .ok_or_else(|| MoneyError::MetadataNotFound {
@@ -100,6 +103,7 @@ impl Currency {
             Self::BTC => Cow::Borrowed("Bitcoin"),
             Self::ETH => Cow::Borrowed("Ethereum"),
             Self::XMR => Cow::Borrowed("Monero"),
+            Self::USDC => Cow::Borrowed("USDC"),
             Self::Other(code) => currency_metadata(code.as_ref()).map_or_else(
                 || Cow::Owned(code.as_ref().to_string()),
                 |meta| meta.full_name,
@@ -127,6 +131,7 @@ impl Currency {
             Self::BTC => "BTC",
             Self::ETH => "ETH",
             Self::XMR => "XMR",
+            Self::USDC => "USDC",
             Self::Other(c) => c.as_ref(),
         }
     }
@@ -215,6 +220,9 @@ impl FromStr for Currency {
         if canon == "XMR" {
             return Ok(Self::XMR);
         }
+        if canon == "USDC" {
+            return Ok(Self::USDC);
+        }
 
         if let Some(iso) = IsoCurrency::from_code(canon) {
             return Ok(Self::Iso(iso));
@@ -235,6 +243,7 @@ impl StringCode for Currency {
             Self::BTC => "BTC",
             Self::ETH => "ETH",
             Self::XMR => "XMR",
+            Self::USDC => "USDC",
             Self::Other(canon) => canon.as_ref(),
         }
     }

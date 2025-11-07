@@ -31,6 +31,8 @@ fn end_to_end_workflow() {
         Some("BBG000B9XRY4"),
         None,
         Some(Exchange::NASDAQ),
+        None,
+        None,
     )
     .expect("valid instrument");
     assert_eq!(instrument.symbol().as_str(), "AAPL");
@@ -255,6 +257,8 @@ fn asset_kind_workflow() {
             Some("BBG000B9XRY4"),
             None,
             Some(Exchange::try_from_str("TEST").unwrap()),
+            None,
+            None,
         )
         .expect("valid instrument for asset kind");
         assert_eq!(instrument.kind(), &asset_kind);

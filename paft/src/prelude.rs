@@ -55,6 +55,8 @@ pub use crate::market::news::NewsArticle;
 #[cfg(feature = "market")]
 pub use crate::market::options::{OptionChain, OptionContract};
 #[cfg(feature = "market")]
+pub use crate::market::orderbook::{OrderBook, OrderBookEntry};
+#[cfg(feature = "market")]
 pub use crate::market::quote::{Quote, QuoteUpdate};
 #[cfg(feature = "market")]
 pub use crate::market::requests::history::{

@@ -3,7 +3,7 @@
 use super::Exchange;
 use crate::{
     DomainError,
-    identifiers::{Figi, Isin, Symbol},
+    identifiers::{ConditionID, Figi, Isin, Symbol, TokenID},
 };
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, str::FromStr};
@@ -52,6 +52,8 @@ pub enum AssetKind {
     LST,
     /// Real-world assets (tokenized physical assets).
     RWA,
+    /// Prediction market.
+    PredictionMarket,
 }
 
 crate::string_enum_closed_with_code!(
@@ -75,7 +77,8 @@ crate::string_enum_closed_with_code!(
         "LEVERAGED_TOKEN" => AssetKind::LeveragedToken,
         "LP_TOKEN" => AssetKind::LPToken,
         "LST" => AssetKind::LST,
-        "RWA" => AssetKind::RWA
+        "RWA" => AssetKind::RWA,
+        "PREDICTION_MARKET" => AssetKind::PredictionMarket,
     },
     {
         "STOCK" => AssetKind::Equity,
@@ -108,6 +111,7 @@ impl AssetKind {
             Self::LPToken => "LP Token",
             Self::LST => "Liquid Staking Token",
             Self::RWA => "Real-World Asset",
+            Self::PredictionMarket => "Prediction Market",
         }
     }
 }
@@ -135,6 +139,11 @@ pub struct Instrument {
     exchange: Option<Exchange>,
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     kind: AssetKind,
+
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    token_id: Option<TokenID>,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    condition_id: Option<ConditionID>,
 }
 
 impl Instrument {
@@ -204,6 +213,8 @@ impl Instrument {
         figi: Option<&str>,
         isin: Option<&str>,
         exchange: Option<Exchange>,
+        token_id: Option<&str>,
+        condition_id: Option<&str>,
     ) -> Result<Self, DomainError> {
         let symbol = Symbol::new(symbol.as_ref())?;
         let mut instrument = Self {
@@ -212,6 +223,8 @@ impl Instrument {
             symbol,
             exchange,
             kind,
+            token_id: None,
+            condition_id: None,
         };
 
         if let Some(figi_value) = figi {
@@ -219,6 +232,13 @@ impl Instrument {
         }
         if let Some(isin_value) = isin {
             instrument.try_set_isin(isin_value)?;
+        }
+
+        if let Some(token_id_value) = token_id {
+            instrument.token_id = Some(TokenID::new(token_id_value)?);
+        }
+        if let Some(condition_id_value) = condition_id {
+            instrument.condition_id = Some(ConditionID::new(condition_id_value)?);
         }
 
         Ok(instrument)
@@ -240,6 +260,8 @@ impl Instrument {
             symbol: Symbol::new(symbol.as_ref())?,
             exchange: None,
             kind,
+            token_id: None,
+            condition_id: None,
         })
     }
 
@@ -263,6 +285,8 @@ impl Instrument {
             symbol: Symbol::new(symbol.as_ref())?,
             exchange: Some(exchange),
             kind,
+            token_id: None,
+            condition_id: None,
         })
     }
 
@@ -287,15 +311,28 @@ impl Instrument {
     /// a canonical mapping is introduced in a future release.
     #[must_use]
     pub fn unique_key(&self) -> Cow<'_, str> {
+        // Priority 1: Specific Asset GUIDs
+        // (token_id, figi, and isin are all highly specific)
+        if let Some(token_id) = &self.token_id {
+            return Cow::Borrowed(token_id.as_ref());
+        }
         if let Some(figi) = &self.figi {
             return Cow::Borrowed(figi.as_ref());
         }
         if let Some(isin) = &self.isin {
             return Cow::Borrowed(isin.as_ref());
         }
+
+        // Priority 2: Market/Group GUIDs
+        if let Some(condition_id) = &self.condition_id {
+            return Cow::Borrowed(condition_id.as_ref());
+        }
+
+        // Priority 3: Ticker-Based Fallbacks
         if let Some(exchange) = &self.exchange {
             return Cow::Owned(format!("{}@{}", self.symbol, exchange.code()));
         }
+
         Cow::Borrowed(self.symbol.as_str())
     }
 

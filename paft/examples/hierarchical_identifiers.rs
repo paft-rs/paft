@@ -57,6 +57,8 @@ fn run_example() {
         Some("BBG000B9XRY4"), // FIGI
         Some("US0378331005"), // ISIN
         Some(Exchange::NASDAQ),
+        None,
+        None,
     )
     .expect("valid professional instrument");
 
@@ -90,6 +92,8 @@ fn run_example() {
         None,                 // No FIGI
         Some("NL0010273215"), // ISIN
         Some(Exchange::Euronext),
+        None,
+        None,
     )
     .expect("valid european instrument");
 

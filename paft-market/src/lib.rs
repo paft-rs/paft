@@ -42,6 +42,7 @@ pub use market::{
     action::Action,
     news::NewsArticle,
     options::{OptionChain, OptionContract, OptionGreeks},
+    orderbook::{OrderBook, OrderBookEntry},
     quote::{Quote, QuoteUpdate},
 };
 pub use requests::history::{HistoryRequest, HistoryRequestBuilder, Interval, Range};

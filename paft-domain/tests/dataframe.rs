@@ -13,6 +13,8 @@ fn instrument_to_dataframe() {
         Some("BBG000B9XRY4"),
         Some("US0378331005"),
         Some(Exchange::NASDAQ),
+        None,
+        None,
     )
     .unwrap();
 
@@ -29,6 +31,8 @@ fn instruments_vec_to_dataframe() {
             None,
             None,
             Some(Exchange::NASDAQ),
+            None,
+            None,
         )
         .unwrap(),
         Instrument::try_new(
@@ -37,6 +41,8 @@ fn instruments_vec_to_dataframe() {
             None,
             None,
             Some(Exchange::Other(Canonical::try_new("FX").unwrap())),
+            None,
+            None,
         )
         .unwrap(),
     ];
