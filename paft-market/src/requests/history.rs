@@ -9,6 +9,28 @@ use chrono::{DateTime, Utc};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Logical lookback range presets.
 pub enum Range {
+    /// 1 minute
+    I1m,
+    /// 2 minutes
+    I2m,
+    /// 5 minutes
+    I5m,
+    /// 10 minutes
+    I10m,
+    /// 15 minutes
+    I15m,
+    /// 30 minutes
+    I30m,
+    /// 1 hour
+    I1h,
+    /// 4 hours
+    I4h,
+    /// 6 hours
+    I6h,
+    /// 8 hours
+    I8h,
+    /// 12 hours
+    I12h,
     /// 1 day
     #[default]
     D1,
