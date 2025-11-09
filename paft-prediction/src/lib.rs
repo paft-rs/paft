@@ -1,6 +1,6 @@
 //! Prediction market data models for paft.
 
-use paft_domain::identifiers::{ConditionID, TokenID};
+use paft_domain::identifiers::{EventID, OutcomeID};
 use paft_money::{Currency, Money};
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +14,7 @@ use paft_utils::dataframe::ToDataFrame;
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct Token {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub token_id: TokenID,
+    pub outcome_id: OutcomeID,
     pub outcome: String,
 }
 
@@ -23,7 +23,7 @@ pub struct Token {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct Market {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub condition_id: ConditionID,
+    pub event_id: EventID,
     pub tokens: Vec<Token>, // The tradeable outcomes
     pub description: String,
     pub question: String,
@@ -37,5 +37,3 @@ pub struct Market {
     pub is_closed: bool,
     // pub end_date: Option<DateTime<Utc>>,
 }
-
-// What else do we need here?

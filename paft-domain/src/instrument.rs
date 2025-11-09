@@ -1,15 +1,13 @@
 //! Instrument identifier and asset classification domain types.
 
 use super::Exchange;
+use crate::identifier::{IdentifierScheme, PredictionId, SecurityId};
 use crate::{
     DomainError,
-    identifiers::{ConditionID, Figi, Isin, Symbol, TokenID},
+    identifiers::{EventID, Figi, OutcomeID, Symbol},
 };
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, str::FromStr};
-
-#[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
 
 /// Kinds of financial instruments
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -116,136 +114,23 @@ impl AssetKind {
     }
 }
 
-/// Logical instrument identifier with hierarchical identifier support and asset classification.
-///
-/// This struct serves as a container for multiple types of identifiers, prioritizing
-/// stable, universal identifiers like FIGI while maintaining backward compatibility
-/// with symbol-based identification. The hierarchical approach allows providers to
-/// populate the identifiers they have access to, while encouraging the use of
-/// better identifiers when available.
-///
-/// Symbol values are canonicalized into the [`Symbol`] newtype, preserving casing
-/// and punctuation semantics required by upstream data sources.
+/// Logical instrument identity and asset classification.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct Instrument {
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    figi: Option<Figi>,
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    isin: Option<Isin>,
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    symbol: Symbol,
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    exchange: Option<Exchange>,
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    /// Identifier scheme (family of IDs)
+    id: IdentifierScheme,
+    /// Asset class and behavior
     kind: AssetKind,
-
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    token_id: Option<TokenID>,
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    condition_id: Option<ConditionID>,
 }
 
 impl Instrument {
-    /// # Errors
-    /// Returns `DomainError::InvalidIsin` when `isin` is empty, malformed,
-    /// or fails normalization/validation.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(level = "debug", skip(self), err)
-    )]
-    pub fn try_set_isin(&mut self, isin: &str) -> Result<(), DomainError> {
-        self.isin = Some(Isin::new(isin)?);
-        Ok(())
+    /// Construct an instrument from an identifier scheme and asset kind.
+    #[must_use]
+    pub const fn new(id: IdentifierScheme, kind: AssetKind) -> Self {
+        Self { id, kind }
     }
 
-    /// Try to set the FIGI while ensuring validation.
-    ///
-    /// # Errors
-    /// Returns `DomainError::InvalidFigi` when `figi` is empty, not exactly
-    /// 12 ASCII alphanumeric characters, or fails the checksum.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(level = "debug", skip(self), err)
-    )]
-    pub fn try_set_figi(&mut self, figi: &str) -> Result<(), DomainError> {
-        self.figi = Some(Figi::new(figi)?);
-        Ok(())
-    }
-
-    /// Try to set the ISIN while consuming and returning the instrument.
-    ///
-    /// # Errors
-    /// Propagates `DomainError::InvalidIsin` from [`Isin::new`].
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(level = "debug", skip(self), err)
-    )]
-    pub fn try_with_isin(mut self, isin: &str) -> Result<Self, DomainError> {
-        self.try_set_isin(isin)?;
-        Ok(self)
-    }
-
-    /// Try to set the FIGI while consuming and returning the instrument.
-    ///
-    /// # Errors
-    /// Propagates `DomainError::InvalidFigi` from [`Figi::new`].
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(level = "debug", skip(self), err)
-    )]
-    pub fn try_with_figi(mut self, figi: &str) -> Result<Self, DomainError> {
-        self.try_set_figi(figi)?;
-        Ok(self)
-    }
-
-    /// # Errors
-    /// Returns `DomainError::InvalidSymbol`, `DomainError::InvalidFigi`, or
-    /// `DomainError::InvalidIsin` if the provided identifiers fail
-    /// validation/normalization.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(level = "debug", skip(symbol), err)
-    )]
-    pub fn try_new(
-        symbol: impl AsRef<str>,
-        kind: AssetKind,
-        figi: Option<&str>,
-        isin: Option<&str>,
-        exchange: Option<Exchange>,
-        token_id: Option<&str>,
-        condition_id: Option<&str>,
-    ) -> Result<Self, DomainError> {
-        let symbol = Symbol::new(symbol.as_ref())?;
-        let mut instrument = Self {
-            figi: None,
-            isin: None,
-            symbol,
-            exchange,
-            kind,
-            token_id: None,
-            condition_id: None,
-        };
-
-        if let Some(figi_value) = figi {
-            instrument.try_set_figi(figi_value)?;
-        }
-        if let Some(isin_value) = isin {
-            instrument.try_set_isin(isin_value)?;
-        }
-
-        if let Some(token_id_value) = token_id {
-            instrument.token_id = Some(TokenID::new(token_id_value)?);
-        }
-        if let Some(condition_id_value) = condition_id {
-            instrument.condition_id = Some(ConditionID::new(condition_id_value)?);
-        }
-
-        Ok(instrument)
-    }
-
-    /// Construct a new `Instrument` with just a symbol and kind (backward compatibility).
-    /// This is useful for providers that only have basic symbol information.
+    /// Construct a new `Instrument` with just a symbol and kind.
     ///
     /// # Errors
     /// Returns `DomainError::InvalidSymbol` if the provided symbol violates canonical invariants.
@@ -255,18 +140,17 @@ impl Instrument {
     )]
     pub fn from_symbol(symbol: impl AsRef<str>, kind: AssetKind) -> Result<Self, DomainError> {
         Ok(Self {
-            figi: None,
-            isin: None,
-            symbol: Symbol::new(symbol.as_ref())?,
-            exchange: None,
+            id: IdentifierScheme::Security(SecurityId {
+                symbol: Symbol::new(symbol.as_ref())?,
+                exchange: None,
+                figi: None,
+                isin: None,
+            }),
             kind,
-            token_id: None,
-            condition_id: None,
         })
     }
 
     /// Construct a new `Instrument` with symbol, exchange, and kind.
-    /// This is useful for providers that have exchange information but no global identifiers.
     ///
     /// # Errors
     /// Returns `DomainError::InvalidSymbol` if the provided symbol violates canonical invariants.
@@ -280,108 +164,52 @@ impl Instrument {
         kind: AssetKind,
     ) -> Result<Self, DomainError> {
         Ok(Self {
-            figi: None,
-            isin: None,
-            symbol: Symbol::new(symbol.as_ref())?,
-            exchange: Some(exchange),
+            id: IdentifierScheme::Security(SecurityId {
+                symbol: Symbol::new(symbol.as_ref())?,
+                exchange: Some(exchange),
+                figi: None,
+                isin: None,
+            }),
             kind,
-            token_id: None,
-            condition_id: None,
+        })
+    }
+
+    /// Construct a new `Instrument` for a security identified by a FIGI and symbol.
+    ///
+    /// # Errors
+    /// Returns `DomainError::InvalidFigi` or `DomainError::InvalidSymbol` if validation fails.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
+    pub fn from_figi(figi: &str, symbol: Symbol, kind: AssetKind) -> Result<Self, DomainError> {
+        Ok(Self {
+            id: IdentifierScheme::Security(SecurityId {
+                symbol,
+                exchange: None,
+                figi: Some(Figi::new(figi)?),
+                isin: None,
+            }),
+            kind,
+        })
+    }
+
+    /// Construct a new `Instrument` for a prediction market outcome.
+    ///
+    /// # Errors
+    /// Returns `DomainError` variants if ID validation fails.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
+    pub fn from_prediction_market(event_id: &str, outcome_id: &str) -> Result<Self, DomainError> {
+        Ok(Self {
+            id: IdentifierScheme::Prediction(PredictionId {
+                event_id: EventID::new(event_id)?,
+                outcome_id: OutcomeID::new(outcome_id)?,
+            }),
+            kind: AssetKind::PredictionMarket,
         })
     }
 
     /// Returns the best available unique identifier for this instrument.
-    ///
-    /// Priority order:
-    /// 1. FIGI (if available)
-    /// 2. ISIN (if available)
-    /// 3. `SYMBOL@EXCHANGE` (if the exchange is available)
-    /// 4. Symbol only (fallback; ambiguous across venues/data vendors)
-    ///
-    /// This method returns a `Cow<str>` to avoid unnecessary allocations:
-    /// - Returns `Cow::Borrowed` for FIGI, ISIN, and symbol-only cases
-    /// - Returns `Cow::Owned` only for the symbol@exchange case that requires formatting
-    ///
-    /// Bare symbols are not globally unique; callers should prefer FIGI/ISIN
-    /// when present and treat the symbol fallback as legacy.
-    ///
-    /// # Future compatibility
-    /// The `symbol@exchange` fallback currently uses the exchange display code (e.g. `NASDAQ`).
-    /// These values are not MICs and should be treated as a legacy format until
-    /// a canonical mapping is introduced in a future release.
     #[must_use]
     pub fn unique_key(&self) -> Cow<'_, str> {
-        // Priority 1: Specific Asset GUIDs
-        // (token_id, figi, and isin are all highly specific)
-        if let Some(token_id) = &self.token_id {
-            return Cow::Borrowed(token_id.as_ref());
-        }
-        if let Some(figi) = &self.figi {
-            return Cow::Borrowed(figi.as_ref());
-        }
-        if let Some(isin) = &self.isin {
-            return Cow::Borrowed(isin.as_ref());
-        }
-
-        // Priority 2: Market/Group GUIDs
-        if let Some(condition_id) = &self.condition_id {
-            return Cow::Borrowed(condition_id.as_ref());
-        }
-
-        // Priority 3: Ticker-Based Fallbacks
-        if let Some(exchange) = &self.exchange {
-            return Cow::Owned(format!("{}@{}", self.symbol, exchange.code()));
-        }
-
-        Cow::Borrowed(self.symbol.as_str())
-    }
-
-    /// Returns true if this instrument has a globally unique identifier (FIGI or ISIN).
-    #[must_use]
-    pub const fn is_globally_identified(&self) -> bool {
-        self.figi.is_some() || self.isin.is_some()
-    }
-
-    /// Returns the FIGI identifier if available.
-    #[must_use]
-    pub const fn figi(&self) -> Option<&Figi> {
-        self.figi.as_ref()
-    }
-
-    /// Returns the FIGI as a string slice if available.
-    #[must_use]
-    pub fn figi_str(&self) -> Option<&str> {
-        self.figi.as_ref().map(AsRef::as_ref)
-    }
-
-    /// Returns the ISIN identifier if available.
-    #[must_use]
-    pub const fn isin(&self) -> Option<&Isin> {
-        self.isin.as_ref()
-    }
-
-    /// Returns the ISIN as a string slice if available.
-    #[must_use]
-    pub fn isin_str(&self) -> Option<&str> {
-        self.isin.as_ref().map(AsRef::as_ref)
-    }
-
-    /// Returns the canonical instrument symbol.
-    #[must_use]
-    pub const fn symbol(&self) -> &Symbol {
-        &self.symbol
-    }
-
-    /// Returns the ticker symbol as a string slice.
-    #[must_use]
-    pub fn symbol_str(&self) -> &str {
-        self.symbol.as_str()
-    }
-
-    /// Returns the exchange if available.
-    #[must_use]
-    pub const fn exchange(&self) -> Option<&Exchange> {
-        self.exchange.as_ref()
+        self.id.unique_key()
     }
 
     /// Returns the asset kind.
@@ -390,21 +218,113 @@ impl Instrument {
         &self.kind
     }
 
-    /// Returns true if this instrument has a FIGI identifier.
+    /// Returns the identifier scheme.
     #[must_use]
-    pub const fn has_figi(&self) -> bool {
-        self.figi.is_some()
+    pub const fn id(&self) -> &IdentifierScheme {
+        &self.id
+    }
+}
+
+#[cfg(feature = "dataframe")]
+mod dataframe_impl {
+    use super::Instrument;
+    use crate::identifier::IdentifierScheme;
+    use paft_utils::dataframe::{Columnar, ToDataFrame};
+    use polars::datatypes::DataType;
+    use polars::prelude::{DataFrame, NamedFrom, PolarsResult, Series};
+
+    impl ToDataFrame for Instrument {
+        fn to_dataframe(&self) -> PolarsResult<DataFrame> {
+            <Self as Columnar>::columnar_to_dataframe(std::slice::from_ref(self))
+        }
+
+        fn empty_dataframe() -> PolarsResult<DataFrame> {
+            DataFrame::new(vec![
+                Series::new_empty("kind".into(), &DataType::String).into(),
+                Series::new_empty("symbol".into(), &DataType::String).into(),
+                Series::new_empty("exchange".into(), &DataType::String).into(),
+                Series::new_empty("figi".into(), &DataType::String).into(),
+                Series::new_empty("isin".into(), &DataType::String).into(),
+                Series::new_empty("event_id".into(), &DataType::String).into(),
+                Series::new_empty("outcome_id".into(), &DataType::String).into(),
+            ])
+        }
+
+        fn schema() -> PolarsResult<Vec<(&'static str, DataType)>> {
+            Ok(vec![
+                ("kind", DataType::String),
+                ("symbol", DataType::String),
+                ("exchange", DataType::String),
+                ("figi", DataType::String),
+                ("isin", DataType::String),
+                ("event_id", DataType::String),
+                ("outcome_id", DataType::String),
+            ])
+        }
     }
 
-    /// Returns true if this instrument has an ISIN identifier.
-    #[must_use]
-    pub const fn has_isin(&self) -> bool {
-        self.isin.is_some()
-    }
+    impl Columnar for Instrument {
+        fn columnar_to_dataframe(items: &[Self]) -> PolarsResult<DataFrame> {
+            let kinds: Vec<String> = items.iter().map(|i| i.kind().to_string()).collect();
+            let symbols: Vec<Option<String>> = items
+                .iter()
+                .map(|i| match i.id() {
+                    IdentifierScheme::Security(s) => Some(s.symbol.to_string()),
+                    IdentifierScheme::Prediction(_) => None,
+                })
+                .collect();
+            let exchanges: Vec<Option<String>> = items
+                .iter()
+                .map(|i| match i.id() {
+                    IdentifierScheme::Security(s) => {
+                        s.exchange.as_ref().map(std::string::ToString::to_string)
+                    }
+                    IdentifierScheme::Prediction(_) => None,
+                })
+                .collect();
+            let figis: Vec<Option<String>> = items
+                .iter()
+                .map(|i| match i.id() {
+                    IdentifierScheme::Security(s) => {
+                        s.figi.as_ref().map(|f| f.as_ref().to_string())
+                    }
+                    IdentifierScheme::Prediction(_) => None,
+                })
+                .collect();
+            let isins: Vec<Option<String>> = items
+                .iter()
+                .map(|i| match i.id() {
+                    IdentifierScheme::Security(s) => {
+                        s.isin.as_ref().map(|v| v.as_ref().to_string())
+                    }
+                    IdentifierScheme::Prediction(_) => None,
+                })
+                .collect();
+            let event_ids: Vec<Option<String>> = items
+                .iter()
+                .map(|i| match i.id() {
+                    IdentifierScheme::Prediction(p) => Some(p.event_id.as_ref().to_string()),
+                    IdentifierScheme::Security(_) => None,
+                })
+                .collect();
+            let outcome_ids: Vec<Option<String>> = items
+                .iter()
+                .map(|i| match i.id() {
+                    IdentifierScheme::Prediction(p) => Some(p.outcome_id.as_ref().to_string()),
+                    IdentifierScheme::Security(_) => None,
+                })
+                .collect();
 
-    /// Returns true if this instrument has exchange information.
-    #[must_use]
-    pub const fn has_exchange(&self) -> bool {
-        self.exchange.is_some()
+            let df = DataFrame::new(vec![
+                Series::new("kind".into(), kinds).into(),
+                Series::new("symbol".into(), symbols).into(),
+                Series::new("exchange".into(), exchanges).into(),
+                Series::new("figi".into(), figis).into(),
+                Series::new("isin".into(), isins).into(),
+                Series::new("event_id".into(), event_ids).into(),
+                Series::new("outcome_id".into(), outcome_ids).into(),
+            ])?;
+            Ok(df)
+        }
     }
 }

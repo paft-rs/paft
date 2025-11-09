@@ -1,4 +1,4 @@
-//! Identifier newtypes for instrument codes (ISIN, FIGI, Symbol).
+//! FIGI newtype for instrument codes.
 
 use crate::DomainError;
 use serde::{Deserialize, Deserializer, Serialize, de};

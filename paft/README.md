@@ -45,14 +45,15 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `aggregates`: exposes aggregated snapshot models like `FastInfo` and `Info`.
 - `bigdecimal`: swaps the money backend to `BigDecimal` when you require arbitrary precision.
 - `dataframe`: forwards DataFrame support from `paft-utils`, providing `ToDataFrame`/`ToDataFrameVec`.
-- `full`: convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, and `dataframe`.
+- `prediction`: prediction market data models (`Market`, `Token`).
+- `full`: convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, `prediction`, and `dataframe`.
 - `panicking-money-ops`: re-enables `Money` arithmetic operators that panic on mismatched currencies (see below).
 - `money-formatting`: forwards to `paft-money/money-formatting` for locale-aware formatting and parsing APIs.
 - `tracing`: enables lightweight instrumentation via the `tracing` crate; zero‑cost when disabled; adds spans/events in constructors and validators across the workspace.
 
 ## Migration Notes
 
-- `Instrument::figi` and `Instrument::isin` are now typed as `Option<Figi>` / `Option<Isin>`. Use `Figi::new("...")` and `Isin::new("...")` to construct validated identifiers, and call `figi_str()` / `isin_str()` when you need a borrowed `&str`.
+- `Instrument::figi` and `Instrument::isin` now return `Option<&Figi>` / `Option<&Isin>`. Construct with `Figi::new("...")` and `Isin::new("...")`. When you need `&str`, use helpers like `inst.figi().map(AsRef::as_ref)` or `inst.isin().map(|i| i.as_ref())`.
 - `CompanyProfile::isin` and `FundProfile::isin` now store `Option<Isin>`; update struct literals to pass `Isin::new(..)?` and adjust deserialization expectations accordingly.
 - `Isin::new` and `Figi::new` now always enforce checksum validation. If you previously relied on lenient mode, strip placeholders or keep them in `Symbol` fields instead.
 - The new identifier newtypes are `#[serde(transparent)]`, so existing JSON payloads continue to operate with plain strings while now enforcing checksum validation at the boundary.
@@ -67,6 +68,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 - **Options**: `OptionContract`, `OptionChain`
 - **News & Search**: `NewsArticle`, `SearchResult`
 - **ESG & Holders**: ESG scores, institutional holdings
+- **Prediction Markets** (feature `prediction`): `Market`, `Token`
 
 ### Key Features
 
@@ -82,16 +84,14 @@ All features are optional—disable the defaults (`default-features = false`) an
 ```rust
 use paft::prelude::*;
 use rust_decimal::Decimal;
+use paft::money::IsoCurrency;
 
 // Create instruments with different levels of identification
-let apple = Instrument::try_new(
-    "AAPL",
-    AssetKind::Equity,
-    Some("BBG000B9XRY4"), // FIGI (best)
-    Some("US0378331005"),            // ISIN
-    Some(Exchange::NASDAQ),
-)
-.expect("valid instrument");
+let apple = {
+    // Prefer global IDs when available (FIGI > ISIN > Symbol@Exchange > Symbol)
+    let symbol = Symbol::new("AAPL").unwrap();
+    Instrument::from_figi("BBG000B9XRY4", symbol, AssetKind::Equity).unwrap()
+};
 
 let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto)
     .expect("valid crypto symbol");
@@ -115,7 +115,7 @@ println!("{}", apple.unique_key());   // "BBG000B9XRY4" (uses FIGI)
 println!("{}", bitcoin.unique_key()); // "BTC-USD" (uses symbol)
 
 // Check identification levels
-if apple.is_globally_identified() {
+if apple.figi().is_some() || apple.isin().is_some() {
     println!("Has FIGI or ISIN - works across all providers");
 }
 

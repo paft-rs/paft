@@ -1,13 +1,13 @@
 [package]
-name = "paft-polymarket"
+name = "paft-prediction"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Polymarket.com data models and helpers for paft."
+description = "Prediction market data models and helpers for paft."
 repository.workspace = true
 readme = "README.md"
-keywords = ["finance", "polymarket", "prediction-markets", "serde"]
+keywords = ["finance", "prediction-markets", "serde"]
 categories = ["data-structures", "finance"]
 
 [dependencies]

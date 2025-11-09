@@ -7,16 +7,8 @@ use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
 #[test]
 fn instrument_to_dataframe() {
-    let instrument = Instrument::try_new(
-        "AAPL",
-        AssetKind::Equity,
-        Some("BBG000B9XRY4"),
-        Some("US0378331005"),
-        Some(Exchange::NASDAQ),
-        None,
-        None,
-    )
-    .unwrap();
+    let instrument =
+        Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity).unwrap();
 
     let df = instrument.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -25,29 +17,18 @@ fn instrument_to_dataframe() {
 #[test]
 fn instruments_vec_to_dataframe() {
     let instruments = [
-        Instrument::try_new(
-            "AAPL",
-            AssetKind::Equity,
-            None,
-            None,
-            Some(Exchange::NASDAQ),
-            None,
-            None,
-        )
-        .unwrap(),
-        Instrument::try_new(
+        Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity).unwrap(),
+        Instrument::from_symbol_and_exchange(
             "EURUSD=X",
+            Exchange::Other(Canonical::try_new("FX").unwrap()),
             AssetKind::Forex,
-            None,
-            None,
-            Some(Exchange::Other(Canonical::try_new("FX").unwrap())),
-            None,
-            None,
         )
         .unwrap(),
     ];
 
     let df = instruments.to_dataframe().unwrap();
+    println!("{df:?}");
+
     assert_eq!(df.height(), 2);
     let columns = df.get_column_names();
     assert!(columns.iter().any(|c| c.as_str() == "symbol"));

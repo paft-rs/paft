@@ -9,7 +9,7 @@ members = [
     "paft-money",
     "paft-domain",
     "paft-aggregates",
-    "paft-polymarket"
+    "paft-prediction"
 ]
 
 [workspace.package]
@@ -46,4 +46,4 @@ paft-money = { path = "paft-money", version = "0.8.0", default-features = false}
 paft-utils = { path = "paft-utils", version = "0.8.0", default-features = false }
 paft-domain = { path = "paft-domain", version = "0.8.0", default-features = false }
 paft-aggregates = { path = "paft-aggregates", version = "0.8.0", default-features = false }
-paft-polymarket = { path = "paft-polymarket", version = "0.8.0", default-features = false }
+paft-prediction = { path = "paft-prediction", version = "0.8.0", default-features = false }

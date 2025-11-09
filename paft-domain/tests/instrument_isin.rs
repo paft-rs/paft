@@ -1,75 +1,16 @@
-use paft_domain::{AssetKind, DomainError, Instrument, Isin};
-
-#[test]
-fn try_set_isin_accepts_clean_value() {
-    let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
-    instrument.try_set_isin("US0378331005").expect("valid ISIN");
-    assert_eq!(instrument.isin_str(), Some("US0378331005"));
-    assert!(Isin::new("US0378331005").is_ok());
-    let normalized = Isin::new("us0378331005").expect("valid normalization");
-    assert_eq!(normalized.as_ref(), "US0378331005");
-}
-
-#[test]
-fn try_set_isin_normalizes_loose_input() {
-    let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
-    instrument
-        .try_set_isin("us-037833-1005 ")
-        .expect("normalized ISIN");
-    assert_eq!(instrument.isin_str(), Some("US0378331005"));
-    assert!(Isin::new("us-037833-1005 ").is_ok());
-}
-
-#[test]
-fn try_set_isin_rejects_invalid_values() {
-    let invalid_inputs = [
-        "US037833100",   // too short after scrubbing
-        "1234567890123", // too long
-        "US0378331006",  // bad checksum
-    ];
-
-    for value in invalid_inputs {
-        let mut instrument =
-            Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
-        let err = instrument.try_set_isin(value).expect_err("invalid ISIN");
-        assert_eq!(
-            err,
-            DomainError::InvalidIsin {
-                value: value.to_string(),
-            }
-        );
-        assert!(matches!(
-            Isin::new(value),
-            Err(DomainError::InvalidIsin { .. })
-        ));
-    }
-}
-
-#[test]
-fn try_set_isin_rejects_non_isin_placeholders() {
-    let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
-    let err = instrument
-        .try_set_isin("invalid!!!")
-        .expect_err("non-ISIN placeholders should fail");
-    assert!(matches!(err, DomainError::InvalidIsin { .. }));
-}
-
-#[test]
-fn try_set_isin_rejects_empty_after_scrub() {
-    let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity).expect("valid symbol");
-    let err = instrument
-        .try_set_isin("   ---   ")
-        .expect_err("scrubbed empty strings are rejected");
-    assert!(matches!(err, DomainError::InvalidIsin { value } if value == "   ---   "));
-}
+use paft_domain::{IdentifierScheme, Instrument};
 
 #[test]
 fn deserialize_requires_valid_isin() {
     let json = r#"{
-        "figi": null,
-        "isin": "US0378331006",
-        "symbol": "AAPL",
-        "exchange": null,
+        "id": {
+            "Security": {
+                "symbol": "AAPL",
+                "exchange": null,
+                "figi": null,
+                "isin": "US0378331006"
+            }
+        },
         "kind": "EQUITY"
     }"#;
 
@@ -81,24 +22,37 @@ fn deserialize_requires_valid_isin() {
 #[test]
 fn deserialize_normalizes_loose_isin() {
     let json = r#"{
-        "figi": null,
-        "isin": "us-037833-1005 ",
-        "symbol": "AAPL",
-        "exchange": null,
+        "id": {
+            "Security": {
+                "symbol": "AAPL",
+                "exchange": null,
+                "figi": null,
+                "isin": "us-037833-1005 "
+            }
+        },
         "kind": "EQUITY"
     }"#;
 
     let instrument: Instrument = serde_json::from_str(json).expect("valid loose ISIN");
-    assert_eq!(instrument.isin_str(), Some("US0378331005"));
+    match instrument.id() {
+        IdentifierScheme::Security(sec) => {
+            assert_eq!(sec.isin.as_ref().map(AsRef::as_ref), Some("US0378331005"));
+        }
+        IdentifierScheme::Prediction(_) => panic!("expected Security identifier"),
+    }
 }
 
 #[test]
 fn deserialize_rejects_empty_after_scrub() {
     let json = r#"{
-        "figi": null,
-        "isin": "---",
-        "symbol": "AAPL",
-        "exchange": null,
+        "id": {
+            "Security": {
+                "symbol": "AAPL",
+                "exchange": null,
+                "figi": null,
+                "isin": "---"
+            }
+        },
         "kind": "EQUITY"
     }"#;
 

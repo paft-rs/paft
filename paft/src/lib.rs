@@ -4,24 +4,21 @@
 //! with coherent feature flags and a convenient `prelude` for common imports.
 //!
 //! Features
-//! - `domain`, `market`, `fundamentals`: opt into domain areas you need
-//! - `bigdecimal`: Change the money backend from `rust_decimal` to `bigdecimal`
+//! - `domain`, `market`, `fundamentals`, `aggregates`: opt into the areas you need
+//! - `prediction`: prediction market data models (`Market`, `Token`)
+//! - `bigdecimal`: change the money backend from `rust_decimal` to `bigdecimal`
 //! - `dataframe`: enable `DataFrame` export via Polars helpers
 //! - `panicking-money-ops`: opt‑in operator overloading for `Money` that panics on invalid input
+//! - `money-formatting`: locale‑aware money formatting and parsing
+//! - `tracing`: lightweight instrumentation; zero‑cost when disabled
 //!
 //! # Quickstart
 //! ```rust
 //! use paft::prelude::*;
 //!
 //! // Construct an instrument with identifiers
-//! let aapl = Instrument::try_new(
-//!     "AAPL",
-//!     AssetKind::Equity,
-//!     Some("BBG000B9XRY4"),
-//!     Some("US0378331005"),
-//!     Some(Exchange::NASDAQ),
-//! ).unwrap();
-//! assert!(aapl.is_globally_identified());
+//! let aapl = Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
+//!     .unwrap();
 //!
 //! // Build a validated history request
 //! let req = HistoryRequest::try_from_range(Range::M1, Interval::D1).unwrap();
@@ -46,8 +43,8 @@ pub mod core {
 #[cfg(feature = "domain")]
 pub mod domain {
     pub use paft_domain::{
-        AssetKind, Canonical, CanonicalError, DomainError, Exchange, Figi, Instrument, Isin,
-        MarketState, Period, StringCode, Symbol, canonicalize,
+        AssetKind, Canonical, CanonicalError, DomainError, Exchange, Figi, IdentifierScheme,
+        Instrument, Isin, MarketState, Period, SecurityId, StringCode, Symbol, canonicalize,
     };
     #[cfg(feature = "dataframe")]
     pub use paft_domain::{ToDataFrame, ToDataFrameVec};
@@ -85,10 +82,10 @@ pub mod aggregates {
     pub use paft_aggregates::{FastInfo, Info};
 }
 
-/// Namespaced access to `paft-polymarket` (feature-gated).
-#[cfg(feature = "polymarket")]
-pub mod polymarket {
-    pub use paft_polymarket::{Market, Token};
+/// Namespaced access to `paft-prediction` (feature-gated).
+#[cfg(feature = "prediction")]
+pub mod prediction {
+    pub use paft_prediction::{Market, Token};
 }
 
 /// Frequently used types for convenient imports.

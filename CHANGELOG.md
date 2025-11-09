@@ -12,11 +12,30 @@ All notable changes to this project will be documented in this file.
 - Money: implement `Hash` for `paft_money::Money` using currency and canonicalized amount.
 - Market: derive `Hash` for `paft_market::market::action::Action`.
   - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
+- Domain: new `IdentifierScheme` with `SecurityId`/`PredictionId` unifies instrument identifiers across securities and prediction markets.
+- Domain: new identifiers `EventID` and `OutcomeID` for prediction markets.
+- Domain: new constructors on `Instrument`: `from_prediction_market`, `from_figi`, plus `new(IdentifierScheme, AssetKind)`.
+- New crate `paft-prediction` (replaces `paft-polymarket`) exposing `Market` and `Token`; gated behind the `prediction` feature on the facade.
+
+### Breaking Change
+
+- Domain: `Instrument` now stores `id: IdentifierScheme` (replacing top-level `figi`, `isin`, `symbol`, `exchange`, `token_id`, `condition_id` fields). JSON shape reflects this (`{ "id": { "Security": { ... } } }` or `{ "id": { "Prediction": { ... } } }`).
+- Domain: removed legacy setters like `try_set_isin/try_set_figi` and the `try_new` constructor; use `from_symbol[_and_exchange]`, `from_figi`, `from_prediction_market`, or `Instrument::new`.
 
 ### Dependencies
 
 - Bump df-derive to v0.1.2
 - Bump polars to v0.52.0
+- Enable Polars `fmt` feature in `paft-domain` for better DataFrame display; this pulls `comfy-table` (and transitively `crossterm`, `unicode-width`) at build time.
+
+### Changed
+
+- Facade: `full` feature now includes `prediction`.
+- Market: `DownloadResponse::iter_by_symbol()` now omits prediction instruments (only yields security symbols), preserving symbol-centric semantics.
+
+### Documentation
+
+- Updated `paft` and `paft-domain` READMEs and examples to use `IdentifierScheme`, `SecurityId`, `EventID`/`OutcomeID`, and the new `Instrument` constructors.
 
 ## [0.7.1] - 2025-10-31
 

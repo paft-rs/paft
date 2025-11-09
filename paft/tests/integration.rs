@@ -7,7 +7,8 @@ use iso_currency::Currency as IsoCurrency;
 use paft::market::MarketError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
-    Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range, SearchRequest, Symbol,
+    IdentifierScheme, Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range,
+    SearchRequest, Symbol,
 };
 use paft_money::Decimal;
 use std::str::FromStr;
@@ -25,17 +26,14 @@ fn end_to_end_workflow() {
         .unwrap();
 
     // 2. Create an instrument from search results
-    let instrument = Instrument::try_new(
-        "AAPL",
-        AssetKind::Equity,
-        Some("BBG000B9XRY4"),
-        None,
-        Some(Exchange::NASDAQ),
-        None,
-        None,
-    )
-    .expect("valid instrument");
-    assert_eq!(instrument.symbol().as_str(), "AAPL");
+    let instrument =
+        Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
+            .expect("valid instrument");
+    let inst_symbol = match instrument.id() {
+        IdentifierScheme::Security(sec) => sec.symbol.as_str(),
+        IdentifierScheme::Prediction(_) => unreachable!(),
+    };
+    assert_eq!(inst_symbol, "AAPL");
     assert_eq!(instrument.kind(), &AssetKind::Equity);
 
     // 3. Create a history request
@@ -120,8 +118,12 @@ fn end_to_end_workflow() {
     };
 
     // Verify all data is consistent
-    assert_eq!(quote.symbol.as_str(), instrument.symbol().as_str());
-    assert_eq!(quote_update.symbol.as_str(), instrument.symbol().as_str());
+    let inst_symbol = match instrument.id() {
+        IdentifierScheme::Security(sec) => sec.symbol.as_str(),
+        IdentifierScheme::Prediction(_) => unreachable!(),
+    };
+    assert_eq!(quote.symbol.as_str(), inst_symbol);
+    assert_eq!(quote_update.symbol.as_str(), inst_symbol);
     assert_eq!(history_response.candles[0].close, quote.price.unwrap());
 }
 
@@ -251,14 +253,10 @@ fn asset_kind_workflow() {
 
     // Test that each asset kind can be used in an instrument
     for asset_kind in asset_kinds {
-        let instrument = Instrument::try_new(
+        let instrument = Instrument::from_symbol_and_exchange(
             "TEST",
+            Exchange::try_from_str("TEST").unwrap(),
             asset_kind,
-            Some("BBG000B9XRY4"),
-            None,
-            Some(Exchange::try_from_str("TEST").unwrap()),
-            None,
-            None,
         )
         .expect("valid instrument for asset kind");
         assert_eq!(instrument.kind(), &asset_kind);

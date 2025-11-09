@@ -1,7 +1,8 @@
 //! Core domain types for the paft ecosystem.
 //!
 //! This crate defines strongly-typed primitives for instruments, exchanges,
-//! market sessions, identifiers (including an opaque `Symbol`), and financial
+//! market sessions, identifiers for both traditional securities and prediction
+//! markets (`Symbol`, `Figi`, `Isin`, `EventID`, `OutcomeID`), and financial
 //! periods used across the paft ecosystem. Types are designed to be:
 //! - Canonical and stable in string form (for serde, display, and storage)
 //! - Liberal in what they accept when parsing (aliases, case-insensitivity),
@@ -11,7 +12,7 @@
 //! # Quickstart
 //!
 //! ```rust
-//! use paft_domain::{AssetKind, Exchange, Instrument, Period, Symbol};
+//! use paft_domain::{AssetKind, Exchange, IdentifierScheme, Instrument, Period, Symbol};
 //!
 //! // Create an instrument from a symbol and kind
 //! let symbol = Symbol::new("AAPL").unwrap();
@@ -21,8 +22,13 @@
 //!     AssetKind::Equity,
 //! )
 //! .unwrap();
-//! assert_eq!(aapl.symbol().as_str(), symbol.as_str());
-//! assert!(aapl.exchange().is_some());
+//! match aapl.id() {
+//!     IdentifierScheme::Security(sec) => {
+//!         assert_eq!(sec.symbol.as_str(), symbol.as_str());
+//!         assert!(sec.exchange.is_some());
+//!     }
+//!     IdentifierScheme::Prediction(_) => unreachable!(),
+//! }
 //!
 //! // Parse financial periods from flexible inputs and get canonical form
 //! let q4 = "2023-Q4".parse::<Period>().unwrap();
@@ -37,15 +43,15 @@
 //! applicable.
 //!
 //! # Feature flags
-//! - `rust-decimal` (default): use `paft-money` with `rust-decimal`
-//! - `bigdecimal`: use `paft-money` with `bigdecimal`
-//! - `dataframe`: enable `paft-utils` dataframe traits for convenient export
+//! - `tracing`: enable lightweight instrumentation on constructors and validators
+//! - `dataframe`: enable `paft-utils` `DataFrame` traits for convenient export
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
 pub mod error;
 pub mod exchange;
+pub mod identifier;
 pub mod identifiers;
 pub mod instrument;
 pub mod market_state;
@@ -53,7 +59,8 @@ pub mod period;
 
 pub use error::DomainError;
 pub use exchange::Exchange;
-pub use identifiers::{ConditionID, Figi, Isin, Symbol, TokenID};
+pub use identifier::{IdentifierScheme, PredictionId, SecurityId};
+pub use identifiers::{EventID, Figi, Isin, OutcomeID, Symbol};
 pub use instrument::{AssetKind, Instrument};
 pub use market_state::MarketState;
 pub use period::Period;

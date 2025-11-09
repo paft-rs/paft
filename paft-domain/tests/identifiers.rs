@@ -1,4 +1,4 @@
-use paft_domain::{ConditionID, DomainError, Figi, Isin, Symbol, TokenID};
+use paft_domain::{DomainError, EventID, Figi, Isin, OutcomeID, Symbol};
 use serde_json::{from_str, to_string};
 
 #[test]
@@ -147,90 +147,82 @@ fn figi_rejects_bad_checksum() {
     assert!(matches!(err, DomainError::InvalidFigi { .. }));
 }
 
-// ConditionID tests
+// EventID tests
 
 #[test]
-fn condition_id_accepts_valid_examples() {
+fn event_id_accepts_valid_examples() {
     let valid_ids = [
         "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de",
         "0x8901bf367fcb32b406b54e8deb1bcb3320fdc4a994bd7f0a7a1fe72956dc1c9a",
     ];
 
     for id in valid_ids {
-        let result = ConditionID::new(id);
-        assert!(
-            result.is_ok(),
-            "Valid condition ID should be accepted: {id}"
-        );
+        let result = EventID::new(id);
+        assert!(result.is_ok(), "Valid Event ID should be accepted: {id}");
     }
 }
 
 #[test]
-fn condition_id_rejects_empty_string() {
-    let result = ConditionID::new("");
+fn event_id_rejects_empty_string() {
+    let result = EventID::new("");
     assert!(result.is_err());
 }
 
 #[test]
-fn condition_id_rejects_wrong_length() {
-    let result =
-        ConditionID::new("0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085d");
+fn event_id_rejects_wrong_length() {
+    let result = EventID::new("0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085d");
     assert!(
         result.is_err(),
-        "ConditionID with wrong length should be rejected"
+        "Event ID with wrong length should be rejected"
     );
 }
 
 #[test]
-fn condition_id_rejects_missing_0x_prefix() {
-    let result =
-        ConditionID::new("5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de");
+fn event_id_rejects_missing_0x_prefix() {
+    let result = EventID::new("5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de");
     assert!(
         result.is_err(),
-        "ConditionID without 0x prefix should be rejected"
+        "Event ID without 0x prefix should be rejected"
     );
 }
 
 #[test]
-fn condition_id_rejects_invalid_hex_characters() {
-    let result =
-        ConditionID::new("0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085dg");
+fn event_id_rejects_invalid_hex_characters() {
+    let result = EventID::new("0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085dg");
     assert!(
         result.is_err(),
-        "ConditionID with invalid hex character should be rejected"
+        "Event ID with invalid hex character should be rejected"
     );
 }
 
 #[test]
-fn condition_id_accepts_uppercase_hex() {
-    let result =
-        ConditionID::new("0x5EED579FF6763914D78A966C83473BA2485AC8910D0A0914EEF6D9FCB33085DE");
+fn event_id_accepts_uppercase_hex() {
+    let result = EventID::new("0x5EED579FF6763914D78A966C83473BA2485AC8910D0A0914EEF6D9FCB33085DE");
     assert!(
         result.is_ok(),
-        "ConditionID with uppercase hex should be accepted"
+        "Event ID with uppercase hex should be accepted"
     );
 }
 
 #[test]
-fn condition_id_accepts_mixed_case_hex() {
-    let result =
-        ConditionID::new("0x5eed579fF6763914D78a966c83473bA2485ac8910d0a0914eef6D9fcb33085de");
+fn event_id_accepts_mixed_case_hex() {
+    let result = EventID::new("0x5eed579fF6763914D78a966c83473bA2485ac8910d0a0914eef6D9fcb33085de");
     assert!(
         result.is_ok(),
-        "ConditionID with mixed case hex should be accepted"
+        "Event ID with mixed case hex should be accepted"
     );
 }
 
 #[test]
-fn condition_id_display_and_as_ref_consistency() {
+fn event_id_display_and_as_ref_consistency() {
     let id_str = "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de";
-    let condition_id = ConditionID::new(id_str).unwrap();
+    let event_id = EventID::new(id_str).unwrap();
 
-    assert_eq!(condition_id.as_ref(), id_str);
-    assert_eq!(condition_id.to_string(), id_str);
+    assert_eq!(event_id.as_ref(), id_str);
+    assert_eq!(event_id.to_string(), id_str);
 }
 
-// TokenID tests
+// OutcomeID tests
 
 #[test]
 fn token_id_accepts_valid_examples() {
@@ -242,77 +234,77 @@ fn token_id_accepts_valid_examples() {
     ];
 
     for id in valid_ids {
-        let result = TokenID::new(id);
-        assert!(result.is_ok(), "Valid token ID should be accepted: {id}");
+        let result = OutcomeID::new(id);
+        assert!(result.is_ok(), "Valid Outcome ID should be accepted: {id}");
         assert_eq!(result.unwrap().as_ref(), id);
     }
 }
 
 #[test]
 fn token_id_accepts_single_digit() {
-    let result = TokenID::new("0");
-    assert!(result.is_ok(), "Single digit token ID should be accepted");
+    let result = OutcomeID::new("0");
+    assert!(result.is_ok(), "Single digit Outcome ID should be accepted");
 }
 
 #[test]
 fn token_id_accepts_max_length() {
     let max_length_id = "1".repeat(78);
-    let result = TokenID::new(&max_length_id);
+    let result = OutcomeID::new(&max_length_id);
     assert!(
         result.is_ok(),
-        "Token ID at max length (78) should be accepted"
+        "Outcome ID at max length (78) should be accepted"
     );
 }
 
 #[test]
 fn token_id_rejects_empty_string() {
-    let result = TokenID::new("");
-    assert!(result.is_err(), "Empty token ID should be rejected");
+    let result = OutcomeID::new("");
+    assert!(result.is_err(), "Empty Outcome ID should be rejected");
 }
 
 #[test]
 fn token_id_rejects_exceeds_max_length() {
     let too_long_id = "1".repeat(79);
-    let result = TokenID::new(&too_long_id);
+    let result = OutcomeID::new(&too_long_id);
     assert!(
         result.is_err(),
-        "Token ID exceeding max length should be rejected"
+        "Outcome ID exceeding max length should be rejected"
     );
 }
 
 #[test]
 fn token_id_rejects_leading_plus() {
-    let result = TokenID::new("+123");
+    let result = OutcomeID::new("+123");
     assert!(
         result.is_err(),
-        "Token ID with leading + should be rejected"
+        "Outcome ID with leading + should be rejected"
     );
 }
 
 #[test]
 fn token_id_rejects_leading_minus() {
-    let result = TokenID::new("-123");
+    let result = OutcomeID::new("-123");
     assert!(
         result.is_err(),
-        "Token ID with leading - should be rejected"
+        "Outcome ID with leading - should be rejected"
     );
 }
 
 #[test]
 fn token_id_rejects_leading_whitespace() {
-    let result = TokenID::new(" 123");
+    let result = OutcomeID::new(" 123");
     assert!(
         result.is_err(),
-        "Token ID with leading space should be rejected"
+        "Outcome ID with leading space should be rejected"
     );
 }
 
 #[test]
 fn token_id_rejects_leading_tab() {
-    let result = TokenID::new("\t123");
+    let result = OutcomeID::new("\t123");
     assert!(
         result.is_err(),
-        "Token ID with leading tab should be rejected"
+        "Outcome ID with leading tab should be rejected"
     );
 }
 
@@ -321,37 +313,37 @@ fn token_id_rejects_non_digit_characters() {
     let invalid_ids = vec!["12a34", "123.456", "123e5", "123_456", "123-456"];
 
     for id in invalid_ids {
-        let result = TokenID::new(id);
+        let result = OutcomeID::new(id);
         assert!(
             result.is_err(),
-            "Token ID with non-digit character should be rejected: {id}"
+            "Outcome ID with non-digit character should be rejected: {id}"
         );
     }
 }
 
 #[test]
 fn token_id_rejects_trailing_whitespace() {
-    let result = TokenID::new("123 ");
+    let result = OutcomeID::new("123 ");
     assert!(
         result.is_err(),
-        "Token ID with trailing space should be rejected"
+        "Outcome ID with trailing space should be rejected"
     );
 }
 
 #[test]
 fn token_id_rejects_embedded_whitespace() {
-    let result = TokenID::new("123 456");
+    let result = OutcomeID::new("123 456");
     assert!(
         result.is_err(),
-        "Token ID with embedded space should be rejected"
+        "Outcome ID with embedded space should be rejected"
     );
 }
 
 #[test]
 fn token_id_display_and_as_ref_consistency() {
     let id_str = "12345";
-    let token_id = TokenID::new(id_str).unwrap();
+    let outcome_id = OutcomeID::new(id_str).unwrap();
 
-    assert_eq!(token_id.as_ref(), id_str);
-    assert_eq!(token_id.to_string(), id_str);
+    assert_eq!(outcome_id.as_ref(), id_str);
+    assert_eq!(outcome_id.to_string(), id_str);
 }

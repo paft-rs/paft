@@ -5,7 +5,7 @@
 //! access to while encouraging the use of better identifiers when available.
 
 #[cfg(feature = "domain")]
-use paft::prelude::{AssetKind, Exchange, Instrument};
+use paft::prelude::{AssetKind, Exchange, Figi, IdentifierScheme, Instrument, Isin, Symbol};
 
 #[cfg(feature = "domain")]
 use std::collections::HashMap;
@@ -35,80 +35,129 @@ fn run_example() {
         Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
             .expect("valid NASDAQ symbol");
 
-    println!("   Symbol: {}", generic_instrument.symbol());
-    println!(
-        "   Exchange: {}",
-        generic_instrument.exchange().map_or("-", Exchange::code)
-    );
+    let symbol = match generic_instrument.id() {
+        IdentifierScheme::Security(s) => s.symbol.to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   Symbol: {symbol}");
+    let exchange = match generic_instrument.id() {
+        IdentifierScheme::Security(s) => {
+            s.exchange.as_ref().map_or("-", Exchange::code).to_string()
+        }
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   Exchange: {exchange}");
     println!("   Unique Key: {}", generic_instrument.unique_key());
-    println!(
-        "   Globally Identified: {}",
-        generic_instrument.is_globally_identified()
-    );
-    println!("   Has FIGI: {}", generic_instrument.has_figi());
-    println!("   Has ISIN: {}", generic_instrument.has_isin());
+    let globally_identified = match generic_instrument.id() {
+        IdentifierScheme::Security(s) => s.figi.is_some() || s.isin.is_some(),
+        IdentifierScheme::Prediction(_) => false,
+    };
+    println!("   Globally Identified: {globally_identified}");
     println!();
 
     // Example 2: Professional data provider (all identifiers)
     println!("2. Professional Data Provider (All Identifiers):");
-    let professional_instrument = Instrument::try_new(
-        "AAPL",
-        AssetKind::Equity,
-        Some("BBG000B9XRY4"), // FIGI
-        Some("US0378331005"), // ISIN
-        Some(Exchange::NASDAQ),
-        None,
-        None,
-    )
-    .expect("valid professional instrument");
+    let professional_instrument = {
+        let symbol = Symbol::new("AAPL").unwrap();
+        let figi = Figi::new("BBG000B9XRY4").unwrap();
+        let isin = Isin::new("US0378331005").unwrap();
+        let id = paft_domain::IdentifierScheme::Security(paft_domain::SecurityId {
+            symbol,
+            exchange: Some(Exchange::NASDAQ),
+            figi: Some(figi),
+            isin: Some(isin),
+        });
+        Instrument::new(id, AssetKind::Equity)
+    };
 
-    println!("   Symbol: {}", professional_instrument.symbol());
-    println!(
-        "   FIGI: {}",
-        professional_instrument.figi_str().unwrap_or("-")
-    );
-    println!(
-        "   ISIN: {}",
-        professional_instrument.isin_str().unwrap_or("-")
-    );
-    println!(
-        "   Exchange: {}",
-        professional_instrument
-            .exchange()
-            .map_or("-", Exchange::code)
-    );
+    let symbol = match professional_instrument.id() {
+        IdentifierScheme::Security(s) => s.symbol.to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   Symbol: {symbol}");
+    let figi = match professional_instrument.id() {
+        IdentifierScheme::Security(s) => s
+            .figi
+            .as_ref()
+            .map_or("-", std::convert::AsRef::as_ref)
+            .to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   FIGI: {figi}");
+    let isin = match professional_instrument.id() {
+        IdentifierScheme::Security(s) => s
+            .isin
+            .as_ref()
+            .map_or("-", std::convert::AsRef::as_ref)
+            .to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   ISIN: {isin}");
+    let exchange = match professional_instrument.id() {
+        IdentifierScheme::Security(s) => {
+            s.exchange.as_ref().map_or("-", Exchange::code).to_string()
+        }
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   Exchange: {exchange}");
     println!("   Unique Key: {}", professional_instrument.unique_key());
-    println!(
-        "   Globally Identified: {}",
-        professional_instrument.is_globally_identified()
-    );
+    let globally_identified = match professional_instrument.id() {
+        IdentifierScheme::Security(s) => s.figi.is_some() || s.isin.is_some(),
+        IdentifierScheme::Prediction(_) => false,
+    };
+    println!("   Globally Identified: {globally_identified}");
     println!();
 
     // Example 3: European provider (ISIN + symbol + exchange)
     println!("3. European Provider (ISIN + Symbol + Exchange):");
-    let european_instrument = Instrument::try_new(
-        "ASML",
-        AssetKind::Equity,
-        None,                 // No FIGI
-        Some("NL0010273215"), // ISIN
-        Some(Exchange::Euronext),
-        None,
-        None,
-    )
-    .expect("valid european instrument");
+    let european_instrument = {
+        let symbol = Symbol::new("ASML").unwrap();
+        let isin = Isin::new("NL0010273215").unwrap();
+        let id = paft_domain::IdentifierScheme::Security(paft_domain::SecurityId {
+            symbol,
+            exchange: Some(Exchange::Euronext),
+            figi: None,
+            isin: Some(isin),
+        });
+        Instrument::new(id, AssetKind::Equity)
+    };
 
-    println!("   Symbol: {}", european_instrument.symbol());
-    println!("   FIGI: {}", european_instrument.figi_str().unwrap_or("-"));
-    println!("   ISIN: {}", european_instrument.isin_str().unwrap_or("-"));
-    println!(
-        "   Exchange: {}",
-        european_instrument.exchange().map_or("-", Exchange::code)
-    );
+    let symbol = match european_instrument.id() {
+        IdentifierScheme::Security(s) => s.symbol.to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   Symbol: {symbol}");
+    let figi = match european_instrument.id() {
+        IdentifierScheme::Security(s) => s
+            .figi
+            .as_ref()
+            .map_or("-", std::convert::AsRef::as_ref)
+            .to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   FIGI: {figi}");
+    let isin = match european_instrument.id() {
+        IdentifierScheme::Security(s) => s
+            .isin
+            .as_ref()
+            .map_or("-", std::convert::AsRef::as_ref)
+            .to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   ISIN: {isin}");
+    let exchange = match european_instrument.id() {
+        IdentifierScheme::Security(s) => {
+            s.exchange.as_ref().map_or("-", Exchange::code).to_string()
+        }
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   Exchange: {exchange}");
     println!("   Unique Key: {}", european_instrument.unique_key());
-    println!(
-        "   Globally Identified: {}",
-        european_instrument.is_globally_identified()
-    );
+    let globally_identified = match european_instrument.id() {
+        IdentifierScheme::Security(s) => s.figi.is_some() || s.isin.is_some(),
+        IdentifierScheme::Prediction(_) => false,
+    };
+    println!("   Globally Identified: {globally_identified}");
     println!();
 
     // Example 4: Minimal provider (symbol only)
@@ -116,18 +165,42 @@ fn run_example() {
     let minimal_instrument =
         Instrument::from_symbol("BTC-USD", AssetKind::Crypto).expect("valid crypto symbol");
 
-    println!("   Symbol: {}", minimal_instrument.symbol());
-    println!("   FIGI: {}", minimal_instrument.figi_str().unwrap_or("-"));
-    println!("   ISIN: {}", minimal_instrument.isin_str().unwrap_or("-"));
-    println!(
-        "   Exchange: {}",
-        minimal_instrument.exchange().map_or("-", Exchange::code)
-    );
+    let symbol = match minimal_instrument.id() {
+        IdentifierScheme::Security(s) => s.symbol.to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   Symbol: {symbol}");
+    let figi = match minimal_instrument.id() {
+        IdentifierScheme::Security(s) => s
+            .figi
+            .as_ref()
+            .map_or("-", std::convert::AsRef::as_ref)
+            .to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   FIGI: {figi}");
+    let isin = match minimal_instrument.id() {
+        IdentifierScheme::Security(s) => s
+            .isin
+            .as_ref()
+            .map_or("-", std::convert::AsRef::as_ref)
+            .to_string(),
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   ISIN: {isin}");
+    let exchange = match minimal_instrument.id() {
+        IdentifierScheme::Security(s) => {
+            s.exchange.as_ref().map_or("-", Exchange::code).to_string()
+        }
+        IdentifierScheme::Prediction(_) => "-".to_string(),
+    };
+    println!("   Exchange: {exchange}");
     println!("   Unique Key: {}", minimal_instrument.unique_key());
-    println!(
-        "   Globally Identified: {}",
-        minimal_instrument.is_globally_identified()
-    );
+    let globally_identified = match minimal_instrument.id() {
+        IdentifierScheme::Security(s) => s.figi.is_some() || s.isin.is_some(),
+        IdentifierScheme::Prediction(_) => false,
+    };
+    println!("   Globally Identified: {globally_identified}");
     println!();
 
     // Example 5: Demonstrating identifier prioritization

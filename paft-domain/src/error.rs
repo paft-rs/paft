@@ -43,21 +43,21 @@ pub enum DomainError {
         value: String,
     },
 
-    /// Invalid condition ID encountered while parsing or validating.
+    /// Invalid event ID encountered while parsing or validating.
     #[error(
-        "Invalid condition ID: '{value}' - expected 66 characters starting with '0x' followed by 64 hexadecimal characters"
+        "Invalid event ID: '{value}' - expected 66 characters starting with '0x' followed by 64 hexadecimal characters"
     )]
-    InvalidConditionId {
-        /// The original invalid condition ID input.
+    InvalidEventId {
+        /// The original invalid event ID input.
         value: String,
     },
 
-    /// Invalid token ID encountered while parsing or validating.
+    /// Invalid outcome ID encountered while parsing or validating.
     #[error(
-        "Invalid token ID: '{value}' - expected 1-78 ASCII digits with no leading +, -, or whitespace"
+        "Invalid outcome ID: '{value}' - expected 1-78 ASCII digits with no leading +, -, or whitespace"
     )]
-    InvalidTokenId {
-        /// The original invalid token ID input.
+    InvalidOutcomeId {
+        /// The original invalid outcome ID input.
         value: String,
     },
 }
