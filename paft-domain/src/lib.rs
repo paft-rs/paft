@@ -59,7 +59,7 @@ pub mod period;
 
 pub use error::DomainError;
 pub use exchange::Exchange;
-pub use identifier::{IdentifierScheme, PredictionId, SecurityId};
+pub use identifier::{IdentifierScheme, PredictionID, SecurityId};
 pub use identifiers::{EventID, Figi, Isin, OutcomeID, Symbol};
 pub use instrument::{AssetKind, Instrument};
 pub use market_state::MarketState;

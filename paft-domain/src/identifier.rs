@@ -49,7 +49,7 @@ impl SecurityId {
 /// Related identifiers for decentralized prediction market outcomes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-pub struct PredictionId {
+pub struct PredictionID {
     /// Unique ID for the event/question.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub event_id: EventID,
@@ -58,7 +58,7 @@ pub struct PredictionId {
     pub outcome_id: OutcomeID,
 }
 
-impl PredictionId {
+impl PredictionID {
     /// Returns a unique key for the prediction market instrument (`outcome_id`).
     #[must_use]
     pub fn unique_key(&self) -> Cow<'_, str> {
@@ -75,7 +75,7 @@ pub enum IdentifierScheme {
     /// Identifiers for traditional, exchange-traded securities.
     Security(SecurityId),
     /// Identifiers for decentralized prediction market outcomes.
-    Prediction(PredictionId),
+    Prediction(PredictionID),
 }
 impl IdentifierScheme {
     /// Returns the best unique key for this identifier scheme.

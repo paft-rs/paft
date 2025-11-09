@@ -1,7 +1,7 @@
 //! Instrument identifier and asset classification domain types.
 
 use super::Exchange;
-use crate::identifier::{IdentifierScheme, PredictionId, SecurityId};
+use crate::identifier::{IdentifierScheme, PredictionID, SecurityId};
 use crate::{
     DomainError,
     identifiers::{EventID, Figi, OutcomeID, Symbol},
@@ -198,7 +198,7 @@ impl Instrument {
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_prediction_market(event_id: &str, outcome_id: &str) -> Result<Self, DomainError> {
         Ok(Self {
-            id: IdentifierScheme::Prediction(PredictionId {
+            id: IdentifierScheme::Prediction(PredictionID {
                 event_id: EventID::new(event_id)?,
                 outcome_id: OutcomeID::new(outcome_id)?,
             }),

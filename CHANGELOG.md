@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.8.0] - 2025-11-04
+## [0.8.0] - 2025-11-XX
 
 ### Added
 
@@ -21,12 +21,6 @@ All notable changes to this project will be documented in this file.
 
 - Domain: `Instrument` now stores `id: IdentifierScheme` (replacing top-level `figi`, `isin`, `symbol`, `exchange`, `token_id`, `condition_id` fields). JSON shape reflects this (`{ "id": { "Security": { ... } } }` or `{ "id": { "Prediction": { ... } } }`).
 - Domain: removed legacy setters like `try_set_isin/try_set_figi` and the `try_new` constructor; use `from_symbol[_and_exchange]`, `from_figi`, `from_prediction_market`, or `Instrument::new`.
-
-### Dependencies
-
-- Bump df-derive to v0.1.2
-- Bump polars to v0.52.0
-- Enable Polars `fmt` feature in `paft-domain` for better DataFrame display; this pulls `comfy-table` (and transitively `crossterm`, `unicode-width`) at build time.
 
 ### Changed
 
