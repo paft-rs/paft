@@ -29,7 +29,7 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 
-- Updated `paft` and `paft-domain` READMEs and examples to use `IdentifierScheme`, `SecurityId`, `EventID`/`OutcomeID`, and the new `Instrument` constructors.
+- Updated `paft` and `paft-domain` READMEs and examples to use `IdentifierScheme`, `SecurityID`, `EventID`/`OutcomeID`, and the new `Instrument` constructors.
 
 ## [0.7.1] - 2025-10-31
 
