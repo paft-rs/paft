@@ -65,7 +65,9 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 
 ### Core Types
 
-- **Instruments & Identifiers**: `Instrument`, `AssetKind`, `Exchange`, `Isin`, `Figi`, `Period`
+- **Instruments & Identifiers**: `Instrument`, `AssetKind`, `Exchange`, `IdentifierScheme` (`SecurityId`, `PredictionId`)
+  - IDs: `Symbol`, `Figi`, `Isin`, `EventID`, `OutcomeID`
+  - Time periods: `Period`
 - **Market Data**: `Quote`, `QuoteUpdate`, `Candle`, `Action`, `MarketState`
 - **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `Interval`, `Range`
 - **Money & Currency**: `Money`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
@@ -77,13 +79,14 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 - **Options**: `OptionContract`, `OptionChain`, `OptionChainRequest`, `OptionExpirationsRequest`
 - **News & Search**: `NewsArticle`, `SearchRequest`, `SearchResponse`, `SearchResult`
 - **Downloads**: `DownloadResponse`
+- **Prediction Markets** (feature `prediction`): `Market`, `Token`
 - **Aggregates** (with `paft/aggregates`): `FastInfo`, `Info`
 - **Errors**: `Error`, `Result`
 
 ### Advanced Features
 
 - **DataFrame Support**: Optional Polars integration with `ToDataFrame` trait (via `df-derive` proc-macros; enable with the `dataframe` feature)
-- **Validated Identifiers**: `Isin` and `Figi` now always enforce checksum validation; invalid identifiers fail at construction and during serde.
+- **Validated Identifiers**: `Figi`/`Isin` enforce checksum validation; prediction IDs (`EventID`, `OutcomeID`) validate format and length. Invalid identifiers fail at construction and during serde.
 - **Flexible Enums**: Type-safe enums with fallback variants for unknown values
 - **Comprehensive Validation**: Built-in request validation and error handling
 - **Serialization**: Full serde support for JSON, CSV, and other formats
@@ -92,10 +95,11 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   - `paft/dataframe`: Enables DataFrame helpers and derives through the facade
   - `paft/panicking-money-ops` (opt-in): Enables ergonomic arithmetic operators on `Money` that panic on currency mismatch or division by zero. By default, operator overloads are disabled and you should use the safe `try_add`, `try_sub`, and `try_div` methods instead.
   - `paft/money-formatting` (opt-in): Locale‑aware money formatting and strict parsing APIs (re‑exports `Locale`/`LocalizedMoney`).
-- `paft/aggregates` (opt-in): Aggregated snapshot types (`FastInfo`, `Info`).
+  - `paft/prediction` (opt-in): Prediction market data models (`Market`, `Token`).
+  - `paft/aggregates` (opt-in): Aggregated snapshot types (`FastInfo`, `Info`).
   - `paft/bigdecimal` (opt-in): Switches the money backend to `BigDecimal`; `rust_decimal` is the implicit default.
   - `paft/tracing` (opt-in): Enables instrumentation via `tracing` across the workspace; zero-cost when disabled; no subscriber bundled; propagates to member crates.
-  - `paft/full`: Convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, and `dataframe`.
+  - `paft/full`: Convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, `prediction`, and `dataframe`.
 
   To enable panicking operators via the `paft` facade:
 
@@ -182,6 +186,7 @@ The paft ecosystem is designed around interoperable layers that work together to
 - **`paft-market`** - Market data types, requests, and responses.
 - **`paft-fundamentals`** - Fundamentals types (financial statements, ESG, holders, analysis helpers).
 - **`paft-aggregates`** - Aggregated snapshot types for instrument rollups.
+- **`paft-prediction`** - Prediction market data models (`Market`, `Token`), re-exported via the facade under the `prediction` feature.
 - **`paft-money`** - Currency and money primitives with ISO 4217 integration, safe arithmetic, and pluggable decimal backends.
 - **`paft-utils`** - Canonical string utilities and DataFrame traits used across the workspace.
 - **`paft-core`** - Infrastructure utilities and serde helpers used internally by the ecosystem.
