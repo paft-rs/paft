@@ -2,7 +2,7 @@
 use chrono::{NaiveDate, TimeZone, Utc};
 use chrono_tz::UTC as TzUtc;
 use iso_currency::Currency as IsoCurrency;
-use paft_domain::{AssetKind, Exchange, Instrument, Symbol};
+use paft_domain::{AssetKind, Exchange, Instrument};
 use paft_market::{
     market::{
         action::Action,
@@ -29,7 +29,7 @@ fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
 #[test]
 fn search_result_to_dataframe() {
     let result = SearchResult {
-        symbol: Symbol::new("AAPL").unwrap(),
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
         exchange: Some(Exchange::NASDAQ),
         kind: AssetKind::Equity,
@@ -42,7 +42,7 @@ fn search_result_to_dataframe() {
 #[test]
 fn vec_quote_to_dataframe_smoke() {
     let quotes = [Quote {
-        symbol: Symbol::new("AAPL").unwrap(),
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         shortname: Some("Apple Inc.".to_string()),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
@@ -53,13 +53,13 @@ fn vec_quote_to_dataframe_smoke() {
 
     let df = quotes.to_dataframe().unwrap();
     let cols = df.get_column_names();
-    assert!(cols.iter().any(|c| c.as_str() == "symbol"));
+    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
 }
 
 #[test]
 fn quote_to_dataframe_smoke() {
     let quote = Quote {
-        symbol: Symbol::new("AAPL").unwrap(),
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         shortname: Some("Apple Inc.".to_string()),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
@@ -70,7 +70,7 @@ fn quote_to_dataframe_smoke() {
 
     let df = quote.to_dataframe().unwrap();
     let cols = df.get_column_names();
-    assert!(cols.iter().any(|c| c.as_str() == "symbol"));
+    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
     assert_eq!(df.height(), 1);
 }
 
@@ -78,7 +78,7 @@ fn quote_to_dataframe_smoke() {
 fn quote_update_to_dataframe_smoke() {
     use paft_market::market::quote::QuoteUpdate;
     let update = QuoteUpdate {
-        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
         volume: None,
@@ -87,7 +87,7 @@ fn quote_update_to_dataframe_smoke() {
 
     let df = update.to_dataframe().unwrap();
     let cols = df.get_column_names();
-    assert!(cols.iter().any(|c| c.as_str() == "symbol"));
+    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
 }
 
 #[test]
@@ -120,7 +120,7 @@ fn option_greeks_to_dataframe() {
 
 fn sample_contract() -> OptionContract {
     OptionContract {
-        contract_symbol: Symbol::new("AAPL240621C00150000").unwrap(),
+        instrument: Instrument::from_symbol("AAPL240621C00150000", AssetKind::Option).unwrap(),
         strike: usd(150),
         price: Some(usd(5)),
         bid: Some(usd(4)),

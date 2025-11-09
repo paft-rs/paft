@@ -15,6 +15,7 @@ use paft_utils::dataframe::ToDataFrame;
 /// Snapshot quote data for an instrument at a single point in time.
 pub struct Quote {
     /// Instrument identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Short display name.
     pub shortname: Option<String>,
@@ -37,6 +38,7 @@ pub struct Quote {
 /// Incremental update for an instrument during streaming sessions.
 pub struct QuoteUpdate {
     /// Instrument identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Last traded price, if present.
     pub price: Option<Money>,

@@ -12,6 +12,7 @@ use paft_domain::{AssetKind, Exchange, Instrument};
 /// A single search result item.
 pub struct SearchResult {
     /// Instrument identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Display name.
     pub name: Option<String>,

@@ -8,7 +8,7 @@ use paft::market::MarketError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
     IdentifierScheme, Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range,
-    SearchRequest, Symbol,
+    SearchRequest,
 };
 use paft_money::Decimal;
 use std::str::FromStr;
@@ -95,7 +95,7 @@ fn end_to_end_workflow() {
 
     // 5. Create a quote
     let quote = Quote {
-        symbol: Symbol::new("AAPL").unwrap(),
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         shortname: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(105), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
@@ -108,7 +108,7 @@ fn end_to_end_workflow() {
 
     // 6. Create a quote update
     let quote_update = QuoteUpdate {
-        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: Some(Money::new(Decimal::from(106), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap(),
@@ -122,8 +122,8 @@ fn end_to_end_workflow() {
         IdentifierScheme::Security(sec) => sec.symbol.as_str(),
         IdentifierScheme::Prediction(_) => unreachable!(),
     };
-    assert_eq!(quote.symbol.as_str(), inst_symbol);
-    assert_eq!(quote_update.symbol.unique_key().as_ref(), inst_symbol);
+    assert_eq!(quote.instrument.unique_key().as_ref(), inst_symbol);
+    assert_eq!(quote_update.instrument.unique_key().as_ref(), inst_symbol);
     assert_eq!(history_response.candles[0].close, quote.price.unwrap());
 }
 
@@ -205,7 +205,7 @@ fn serialization_workflow() {
 
     // 3. Create and serialize a quote
     let quote = Quote {
-        symbol: Symbol::new("AAPL").unwrap(),
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         shortname: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(

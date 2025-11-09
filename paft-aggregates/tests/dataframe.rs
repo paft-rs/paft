@@ -2,7 +2,7 @@
 use chrono::{NaiveDate, TimeZone, Utc};
 use iso_currency::Currency as IsoCurrency;
 use paft_aggregates::info::{FastInfo, Info};
-use paft_domain::{Exchange, Isin, MarketState, Symbol};
+use paft_domain::{AssetKind, Exchange, Instrument, Isin, MarketState};
 use paft_money::{Currency, Decimal, Money};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
@@ -13,7 +13,7 @@ fn usd(amount: i64) -> Money {
 #[test]
 fn fast_info_to_dataframe() {
     let info = FastInfo {
-        symbol: Symbol::new("AAPL").unwrap(),
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -30,7 +30,7 @@ fn fast_info_to_dataframe() {
 #[test]
 fn info_vec_to_dataframe() {
     let base = Info {
-        symbol: Symbol::new("AAPL").unwrap(),
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
         isin: Some(Isin::new("US0378331005").unwrap()),
         exchange: Some(Exchange::NASDAQ),
@@ -69,6 +69,6 @@ fn info_vec_to_dataframe() {
     let df = infos.to_dataframe().unwrap();
     assert_eq!(df.height(), 2);
     let columns = df.get_column_names();
-    assert!(columns.iter().any(|c| c.as_str() == "symbol"));
+    assert!(columns.iter().any(|c| c.as_str() == "instrument"));
     assert!(columns.iter().any(|c| c.as_str() == "market_state"));
 }

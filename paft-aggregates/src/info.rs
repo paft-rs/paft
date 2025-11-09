@@ -27,6 +27,7 @@ use serde::{Deserialize, Serialize};
 /// extended snapshots, see [`Info`].
 pub struct FastInfo {
     /// Primary instrument as provided by the data source.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Human-friendly instrument name.
     pub name: Option<String>,
@@ -57,6 +58,7 @@ pub struct FastInfo {
 pub struct Info {
     // Identity
     /// Primary instrument as provided by the data source.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Human-friendly instrument name.
     pub name: Option<String>,
