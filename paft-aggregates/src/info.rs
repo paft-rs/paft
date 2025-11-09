@@ -12,23 +12,22 @@
 use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
-use paft_domain::{Exchange, Isin, MarketState, Symbol};
+use paft_domain::{Exchange, Instrument, Isin, MarketState};
 use paft_fundamentals::{EsgScores, PriceTarget, RecommendationSummary};
 use paft_money::{Currency, Money};
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Lightweight snapshot of commonly requested fields for an instrument.
 ///
 /// Prefer `FastInfo` for list views and latency-sensitive paths. For
 /// extended snapshots, see [`Info`].
 pub struct FastInfo {
-    /// Primary trading symbol/ticker as provided by the data source.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub symbol: Symbol,
+    /// Primary instrument as provided by the data source.
+    pub instrument: Instrument,
     /// Human-friendly instrument name.
     pub name: Option<String>,
     /// Primary listing exchange, if known.
@@ -48,7 +47,7 @@ pub struct FastInfo {
     pub volume: Option<u64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Detailed instrument profile and market snapshot.
 ///
@@ -57,9 +56,8 @@ pub struct FastInfo {
 /// optional to accommodate partially populated data from upstream sources.
 pub struct Info {
     // Identity
-    /// Primary trading symbol/ticker as provided by the data source.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub symbol: Symbol,
+    /// Primary instrument as provided by the data source.
+    pub instrument: Instrument,
     /// Human-friendly instrument name.
     pub name: Option<String>,
     /// International Securities Identification Number.

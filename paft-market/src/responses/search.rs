@@ -5,18 +5,17 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 
-use paft_domain::{AssetKind, Exchange, Symbol};
+use paft_domain::{AssetKind, Exchange, Instrument};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single search result item.
 pub struct SearchResult {
-    /// Symbol identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub symbol: Symbol,
+    /// Instrument identifier.
+    pub instrument: Instrument,
     /// Display name.
     pub name: Option<String>,
-    /// Exchange identifier with canonical variants and extensible fallback.
+    /// Exchange identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub exchange: Option<Exchange>,
     /// Classified asset kind.

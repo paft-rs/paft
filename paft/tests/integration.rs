@@ -108,7 +108,7 @@ fn end_to_end_workflow() {
 
     // 6. Create a quote update
     let quote_update = QuoteUpdate {
-        symbol: Symbol::new("AAPL").unwrap(),
+        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: Some(Money::new(Decimal::from(106), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap(),
@@ -123,7 +123,7 @@ fn end_to_end_workflow() {
         IdentifierScheme::Prediction(_) => unreachable!(),
     };
     assert_eq!(quote.symbol.as_str(), inst_symbol);
-    assert_eq!(quote_update.symbol.as_str(), inst_symbol);
+    assert_eq!(quote_update.symbol.unique_key().as_ref(), inst_symbol);
     assert_eq!(history_response.candles[0].close, quote.price.unwrap());
 }
 

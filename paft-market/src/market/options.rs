@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
-use paft_domain::Symbol;
-use paft_money::Money;
+use paft_domain::{Instrument, Symbol};
+use paft_money::{Decimal, Money};
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
 
@@ -30,9 +30,8 @@ pub struct OptionGreeks {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single option contract (call or put) at a given strike and expiration.
 pub struct OptionContract {
-    /// Provider-specific contract identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub contract_symbol: Symbol,
+    /// Instrument identifier.
+    pub instrument: Instrument,
     /// Strike price of the contract.
     pub strike: Money,
     /// Last traded price.
@@ -70,4 +69,27 @@ pub struct OptionChain {
     pub calls: Vec<OptionContract>,
     /// Put contracts.
     pub puts: Vec<OptionContract>,
+}
+
+/// A point-in-time update for an option contract.
+///
+/// This represents incremental changes to market data commonly used for options,
+/// such as bid/ask, last price, and implied volatility, keyed by the underlying
+/// symbol for routing and session filtering.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
+pub struct OptionUpdate {
+    /// Underlying instrument used for routing and monotonic filtering.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub instrument: Instrument,
+    /// Timestamp of the update.
+    pub ts: DateTime<Utc>,
+    /// Best bid for the contract, if available.
+    pub bid: Option<Money>,
+    /// Best ask for the contract, if available.
+    pub ask: Option<Money>,
+    /// Last traded price, if available.
+    pub last_price: Option<Money>,
+    /// Implied volatility estimate, if available.
+    pub implied_volatility: Option<Decimal>,
 }

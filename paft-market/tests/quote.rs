@@ -1,6 +1,6 @@
 use chrono::DateTime;
 use iso_currency::Currency as IsoCurrency;
-use paft_domain::{Exchange, MarketState, Symbol};
+use paft_domain::{AssetKind, Exchange, Instrument, MarketState, Symbol};
 use paft_market::market::quote::{Quote, QuoteUpdate};
 use paft_money::{Currency, Decimal, Money};
 use std::str::FromStr;
@@ -210,7 +210,7 @@ fn quote_money_fields() {
 #[test]
 fn quote_update_construction() {
     let update = QuoteUpdate {
-        symbol: Symbol::new("AAPL").unwrap(),
+        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(
@@ -223,7 +223,7 @@ fn quote_update_construction() {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
 
-    assert_eq!(update.symbol.as_str(), "AAPL");
+    assert_eq!(update.symbol.unique_key().as_ref(), "AAPL");
     assert_eq!(
         update.price,
         Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap(),)
@@ -244,14 +244,14 @@ fn quote_update_construction() {
 #[test]
 fn quote_update_partial_fields() {
     let update = QuoteUpdate {
-        symbol: Symbol::new("AAPL").unwrap(),
+        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: None,
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     };
 
-    assert_eq!(update.symbol.as_str(), "AAPL");
+    assert_eq!(update.symbol.unique_key().as_ref(), "AAPL");
     assert_eq!(
         update.price,
         Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap(),)
@@ -263,7 +263,7 @@ fn quote_update_partial_fields() {
 #[test]
 fn quote_update_clone() {
     let original = QuoteUpdate {
-        symbol: Symbol::new("AAPL").unwrap(),
+        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(
@@ -283,7 +283,7 @@ fn quote_update_clone() {
 #[test]
 fn quote_update_debug_formatting() {
     let update = QuoteUpdate {
-        symbol: Symbol::new("AAPL").unwrap(),
+        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(
@@ -350,7 +350,7 @@ fn quote_with_none_fields() {
 #[test]
 fn quote_update_serialization() {
     let update = QuoteUpdate {
-        symbol: Symbol::new("AAPL").unwrap(),
+        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(
@@ -371,7 +371,7 @@ fn quote_update_serialization() {
 #[test]
 fn quote_update_with_none_fields() {
     let update = QuoteUpdate {
-        symbol: Symbol::new("AAPL").unwrap(),
+        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: None,
         previous_close: None,
         volume: None,

@@ -2,7 +2,7 @@
 use chrono::{NaiveDate, TimeZone, Utc};
 use chrono_tz::UTC as TzUtc;
 use iso_currency::Currency as IsoCurrency;
-use paft_domain::{AssetKind, Exchange, Symbol};
+use paft_domain::{AssetKind, Exchange, Instrument, Symbol};
 use paft_market::{
     market::{
         action::Action,
@@ -78,7 +78,7 @@ fn quote_to_dataframe_smoke() {
 fn quote_update_to_dataframe_smoke() {
     use paft_market::market::quote::QuoteUpdate;
     let update = QuoteUpdate {
-        symbol: Symbol::new("AAPL").unwrap(),
+        symbol: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
         volume: None,
