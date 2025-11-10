@@ -1,8 +1,9 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
 use iso_currency::Currency as IsoCurrency;
+use paft_domain::{AssetKind, Instrument};
 use paft_market::market::action::Action;
-use paft_market::{Candle, HistoryMeta, HistoryResponse};
+use paft_market::{Candle, CandleUpdate, HistoryMeta, HistoryResponse, Interval};
 use paft_money::{Currency, Decimal, Money};
 use std::str::FromStr;
 
@@ -223,4 +224,44 @@ fn complex_nested_serialization() {
     let json = serde_json::to_string(&response).unwrap();
     let deserialized: HistoryResponse = serde_json::from_str(&json).unwrap();
     assert_eq!(response, deserialized);
+}
+
+#[test]
+fn candle_update_serialization() {
+    let instrument = Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap();
+    let candle = Candle {
+        ts: chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap(),
+        open: Money::new(
+            Decimal::from_str("150.0").unwrap(),
+            Currency::Iso(iso_currency::Currency::USD),
+        )
+        .unwrap(),
+        high: Money::new(
+            Decimal::from_str("155.0").unwrap(),
+            Currency::Iso(iso_currency::Currency::USD),
+        )
+        .unwrap(),
+        low: Money::new(
+            Decimal::from_str("148.0").unwrap(),
+            Currency::Iso(iso_currency::Currency::USD),
+        )
+        .unwrap(),
+        close: Money::new(
+            Decimal::from_str("152.0").unwrap(),
+            Currency::Iso(iso_currency::Currency::USD),
+        )
+        .unwrap(),
+        close_unadj: None,
+        volume: Some(2_500_000),
+    };
+    let update = CandleUpdate {
+        instrument,
+        interval: Interval::I1m,
+        candle,
+        is_final: true,
+    };
+
+    let json = serde_json::to_string(&update).unwrap();
+    let roundtrip: CandleUpdate = serde_json::from_str(&json).unwrap();
+    assert_eq!(update, roundtrip);
 }

@@ -69,7 +69,7 @@ pub use crate::market::requests::search::SearchRequest;
 #[cfg(feature = "market")]
 pub use crate::market::responses::download::DownloadResponse;
 #[cfg(feature = "market")]
-pub use crate::market::responses::history::{Candle, HistoryMeta, HistoryResponse};
+pub use crate::market::responses::history::{Candle, CandleUpdate, HistoryMeta, HistoryResponse};
 #[cfg(feature = "market")]
 pub use crate::market::responses::search::{SearchResponse, SearchResult};
 

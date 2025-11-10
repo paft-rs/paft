@@ -49,6 +49,6 @@ pub use requests::history::{HistoryRequest, HistoryRequestBuilder, Interval, Ran
 pub use requests::options::{OptionChainRequest, OptionExpirationsRequest};
 pub use requests::search::SearchRequest;
 pub use responses::download::DownloadResponse;
-pub use responses::history::{Candle, HistoryMeta, HistoryResponse};
+pub use responses::history::{Candle, CandleUpdate, HistoryMeta, HistoryResponse};
 pub use responses::options::OptionExpirationsResponse;
 pub use responses::search::{SearchResponse, SearchResult};

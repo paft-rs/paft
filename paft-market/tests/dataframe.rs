@@ -215,3 +215,76 @@ fn actions_to_dataframe() {
     let columns = df.get_column_names();
     assert!(columns.iter().any(|c| c.as_str() == "action_type"));
 }
+
+#[test]
+fn candle_update_to_dataframe_smoke() {
+    use paft_market::Interval;
+    use paft_market::responses::history::CandleUpdate;
+    let update = CandleUpdate {
+        instrument: paft_domain::Instrument::from_symbol("AAPL", paft_domain::AssetKind::Equity)
+            .unwrap(),
+        interval: Interval::I1m,
+        candle: Candle {
+            ts: sample_ts(1_700_000_000),
+            open: usd(150),
+            high: usd(155),
+            low: usd(148),
+            close: usd(152),
+            close_unadj: None,
+            volume: Some(2_500_000),
+        },
+        is_final: false,
+    };
+
+    let df = update.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+}
+
+#[test]
+fn vec_candle_update_to_dataframe_smoke() {
+    use paft_market::Interval;
+    use paft_market::responses::history::CandleUpdate;
+    let updates = [
+        CandleUpdate {
+            instrument: paft_domain::Instrument::from_symbol(
+                "AAPL",
+                paft_domain::AssetKind::Equity,
+            )
+            .unwrap(),
+            interval: Interval::I1m,
+            candle: Candle {
+                ts: sample_ts(1_700_000_000),
+                open: usd(150),
+                high: usd(155),
+                low: usd(148),
+                close: usd(152),
+                close_unadj: None,
+                volume: Some(2_500_000),
+            },
+            is_final: false,
+        },
+        CandleUpdate {
+            instrument: paft_domain::Instrument::from_symbol(
+                "AAPL",
+                paft_domain::AssetKind::Equity,
+            )
+            .unwrap(),
+            interval: Interval::I1m,
+            candle: Candle {
+                ts: sample_ts(1_700_000_060),
+                open: usd(152),
+                high: usd(156),
+                low: usd(149),
+                close: usd(154),
+                close_unadj: None,
+                volume: Some(1_000_000),
+            },
+            is_final: true,
+        },
+    ];
+
+    let df = updates.to_dataframe().unwrap();
+    assert_eq!(df.height(), 2);
+    let cols = df.get_column_names();
+    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
+}

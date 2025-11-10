@@ -1,4 +1,5 @@
 //! Historical data request types and helpers.
+use std::fmt::Display;
 
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
@@ -54,6 +55,12 @@ pub enum Range {
     Ytd,
     /// Maximum available
     Max,
+}
+
+impl Display for Range {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -130,6 +137,12 @@ pub enum Interval {
     Y5,
     /// 10 years
     Y10,
+}
+
+impl Display for Interval {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 
 impl Interval {

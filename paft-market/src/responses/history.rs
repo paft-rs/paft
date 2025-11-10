@@ -3,10 +3,12 @@
 use paft_money::Money;
 use serde::{Deserialize, Serialize};
 
+use crate::requests::history::Interval;
 use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
+use paft_domain::Instrument;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
 
@@ -32,6 +34,22 @@ pub struct Candle {
     pub close_unadj: Option<paft_money::Money>,
     /// Volume if available.
     pub volume: Option<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
+/// Streaming candle update event.
+pub struct CandleUpdate {
+    /// Instrument identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub instrument: Instrument,
+    /// Interval represented by the candle.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub interval: Interval,
+    /// The candle payload for the interval.
+    pub candle: Candle,
+    /// true when the bar is closed/final as per the upstream provider WebSocket
+    pub is_final: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
