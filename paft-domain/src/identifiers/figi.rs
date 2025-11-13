@@ -133,6 +133,6 @@ impl<'de> Deserialize<'de> for Figi {
         D: Deserializer<'de>,
     {
         let raw = String::deserialize(deserializer)?;
-        Self::new(&raw).map_err(de::Error::custom)
+        Self::try_from(raw).map_err(de::Error::custom)
     }
 }

@@ -1,10 +1,10 @@
 //! Generic prediction-market identifier newtypes.
 use crate::DomainError;
-use serde::{Deserialize, Serialize};
-use std::fmt;
+use serde::{Deserialize, Deserializer, Serialize, de};
+use std::{convert::TryFrom, fmt};
 
 /// Opaque wrapper for validated prediction event ID.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
 #[serde(transparent)]
 pub struct EventID(String);
 
@@ -17,27 +17,56 @@ impl EventID {
     /// # Errors
     /// Returns `DomainError::InvalidEventId` if validation fails.
     pub fn new(value: &str) -> Result<Self, DomainError> {
-        if value.len() != 66 {
-            return Err(DomainError::InvalidEventId {
-                value: value.to_string(),
-            });
-        }
-        if !value.starts_with("0x") {
-            return Err(DomainError::InvalidEventId {
-                value: value.to_string(),
-            });
-        }
-        for byte in value[2..].bytes() {
-            match byte {
-                b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F' => {}
-                _ => {
-                    return Err(DomainError::InvalidEventId {
-                        value: value.to_string(),
-                    });
-                }
+        validate_event_id(value)?;
+        Ok(Self(value.to_string()))
+    }
+}
+
+fn validate_event_id(value: &str) -> Result<(), DomainError> {
+    if value.len() != 66 {
+        return Err(DomainError::InvalidEventId {
+            value: value.to_string(),
+        });
+    }
+    if !value.starts_with("0x") {
+        return Err(DomainError::InvalidEventId {
+            value: value.to_string(),
+        });
+    }
+    for byte in value[2..].bytes() {
+        match byte {
+            b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F' => {}
+            _ => {
+                return Err(DomainError::InvalidEventId {
+                    value: value.to_string(),
+                });
             }
         }
-        Ok(Self(value.to_string()))
+    }
+    Ok(())
+}
+
+impl TryFrom<String> for EventID {
+    type Error = DomainError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        validate_event_id(&value)?;
+        Ok(Self(value))
+    }
+}
+
+impl From<EventID> for String {
+    fn from(id: EventID) -> Self {
+        id.0
+    }
+}
+
+impl<'de> Deserialize<'de> for EventID {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Self::try_from(raw).map_err(de::Error::custom)
     }
 }
 
@@ -54,7 +83,7 @@ impl fmt::Display for EventID {
 }
 
 /// Opaque wrapper for validated prediction outcome ID.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
 #[serde(transparent)]
 pub struct OutcomeID(String);
 
@@ -70,24 +99,53 @@ impl OutcomeID {
     /// # Errors
     /// Returns `DomainError::InvalidOutcomeId` if validation fails.
     pub fn new(value: &str) -> Result<Self, DomainError> {
-        if value.is_empty() || value.len() > 78 {
-            return Err(DomainError::InvalidOutcomeId {
-                value: value.to_string(),
-            });
-        }
-        if let Some(first_char) = value.chars().next()
-            && (first_char == '+' || first_char == '-' || first_char.is_whitespace())
-        {
-            return Err(DomainError::InvalidOutcomeId {
-                value: value.to_string(),
-            });
-        }
-        if !value.chars().all(|c| c.is_ascii_digit()) {
-            return Err(DomainError::InvalidOutcomeId {
-                value: value.to_string(),
-            });
-        }
+        validate_outcome_id(value)?;
         Ok(Self(value.to_string()))
+    }
+}
+
+fn validate_outcome_id(value: &str) -> Result<(), DomainError> {
+    if value.is_empty() || value.len() > 78 {
+        return Err(DomainError::InvalidOutcomeId {
+            value: value.to_string(),
+        });
+    }
+    if let Some(first_char) = value.chars().next()
+        && (first_char == '+' || first_char == '-' || first_char.is_whitespace())
+    {
+        return Err(DomainError::InvalidOutcomeId {
+            value: value.to_string(),
+        });
+    }
+    if !value.chars().all(|c| c.is_ascii_digit()) {
+        return Err(DomainError::InvalidOutcomeId {
+            value: value.to_string(),
+        });
+    }
+    Ok(())
+}
+
+impl TryFrom<String> for OutcomeID {
+    type Error = DomainError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        validate_outcome_id(&value)?;
+        Ok(Self(value))
+    }
+}
+
+impl From<OutcomeID> for String {
+    fn from(id: OutcomeID) -> Self {
+        id.0
+    }
+}
+
+impl<'de> Deserialize<'de> for OutcomeID {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Self::try_from(raw).map_err(de::Error::custom)
     }
 }
 
