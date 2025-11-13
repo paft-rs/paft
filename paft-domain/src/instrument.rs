@@ -206,6 +206,18 @@ impl Instrument {
         })
     }
 
+    /// Construct a new `Instrument` for a prediction market outcome using IDs.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug"))]
+    pub fn from_prediction_market_ids(event_id: &EventID, outcome_id: &OutcomeID) -> Self {
+        Self {
+            id: IdentifierScheme::Prediction(PredictionID {
+                event_id: event_id.clone(),
+                outcome_id: outcome_id.clone(),
+            }),
+            kind: AssetKind::PredictionMarket,
+        }
+    }
+
     /// Returns the best available unique identifier for this instrument.
     #[must_use]
     pub fn unique_key(&self) -> Cow<'_, str> {
