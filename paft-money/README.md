@@ -7,8 +7,9 @@ Currency and money primitives for the paft ecosystem.
 [![Docs.rs](https://docs.rs/paft-money/badge.svg)](https://docs.rs/paft-money)
 
 - `Currency` with ISO 4217 integration and extensible fallback
+- `decimal::*` facade offering backend-agnostic decimal helpers
+- `MoneyAmount` for high-precision values with optional currency hints
 - `Money` with safe arithmetic and explicit conversions via `ExchangeRate`
-- Backend-agnostic decimals (default `rust_decimal`, optional `bigdecimal` feature)
 - Runtime currency metadata overlays for non-ISO minor units (e.g., `XAU`, `XDR`)
 
 Install
@@ -49,6 +50,39 @@ Features
 - `dataframe`: Polars integration (`ToDataFrame`/`ToDataFrameVec`)
 - `panicking-money-ops`: opt-in operator overloading that panics on invalid operations
 - `money-formatting`: locale-aware formatting and strict parsing for `Money`
+
+Money layers
+------------
+
+Choose the level of structure you need:
+
+- `decimal::*` exposes helpers such as `parse_decimal`, `from_minor_units`, `zero`, and `one`
+- `MoneyAmount` keeps high-precision values with optional `Currency` hints and serde parity with `Decimal`
+- `Money` attaches a currency, enforces metadata-driven rounding, and remains settlement-safe
+
+```rust
+use iso_currency::Currency as IsoCurrency;
+use paft_money::{
+    decimal, Currency, Money, MoneyAmount, MoneyError, RoundingStrategy,
+};
+
+fn run() -> Result<(), MoneyError> {
+    let raw = decimal::from_minor_units(123_456, 4); // 12.3456
+    let amount = MoneyAmount::new(raw);
+    let shipping = MoneyAmount::from_str("1.25")?;
+    let subtotal = amount.add(&shipping);
+    let hinted = subtotal.with_currency_hint(Currency::Iso(IsoCurrency::USD));
+    let money = hinted.to_money_with(
+        Currency::Iso(IsoCurrency::USD),
+        RoundingStrategy::MidpointAwayFromZero,
+        None,
+    )?;
+    assert_eq!(money.format(), "13.60 USD");
+    Ok(())
+}
+
+run().unwrap();
+```
 
 Quickstart
 ----------

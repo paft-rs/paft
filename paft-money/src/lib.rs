@@ -50,6 +50,46 @@
 //! places so that `10^scale` fits inside an `i128` when performing
 //! conversions.
 //!
+//! # Money layers
+//!
+//! The crate exposes three complementary layers so you can opt into as much structure
+//! as you need:
+//! - [`decimal`]: backend-agnostic helpers such as [`decimal::parse_decimal`],
+//!   [`decimal::from_minor_units`], [`decimal::zero`], and [`decimal::one`].
+//! - [`MoneyAmount`]: a high-precision numeric wrapper with optional
+//!   [`Currency`] hints and lossless serde integration.
+//! - [`Money`]: a currency-attached value that enforces exponents,
+//!   metadata lookups, and settlement-ready rounding.
+//!
+//! ```rust
+//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::{
+//! #     decimal, Currency, Money, MoneyAmount, MoneyError,
+//! #     RoundingStrategy,
+//! # };
+//! # fn run() -> Result<(), MoneyError> {
+//! // Build a Decimal using the facade helpers.
+//! let raw = decimal::from_minor_units(123_456, 4); // 12.3456
+//!
+//! // Lift it into a MoneyAmount and combine with a parsed adjustment.
+//! let amount = MoneyAmount::new(raw);
+//! let adjustment = MoneyAmount::from_str("1.25")?;
+//! let subtotal = amount.add(&adjustment);
+//!
+//! // Optionally carry a currency hint for downstream consumers.
+//! let hinted = subtotal.with_currency_hint(Currency::Iso(IsoCurrency::USD));
+//!
+//! // Finalize into Money with explicit rounding rules.
+//! let settled = hinted.to_money_with(
+//!     Currency::Iso(IsoCurrency::USD),
+//!     RoundingStrategy::MidpointAwayFromZero,
+//!     None,
+//! )?;
+//! assert_eq!(settled.format(), "13.60 USD");
+//! # Ok(()) }
+//! # run().unwrap();
+//! ```
+//!
 //! # Quickstart
 //!
 //! Create money in ISO currencies, add and subtract safely, serialize with
@@ -161,6 +201,7 @@
 #![warn(missing_docs)]
 #![allow(clippy::cargo_common_metadata)]
 
+mod amount;
 #[cfg(feature = "money-formatting")]
 mod format;
 mod locale;
@@ -175,6 +216,7 @@ pub mod decimal;
 pub mod error;
 pub mod money;
 
+pub use amount::MoneyAmount;
 pub use currency::Currency;
 pub use currency_utils::{
     MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS, MinorUnitError, clear_currency_metadata,

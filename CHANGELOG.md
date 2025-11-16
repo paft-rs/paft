@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 - Market: expanded `requests::history::Interval` coverage and provided second/minute conversion helpers for the new variants.
 - Money: implement `Hash` for `paft_money::Money` using currency and canonicalized amount.
+- Money: add `MoneyAmount` for high-precision decimal values with optional currency hints, re-exporting the decimal facade to simplify construction and serde use.
 - Market: derive `Hash` for `paft_market::market::action::Action`.
   - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
 - Domain: new `IdentifierScheme` with `SecurityId`/`PredictionId` unifies instrument identifiers across securities and prediction markets.
@@ -30,6 +31,7 @@ All notable changes to this project will be documented in this file.
 ### Documentation
 
 - Updated `paft` and `paft-domain` READMEs and examples to use `IdentifierScheme`, `SecurityID`, `EventID`/`OutcomeID`, and the new `Instrument` constructors.
+- Documented `paft-money` layered usage with `MoneyAmount`, including README and crate-level examples of decimal facade helpers.
 
 ## [0.7.1] - 2025-10-31
 
