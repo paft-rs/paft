@@ -6,11 +6,15 @@ use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, Isin, MarketState};
 use paft_money::{Currency, Money};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
+use std::str::FromStr;
 
 fn usd(amount: i64) -> Money {
     Money::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD)).unwrap()
 }
 
+fn dec(value: &str) -> Decimal {
+    Decimal::from_str(value).unwrap()
+}
 #[test]
 fn fast_info_to_dataframe() {
     let info = FastInfo {
@@ -51,8 +55,8 @@ fn info_vec_to_dataframe() {
         market_cap: Some(usd(2_500_000)),
         shares_outstanding: Some(16_000_000),
         eps_ttm: Some(usd(6)),
-        pe_ttm: Some(25.0),
-        dividend_yield: Some(0.015),
+        pe_ttm: Some(dec("25")),
+        dividend_yield: Some(dec("0.015")),
         ex_dividend_date: Some(NaiveDate::from_ymd_opt(2024, 3, 1).unwrap()),
         price_target: None,
         recommendation_summary: None,

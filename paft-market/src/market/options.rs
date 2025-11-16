@@ -11,23 +11,23 @@ use paft_money::Money;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Primary first-order greeks for an option contract.
 pub struct OptionGreeks {
     /// Dimensionless change in option price for a 1.0 change in underlying price.
-    pub delta: Option<f64>,
+    pub delta: Option<Decimal>,
     /// Change in `delta` per 1.0 change in underlying price (1/price units).
-    pub gamma: Option<f64>,
+    pub gamma: Option<Decimal>,
     /// Change in option price per calendar day.
-    pub theta: Option<f64>,
+    pub theta: Option<Decimal>,
     /// Change in option price for a 1 percentage point (0.01) change in IV.
-    pub vega: Option<f64>,
+    pub vega: Option<Decimal>,
     /// Change in option price for a 1 percentage point (0.01) change in rate.
-    pub rho: Option<f64>,
+    pub rho: Option<Decimal>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single option contract (call or put) at a given strike and expiration.
 pub struct OptionContract {
@@ -47,7 +47,7 @@ pub struct OptionContract {
     /// Open interest at the time of fetch.
     pub open_interest: Option<u64>,
     /// Implied volatility as a fraction (e.g., 0.25 for 25%).
-    pub implied_volatility: Option<f64>,
+    pub implied_volatility: Option<Decimal>,
     /// Whether the option is currently in the money.
     pub in_the_money: bool,
     /// Canonical expiration calendar date.
@@ -63,7 +63,7 @@ pub struct OptionContract {
     pub greeks: Option<OptionGreeks>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A full option chain split into calls and puts.
 pub struct OptionChain {

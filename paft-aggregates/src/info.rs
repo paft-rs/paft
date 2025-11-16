@@ -12,6 +12,7 @@
 use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
+use paft_decimal::Decimal;
 use paft_domain::{Exchange, Instrument, Isin, MarketState};
 use paft_fundamentals::{EsgScores, PriceTarget, RecommendationSummary};
 use paft_money::{Currency, Money};
@@ -48,7 +49,7 @@ pub struct FastInfo {
     pub volume: Option<u64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Detailed instrument profile and market snapshot.
 ///
@@ -109,9 +110,9 @@ pub struct Info {
     /// Earnings per share, trailing twelve months.
     pub eps_ttm: Option<Money>,
     /// Price-to-earnings ratio, trailing twelve months.
-    pub pe_ttm: Option<f64>,
+    pub pe_ttm: Option<Decimal>,
     /// Dividend yield as a fraction (for example: `0.025` = 2.5%).
-    pub dividend_yield: Option<f64>, // 0.025 = 2.5%
+    pub dividend_yield: Option<Decimal>, // 0.025 = 2.5%
     /// Most recent ex-dividend date.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub ex_dividend_date: Option<NaiveDate>,

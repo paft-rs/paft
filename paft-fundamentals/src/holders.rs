@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 use paft_core::error::PaftError;
+use paft_decimal::Decimal;
 use paft_domain::Canonical;
 use paft_domain::Period;
 use paft_money::Money;
@@ -162,18 +163,18 @@ paft_core::string_enum_with_code!(
 
 paft_core::impl_display_via_code!(InsiderPosition);
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Summary percentages for major holder categories.
 pub struct MajorHolder {
     /// The category of the holder (e.g., "% of Shares Held by All Insider").
     pub category: String,
     /// The value associated with the category as a numeric fraction (e.g., 0.255 for 25.5%).
-    pub value: f64,
+    pub value: Decimal,
 }
 
 /// Represents a single institutional or mutual fund holder.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct InstitutionalHolder {
     /// The name of the holding institution or fund.
@@ -184,7 +185,7 @@ pub struct InstitutionalHolder {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub date_reported: DateTime<Utc>,
     /// The percentage of the company's outstanding shares held by this entity.
-    pub pct_held: Option<f64>,
+    pub pct_held: Option<Decimal>,
     /// The market value of the shares held.
     pub value: Option<Money>,
 }
@@ -235,7 +236,7 @@ pub struct InsiderRosterHolder {
 }
 
 /// A summary of net share purchase activity by insiders over a specific period.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct NetSharePurchaseActivity {
     /// The period the summary covers (e.g., `Period::Quarter { year: 2023, quarter: 4 }`).
@@ -256,5 +257,5 @@ pub struct NetSharePurchaseActivity {
     /// The total number of shares held by all insiders.
     pub total_insider_shares: Option<u64>,
     /// The net shares purchased/sold as a percentage of total insider shares.
-    pub net_percent_insider_shares: Option<f64>,
+    pub net_percent_insider_shares: Option<Decimal>,
 }

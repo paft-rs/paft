@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Domain: `Instrument` now stores `id: IdentifierScheme` (replacing top-level `figi`, `isin`, `symbol`, `exchange`, `token_id`, `condition_id` fields). JSON shape reflects this (`{ "id": { "Security": { ... } } }` or `{ "id": { "Prediction": { ... } } }`).
 - Domain: removed legacy setters like `try_set_isin/try_set_figi` and the `try_new` constructor; use `from_symbol[_and_exchange]`, `from_figi`, `from_prediction_market`, or `Instrument::new`.
 - Money: `Decimal` and `RoundingStrategy` have moved to the standalone `paft-decimal` crate; import them from `paft_decimal` (or via the facade root) instead of `paft_money::decimal` or `paft::money::Decimal`.
+- Market/Aggregates/Fundamentals: analytics fields that previously exposed `f64` (option greeks, implied volatility, P/E, dividend yield, recommendation scores, growth rates, ESG metrics, holder percentages) now use `paft_decimal::Decimal` for consistent precision.
 
 ### Changed
 

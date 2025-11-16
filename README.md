@@ -232,8 +232,8 @@ Data provider crates are the bridge between proprietary APIs and standardized pa
 // Internal wire types (efficient for serialization)
 #[derive(Deserialize)]
 struct GenericQuoteWire {
-    regularMarketPrice: Option<f64>,
-    regularMarketPreviousClose: Option<f64>,
+    regularMarketPrice: Option<paft_decimal::Decimal>,
+    regularMarketPreviousClose: Option<paft_decimal::Decimal>,
     exchange: Option<String>, // "NASDAQ", "NYSE", etc.
 }
 
@@ -250,8 +250,8 @@ impl GenericQuoteWire {
     fn into_paft_quote(self, symbol: &str) -> paft::Quote {
         paft::Quote {
             symbol: paft::Symbol::new(symbol).expect("validated upstream"),
-            price: self.regularMarketPrice.map(|amount| 
-                paft::Money::new(amount.into(), paft::Currency::Iso(paft::IsoCurrency::USD))
+            price: self.regularMarketPrice.map(|amount|
+                paft::Money::new(amount, paft::Currency::Iso(paft::IsoCurrency::USD))
             ),
             exchange: self.exchange.as_ref().map(|ex| match ex.as_ref() {
                 "NASDAQ" => paft::Exchange::NASDAQ,

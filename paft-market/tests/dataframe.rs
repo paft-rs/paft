@@ -18,11 +18,15 @@ use paft_market::{
 };
 use paft_money::{Currency, Money};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
+use std::str::FromStr;
 
 fn usd(amount: i64) -> Money {
     Money::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD)).unwrap()
 }
 
+fn dec(value: &str) -> Decimal {
+    Decimal::from_str(value).unwrap()
+}
 fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
     Utc.timestamp_opt(secs, 0).unwrap()
 }
@@ -108,11 +112,11 @@ fn news_article_to_dataframe() {
 #[test]
 fn option_greeks_to_dataframe() {
     let greeks = OptionGreeks {
-        delta: Some(0.5),
-        gamma: Some(0.01),
-        theta: Some(-0.1),
-        vega: Some(0.2),
-        rho: Some(0.05),
+        delta: Some(dec("0.5")),
+        gamma: Some(dec("0.01")),
+        theta: Some(dec("-0.1")),
+        vega: Some(dec("0.2")),
+        rho: Some(dec("0.05")),
     };
 
     let df = greeks.to_dataframe().unwrap();
@@ -128,17 +132,17 @@ fn sample_contract() -> OptionContract {
         ask: Some(usd(6)),
         volume: Some(1_000),
         open_interest: Some(5_000),
-        implied_volatility: Some(0.25),
+        implied_volatility: Some(dec("0.25")),
         in_the_money: true,
         expiration_date: NaiveDate::from_ymd_opt(2024, 6, 21).unwrap(),
         expiration_at: Some(sample_ts(1_719_196_800)),
         last_trade_at: Some(sample_ts(1_700_000_000)),
         greeks: Some(OptionGreeks {
-            delta: Some(0.5),
-            gamma: Some(0.02),
-            theta: Some(-0.1),
-            vega: Some(0.3),
-            rho: Some(0.05),
+            delta: Some(dec("0.5")),
+            gamma: Some(dec("0.02")),
+            theta: Some(dec("-0.1")),
+            vega: Some(dec("0.3")),
+            rho: Some(dec("0.05")),
         }),
     }
 }

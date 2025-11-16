@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 use paft_core::error::PaftError;
+use paft_decimal::Decimal;
 use paft_domain::{Canonical, DomainError, Period};
 use paft_money::Money;
 #[cfg(feature = "dataframe")]
@@ -228,7 +229,7 @@ pub struct RecommendationRow {
     pub strong_sell: Option<u32>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Summary of analyst recommendations and mean scoring.
 pub struct RecommendationSummary {
@@ -246,7 +247,7 @@ pub struct RecommendationSummary {
     /// Count of "strong sell" recommendations.
     pub strong_sell: Option<u32>,
     /// Mean recommendation score.
-    pub mean: Option<f64>,
+    pub mean: Option<Decimal>,
     /// Provider-specific text for the mean score (e.g., "Buy", "Overweight").
     pub mean_rating_text: Option<String>,
 }
@@ -271,7 +272,7 @@ pub struct UpgradeDowngradeRow {
     pub action: Option<RecommendationAction>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Summary of key analysis metrics extracted from detailed analysis data.
 pub struct AnalysisSummary {
@@ -284,12 +285,12 @@ pub struct AnalysisSummary {
     /// Number of analyst opinions contributing to the recommendation.
     pub number_of_analyst_opinions: Option<u32>,
     /// Numeric recommendation score (provider-defined scale).
-    pub recommendation_mean: Option<f64>,
+    pub recommendation_mean: Option<Decimal>,
     /// Categorical recommendation text (e.g., "Buy", "Overweight").
     pub recommendation_text: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Earnings estimate data with analyst consensus.
 pub struct EarningsEstimate {
@@ -304,10 +305,10 @@ pub struct EarningsEstimate {
     /// Number of analysts providing earnings estimates.
     pub num_analysts: Option<u32>,
     /// Estimated earnings growth.
-    pub growth: Option<f64>,
+    pub growth: Option<Decimal>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Revenue estimate data with analyst consensus.
 pub struct RevenueEstimate {
@@ -322,7 +323,7 @@ pub struct RevenueEstimate {
     /// Number of analysts providing revenue estimates.
     pub num_analysts: Option<u32>,
     /// Estimated revenue growth.
-    pub growth: Option<f64>,
+    pub growth: Option<Decimal>,
 }
 
 /// A flexible data point for time-series trend data.
@@ -536,7 +537,7 @@ impl EpsRevisions {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Represents a single row of earnings trend data for a specific period.
 pub struct EarningsTrendRow {
@@ -544,7 +545,7 @@ pub struct EarningsTrendRow {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub period: Period,
     /// The growth rate.
-    pub growth: Option<f64>,
+    pub growth: Option<Decimal>,
     /// Earnings estimate data with analyst consensus.
     pub earnings_estimate: EarningsEstimate,
     /// Revenue estimate data with analyst consensus.

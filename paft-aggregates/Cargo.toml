@@ -17,6 +17,7 @@ paft-domain = { workspace = true }
 paft-money  = { workspace = true }
 paft-market = { workspace = true }
 paft-fundamentals = { workspace = true }
+paft-decimal = { workspace = true, default-features = false }
 paft-utils = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
 df-derive = { workspace = true, optional = true }
@@ -28,6 +29,7 @@ default = []
 bigdecimal = [
   "paft-money/bigdecimal",
   "paft-market/bigdecimal",
+  "paft-decimal/bigdecimal",
 ]
 
 # Optional: expose panicking money ops for tests/consumers

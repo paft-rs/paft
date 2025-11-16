@@ -1,8 +1,10 @@
 use chrono::{NaiveDate, TimeZone, Utc};
 use paft_aggregates::{FastInfo, Info};
+use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, Isin, MarketState};
 use paft_money::IsoCurrency;
 use paft_money::{Currency, Money};
+use std::str::FromStr;
 
 #[test]
 fn fast_info_roundtrip() {
@@ -47,8 +49,8 @@ fn info_roundtrip() {
         market_cap: Some(Money::from_minor_units(3_000_000_000_000i128, usd.clone()).unwrap()),
         shares_outstanding: Some(7_500_000_000),
         eps_ttm: Some(Money::from_canonical_str("11.20", usd).unwrap()),
-        pe_ttm: Some(38.4),
-        dividend_yield: Some(0.008),
+        pe_ttm: Some(Decimal::from_str("38.4").unwrap()),
+        dividend_yield: Some(Decimal::from_str("0.008").unwrap()),
         ex_dividend_date: Some(NaiveDate::from_ymd_opt(2024, 11, 14).unwrap()),
         price_target: None,
         recommendation_summary: None,

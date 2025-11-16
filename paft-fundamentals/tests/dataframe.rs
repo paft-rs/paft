@@ -20,6 +20,7 @@ use paft_fundamentals::{
 };
 use paft_money::Money;
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
+use std::str::FromStr;
 
 fn usd(amount: i64) -> Money {
     Money::new(
@@ -29,6 +30,9 @@ fn usd(amount: i64) -> Money {
     .unwrap()
 }
 
+fn dec(value: &str) -> Decimal {
+    Decimal::from_str(value).unwrap()
+}
 fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
     Utc.timestamp_opt(secs, 0).unwrap()
 }
@@ -143,7 +147,7 @@ fn recommendation_summary_to_dataframe() {
         hold: Some(3),
         sell: Some(1),
         strong_sell: Some(0),
-        mean: Some(1.5),
+        mean: Some(dec("1.5")),
         mean_rating_text: Some("Outperform".to_string()),
     };
 
@@ -172,7 +176,7 @@ fn analysis_summary_to_dataframe() {
         target_high_price: Some(usd(250)),
         target_low_price: Some(usd(150)),
         number_of_analyst_opinions: Some(15),
-        recommendation_mean: Some(1.2),
+        recommendation_mean: Some(dec("1.2")),
         recommendation_text: Some("Buy".to_string()),
     };
 
@@ -188,7 +192,7 @@ fn earnings_estimate_to_dataframe() {
         high: Some(usd(4)),
         year_ago_eps: Some(usd(1)),
         num_analysts: Some(10),
-        growth: Some(0.15),
+        growth: Some(dec("0.15")),
     };
 
     let df = estimate.to_dataframe().unwrap();
@@ -203,7 +207,7 @@ fn revenue_estimate_to_dataframe() {
         high: Some(usd(1_100)),
         year_ago_revenue: Some(usd(800)),
         num_analysts: Some(12),
-        growth: Some(0.2),
+        growth: Some(dec("0.2")),
     };
 
     let df = estimate.to_dataframe().unwrap();
@@ -268,7 +272,7 @@ fn earnings_trend_row_to_dataframe() {
         high: Some(usd(4)),
         year_ago_eps: Some(usd(1)),
         num_analysts: Some(10),
-        growth: Some(0.15),
+        growth: Some(dec("0.15")),
     };
     let revenue_estimate = RevenueEstimate {
         avg: Some(usd(1_000)),
@@ -276,7 +280,7 @@ fn earnings_trend_row_to_dataframe() {
         high: Some(usd(1_100)),
         year_ago_revenue: Some(usd(800)),
         num_analysts: Some(12),
-        growth: Some(0.2),
+        growth: Some(dec("0.2")),
     };
     let eps_trend = EpsTrend {
         current: Some(usd(3)),
@@ -304,7 +308,7 @@ fn earnings_trend_row_to_dataframe() {
             year: 2024,
             quarter: 1,
         },
-        growth: Some(0.12),
+        growth: Some(dec("0.12")),
         earnings_estimate,
         revenue_estimate,
         eps_trend,
@@ -374,7 +378,7 @@ fn calendar_to_dataframe() {
 fn major_holder_to_dataframe() {
     let holder = MajorHolder {
         category: "% Held by Insiders".to_string(),
-        value: 0.255,
+        value: dec("0.255"),
     };
 
     let df = holder.to_dataframe().unwrap();
@@ -387,7 +391,7 @@ fn institutional_holder_to_dataframe() {
         holder: "Example Fund".to_string(),
         shares: Some(10_000),
         date_reported: sample_ts(1_600_000_000),
-        pct_held: Some(0.12),
+        pct_held: Some(dec("0.12")),
         value: Some(usd(1_200)),
     };
 
@@ -440,7 +444,7 @@ fn net_share_purchase_activity_to_dataframe() {
         net_shares: Some(500),
         net_count: Some(2),
         total_insider_shares: Some(20_000),
-        net_percent_insider_shares: Some(0.025),
+        net_percent_insider_shares: Some(dec("0.025")),
     };
 
     let df = activity.to_dataframe().unwrap();
@@ -505,9 +509,9 @@ fn share_count_to_dataframe() {
 #[test]
 fn esg_scores_to_dataframe() {
     let scores = EsgScores {
-        environmental: Some(55.0),
-        social: Some(60.5),
-        governance: Some(70.2),
+        environmental: Some(dec("55.0")),
+        social: Some(dec("60.5")),
+        governance: Some(dec("70.2")),
     };
 
     let df = scores.to_dataframe().unwrap();
@@ -519,11 +523,11 @@ fn esg_involvement_vec_to_dataframe() {
     let involvement = [
         EsgInvolvement {
             category: "Thermal Coal".to_string(),
-            score: Some(0.1),
+            score: Some(dec("0.1")),
         },
         EsgInvolvement {
             category: "Renewables".to_string(),
-            score: Some(0.8),
+            score: Some(dec("0.8")),
         },
     ];
 
