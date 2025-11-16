@@ -1,6 +1,7 @@
 #![cfg(feature = "dataframe")]
 use chrono::{TimeZone, Utc};
 use iso_currency::Currency as IsoCurrency;
+use paft_decimal::Decimal;
 use paft_domain::{Isin, Period};
 use paft_fundamentals::{
     analysis::{
@@ -17,7 +18,7 @@ use paft_fundamentals::{
     profile::{Address, CompanyProfile, FundKind, FundProfile, Profile, ShareCount},
     statements::{BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow},
 };
-use paft_money::{Decimal, Money};
+use paft_money::Money;
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
 fn usd(amount: i64) -> Money {

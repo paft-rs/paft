@@ -1,6 +1,7 @@
 #![cfg(feature = "dataframe")]
 use iso_currency::Currency as IsoCurrency;
-use paft_money::{Currency, Decimal, ExchangeRate, Money};
+use paft_decimal::Decimal;
+use paft_money::{Currency, ExchangeRate, Money};
 use paft_utils::dataframe::ToDataFrame;
 
 fn usd(amount: i64) -> Money {

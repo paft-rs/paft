@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
+use paft_decimal::Decimal;
 use paft_domain::Instrument;
-use paft_money::{Decimal, Money};
+use paft_money::Money;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
 

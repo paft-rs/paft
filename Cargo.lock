@@ -1456,6 +1456,7 @@ dependencies = [
  "iso_currency",
  "paft-aggregates",
  "paft-core",
+ "paft-decimal",
  "paft-domain",
  "paft-fundamentals",
  "paft-market",
@@ -1475,6 +1476,7 @@ dependencies = [
  "chrono",
  "df-derive",
  "iso_currency",
+ "paft-decimal",
  "paft-domain",
  "paft-fundamentals",
  "paft-market",
@@ -1492,6 +1494,16 @@ dependencies = [
  "chrono",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "paft-decimal"
+version = "0.8.0"
+dependencies = [
+ "bigdecimal",
+ "num-bigint",
+ "num-traits",
+ "rust_decimal",
 ]
 
 [[package]]
@@ -1520,11 +1532,11 @@ dependencies = [
  "df-derive",
  "iso_currency",
  "paft-core",
+ "paft-decimal",
  "paft-domain",
  "paft-money",
  "paft-utils",
  "polars",
- "rust_decimal",
  "serde",
  "serde_json",
  "thiserror",
@@ -1541,11 +1553,11 @@ dependencies = [
  "df-derive",
  "iso_currency",
  "paft-core",
+ "paft-decimal",
  "paft-domain",
  "paft-money",
  "paft-utils",
  "polars",
- "rust_decimal",
  "serde",
  "serde_json",
  "thiserror",
@@ -1556,14 +1568,11 @@ dependencies = [
 name = "paft-money"
 version = "0.8.0"
 dependencies = [
- "bigdecimal",
  "df-derive",
  "iso_currency",
- "num-bigint",
- "num-traits",
+ "paft-decimal",
  "paft-utils",
  "polars",
- "rust_decimal",
  "serde",
  "serde_json",
  "thiserror",

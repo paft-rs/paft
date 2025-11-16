@@ -2,8 +2,9 @@
 use chrono::{NaiveDate, TimeZone, Utc};
 use iso_currency::Currency as IsoCurrency;
 use paft_aggregates::info::{FastInfo, Info};
+use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, Isin, MarketState};
-use paft_money::{Currency, Decimal, Money};
+use paft_money::{Currency, Money};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
 fn usd(amount: i64) -> Money {

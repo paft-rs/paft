@@ -1,4 +1,5 @@
-use paft_money::{Currency, Decimal, Money};
+use paft_decimal::Decimal;
+use paft_money::{Currency, Money};
 use std::str::FromStr;
 
 fn usd() -> Currency {

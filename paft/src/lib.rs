@@ -63,13 +63,16 @@ pub mod market {
 /// Namespaced access to `paft-money` types.
 pub mod money {
     pub use paft_money::{
-        Currency, ExchangeRate, IsoCurrency, MinorUnitError, Money, MoneyError,
+        Currency, ExchangeRate, IsoCurrency, MinorUnitError, Money, MoneyAmount, MoneyError,
         clear_currency_metadata, currency_metadata, set_currency_metadata,
-        try_normalize_currency_code, Decimal, RoundingStrategy, MoneyAmount,
+        try_normalize_currency_code,
     };
     #[cfg(feature = "money-formatting")]
     pub use paft_money::{Locale, LocalizedMoney};
 }
+
+/// Direct access to Decimal type
+pub use paft_decimal::{Decimal, RoundingStrategy};
 
 /// Namespaced access to `paft-fundamentals` (feature-gated).
 #[cfg(feature = "fundamentals")]

@@ -1,10 +1,11 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
 use iso_currency::Currency as IsoCurrency;
+use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::action::Action;
 use paft_market::{Candle, CandleUpdate, HistoryMeta, HistoryResponse, Interval};
-use paft_money::{Currency, Decimal, Money};
+use paft_money::{Currency, Money};
 use std::str::FromStr;
 
 #[test]

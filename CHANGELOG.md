@@ -10,22 +10,25 @@ All notable changes to this project will be documented in this file.
 
 - Market: expanded `requests::history::Interval` coverage and provided second/minute conversion helpers for the new variants.
 - Money: implement `Hash` for `paft_money::Money` using currency and canonicalized amount.
-- Money: add `MoneyAmount` for high-precision decimal values with optional currency hints, re-exporting the decimal facade to simplify construction and serde use.
+- Money: add `MoneyAmount` for high-precision decimal values with optional currency hints, now backed by the shared `paft-decimal` facade for construction and serde parity.
 - Market: derive `Hash` for `paft_market::market::action::Action`.
   - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
 - Domain: new `IdentifierScheme` with `SecurityId`/`PredictionId` unifies instrument identifiers across securities and prediction markets.
 - Domain: new identifiers `EventID` and `OutcomeID` for prediction markets.
 - Domain: new constructors on `Instrument`: `from_prediction_market`, `from_figi`, plus `new(IdentifierScheme, AssetKind)`.
 - New crate `paft-prediction` (replaces `paft-polymarket`) exposing `Market` and `Token`; gated behind the `prediction` feature on the facade.
+- New crate `paft-decimal` exposing backend-agnostic decimal helpers (parsing, rounding, canonical rendering) without depending on higher-level money types.
 
 ### Breaking Change
 
 - Domain: `Instrument` now stores `id: IdentifierScheme` (replacing top-level `figi`, `isin`, `symbol`, `exchange`, `token_id`, `condition_id` fields). JSON shape reflects this (`{ "id": { "Security": { ... } } }` or `{ "id": { "Prediction": { ... } } }`).
 - Domain: removed legacy setters like `try_set_isin/try_set_figi` and the `try_new` constructor; use `from_symbol[_and_exchange]`, `from_figi`, `from_prediction_market`, or `Instrument::new`.
+- Money: `Decimal` and `RoundingStrategy` have moved to the standalone `paft-decimal` crate; import them from `paft_decimal` (or via the facade root) instead of `paft_money::decimal` or `paft::money::Decimal`.
 
 ### Changed
 
 - Facade: `full` feature now includes `prediction`.
+- Facade: re-exports `paft_decimal::{Decimal, RoundingStrategy}` from the root module; downstream crates (`paft-market`, `paft-fundamentals`, etc.) now depend on `paft-decimal` directly for numeric helpers.
 - Market: `DownloadResponse::iter_by_symbol()` now omits prediction instruments (only yields security symbols), preserving symbol-centric semantics.
 
 ### Documentation

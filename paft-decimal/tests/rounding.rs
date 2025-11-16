@@ -1,5 +1,4 @@
-use paft_money::decimal;
-use paft_money::{Decimal, RoundingStrategy};
+use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
 
 fn round(input: &str, scale: u32, strategy: RoundingStrategy) -> Decimal {
     let value = decimal::parse_decimal(input).expect("valid decimal literal");

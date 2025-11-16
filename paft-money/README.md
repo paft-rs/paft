@@ -7,7 +7,7 @@ Currency and money primitives for the paft ecosystem.
 [![Docs.rs](https://docs.rs/paft-money/badge.svg)](https://docs.rs/paft-money)
 
 - `Currency` with ISO 4217 integration and extensible fallback
-- `decimal::*` facade offering backend-agnostic decimal helpers
+- Integrates with [`paft-decimal`](https://crates.io/crates/paft-decimal) for backend-agnostic decimal helpers
 - `MoneyAmount` for high-precision values with optional currency hints
 - `Money` with safe arithmetic and explicit conversions via `ExchangeRate`
 - Runtime currency metadata overlays for non-ISO minor units (e.g., `XAU`, `XDR`)
@@ -56,15 +56,14 @@ Money layers
 
 Choose the level of structure you need:
 
-- `decimal::*` exposes helpers such as `parse_decimal`, `from_minor_units`, `zero`, and `one`
+- [`paft-decimal`](https://crates.io/crates/paft-decimal) exposes helpers such as `parse_decimal`, `from_minor_units`, `zero`, and `one`
 - `MoneyAmount` keeps high-precision values with optional `Currency` hints and serde parity with `Decimal`
 - `Money` attaches a currency, enforces metadata-driven rounding, and remains settlement-safe
 
 ```rust
 use iso_currency::Currency as IsoCurrency;
-use paft_money::{
-    decimal, Currency, Money, MoneyAmount, MoneyError, RoundingStrategy,
-};
+use paft_decimal::{self as decimal, RoundingStrategy};
+use paft_money::{Currency, Money, MoneyAmount, MoneyError};
 
 fn run() -> Result<(), MoneyError> {
     let raw = decimal::from_minor_units(123_456, 4); // 12.3456

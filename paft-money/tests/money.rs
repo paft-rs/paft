@@ -1,9 +1,10 @@
 use iso_currency::Currency as IsoCurrency;
-use paft_money::{Currency, Decimal, ExchangeRate, Money, RoundingStrategy};
+use paft_decimal::{Decimal, RoundingStrategy};
+use paft_money::{Currency, ExchangeRate, Money};
 use std::str::FromStr;
 
 #[cfg(feature = "dataframe")]
-use paft_money::decimal;
+use paft_decimal as decimal;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::ToDataFrame;
 #[cfg(feature = "dataframe")]

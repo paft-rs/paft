@@ -15,6 +15,7 @@ categories = ["finance", "data-structures", "api-bindings"]
 [dependencies]
 paft-core = { workspace = true }
 paft-money = { workspace = true, default-features = false }
+paft-decimal = { workspace = true, default-features = false }
 paft-domain = { workspace = true, optional = true, default-features = false }
 paft-market = { workspace = true, optional = true, default-features = false }
 paft-fundamentals = { workspace = true, optional = true, default-features = false }

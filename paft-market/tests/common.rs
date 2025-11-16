@@ -1,7 +1,8 @@
 use iso_currency::Currency as IsoCurrency;
+use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
 use paft_market::market::quote::Quote;
-use paft_money::{Currency, Decimal, Money};
+use paft_money::{Currency, Money};
 
 #[must_use]
 /// Builds a sample quote for testing.

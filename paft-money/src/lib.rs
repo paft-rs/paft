@@ -34,8 +34,10 @@
 //!
 //! # Decimal backend
 //!
-//! The crate exposes a backend-agnostic [`Decimal`] type alongside
-//! [`RoundingStrategy`]. By default it uses
+//! Decimal helpers live in the lightweight [`paft_decimal`](https://docs.rs/paft-decimal)
+//! crate, which provides the [`paft_decimal::Decimal`] type,
+//! [`paft_decimal::RoundingStrategy`], and supporting
+//! utilities used throughout `paft`. By default it uses
 //! [`rust_decimal`](https://docs.rs/rust_decimal) providing 28 fractional
 //! digits of precision with a fast fixed-size representation. Alternatively,
 //! enabling the `bigdecimal` feature switches the backend to
@@ -52,10 +54,11 @@
 //!
 //! # Money layers
 //!
-//! The crate exposes three complementary layers so you can opt into as much structure
+//! The ecosystem exposes complementary layers so you can opt into as much structure
 //! as you need:
-//! - [`decimal`]: backend-agnostic helpers such as [`decimal::parse_decimal`],
-//!   [`decimal::from_minor_units`], [`decimal::zero`], and [`decimal::one`].
+//! - [`paft_decimal`](https://docs.rs/paft-decimal): backend-agnostic helpers
+//!   such as [`paft_decimal::parse_decimal`], [`paft_decimal::from_minor_units`],
+//!   [`paft_decimal::zero`], and [`paft_decimal::one`].
 //! - [`MoneyAmount`]: a high-precision numeric wrapper with optional
 //!   [`Currency`] hints and lossless serde integration.
 //! - [`Money`]: a currency-attached value that enforces exponents,
@@ -63,10 +66,8 @@
 //!
 //! ```rust
 //! # use iso_currency::Currency as IsoCurrency;
-//! # use paft_money::{
-//! #     decimal, Currency, Money, MoneyAmount, MoneyError,
-//! #     RoundingStrategy,
-//! # };
+//! # use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
+//! # use paft_money::{Currency, Money, MoneyAmount, MoneyError};
 //! # fn run() -> Result<(), MoneyError> {
 //! // Build a Decimal using the facade helpers.
 //! let raw = decimal::from_minor_units(123_456, 4); // 12.3456
@@ -116,7 +117,8 @@
 //!
 //! ```rust
 //! # use iso_currency::Currency as IsoCurrency;
-//! # use paft_money::{Currency, Money, ExchangeRate, Decimal, RoundingStrategy};
+//! # use paft_decimal::{Decimal, RoundingStrategy};
+//! # use paft_money::{Currency, Money, ExchangeRate};
 //! # fn run() -> Result<(), paft_money::MoneyError> {
 //! let usd = Money::from_canonical_str("10.00", Currency::Iso(IsoCurrency::USD))?;
 //! let rate = ExchangeRate::new(
@@ -202,6 +204,7 @@
 #![allow(clippy::cargo_common_metadata)]
 
 mod amount;
+pub(crate) mod decimal;
 #[cfg(feature = "money-formatting")]
 mod format;
 mod locale;
@@ -210,8 +213,6 @@ mod parser;
 
 pub mod currency;
 pub mod currency_utils;
-/// Decimal abstraction toggled by feature flags.
-pub mod decimal;
 /// Error types shared across the money crate.
 pub mod error;
 pub mod money;
@@ -222,7 +223,6 @@ pub use currency_utils::{
     MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS, MinorUnitError, clear_currency_metadata,
     currency_metadata, set_currency_metadata, try_normalize_currency_code,
 };
-pub use decimal::{Decimal, RoundingStrategy};
 pub use error::{MoneyError, MoneyParseError};
 pub use locale::Locale;
 #[cfg(feature = "money-formatting")]

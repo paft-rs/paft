@@ -1,8 +1,9 @@
 use chrono::DateTime;
 use iso_currency::Currency as IsoCurrency;
+use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
 use paft_market::market::quote::{Quote, QuoteUpdate};
-use paft_money::{Currency, Decimal, Money};
+use paft_money::{Currency, Money};
 use std::str::FromStr;
 
 // -----------------

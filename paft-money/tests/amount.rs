@@ -4,7 +4,8 @@ use std::hash::{Hash, Hasher};
 use iso_currency::Currency as IsoCurrency;
 use serde_json::Value;
 
-use paft_money::{Currency, Decimal, Money, MoneyAmount, MoneyError, RoundingStrategy, decimal};
+use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
+use paft_money::{Currency, Money, MoneyAmount, MoneyError};
 
 const fn usd() -> Currency {
     Currency::Iso(IsoCurrency::USD)

@@ -1,0 +1,24 @@
+[package]
+name = "paft-decimal"
+version.workspace = true
+edition = "2024"
+license.workspace = true
+authors.workspace = true
+description = "Backend-agnostic decimal helpers for the paft ecosystem."
+repository.workspace = true
+homepage = "https://github.com/paft-rs/paft"
+documentation = "https://docs.rs/paft-decimal"
+readme = "README.md"
+keywords = ["finance", "decimal", "numeric"]
+categories = ["finance", "data-structures"]
+
+[dependencies]
+rust_decimal = { workspace = true }
+bigdecimal = { workspace = true, optional = true }
+num-traits = { workspace = true, optional = true }
+num-bigint = { workspace = true, optional = true }
+
+[features]
+default = []
+bigdecimal = ["dep:bigdecimal", "dep:num-traits", "dep:num-bigint"]
+

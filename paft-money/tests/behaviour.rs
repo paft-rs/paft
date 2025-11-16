@@ -1,5 +1,6 @@
 use iso_currency::Currency as IsoCurrency;
-use paft_money::{Currency, Decimal, ExchangeRate, Money, RoundingStrategy, decimal};
+use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
+use paft_money::{Currency, ExchangeRate, Money};
 use serde_json::{from_value, json, to_value};
 
 const fn usd() -> Currency {

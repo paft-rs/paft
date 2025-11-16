@@ -10,7 +10,7 @@ use paft::prelude::{
     IdentifierScheme, Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range,
     SearchRequest,
 };
-use paft_money::Decimal;
+use paft_decimal::Decimal;
 use std::str::FromStr;
 
 #[cfg(all(feature = "domain", feature = "market"))]

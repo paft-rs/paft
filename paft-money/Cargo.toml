@@ -13,20 +13,17 @@ keywords = ["finance", "currency", "money", "serde"]
 categories = ["finance", "data-structures"]
 
 [dependencies]
+paft-decimal = { workspace = true, default-features = false }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 iso_currency = { workspace = true }
-rust_decimal = { workspace = true }
-bigdecimal = { workspace = true, optional = true }
-num-traits = { workspace = true, optional = true }
-num-bigint = { workspace = true, optional = true }
 paft-utils = { workspace = true }
 df-derive = { workspace = true, optional = true }
 polars = { workspace = true, features = ["dtype-decimal"], optional = true }
 tracing = { workspace = true, optional = true }
 
 [features]
-bigdecimal = ["dep:bigdecimal", "dep:num-traits", "dep:num-bigint"]
+bigdecimal = ["paft-decimal/bigdecimal"]
 dataframe = ["polars", "df-derive", "paft-utils/dataframe"]
 money-formatting = []
 panicking-money-ops = []

@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "paft",
+    "paft-decimal",
     "paft-core",
     "paft-market",
     "paft-fundamentals",
@@ -47,3 +48,4 @@ paft-utils = { path = "paft-utils", version = "0.8.0", default-features = false 
 paft-domain = { path = "paft-domain", version = "0.8.0", default-features = false }
 paft-aggregates = { path = "paft-aggregates", version = "0.8.0", default-features = false }
 paft-prediction = { path = "paft-prediction", version = "0.8.0", default-features = false }
+paft-decimal = { path = "paft-decimal", version = "0.8.0", default-features = false }

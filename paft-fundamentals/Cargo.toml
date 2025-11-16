@@ -36,5 +36,5 @@ dataframe = ["polars", "df-derive", "paft-utils/dataframe", "paft-domain/datafra
 tracing = ["dep:tracing"]
 
 [dev-dependencies]
+paft-decimal = { workspace = true, default-features = false }
 serde_json = { workspace = true }
-rust_decimal = { workspace = true }

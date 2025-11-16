@@ -1,6 +1,7 @@
 //! Order book types under the `paft_market::market::orderbook` namespace.
 
-use paft_money::{Decimal, Money}; // Use Money for price, Decimal for size
+use paft_decimal::Decimal; // Decimal for size
+use paft_money::Money; // Money for priced values
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
