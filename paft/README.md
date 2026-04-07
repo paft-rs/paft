@@ -99,7 +99,7 @@ let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto)
 // Create market data
 let quote = Quote {
     symbol: Symbol::new("AAPL").unwrap(),
-    shortname: Some("Apple Inc.".to_string()),
+    name: Some("Apple Inc.".to_string()),
     price: Some(Money::from_canonical_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
     previous_close: Some(Money::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
     exchange: Some(Exchange::NASDAQ),
