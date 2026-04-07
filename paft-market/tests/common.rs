@@ -12,7 +12,7 @@ use paft_money::{Currency, Money};
 pub fn build_quote() -> paft_market::market::quote::Quote {
     paft_market::market::quote::Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),
@@ -27,7 +27,7 @@ pub fn build_quote() -> paft_market::market::quote::Quote {
 fn quote_construction_smoke() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(

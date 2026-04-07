@@ -96,7 +96,7 @@ fn end_to_end_workflow() {
     // 5. Create a quote
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(105), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap(),
@@ -206,7 +206,7 @@ fn serialization_workflow() {
     // 3. Create and serialize a quote
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(

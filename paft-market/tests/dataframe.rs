@@ -48,7 +48,7 @@ fn search_result_to_dataframe() {
 fn vec_quote_to_dataframe_smoke() {
     let quotes = [Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
         day_volume: None,
@@ -65,7 +65,7 @@ fn vec_quote_to_dataframe_smoke() {
 fn quote_to_dataframe_smoke() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
         day_volume: None,

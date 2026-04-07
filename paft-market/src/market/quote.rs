@@ -17,8 +17,8 @@ pub struct Quote {
     /// Instrument identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
-    /// Short display name.
-    pub shortname: Option<String>,
+    /// Display name.
+    pub name: Option<String>,
     /// Market price.
     pub price: Option<Money>,
     /// Previous close price.
