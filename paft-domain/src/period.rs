@@ -3,7 +3,6 @@
 //! Provides a structured `Period` type with parsing/formatting helpers and an
 //! extensible fallback variant.
 
-use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as DeError};
 use std::borrow::Cow;
 use std::cmp::Ordering;
@@ -12,27 +11,6 @@ use std::fmt;
 use crate::error::DomainError;
 use chrono::{Datelike, NaiveDate};
 use paft_utils::Canonical;
-
-// Compile-time compiled regex patterns for Period parsing
-static QUARTERLY_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
-    Regex::new(r"(?i)^(\d{4})[-\s]?Q(\d+)$").expect("Invalid quarterly regex pattern")
-});
-
-static YEAR_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
-    Regex::new(r"(?i)^(?:FY|FISCAL\s+)?(\d{4})$").expect("Invalid year regex pattern")
-});
-
-static DATE_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
-    Regex::new(r"^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$").expect("Invalid date regex pattern")
-});
-
-static US_DATE_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
-    Regex::new(r"^(\d{1,2})/(\d{1,2})/(\d{4})$").expect("Invalid US date regex pattern")
-});
-
-static DAY_FIRST_DATE_REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
-    Regex::new(r"^(\d{1,2})-(\d{1,2})-(\d{4})$").expect("Invalid day-first date regex pattern")
-});
 
 /// Financial period enumeration with structured variants and extensible fallback.
 ///
@@ -246,81 +224,186 @@ impl Period {
     }
 }
 
+// Per-format parser results.
+//
+// `Some(Ok(p))` means the input fully matched the format and produced a valid
+// `Period`. `Some(Err(()))` means the input matched the format structurally
+// (i.e., the original regex would have matched) but the captured values were
+// invalid (e.g., `2023Q5`, `2023-13-01`); the caller treats this as
+// `InvalidPeriodFormat`. `None` means the input does not match this format
+// and the caller should try the next one.
+type PeriodAttempt = Option<Result<Period, ()>>;
+
+#[inline]
+fn read_4_digits(b: &[u8], start: usize) -> Option<i32> {
+    if start + 4 > b.len() {
+        return None;
+    }
+    let mut v: i32 = 0;
+    for &c in &b[start..start + 4] {
+        if !c.is_ascii_digit() {
+            return None;
+        }
+        v = v * 10 + i32::from(c - b'0');
+    }
+    Some(v)
+}
+
+#[inline]
+fn read_1_or_2_digits(b: &[u8], start: usize) -> Option<(u32, usize)> {
+    let &first = b.get(start)?;
+    if !first.is_ascii_digit() {
+        return None;
+    }
+    let d1 = u32::from(first - b'0');
+    if let Some(&second) = b.get(start + 1)
+        && second.is_ascii_digit()
+    {
+        Some((d1 * 10 + u32::from(second - b'0'), 2))
+    } else {
+        Some((d1, 1))
+    }
+}
+
+#[inline]
+fn date_or_err(year: i32, month: u32, day: u32) -> Result<Period, ()> {
+    NaiveDate::from_ymd_opt(year, month, day)
+        .map(Period::Date)
+        .ok_or(())
+}
+
 impl Period {
-    /// Parse quarterly period format: "2023Q4", "2023-Q4", "2023 Q4"
-    fn parse_quarterly(s: &str) -> Option<Self> {
-        let captures = QUARTERLY_REGEX.captures(s)?;
-        let year_str = &captures[1];
-        let quarter_str = &captures[2];
+    /// Parse quarterly period format: "2023Q4", "2023-Q4", "2023 Q4".
+    fn parse_quarterly(s: &str) -> PeriodAttempt {
+        let b = s.as_bytes();
+        // Minimum form is `YYYYQ#` (6 bytes).
+        if b.len() < 6 {
+            return None;
+        }
 
-        let year = year_str.parse::<i32>().ok()?;
-        let quarter = quarter_str.parse::<u8>().ok()?;
+        let year = read_4_digits(b, 0)?;
+        let mut idx = 4;
 
-        // Validate quarter is between 1-4
-        if (1..=4).contains(&quarter) {
-            Some(Self::Quarter { year, quarter })
-        } else {
-            None
+        // Optional single ASCII separator: '-' or whitespace.
+        if b[idx] == b'-' || b[idx].is_ascii_whitespace() {
+            idx += 1;
+            if idx >= b.len() {
+                return None;
+            }
+        }
+
+        // Case-insensitive 'Q'.
+        if b[idx] != b'Q' && b[idx] != b'q' {
+            return None;
+        }
+        idx += 1;
+
+        let q_bytes = b.get(idx..)?;
+        if q_bytes.is_empty() {
+            return None;
+        }
+
+        // Valid quarters are always exactly one digit. Multi-digit runs of
+        // digits structurally match the original `Q\d+` regex but are
+        // out-of-range, so they're a structural-only match (caller turns into
+        // `InvalidPeriodFormat`). A multi-byte tail with any non-digit is
+        // simply not a quarterly token at all.
+        if q_bytes.len() > 1 {
+            return q_bytes.iter().all(u8::is_ascii_digit).then_some(Err(()));
+        }
+
+        let c = q_bytes[0];
+        if !c.is_ascii_digit() {
+            return None;
+        }
+        let quarter = c - b'0';
+        match quarter {
+            1..=4 => Some(Ok(Self::Quarter { year, quarter })),
+            _ => Some(Err(())),
         }
     }
 
-    /// Parse year period format: "2023", "FY2023", "Fiscal 2023"
+    /// Parse year period format: "2023", "FY2023", "Fiscal 2023".
     fn parse_year(s: &str) -> Option<Self> {
-        let captures = YEAR_REGEX.captures(s)?;
-        let year_str = &captures[1];
+        let b = s.as_bytes();
+        let digits_start = match b.len() {
+            4 => 0,
+            6 if b[..2].eq_ignore_ascii_case(b"FY") => 2,
+            n if n >= 11 && b[..6].eq_ignore_ascii_case(b"FISCAL") => {
+                let mut i = 6;
+                while i < n && b[i].is_ascii_whitespace() {
+                    i += 1;
+                }
+                if i == 6 {
+                    return None;
+                }
+                i
+            }
+            _ => return None,
+        };
 
-        let year = year_str.parse::<i32>().ok()?;
+        if b.len() - digits_start != 4 {
+            return None;
+        }
+        let year = read_4_digits(b, digits_start)?;
         Some(Self::Year { year })
     }
 
-    /// Parse date period format: "2023-12-31", "12/31/2023", "31-12-2023"
-    fn parse_date(s: &str) -> Option<Self> {
-        // Try ISO date format first: "2023-12-31"
-        if let Some(captures) = DATE_REGEX.captures(s) {
-            let year_str = &captures[1];
-            let month_str = &captures[2];
-            let day_str = &captures[3];
-
-            let year = year_str.parse::<i32>().ok()?;
-            let month = month_str.parse::<u32>().ok()?;
-            let day = day_str.parse::<u32>().ok()?;
-
-            if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
-                return Some(Self::Date(date));
-            }
+    /// Parse date period: ISO `YYYY[-/]M[M][-/]D[D]`, US `M[M]/D[D]/YYYY`,
+    /// or day-first `D[D]-M[M]-YYYY`.
+    fn parse_date(s: &str) -> PeriodAttempt {
+        let b = s.as_bytes();
+        if !(8..=10).contains(&b.len()) {
+            return None;
         }
 
-        // Try US date format: "12/31/2023"
-        if let Some(captures) = US_DATE_REGEX.captures(s) {
-            let month_str = &captures[1];
-            let day_str = &captures[2];
-            let year_str = &captures[3];
-
-            let month = month_str.parse::<u32>().ok()?;
-            let day = day_str.parse::<u32>().ok()?;
-            let year = year_str.parse::<i32>().ok()?;
-
-            if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
-                return Some(Self::Date(date));
+        // ISO: `YYYY[-/]M[M][-/]D[D]`.
+        if let Some(year) = read_4_digits(b, 0)
+            && (b[4] == b'-' || b[4] == b'/')
+        {
+            let sep = b[4];
+            let (month, m_len) = read_1_or_2_digits(b, 5)?;
+            let after_m = 5 + m_len;
+            if b.get(after_m).copied() == Some(sep) {
+                let (day, d_len) = read_1_or_2_digits(b, after_m + 1)?;
+                if after_m + 1 + d_len == b.len() {
+                    return Some(date_or_err(year, month, day));
+                }
             }
+            // Leading `YYYY[-/]` cannot match the US or day-first shapes
+            // (those need 1-2 digits before the first separator), so a
+            // partial ISO match means no date format matches.
+            return None;
         }
 
-        // Try day-first format: "31-12-2023"
-        if let Some(captures) = DAY_FIRST_DATE_REGEX.captures(s) {
-            let day_str = &captures[1];
-            let month_str = &captures[2];
-            let year_str = &captures[3];
-
-            let day = day_str.parse::<u32>().ok()?;
-            let month = month_str.parse::<u32>().ok()?;
-            let year = year_str.parse::<i32>().ok()?;
-
-            if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
-                return Some(Self::Date(date));
-            }
+        // US (`/`-separated, year last) and day-first (`-`-separated, year
+        // last) share a common prefix of 1-2 digits + separator + 1-2 digits
+        // + same separator + 4-digit year.
+        let (first, first_len) = read_1_or_2_digits(b, 0)?;
+        let sep = *b.get(first_len)?;
+        if sep != b'/' && sep != b'-' {
+            return None;
         }
 
-        None
+        let (second, second_len) = read_1_or_2_digits(b, first_len + 1)?;
+        let after_second = first_len + 1 + second_len;
+        if b.get(after_second).copied() != Some(sep) {
+            return None;
+        }
+
+        let year_start = after_second + 1;
+        if b.len() - year_start != 4 {
+            return None;
+        }
+        let year = read_4_digits(b, year_start)?;
+
+        let (month, day) = if sep == b'/' {
+            (first, second)
+        } else {
+            (second, first)
+        };
+
+        Some(date_or_err(year, month, day))
     }
 }
 
@@ -398,34 +481,27 @@ impl std::str::FromStr for Period {
             });
         }
 
-        if let Some(period) = Self::parse_quarterly(trimmed) {
-            return Ok(period);
+        let invalid = || DomainError::InvalidPeriodFormat {
+            format: s.to_string(),
+        };
+
+        match Self::parse_quarterly(trimmed) {
+            Some(Ok(period)) => return Ok(period),
+            Some(Err(())) => return Err(invalid()),
+            None => {}
         }
 
         if let Some(period) = Self::parse_year(trimmed) {
             return Ok(period);
         }
 
-        if let Some(period) = Self::parse_date(trimmed) {
-            return Ok(period);
+        match Self::parse_date(trimmed) {
+            Some(Ok(period)) => return Ok(period),
+            Some(Err(())) => return Err(invalid()),
+            None => {}
         }
 
-        if QUARTERLY_REGEX.is_match(trimmed)
-            || YEAR_REGEX.is_match(trimmed)
-            || DATE_REGEX.is_match(trimmed)
-            || US_DATE_REGEX.is_match(trimmed)
-            || DAY_FIRST_DATE_REGEX.is_match(trimmed)
-        {
-            return Err(DomainError::InvalidPeriodFormat {
-                format: s.to_string(),
-            });
-        }
-
-        let canonical =
-            Canonical::try_new(trimmed).map_err(|_| DomainError::InvalidPeriodFormat {
-                format: s.to_string(),
-            })?;
-
+        let canonical = Canonical::try_new(trimmed).map_err(|_| invalid())?;
         Ok(Self::Other(canonical))
     }
 }
