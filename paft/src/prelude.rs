@@ -78,4 +78,4 @@ pub use crate::market::responses::search::{SearchResponse, SearchResult};
 pub use crate::aggregates::Snapshot;
 
 #[cfg(feature = "prediction")]
-pub use crate::prediction::{Market, Token};
+pub use crate::prediction::{Market, PredictionInstrument, Token};

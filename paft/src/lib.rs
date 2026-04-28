@@ -89,7 +89,7 @@ pub mod aggregates {
 /// Namespaced access to `paft-prediction` (feature-gated).
 #[cfg(feature = "prediction")]
 pub mod prediction {
-    pub use paft_prediction::{Market, Token};
+    pub use paft_prediction::{Market, PredictionInstrument, Token};
 }
 
 /// Frequently used types for convenient imports.
