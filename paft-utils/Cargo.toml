@@ -12,6 +12,7 @@ categories = ["finance", "data-structures"]
 
 [dependencies]
 thiserror = { workspace = true }
+smol_str = { workspace = true }
 polars = { workspace = true, optional = true }
 
 [features]

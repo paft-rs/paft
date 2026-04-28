@@ -61,6 +61,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Utils: `paft_utils::Canonical` now wraps `smol_str::SmolStr` instead of `String`. Tokens up to 23 bytes (the common case for currency/exchange/period codes) are stored inline with no heap allocation, and longer tokens use an `Arc<str>` so cloning a `Canonical` is an O(1) refcount bump rather than a fresh allocation. The public API (`try_new`, `as_str`, `into_inner`, `Display`, `AsRef<str>`, `Borrow<str>`, `FromStr`) is unchanged; this is a transparent allocation-reduction change for hot paths that repeatedly parse the same `Other(_)` payloads (e.g., streaming JSON deserialization of `Currency`, `Exchange`, `Period`, `FundType`, etc.).
 - Facade: `full` feature now includes `prediction`.
 - Facade: re-exports `paft_decimal::{Decimal, RoundingStrategy}` from the root module; downstream crates (`paft-market`, `paft-fundamentals`, etc.) now depend on `paft-decimal` directly for numeric helpers.
 - Market: `DownloadResponse::iter_by_symbol()` returns `(&Symbol, &HistoryResponse)` directly, no filtering required.

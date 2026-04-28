@@ -4,6 +4,7 @@
 //! [`Canonical::try_new`] to guarantee we never serialize an empty string and thus
 //! preserve serde/display round-trips.
 
+use smol_str::SmolStr;
 use std::{
     borrow::{Borrow, Cow},
     fmt,
@@ -16,8 +17,14 @@ use std::{
 /// - Trimmed
 /// - ASCII uppercased
 /// - Whitespace collapsed to single underscores
+///
+/// Backed by [`SmolStr`] so canonical tokens that fit inline (≤ 23 bytes on
+/// 64-bit targets) avoid heap allocation entirely, and longer tokens use an
+/// `Arc<str>` so clones are O(1) refcount bumps. Most canonical tokens in
+/// this workspace — currency codes, exchange codes, period codes — are short
+/// enough to be stored inline.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Canonical(String);
+pub struct Canonical(SmolStr);
 
 impl Canonical {
     /// Attempts to create a new canonical string from arbitrary input, rejecting
@@ -38,7 +45,7 @@ impl Canonical {
                 value: input.to_string(),
             });
         }
-        Ok(Self(token.into_owned()))
+        Ok(Self(SmolStr::new(token.as_ref())))
     }
 
     /// Returns the inner canonical string slice.
@@ -48,11 +55,11 @@ impl Canonical {
         &self.0
     }
 
-    /// Consumes the `Canonical` and returns the inner `String`.
+    /// Consumes the `Canonical` and returns the inner value as a `String`.
     #[inline]
     #[must_use]
     pub fn into_inner(self) -> String {
-        self.0
+        self.0.to_string()
     }
 }
 

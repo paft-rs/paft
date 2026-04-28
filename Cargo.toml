@@ -38,6 +38,7 @@ iso_currency = "0.5.3"
 bitflags = { version = "2.11.1", features = ["serde"] }
 isin = { version = "0.1.19", default-features = false }
 tracing = { version = "0.1.44", features = ["attributes"] }
+smol_str = "0.3.6"
 
 # Local crates
 paft-core = { path = "paft-core", version = "0.8.0", default-features = false }
