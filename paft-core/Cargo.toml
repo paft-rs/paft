@@ -17,5 +17,8 @@ serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 chrono = { workspace = true }
 
+[dev-dependencies]
+paft-utils = { workspace = true }
+
 [features]
 default = []

@@ -26,6 +26,8 @@ fn snapshot_to_dataframe() {
         day_high: Some(usd(151)),
         day_low: Some(usd(147)),
         volume: Some(1_234_567),
+
+        provider: (),
     };
 
     let df = snapshot.to_dataframe().unwrap();
@@ -47,6 +49,8 @@ fn snapshot_vec_to_dataframe() {
         day_high: Some(usd(151)),
         day_low: Some(usd(147)),
         volume: Some(1_000_000),
+
+        provider: (),
     };
 
     let snapshots = [

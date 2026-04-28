@@ -26,6 +26,8 @@ fn quote_construction() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+
+        provider: (),
     };
 
     assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL");
@@ -58,6 +60,8 @@ fn quote_minimal_construction() {
         day_volume: None,
         exchange: None,
         market_state: None,
+
+        provider: (),
     };
     assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL");
     assert!(quote.shortname.is_none());
@@ -83,6 +87,8 @@ fn quote_clone() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+
+        provider: (),
     };
 
     let cloned = original.clone();
@@ -105,6 +111,8 @@ fn quote_debug_formatting() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+
+        provider: (),
     };
 
     let debug_str = format!("{quote:?}");
@@ -129,6 +137,8 @@ fn quote_currency_consistency() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+
+        provider: (),
     };
 
     // The currency should be accessible from the Money fields
@@ -153,6 +163,8 @@ fn quote_currency_none() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+
+        provider: (),
     };
 
     // Should return None when no Money fields are present
@@ -173,6 +185,8 @@ fn quote_money_fields() {
         day_volume: None,
         exchange: None,
         market_state: None,
+
+        provider: (),
     };
 
     // Test price
@@ -197,6 +211,8 @@ fn quote_money_fields() {
         day_volume: None,
         exchange: None,
         market_state: None,
+
+        provider: (),
     };
 
     // Should be None when prices are None
@@ -222,6 +238,8 @@ fn quote_update_construction() {
         ),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+
+        provider: (),
     };
 
     assert_eq!(update.instrument.unique_key().as_ref(), "AAPL");
@@ -250,6 +268,8 @@ fn quote_update_partial_fields() {
         previous_close: None,
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+
+        provider: (),
     };
 
     assert_eq!(update.instrument.unique_key().as_ref(), "AAPL");
@@ -275,6 +295,8 @@ fn quote_update_clone() {
         ),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+
+        provider: (),
     };
 
     let cloned = original.clone();
@@ -295,6 +317,8 @@ fn quote_update_debug_formatting() {
         ),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+
+        provider: (),
     };
 
     let debug_str = format!("{update:?}");
@@ -322,6 +346,8 @@ fn quote_serialization() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&quote).unwrap();
@@ -341,6 +367,8 @@ fn quote_with_none_fields() {
         day_volume: None,
         exchange: None,
         market_state: None,
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&quote).unwrap();
@@ -362,6 +390,8 @@ fn quote_update_serialization() {
         ),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&update).unwrap();
@@ -377,6 +407,8 @@ fn quote_update_with_none_fields() {
         previous_close: None,
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&update).unwrap();
@@ -406,6 +438,8 @@ fn serialization_roundtrip_preserves_precision() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&quote).unwrap();
@@ -428,6 +462,8 @@ fn deserialization_handles_missing_optional_fields() {
         day_volume: None,
         exchange: None,
         market_state: None,
+
+        provider: (),
     };
     let json = serde_json::to_string(&quote).unwrap();
     let deserialized: Quote = serde_json::from_str(&json).unwrap();

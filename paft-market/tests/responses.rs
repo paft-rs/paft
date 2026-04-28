@@ -34,6 +34,8 @@ fn candle_serialization() {
         .unwrap(),
         close_unadj: None,
         volume: Some(1_000_000),
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&candle).unwrap();
@@ -67,6 +69,8 @@ fn candle_with_none_volume() {
         .unwrap(),
         close_unadj: None,
         volume: None,
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&candle).unwrap();
@@ -169,6 +173,8 @@ fn responses_smoke() {
         .unwrap(),
         close_unadj: None,
         volume: Some(1_000_000),
+
+        provider: (),
     }];
 
     let meta = HistoryMeta {
@@ -181,6 +187,7 @@ fn responses_smoke() {
         actions: vec![],
         adjusted: false,
         meta: Some(meta),
+        provider: (),
     };
 
     assert_eq!(response.candles.len(), 1);
@@ -217,9 +224,11 @@ fn complex_nested_serialization() {
             .unwrap(),
             close_unadj: None,
             volume: Some(1_000_000),
+            provider: (),
         }],
         actions: vec![],
         adjusted: false,
+        provider: (),
     };
 
     let json = serde_json::to_string(&response).unwrap();
@@ -254,12 +263,16 @@ fn candle_update_serialization() {
         .unwrap(),
         close_unadj: None,
         volume: Some(2_500_000),
+
+        provider: (),
     };
     let update = CandleUpdate {
         instrument,
         interval: Interval::I1m,
         candle,
         is_final: true,
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&update).unwrap();

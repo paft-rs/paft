@@ -20,6 +20,8 @@ fn snapshot_roundtrip_minimal() {
         day_high: None,
         day_low: None,
         volume: None,
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&snapshot).unwrap();
@@ -43,6 +45,8 @@ fn snapshot_roundtrip_full() {
         day_high: Some(Money::from_canonical_str("432.22", usd.clone()).unwrap()),
         day_low: Some(Money::from_canonical_str("427.80", usd).unwrap()),
         volume: Some(25_000_000),
+
+        provider: (),
     };
 
     let json = serde_json::to_string(&snapshot).unwrap();

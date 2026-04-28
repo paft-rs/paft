@@ -72,3 +72,35 @@ where
         <T as Columnar>::columnar_to_dataframe(self)
     }
 }
+
+#[cfg(feature = "dataframe")]
+impl ToDataFrame for () {
+    fn to_dataframe(&self) -> PolarsResult<DataFrame> {
+        use polars::prelude::{NamedFrom, Series};
+        let dummy = Series::new("_dummy".into(), &[0i32]);
+        let mut df = DataFrame::new(1, vec![dummy.into()])?;
+        df.drop_in_place("_dummy")?;
+        Ok(df)
+    }
+
+    fn empty_dataframe() -> PolarsResult<DataFrame> {
+        DataFrame::new(0, vec![])
+    }
+
+    fn schema() -> PolarsResult<Vec<(&'static str, DataType)>> {
+        Ok(Vec::new())
+    }
+}
+
+#[cfg(feature = "dataframe")]
+impl Columnar for () {
+    fn columnar_to_dataframe(items: &[Self]) -> PolarsResult<DataFrame> {
+        use polars::prelude::{AnyValue, Series};
+        let n = items.len();
+        let dummy = Series::new_empty("_dummy".into(), &DataType::Null)
+            .extend_constant(AnyValue::Null, n)?;
+        let mut df = DataFrame::new(n, vec![dummy.into()])?;
+        df.drop_in_place("_dummy")?;
+        Ok(df)
+    }
+}

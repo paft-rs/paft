@@ -38,6 +38,8 @@ fn search_result_to_dataframe() {
         name: Some("Apple Inc.".to_string()),
         exchange: Some(Exchange::NASDAQ),
         kind: AssetKind::Equity,
+
+        provider: (),
     };
 
     let df = result.to_dataframe().unwrap();
@@ -54,6 +56,8 @@ fn vec_quote_to_dataframe_smoke() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: None,
+
+        provider: (),
     }];
 
     let df = quotes.to_dataframe().unwrap();
@@ -71,6 +75,8 @@ fn quote_to_dataframe_smoke() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: None,
+
+        provider: (),
     };
 
     let df = quote.to_dataframe().unwrap();
@@ -88,6 +94,8 @@ fn quote_update_to_dataframe_smoke() {
         previous_close: Some(usd(147)),
         volume: None,
         ts: chrono::DateTime::from_timestamp(0, 0).unwrap(),
+
+        provider: (),
     };
 
     let df = update.to_dataframe().unwrap();
@@ -103,6 +111,8 @@ fn news_article_to_dataframe() {
         publisher: Some("Reuters".to_string()),
         link: Some("https://example.com/news".to_string()),
         published_at: sample_ts(1_700_000_000),
+
+        provider: (),
     };
 
     let df = article.to_dataframe().unwrap();
@@ -144,6 +154,7 @@ fn sample_contract() -> OptionContract {
             vega: Some(dec("0.3")),
             rho: Some(dec("0.05")),
         }),
+        provider: (),
     }
 }
 
@@ -164,6 +175,8 @@ fn option_chain_to_dataframe() {
             in_the_money: false,
             ..contract
         }],
+
+        provider: (),
     };
 
     let df = chain.to_dataframe().unwrap();
@@ -180,6 +193,8 @@ fn candle_to_dataframe() {
         close: usd(152),
         close_unadj: Some(usd(151)),
         volume: Some(2_500_000),
+
+        provider: (),
     };
 
     let df = candle.to_dataframe().unwrap();
@@ -237,8 +252,12 @@ fn candle_update_to_dataframe_smoke() {
             close: usd(152),
             close_unadj: None,
             volume: Some(2_500_000),
+
+            provider: (),
         },
         is_final: false,
+
+        provider: (),
     };
 
     let df = update.to_dataframe().unwrap();
@@ -265,8 +284,12 @@ fn vec_candle_update_to_dataframe_smoke() {
                 close: usd(152),
                 close_unadj: None,
                 volume: Some(2_500_000),
+
+                provider: (),
             },
             is_final: false,
+
+            provider: (),
         },
         CandleUpdate {
             instrument: paft_domain::Instrument::from_symbol(
@@ -283,8 +306,12 @@ fn vec_candle_update_to_dataframe_smoke() {
                 close: usd(154),
                 close_unadj: None,
                 volume: Some(1_000_000),
+
+                provider: (),
             },
             is_final: true,
+
+            provider: (),
         },
     ];
 

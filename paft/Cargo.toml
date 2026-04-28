@@ -68,10 +68,13 @@ money-formatting = ["paft-money/money-formatting"]
 full = ["domain", "market", "fundamentals", "aggregates", "prediction", "dataframe"]
 
 [dev-dependencies]
+serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
 chrono-tz = { workspace = true }
 rust_decimal = { workspace = true }
+df-derive = { workspace = true }
+polars = { workspace = true, features = ["dtype-datetime", "dtype-decimal"] }
 
 [package.metadata.docs.rs]
 all-features = true

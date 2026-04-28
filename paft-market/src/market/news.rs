@@ -1,15 +1,24 @@
 //! News article types returned from market data endpoints.
 
+// `Eq` is intentionally NOT derived on the generic payload types: the
+// metadata payload `M` is meant to accept user types that don't satisfy
+// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A news article associated with an instrument.
-pub struct NewsArticle {
+///
+/// Generic over a provider metadata payload `M`, which is flattened into the
+/// serialized representation. Use the [`NewsArticle`] alias for the
+/// standard shape (no extra metadata).
+pub struct GenericNewsArticle<M = ()> {
     /// A unique identifier for the article.
     pub uuid: String,
     /// The headline of the article.
@@ -21,4 +30,10 @@ pub struct NewsArticle {
     /// The Unix timestamp (in seconds) of when the article was published.
     #[serde(with = "chrono::serde::ts_seconds")]
     pub published_at: DateTime<Utc>,
+    /// Provider-specific payload, flattened into the serialized form.
+    #[serde(flatten, default = "Default::default")]
+    pub provider: M,
 }
+
+/// Standard `NewsArticle` with no extra provider metadata.
+pub type NewsArticle = GenericNewsArticle<()>;

@@ -20,6 +20,25 @@ All notable changes to this project will be documented in this file.
 - Aggregates: new `Snapshot` type — a 12-field, all-optional snapshot focused strictly on instant-in-time market data.
 - New crate `paft-prediction` (replaces `paft-polymarket`) exposing `Market`, `Token`, and `PredictionInstrument`; gated behind the `prediction` feature on the facade.
 - New crate `paft-decimal` exposing backend-agnostic decimal helpers (parsing, rounding, canonical rendering) without depending on higher-level money types.
+- **Provider-metadata escape hatch**: every market data payload type is now generic over a metadata payload `M`, with a public `pub provider: M` field that uses `#[serde(flatten)]` so provider-specific JSON keys map directly into the typed struct. Standard users keep using the original aliases (`Quote`, `Candle`, ...) and notice no change; power users can plug in custom `M` types (e.g. HFT timestamps) without forking the crate.
+  - Generic shapes added (each with a type alias resolving `M = ()` to preserve the existing public API):
+    - `paft_market::market::quote::{GenericQuote<M>, GenericQuoteUpdate<M>}` (`Quote`, `QuoteUpdate`)
+    - `paft_market::market::orderbook::{GenericOrderBookEntry<M>, GenericOrderBook<M>}` (`OrderBookEntry`, `OrderBook`)
+    - `paft_market::responses::history::{GenericCandle<M>, GenericCandleUpdate<M>, GenericHistoryResponse<M>}` (`Candle`, `CandleUpdate`, `HistoryResponse`)
+    - `paft_market::market::options::{GenericOptionContract<M>, GenericOptionUpdate<M>, GenericOptionChain<M>}` (`OptionContract`, `OptionUpdate`, `OptionChain`)
+    - `paft_market::market::news::GenericNewsArticle<M>` (`NewsArticle`)
+    - `paft_market::responses::search::{GenericSearchResult<M>, GenericSearchResponse<M>}` (`SearchResult`, `SearchResponse`)
+    - `paft_market::responses::download::{GenericDownloadEntry<M>, GenericDownloadResponse<M>}` (`DownloadEntry`, `DownloadResponse`)
+    - `paft_aggregates::snapshot::GenericSnapshot<M>` (`Snapshot`)
+  - When a parent type holds nested refactored types (e.g. `GenericOrderBook<M>::asks: Vec<GenericOrderBookEntry<M>>`), `M` is propagated to the inner element so the same metadata type flows through the whole tree.
+  - `paft-utils` now ships blanket `ToDataFrame` / `Columnar` impls for `()`, so the default no-metadata case contributes zero columns to dataframe exports.
+  - The provider field is named `provider` (not `meta`) to avoid clashing with `HistoryResponse::meta: Option<HistoryMeta>` and to give DataFrame columns a more descriptive prefix (`provider.<field>` rather than `meta.<field>`).
+  - `Eq` and `Hash` are intentionally NOT derived on the generic payload types so that provider metadata can carry non-`Eq` fields like `f64` hardware timestamps. The standard aliases (`Quote = GenericQuote<()>`, etc.) still satisfy `PartialEq` because `()` does.
+  - Ergonomic `::new(...)` constructors (bounded by `M: Default`) are provided on the generic shapes whose Rust struct literals would otherwise be verbose: `GenericQuote::new(instrument)`, `GenericQuoteUpdate::new(instrument, ts)`, `GenericOrderBookEntry::new(price, size)`, `GenericCandle::new(ts, open, high, low, close)`, `GenericCandleUpdate::new(instrument, interval, candle, is_final)`, `GenericOptionContract::new(instrument, strike, expiration_date)`, `GenericOptionUpdate::new(instrument, ts)`, and `GenericSnapshot::new(instrument)`. Container types that already derive `Default` (`GenericOrderBook`, `GenericOptionChain`, `GenericHistoryResponse`, `GenericSearchResponse`, `GenericDownloadResponse`) get the same ergonomics for free.
+
+### Bug fixes
+
+- Doctests: `paft-core` now declares `paft-utils` as a dev-dependency so that the `string_enum_closed_with_code!` doctest can resolve macro-internal paths to `paft_utils::*` types. `paft-money`'s lib doctest expectation was corrected from `"13.60 USD"` to `"13.6 USD"` to match `paft_decimal::to_canonical_string`'s trailing-zero stripping.
 
 ### Breaking Change
 
@@ -31,6 +50,10 @@ All notable changes to this project will be documented in this file.
 - Aggregates: removed `Info` and `FastInfo`. Replaced by `Snapshot` (12 strictly-snapshot fields). Fundamentals/analyst/ESG fields that lived on `Info` belong in `paft-fundamentals` types.
 - Money: `Decimal` and `RoundingStrategy` have moved to the standalone `paft-decimal` crate; import them from `paft_decimal` (or via the facade root) instead of `paft_money::decimal` or `paft::money::Decimal`.
 - Market/Aggregates/Fundamentals: analytics fields that previously exposed `f64` (option greeks, implied volatility, P/E, dividend yield, recommendation scores, growth rates, ESG metrics, holder percentages) now use `paft_decimal::Decimal` for consistent precision.
+- Market: every market data payload struct now carries a `pub provider: M` field. Code that constructs these structs with literal syntax must add `provider: ()` (or use the new `::new(...)` constructors / `Default` impl). Existing match patterns and field accessors are unaffected. The serialized JSON shape of the standard `M = ()` aliases is unchanged because `()` flattens to no extra keys.
+- Market: dropped `Eq` and `Hash` derives from every refactored generic payload. The standard aliases still satisfy `PartialEq`. Downstream code that relied on `Quote: Eq` / `Quote: Hash` (e.g. for `HashSet<Quote>`) needs to either wrap the value or compare on a derived key.
+- Workspace: bumped `polars` from `0.51` to `0.53`. Direct callers of `polars::prelude::DataFrame::new` must update from `DataFrame::new(columns)` to `DataFrame::new(height, columns)`, and pattern matches on `polars::prelude::AnyValue::Decimal(value, scale)` must become `AnyValue::Decimal(value, _, scale)` (the variant gained a precision argument).
+- `df-derive`: switched from the crates.io `0.1.1` release to the upstream git source. The new version depends on `polars 0.53` and adds support for generic structs and `()`-typed metadata fields, which is what makes the provider-metadata escape hatch possible.
 
 ### Changed
 
@@ -45,6 +68,8 @@ All notable changes to this project will be documented in this file.
 - **`AssetKind::PredictionMarket`**: removed entirely. Prediction markets are not an asset class — use `PredictionInstrument` to model them.
 - **Snapshot**: `Info` fundamentals live in `paft_fundamentals::analysis` (`PriceTarget`, `RecommendationSummary`), `paft_fundamentals::esg` (`EsgScores`), and `paft_fundamentals::profile` for shares/cap. 52-week ranges are intentionally cut from the snapshot — derive them from `HistoryResponse`.
 - **`EventID`/`OutcomeID` imports**: `use paft_domain::{EventID, OutcomeID}` becomes `use paft_prediction::{EventID, OutcomeID}` (or via the facade's `paft::prediction` module).
+- **Provider metadata (`provider: M`)**: every constructed market payload struct now needs a `provider` field. The cheapest no-metadata migration is to use the new `::new(...)` constructors (`Quote::new(instrument)`, `Candle::new(ts, open, high, low, close)`, …) which default `provider` to `()`. If you keep struct-literal construction, add `provider: ()`. To carry HFT timestamps, broker-specific flags, or other provider-only fields, define a small struct that derives `Serialize + Deserialize + Clone + Default + Debug + PartialEq` and instantiate the generic shape, e.g. `GenericQuote::<MyMeta> { …, provider: MyMeta { … } }`. See `paft/examples/provider_metadata.rs`, `paft/examples/nested_metadata_propagation.rs`, and `paft/examples/metadata_dataframe.rs` for full walkthroughs covering JSON round-trips, propagation through nested `Vec<Generic*<M>>`, and `provider.*` columns in Polars exports.
+- **No `Eq` / `Hash` on payload types**: if you previously used `HashSet<Quote>` or compared `Quote` via `Eq`, fall back to a key-based comparison (e.g. `Hash`/`Eq` on `(instrument, ts)` pairs). The relaxation is deliberate — it lets `M` carry non-`Eq` fields like `f64` hardware timestamps.
 - For yfinance-rs, see `../yfinance-rs/MIGRATION-paft-0.8.md`. For borsa, see `../borsa-workspace/MIGRATION-paft-0.8.md`.
 
 ### Documentation

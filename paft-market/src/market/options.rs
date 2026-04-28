@@ -1,5 +1,10 @@
 //! Option contracts and chains under the market namespace.
 
+// `Eq` is intentionally NOT derived on the generic payload types: the
+// metadata payload `M` is meant to accept user types that don't satisfy
+// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, NaiveDate, Utc};
@@ -27,10 +32,14 @@ pub struct OptionGreeks {
     pub rho: Option<Decimal>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single option contract (call or put) at a given strike and expiration.
-pub struct OptionContract {
+///
+/// Generic over a provider metadata payload `M`, which is flattened into the
+/// serialized representation. Use the [`OptionContract`] alias for the
+/// standard shape (no extra metadata).
+pub struct GenericOptionContract<M = ()> {
     /// Instrument identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
@@ -61,26 +70,73 @@ pub struct OptionContract {
     pub last_trade_at: Option<DateTime<Utc>>,
     /// Optional first-order greeks for the contract.
     pub greeks: Option<OptionGreeks>,
+    /// Provider-specific payload, flattened into the serialized form.
+    #[serde(flatten, default = "Default::default")]
+    pub provider: M,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+impl<M: Default> GenericOptionContract<M> {
+    /// Build an option contract from its required parts. All quoting fields
+    /// (`price`, `bid`, `ask`, …), `volume`, `open_interest`,
+    /// `implied_volatility`, `expiration_at`, `last_trade_at`, and `greeks`
+    /// default to `None`. `in_the_money` defaults to `false`. `provider` is
+    /// initialised via `M::default()`.
+    #[must_use]
+    pub fn new(instrument: Instrument, strike: Money, expiration_date: NaiveDate) -> Self {
+        Self {
+            instrument,
+            strike,
+            price: None,
+            bid: None,
+            ask: None,
+            volume: None,
+            open_interest: None,
+            implied_volatility: None,
+            in_the_money: false,
+            expiration_date,
+            expiration_at: None,
+            last_trade_at: None,
+            greeks: None,
+            provider: M::default(),
+        }
+    }
+}
+
+/// Standard `OptionContract` with no extra provider metadata.
+pub type OptionContract = GenericOptionContract<()>;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A full option chain split into calls and puts.
-pub struct OptionChain {
+///
+/// Generic over a provider metadata payload `M`, which is flattened into the
+/// serialized representation and propagated into each contract. Use the
+/// [`OptionChain`] alias for the standard shape (no extra metadata).
+pub struct GenericOptionChain<M = ()> {
     /// Call contracts.
-    pub calls: Vec<OptionContract>,
+    pub calls: Vec<GenericOptionContract<M>>,
     /// Put contracts.
-    pub puts: Vec<OptionContract>,
+    pub puts: Vec<GenericOptionContract<M>>,
+    /// Provider-specific payload, flattened into the serialized form.
+    #[serde(flatten, default = "Default::default")]
+    pub provider: M,
 }
+
+/// Standard `OptionChain` with no extra provider metadata.
+pub type OptionChain = GenericOptionChain<()>;
 
 /// A point-in-time update for an option contract.
 ///
 /// This represents incremental changes to market data commonly used for options,
 /// such as bid/ask, last price, and implied volatility, keyed by the underlying
 /// symbol for routing and session filtering.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Generic over a provider metadata payload `M`, which is flattened into the
+/// serialized representation. Use the [`OptionUpdate`] alias for the
+/// standard shape (no extra metadata).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-pub struct OptionUpdate {
+pub struct GenericOptionUpdate<M = ()> {
     /// Underlying instrument used for routing and monotonic filtering.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
@@ -94,4 +150,28 @@ pub struct OptionUpdate {
     pub last_price: Option<Money>,
     /// Implied volatility estimate, if available.
     pub implied_volatility: Option<Decimal>,
+    /// Provider-specific payload, flattened into the serialized form.
+    #[serde(flatten, default = "Default::default")]
+    pub provider: M,
 }
+
+impl<M: Default> GenericOptionUpdate<M> {
+    /// Build an option update from its instrument and timestamp; all
+    /// quoting fields default to `None` and `provider` is initialised via
+    /// `M::default()`.
+    #[must_use]
+    pub fn new(instrument: Instrument, ts: DateTime<Utc>) -> Self {
+        Self {
+            instrument,
+            ts,
+            bid: None,
+            ask: None,
+            last_price: None,
+            implied_volatility: None,
+            provider: M::default(),
+        }
+    }
+}
+
+/// Standard `OptionUpdate` with no extra provider metadata.
+pub type OptionUpdate = GenericOptionUpdate<()>;

@@ -66,6 +66,8 @@ fn end_to_end_workflow() {
         .unwrap(),
         close_unadj: None,
         volume: Some(1_000_000),
+
+        provider: (),
     };
 
     let action = Action::Dividend {
@@ -87,6 +89,7 @@ fn end_to_end_workflow() {
         actions: vec![action],
         adjusted: true,
         meta: Some(meta),
+        provider: (),
     };
 
     // 5. Create a quote
@@ -100,6 +103,8 @@ fn end_to_end_workflow() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+
+        provider: (),
     };
 
     // 6. Create a quote update
@@ -111,6 +116,8 @@ fn end_to_end_workflow() {
         ),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_260, 0).unwrap(),
+
+        provider: (),
     };
 
     // Verify all data is consistent
@@ -211,6 +218,8 @@ fn serialization_workflow() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+
+        provider: (),
     };
 
     let quote_json = serde_json::to_string(&quote).unwrap();
@@ -361,6 +370,7 @@ fn action_types_workflow() {
             actions: vec![action],
             adjusted: false,
             meta: None,
+            provider: (),
         };
 
         let json = serde_json::to_string(&history_response).unwrap();

@@ -297,7 +297,7 @@ fn test_money_dataframe_rust_decimal_backend() {
 
     let amount_value = df.column("amount").unwrap().get(0).unwrap();
     match amount_value {
-        AnyValue::Decimal(value, scale) => {
+        AnyValue::Decimal(value, _, scale) => {
             assert_eq!(scale, 10);
             let df_amount =
                 decimal::from_minor_units(value, u32::try_from(scale).expect("scale fits in u32"));
@@ -327,7 +327,7 @@ fn test_money_dataframe_bigdecimal_backend() {
 
     let amount_value = df.column("amount").unwrap().get(0).unwrap();
     match amount_value {
-        AnyValue::Decimal(value, scale) => {
+        AnyValue::Decimal(value, _, scale) => {
             assert_eq!(scale, 10);
             let df_amount =
                 decimal::from_minor_units(value, u32::try_from(scale).expect("scale fits in u32"));

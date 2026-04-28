@@ -1,36 +1,64 @@
 //! Bulk download response types.
 
+// `Eq` is intentionally NOT derived on the generic payload types: the
+// metadata payload `M` is meant to accept user types that don't satisfy
+// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use serde::{Deserialize, Serialize};
 
-use crate::responses::history::HistoryResponse;
+use crate::responses::history::GenericHistoryResponse;
 use paft_domain::{Instrument, Symbol};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 /// A single instrument-scoped history entry within a bulk download.
-pub struct DownloadEntry {
+///
+/// Generic over a provider metadata payload `M`, which is flattened into the
+/// serialized representation and propagated into the inner history
+/// response. Use the [`DownloadEntry`] alias for the standard shape
+/// (no extra metadata).
+pub struct GenericDownloadEntry<M = ()> {
     /// Full instrument identity (symbol, kind, optional identifiers/venue).
     pub instrument: Instrument,
     /// Full `HistoryResponse` (candles, actions, adjusted, meta).
-    pub history: HistoryResponse,
+    pub history: GenericHistoryResponse<M>,
+    /// Provider-specific payload, flattened into the serialized form.
+    #[serde(flatten, default = "Default::default")]
+    pub provider: M,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+/// Standard `DownloadEntry` with no extra provider metadata.
+pub type DownloadEntry = GenericDownloadEntry<()>;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 /// Aggregated bulk-download response as an array of instrument-keyed entries.
-pub struct DownloadResponse {
+///
+/// Generic over a provider metadata payload `M`, which is flattened into the
+/// serialized representation and propagated into each entry. Use the
+/// [`DownloadResponse`] alias for the standard shape (no extra metadata).
+pub struct GenericDownloadResponse<M = ()> {
     /// Entries keyed by full `Instrument` identity.
-    pub entries: Vec<DownloadEntry>,
+    pub entries: Vec<GenericDownloadEntry<M>>,
+    /// Provider-specific payload, flattened into the serialized form.
+    #[serde(flatten, default = "Default::default")]
+    pub provider: M,
 }
 
-impl DownloadResponse {
-    /// Zero-copy iterator over entries as (&Instrument, &`HistoryResponse`).
-    pub fn iter(&self) -> impl Iterator<Item = (&Instrument, &HistoryResponse)> + '_ {
+/// Standard `DownloadResponse` with no extra provider metadata.
+pub type DownloadResponse = GenericDownloadResponse<()>;
+
+impl<M> GenericDownloadResponse<M> {
+    /// Zero-copy iterator over entries as (&Instrument, &`GenericHistoryResponse<M>`).
+    pub fn iter(&self) -> impl Iterator<Item = (&Instrument, &GenericHistoryResponse<M>)> + '_ {
         self.entries
             .iter()
             .map(|entry| (&entry.instrument, &entry.history))
     }
 
     /// Zero-copy iterator exposing a symbol-centric view (duplicates may exist).
-    pub fn iter_by_symbol(&self) -> impl Iterator<Item = (&Symbol, &HistoryResponse)> + '_ {
+    pub fn iter_by_symbol(
+        &self,
+    ) -> impl Iterator<Item = (&Symbol, &GenericHistoryResponse<M>)> + '_ {
         self.entries
             .iter()
             .map(|entry| (&entry.instrument.symbol, &entry.history))

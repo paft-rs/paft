@@ -65,10 +65,13 @@ mod dataframe_impl {
         }
 
         fn empty_dataframe() -> PolarsResult<DataFrame> {
-            DataFrame::new(vec![
-                Series::new_empty("event_id".into(), &DataType::String).into(),
-                Series::new_empty("outcome_id".into(), &DataType::String).into(),
-            ])
+            DataFrame::new(
+                0,
+                vec![
+                    Series::new_empty("event_id".into(), &DataType::String).into(),
+                    Series::new_empty("outcome_id".into(), &DataType::String).into(),
+                ],
+            )
         }
 
         fn schema() -> PolarsResult<Vec<(&'static str, DataType)>> {
@@ -90,10 +93,13 @@ mod dataframe_impl {
                 .map(|i| i.outcome_id.as_ref().to_string())
                 .collect();
 
-            let df = DataFrame::new(vec![
-                Series::new("event_id".into(), event_ids).into(),
-                Series::new("outcome_id".into(), outcome_ids).into(),
-            ])?;
+            let df = DataFrame::new(
+                items.len(),
+                vec![
+                    Series::new("event_id".into(), event_ids).into(),
+                    Series::new("outcome_id".into(), outcome_ids).into(),
+                ],
+            )?;
             Ok(df)
         }
     }

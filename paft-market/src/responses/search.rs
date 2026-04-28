@@ -1,5 +1,10 @@
 //! Search response types.
 
+// `Eq` is intentionally NOT derived on the generic payload types: the
+// metadata payload `M` is meant to accept user types that don't satisfy
+// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
@@ -7,10 +12,14 @@ use df_derive::ToDataFrame;
 
 use paft_domain::{AssetKind, Exchange, Instrument};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single search result item.
-pub struct SearchResult {
+///
+/// Generic over a provider metadata payload `M`, which is flattened into the
+/// serialized representation. Use the [`SearchResult`] alias for the
+/// standard shape (no extra metadata).
+pub struct GenericSearchResult<M = ()> {
     /// Instrument identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
@@ -22,11 +31,27 @@ pub struct SearchResult {
     /// Classified asset kind.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub kind: AssetKind,
+    /// Provider-specific payload, flattened into the serialized form.
+    #[serde(flatten, default = "Default::default")]
+    pub provider: M,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+/// Standard `SearchResult` with no extra provider metadata.
+pub type SearchResult = GenericSearchResult<()>;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 /// Response containing the merged search results.
-pub struct SearchResponse {
+///
+/// Generic over a provider metadata payload `M`, which is flattened into the
+/// serialized representation and propagated into each result. Use the
+/// [`SearchResponse`] alias for the standard shape (no extra metadata).
+pub struct GenericSearchResponse<M = ()> {
     /// De-duplicated search results.
-    pub results: Vec<SearchResult>,
+    pub results: Vec<GenericSearchResult<M>>,
+    /// Provider-specific payload, flattened into the serialized form.
+    #[serde(flatten, default = "Default::default")]
+    pub provider: M,
 }
+
+/// Standard `SearchResponse` with no extra provider metadata.
+pub type SearchResponse = GenericSearchResponse<()>;

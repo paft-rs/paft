@@ -228,13 +228,16 @@ mod dataframe_impl {
         }
 
         fn empty_dataframe() -> PolarsResult<DataFrame> {
-            DataFrame::new(vec![
-                Series::new_empty("kind".into(), &DataType::String).into(),
-                Series::new_empty("symbol".into(), &DataType::String).into(),
-                Series::new_empty("exchange".into(), &DataType::String).into(),
-                Series::new_empty("figi".into(), &DataType::String).into(),
-                Series::new_empty("isin".into(), &DataType::String).into(),
-            ])
+            DataFrame::new(
+                0,
+                vec![
+                    Series::new_empty("kind".into(), &DataType::String).into(),
+                    Series::new_empty("symbol".into(), &DataType::String).into(),
+                    Series::new_empty("exchange".into(), &DataType::String).into(),
+                    Series::new_empty("figi".into(), &DataType::String).into(),
+                    Series::new_empty("isin".into(), &DataType::String).into(),
+                ],
+            )
         }
 
         fn schema() -> PolarsResult<Vec<(&'static str, DataType)>> {
@@ -265,13 +268,16 @@ mod dataframe_impl {
                 .map(|i| i.isin.as_ref().map(|v| v.as_ref().to_string()))
                 .collect();
 
-            let df = DataFrame::new(vec![
-                Series::new("kind".into(), kinds).into(),
-                Series::new("symbol".into(), symbols).into(),
-                Series::new("exchange".into(), exchanges).into(),
-                Series::new("figi".into(), figis).into(),
-                Series::new("isin".into(), isins).into(),
-            ])?;
+            let df = DataFrame::new(
+                items.len(),
+                vec![
+                    Series::new("kind".into(), kinds).into(),
+                    Series::new("symbol".into(), symbols).into(),
+                    Series::new("exchange".into(), exchanges).into(),
+                    Series::new("figi".into(), figis).into(),
+                    Series::new("isin".into(), isins).into(),
+                ],
+            )?;
             Ok(df)
         }
     }

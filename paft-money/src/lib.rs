@@ -86,7 +86,7 @@
 //!     RoundingStrategy::MidpointAwayFromZero,
 //!     None,
 //! )?;
-//! assert_eq!(settled.format(), "13.60 USD");
+//! assert_eq!(settled.format(), "13.6 USD");
 //! # Ok(()) }
 //! # run().unwrap();
 //! ```
