@@ -127,9 +127,30 @@ fn order_book_propagation() -> Result<()> {
 fn history_propagation() -> Result<()> {
     let response: GenericHistoryResponse<FeedMeta> = GenericHistoryResponse {
         candles: vec![
-            candle(1_700_000_000, 150, 152, 149, 151, feed_meta(101, "BARS_AAPL")),
-            candle(1_700_000_060, 151, 153, 150, 152, feed_meta(102, "BARS_AAPL")),
-            candle(1_700_000_120, 152, 154, 151, 153, feed_meta(103, "BARS_AAPL")),
+            candle(
+                1_700_000_000,
+                150,
+                152,
+                149,
+                151,
+                feed_meta(101, "BARS_AAPL"),
+            ),
+            candle(
+                1_700_000_060,
+                151,
+                153,
+                150,
+                152,
+                feed_meta(102, "BARS_AAPL"),
+            ),
+            candle(
+                1_700_000_120,
+                152,
+                154,
+                151,
+                153,
+                feed_meta(103, "BARS_AAPL"),
+            ),
         ],
         actions: vec![Action::Dividend {
             ts: ts(1_699_900_000),
