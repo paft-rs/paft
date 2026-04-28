@@ -83,7 +83,7 @@ pub mod fundamentals {
 /// Namespaced access to `paft-aggregates` (feature-gated).
 #[cfg(feature = "aggregates")]
 pub mod aggregates {
-    pub use paft_aggregates::{FastInfo, Info};
+    pub use paft_aggregates::Snapshot;
 }
 
 /// Namespaced access to `paft-prediction` (feature-gated).

@@ -6,6 +6,6 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-pub mod info;
+pub mod snapshot;
 
-pub use info::{FastInfo, Info};
+pub use snapshot::Snapshot;

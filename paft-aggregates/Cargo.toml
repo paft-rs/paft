@@ -51,3 +51,4 @@ dataframe = [
 paft-decimal = { workspace = true, default-features = false }
 serde_json = { workspace = true }
 iso_currency = { workspace = true }
+pretty_assertions = "1.4"
