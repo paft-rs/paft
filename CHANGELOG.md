@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Money: `Money::try_div_money(&Money) -> Result<Decimal, MoneyError>` divides two same-currency `Money` values and returns the unitless ratio, enabling finance computations like "shares per budget" or P/E quotients without losing precision. Currency mismatch yields `MoneyError::CurrencyMismatch`; a zero divisor yields `MoneyError::DivisionByZero`.
+- Money (panicking-money-ops): `Div<Money> for Money` and `Div<&Money> for &Money` now produce a `Decimal` ratio, complementing the existing `Div<Decimal>` impls that scale a single `Money` value.
 - Market: expanded `requests::history::Interval` coverage and provided second/minute conversion helpers for the new variants.
 - Money: implement `Hash` for `paft_money::Money` using currency and canonicalized amount.
 - Money: add `MoneyAmount` for high-precision decimal values with optional currency hints, now backed by the shared `paft-decimal` facade for construction and serde parity.

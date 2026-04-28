@@ -60,6 +60,34 @@ mod panicking_ops_tests {
     }
 
     #[test]
+    fn test_money_div_money_yields_decimal_ratio() {
+        let budget = Money::new(Decimal::from(1000), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let price = Money::new(Decimal::from(40), Currency::Iso(IsoCurrency::USD)).unwrap();
+
+        let ratio_ref = &budget / &price;
+        assert_eq!(ratio_ref, Decimal::from(25));
+
+        let ratio_owned = budget / price;
+        assert_eq!(ratio_owned, Decimal::from(25));
+    }
+
+    #[test]
+    #[should_panic(expected = "currency mismatch")]
+    fn test_money_div_money_currency_mismatch_panics() {
+        let usd = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let eur = Money::new(Decimal::from(50), Currency::Iso(IsoCurrency::EUR)).unwrap();
+        let _ = &usd / &eur;
+    }
+
+    #[test]
+    #[should_panic(expected = "division by zero")]
+    fn test_money_div_money_zero_panics() {
+        let usd = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let zero = Money::zero(Currency::Iso(IsoCurrency::USD)).unwrap();
+        let _ = &usd / &zero;
+    }
+
+    #[test]
     fn test_money_reference_arithmetic_is_ergonomic() {
         let lhs = Money::new(Decimal::from(125), Currency::Iso(IsoCurrency::USD)).unwrap();
         let rhs = Money::new(Decimal::from(75), Currency::Iso(IsoCurrency::USD)).unwrap();
@@ -114,6 +142,37 @@ mod non_panicking_default_tests {
         let ok = usd_100.try_div(Decimal::from(2)).unwrap();
         assert_eq!(ok.amount(), Decimal::from(50));
         assert_eq!(ok.currency(), &Currency::Iso(IsoCurrency::USD));
+    }
+
+    #[test]
+    fn test_try_div_money_returns_decimal_ratio() {
+        let budget = Money::new(Decimal::from(1000), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let price = Money::new(Decimal::from(40), Currency::Iso(IsoCurrency::USD)).unwrap();
+
+        let ratio = budget.try_div_money(&price).unwrap();
+        assert_eq!(ratio, Decimal::from(25));
+    }
+
+    #[test]
+    fn test_try_div_money_rejects_currency_mismatch() {
+        let usd = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let eur = Money::new(Decimal::from(50), Currency::Iso(IsoCurrency::EUR)).unwrap();
+
+        assert!(matches!(
+            usd.try_div_money(&eur),
+            Err(paft_money::MoneyError::CurrencyMismatch { .. })
+        ));
+    }
+
+    #[test]
+    fn test_try_div_money_rejects_zero_divisor() {
+        let usd = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
+        let zero = Money::zero(Currency::Iso(IsoCurrency::USD)).unwrap();
+
+        assert!(matches!(
+            usd.try_div_money(&zero),
+            Err(paft_money::MoneyError::DivisionByZero)
+        ));
     }
 
     #[test]

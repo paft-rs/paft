@@ -361,6 +361,32 @@ impl Money {
         Self::new(copy_decimal(&self.amount) / rhs, self.currency.clone())
     }
 
+    /// Divides two `Money` values of the same currency, returning the unitless ratio.
+    ///
+    /// Use this for finance ratios such as "how many shares fit in a budget"
+    /// (`budget.try_div_money(&price)`) or P/E-style quotients. The result is a
+    /// pure [`Decimal`] and is **not** rounded to any currency precision.
+    ///
+    /// # Errors
+    /// - [`MoneyError::CurrencyMismatch`] when the operands use different currencies.
+    /// - [`MoneyError::DivisionByZero`] when `rhs` has a zero amount.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "debug", skip(self, rhs), err)
+    )]
+    pub fn try_div_money(&self, rhs: &Self) -> Result<Decimal, MoneyError> {
+        if self.currency != rhs.currency {
+            return Err(MoneyError::CurrencyMismatch {
+                expected: self.currency.clone(),
+                found: rhs.currency.clone(),
+            });
+        }
+        if rhs.amount == decimal::zero() {
+            return Err(MoneyError::DivisionByZero);
+        }
+        Ok(copy_decimal(&self.amount) / copy_decimal(&rhs.amount))
+    }
+
     /// Converts this money to another currency using the provided exchange rate and rounding strategy.
     ///
     /// # Errors
@@ -715,5 +741,46 @@ impl Div<Decimal> for &Money {
         assert!(rhs != decimal::zero(), "division by zero");
         Money::new(copy_decimal(&self.amount) / rhs, self.currency.clone())
             .expect("currency metadata available")
+    }
+}
+
+#[cfg(feature = "panicking-money-ops")]
+impl Div for Money {
+    type Output = Decimal;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        let Self {
+            amount: lhs_amount,
+            currency: lhs_currency,
+        } = self;
+        let Self {
+            amount: rhs_amount,
+            currency: rhs_currency,
+        } = rhs;
+
+        assert!(
+            lhs_currency == rhs_currency,
+            "currency mismatch: expected {lhs_currency}, found {rhs_currency}"
+        );
+        assert!(rhs_amount != decimal::zero(), "division by zero");
+
+        lhs_amount / rhs_amount
+    }
+}
+
+#[cfg(feature = "panicking-money-ops")]
+impl<'b> Div<&'b Money> for &Money {
+    type Output = Decimal;
+
+    fn div(self, rhs: &'b Money) -> Self::Output {
+        assert!(
+            self.currency == rhs.currency,
+            "currency mismatch: expected {expected}, found {found}",
+            expected = self.currency,
+            found = rhs.currency
+        );
+        assert!(rhs.amount != decimal::zero(), "division by zero");
+
+        copy_decimal(&self.amount) / copy_decimal(&rhs.amount)
     }
 }
