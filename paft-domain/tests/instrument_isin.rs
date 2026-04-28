@@ -1,16 +1,12 @@
-use paft_domain::{IdentifierScheme, Instrument};
+use paft_domain::Instrument;
 
 #[test]
 fn deserialize_requires_valid_isin() {
     let json = r#"{
-        "id": {
-            "Security": {
-                "symbol": "AAPL",
-                "exchange": null,
-                "figi": null,
-                "isin": "US0378331006"
-            }
-        },
+        "symbol": "AAPL",
+        "exchange": null,
+        "figi": null,
+        "isin": "US0378331006",
         "kind": "EQUITY"
     }"#;
 
@@ -22,37 +18,27 @@ fn deserialize_requires_valid_isin() {
 #[test]
 fn deserialize_normalizes_loose_isin() {
     let json = r#"{
-        "id": {
-            "Security": {
-                "symbol": "AAPL",
-                "exchange": null,
-                "figi": null,
-                "isin": "us-037833-1005 "
-            }
-        },
+        "symbol": "AAPL",
+        "exchange": null,
+        "figi": null,
+        "isin": "us-037833-1005 ",
         "kind": "EQUITY"
     }"#;
 
     let instrument: Instrument = serde_json::from_str(json).expect("valid loose ISIN");
-    match instrument.id() {
-        IdentifierScheme::Security(sec) => {
-            assert_eq!(sec.isin.as_ref().map(AsRef::as_ref), Some("US0378331005"));
-        }
-        IdentifierScheme::Prediction(_) => panic!("expected Security identifier"),
-    }
+    assert_eq!(
+        instrument.isin.as_ref().map(AsRef::as_ref),
+        Some("US0378331005")
+    );
 }
 
 #[test]
 fn deserialize_rejects_empty_after_scrub() {
     let json = r#"{
-        "id": {
-            "Security": {
-                "symbol": "AAPL",
-                "exchange": null,
-                "figi": null,
-                "isin": "---"
-            }
-        },
+        "symbol": "AAPL",
+        "exchange": null,
+        "figi": null,
+        "isin": "---",
         "kind": "EQUITY"
     }"#;
 

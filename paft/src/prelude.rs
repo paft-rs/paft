@@ -6,8 +6,8 @@
 // Re-export core types via namespaced modules
 #[cfg(feature = "domain")]
 pub use crate::domain::{
-    AssetKind, Canonical, Exchange, Figi, IdentifierScheme, Instrument, Isin, MarketState, Period,
-    SecurityId, StringCode, Symbol, canonicalize,
+    AssetKind, Canonical, Exchange, Figi, Instrument, Isin, MarketState, Period, StringCode,
+    Symbol, canonicalize,
 };
 #[cfg(feature = "money-formatting")]
 pub use crate::money::Locale;
@@ -78,4 +78,4 @@ pub use crate::market::responses::search::{SearchResponse, SearchResult};
 pub use crate::aggregates::Snapshot;
 
 #[cfg(feature = "prediction")]
-pub use crate::prediction::{Market, PredictionInstrument, Token};
+pub use crate::prediction::{EventID, Market, OutcomeID, PredictionInstrument, Token};

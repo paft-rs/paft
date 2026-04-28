@@ -7,8 +7,7 @@ use iso_currency::Currency as IsoCurrency;
 use paft::market::MarketError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
-    IdentifierScheme, Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range,
-    SearchRequest,
+    Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range, SearchRequest,
 };
 use paft_decimal::Decimal;
 use std::str::FromStr;
@@ -29,12 +28,9 @@ fn end_to_end_workflow() {
     let instrument =
         Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
             .expect("valid instrument");
-    let inst_symbol = match instrument.id() {
-        IdentifierScheme::Security(sec) => sec.symbol.as_str(),
-        IdentifierScheme::Prediction(_) => unreachable!(),
-    };
+    let inst_symbol = instrument.symbol.as_str();
     assert_eq!(inst_symbol, "AAPL");
-    assert_eq!(instrument.kind(), &AssetKind::Equity);
+    assert_eq!(instrument.kind, AssetKind::Equity);
 
     // 3. Create a history request
     let _history_req = HistoryRequest::builder()
@@ -118,10 +114,7 @@ fn end_to_end_workflow() {
     };
 
     // Verify all data is consistent
-    let inst_symbol = match instrument.id() {
-        IdentifierScheme::Security(sec) => sec.symbol.as_str(),
-        IdentifierScheme::Prediction(_) => unreachable!(),
-    };
+    let inst_symbol = instrument.symbol.as_str();
     assert_eq!(quote.instrument.unique_key().as_ref(), inst_symbol);
     assert_eq!(quote_update.instrument.unique_key().as_ref(), inst_symbol);
     assert_eq!(history_response.candles[0].close, quote.price.unwrap());
@@ -259,7 +252,7 @@ fn asset_kind_workflow() {
             asset_kind,
         )
         .expect("valid instrument for asset kind");
-        assert_eq!(instrument.kind(), &asset_kind);
+        assert_eq!(instrument.kind, asset_kind);
 
         // Test serialization
         let json = serde_json::to_string(&instrument).unwrap();

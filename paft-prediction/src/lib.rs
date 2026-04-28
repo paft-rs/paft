@@ -1,10 +1,11 @@
 //! Prediction market data models for paft.
 
+pub mod identifiers;
 pub mod instrument;
 
+pub use identifiers::{EventID, OutcomeID};
 pub use instrument::PredictionInstrument;
 
-use paft_domain::identifiers::{EventID, OutcomeID};
 use paft_money::{Currency, Money};
 use serde::{Deserialize, Serialize};
 

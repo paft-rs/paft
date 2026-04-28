@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::responses::history::HistoryResponse;
-use paft_domain::{IdentifierScheme, Instrument, Symbol};
+use paft_domain::{Instrument, Symbol};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// A single instrument-scoped history entry within a bulk download.
@@ -30,13 +30,9 @@ impl DownloadResponse {
     }
 
     /// Zero-copy iterator exposing a symbol-centric view (duplicates may exist).
-    /// Prediction instruments are omitted.
     pub fn iter_by_symbol(&self) -> impl Iterator<Item = (&Symbol, &HistoryResponse)> + '_ {
         self.entries
             .iter()
-            .filter_map(|entry| match entry.instrument.id() {
-                IdentifierScheme::Security(sec) => Some((&sec.symbol, &entry.history)),
-                IdentifierScheme::Prediction(_) => None,
-            })
+            .map(|entry| (&entry.instrument.symbol, &entry.history))
     }
 }

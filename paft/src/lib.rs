@@ -43,9 +43,8 @@ pub mod core {
 #[cfg(feature = "domain")]
 pub mod domain {
     pub use paft_domain::{
-        AssetKind, Canonical, CanonicalError, DomainError, EventID, Exchange, Figi,
-        IdentifierScheme, Instrument, Isin, MarketState, OutcomeID, Period, PredictionID,
-        SecurityId, StringCode, Symbol, canonicalize,
+        AssetKind, Canonical, CanonicalError, DomainError, Exchange, Figi, Instrument, Isin,
+        MarketState, Period, StringCode, Symbol, canonicalize,
     };
     #[cfg(feature = "dataframe")]
     pub use paft_domain::{ToDataFrame, ToDataFrameVec};
@@ -89,7 +88,7 @@ pub mod aggregates {
 /// Namespaced access to `paft-prediction` (feature-gated).
 #[cfg(feature = "prediction")]
 pub mod prediction {
-    pub use paft_prediction::{Market, PredictionInstrument, Token};
+    pub use paft_prediction::{EventID, Market, OutcomeID, PredictionInstrument, Token};
 }
 
 /// Frequently used types for convenient imports.

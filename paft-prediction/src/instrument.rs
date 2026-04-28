@@ -1,6 +1,7 @@
 //! Logical identity for a prediction-market outcome.
 
-use paft_domain::{DomainError, EventID, OutcomeID};
+use crate::identifiers::{EventID, OutcomeID};
+use paft_domain::DomainError;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 

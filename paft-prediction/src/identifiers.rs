@@ -1,5 +1,5 @@
 //! Generic prediction-market identifier newtypes.
-use crate::DomainError;
+use paft_domain::DomainError;
 use serde::{Deserialize, Deserializer, Serialize, de};
 use std::{convert::TryFrom, fmt};
 

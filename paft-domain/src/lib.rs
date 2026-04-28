@@ -1,9 +1,8 @@
 //! Core domain types for the paft ecosystem.
 //!
 //! This crate defines strongly-typed primitives for instruments, exchanges,
-//! market sessions, identifiers for both traditional securities and prediction
-//! markets (`Symbol`, `Figi`, `Isin`, `EventID`, `OutcomeID`), and financial
-//! periods used across the paft ecosystem. Types are designed to be:
+//! market sessions, security identifiers (`Symbol`, `Figi`, `Isin`), and
+//! financial periods used across the paft ecosystem. Types are designed to be:
 //! - Canonical and stable in string form (for serde, display, and storage)
 //! - Liberal in what they accept when parsing (aliases, case-insensitivity),
 //!   strict and consistent in emission
@@ -12,29 +11,19 @@
 //! # Quickstart
 //!
 //! ```rust
-//! use paft_domain::{AssetKind, Exchange, IdentifierScheme, Instrument, Period, Symbol};
+//! use paft_domain::{AssetKind, Exchange, Instrument, Period, Symbol};
 //!
-//! // Create an instrument from a symbol and kind
 //! let symbol = Symbol::new("AAPL").unwrap();
 //! let aapl = Instrument::from_symbol_and_exchange(
 //!     symbol.as_str(),
 //!     Exchange::NASDAQ,
 //!     AssetKind::Equity,
-//! )
-//! .unwrap();
-//! match aapl.id() {
-//!     IdentifierScheme::Security(sec) => {
-//!         assert_eq!(sec.symbol.as_str(), symbol.as_str());
-//!         assert!(sec.exchange.is_some());
-//!     }
-//!     IdentifierScheme::Prediction(_) => unreachable!(),
-//! }
+//! ).unwrap();
+//! assert_eq!(aapl.symbol.as_str(), "AAPL");
+//! assert!(aapl.exchange.is_some());
 //!
-//! // Parse financial periods from flexible inputs and get canonical form
 //! let q4 = "2023-Q4".parse::<Period>().unwrap();
 //! assert_eq!(q4.to_string(), "2023Q4");
-//! let next = q4.next_quarter().unwrap();
-//! assert_eq!(next.to_string(), "2024Q1");
 //! ```
 //!
 //! # Serde
@@ -51,7 +40,6 @@
 
 pub mod error;
 pub mod exchange;
-pub mod identifier;
 pub mod identifiers;
 pub mod instrument;
 pub mod market_state;
@@ -59,8 +47,7 @@ pub mod period;
 
 pub use error::DomainError;
 pub use exchange::Exchange;
-pub use identifier::{IdentifierScheme, PredictionID, SecurityId};
-pub use identifiers::{EventID, Figi, Isin, OutcomeID, Symbol};
+pub use identifiers::{Figi, Isin, Symbol};
 pub use instrument::{AssetKind, Instrument};
 pub use market_state::MarketState;
 pub use period::Period;
