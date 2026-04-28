@@ -292,7 +292,7 @@ fn cases() -> Vec<Case> {
 fn assert_round_trip(case: &Case) {
     let display = case.variant.to_string();
     assert_eq!(display, case.canonical);
-    assert_eq!(case.variant.full_name(), case.full_name);
+    assert_eq!(case.variant.full_name().as_ref(), case.full_name);
 
     assert_eq!(case.variant.code(), case.canonical);
 

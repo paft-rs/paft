@@ -57,6 +57,7 @@ All notable changes to this project will be documented in this file.
 - Market: dropped `Eq` and `Hash` derives from every refactored generic payload. The standard aliases still satisfy `PartialEq`. Downstream code that relied on `Quote: Eq` / `Quote: Hash` (e.g. for `HashSet<Quote>`) needs to either wrap the value or compare on a derived key.
 - Workspace: bumped `polars` from `0.51` to `0.53`. Direct callers of `polars::prelude::DataFrame::new` must update from `DataFrame::new(columns)` to `DataFrame::new(height, columns)`, and pattern matches on `polars::prelude::AnyValue::Decimal(value, scale)` must become `AnyValue::Decimal(value, _, scale)` (the variant gained a precision argument).
 - `df-derive`: switched from the crates.io `0.1.1` release to the upstream git source. The new version depends on `polars 0.53` and adds support for generic structs and `()`-typed metadata fields, which is what makes the provider-metadata escape hatch possible.
+- Domain: `Exchange::full_name()` now returns `Cow<'static, str>` (previously `&str`) so its signature matches `Currency::full_name()`. Canonical variants stay zero-cost (`Cow::Borrowed`); only the `Other(_)` arm allocates. Callers that compared the result to a `&str` literal must use `.as_ref()` (or `&*`).
 
 ### Changed
 
@@ -74,6 +75,7 @@ All notable changes to this project will be documented in this file.
 - **`EventID`/`OutcomeID` imports**: `use paft_domain::{EventID, OutcomeID}` becomes `use paft_prediction::{EventID, OutcomeID}` (or via the facade's `paft::prediction` module).
 - **Provider metadata (`provider: M`)**: every constructed market payload struct now needs a `provider` field. The cheapest no-metadata migration is to use the new `::new(...)` constructors (`Quote::new(instrument)`, `Candle::new(ts, open, high, low, close)`, …) which default `provider` to `()`. If you keep struct-literal construction, add `provider: ()`. To carry HFT timestamps, broker-specific flags, or other provider-only fields, define a small struct that derives `Serialize + Deserialize + Clone + Default + Debug + PartialEq` and instantiate the generic shape, e.g. `GenericQuote::<MyMeta> { …, provider: MyMeta { … } }`. See `paft/examples/provider_metadata.rs`, `paft/examples/nested_metadata_propagation.rs`, and `paft/examples/metadata_dataframe.rs` for full walkthroughs covering JSON round-trips, propagation through nested `Vec<Generic*<M>>`, and `provider.*` columns in Polars exports.
 - **No `Eq` / `Hash` on payload types**: if you previously used `HashSet<Quote>` or compared `Quote` via `Eq`, fall back to a key-based comparison (e.g. `Hash`/`Eq` on `(instrument, ts)` pairs). The relaxation is deliberate — it lets `M` carry non-`Eq` fields like `f64` hardware timestamps.
+- **`Exchange::full_name()`**: returns `Cow<'static, str>` instead of `&str`. Replace `assert_eq!(ex.full_name(), "Nasdaq")` with `assert_eq!(ex.full_name().as_ref(), "Nasdaq")`, and use `&*ex.full_name()` (or bind to a `let`) where a `&str` is needed.
 - For yfinance-rs, see `../yfinance-rs/MIGRATION-paft-0.8.md`. For borsa, see `../borsa-workspace/MIGRATION-paft-0.8.md`.
 
 ### Documentation
