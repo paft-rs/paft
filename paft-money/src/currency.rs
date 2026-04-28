@@ -30,12 +30,6 @@ pub enum Currency {
     Other(Canonical),
 }
 
-impl Default for Currency {
-    fn default() -> Self {
-        Self::Iso(IsoCurrency::USD)
-    }
-}
-
 impl Currency {
     /// Attempts to parse a currency from the provided string, enforcing canonical aliases.
     ///
