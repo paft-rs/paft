@@ -60,6 +60,7 @@ All notable changes to this project will be documented in this file.
 - Facade: `full` feature now includes `prediction`.
 - Facade: re-exports `paft_decimal::{Decimal, RoundingStrategy}` from the root module; downstream crates (`paft-market`, `paft-fundamentals`, etc.) now depend on `paft-decimal` directly for numeric helpers.
 - Market: `DownloadResponse::iter_by_symbol()` returns `(&Symbol, &HistoryResponse)` directly, no filtering required.
+- Workspace: refreshed direct dependency pins to their latest semver-compatible releases — `serde 1.0.228`, `serde_json 1.0.149`, `thiserror 2.0.18`, `regex 1.12.3`, `quote 1.0.45`, `rust_decimal 1.41`, `bigdecimal 0.4.10`, `bitflags 2.11.1`, `iso_currency 0.5.3`, `isin 0.1.19`, `tracing 0.1.44`, `num-traits 0.2.19`, and `pretty_assertions 1.4.1`. `chrono`/`chrono-tz` stay loosely pinned (`0.4` / `0.10`) to remain compatible with `polars 0.53`'s `chrono <= 0.4.41` upper bound.
 
 ### Migration notes
 

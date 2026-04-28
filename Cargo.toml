@@ -21,23 +21,23 @@ license = "MIT"
 repository = "https://github.com/paft-rs/paft"
 
 [workspace.dependencies]
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 polars = { version = "0.53", default-features = false }
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 df-derive = { git = "https://github.com/gramistella/df-derive.git" }
-quote = "1.0.41"
-serde_json = "1.0.145"
-regex = "1.12.2"
+quote = "1.0.45"
+serde_json = "1.0.149"
+regex = "1.12.3"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = { version = "0.10", features = ["serde"] }
-rust_decimal = { version = "1.39", features = ["serde"] }
-bigdecimal = { version = "0.4.9", features = ["serde"] }
+rust_decimal = { version = "1.41", features = ["serde"] }
+bigdecimal = { version = "0.4.10", features = ["serde"] }
 num-bigint = "0.4.6"
-num-traits = "0.2"
-iso_currency = "0.5"
-bitflags = { version = "2.10.0", features = ["serde"] }
-isin = { version = "0.1", default-features = false }
-tracing = { version = "0.1", features = ["attributes"] }
+num-traits = "0.2.19"
+iso_currency = "0.5.3"
+bitflags = { version = "2.11.1", features = ["serde"] }
+isin = { version = "0.1.19", default-features = false }
+tracing = { version = "0.1.44", features = ["attributes"] }
 
 # Local crates
 paft-core = { path = "paft-core", version = "0.8.0", default-features = false }
