@@ -13,16 +13,22 @@ All notable changes to this project will be documented in this file.
 - Money: add `MoneyAmount` for high-precision decimal values with optional currency hints, now backed by the shared `paft-decimal` facade for construction and serde parity.
 - Market: derive `Hash` for `paft_market::market::action::Action`.
   - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
-- Domain: new `IdentifierScheme` with `SecurityId`/`PredictionId` unifies instrument identifiers across securities and prediction markets.
-- Domain: new identifiers `EventID` and `OutcomeID` for prediction markets.
-- Domain: new constructors on `Instrument`: `from_prediction_market`, `from_figi`, plus `new(IdentifierScheme, AssetKind)`.
-- New crate `paft-prediction` (replaces `paft-polymarket`) exposing `Market` and `Token`; gated behind the `prediction` feature on the facade.
+- Domain: `Instrument` is a flat struct with security identifier fields (`symbol`, optional `exchange`, `figi`, `isin`) plus `kind: AssetKind`.
+- Domain: constructors on `Instrument`: `new(Symbol, AssetKind)`, `from_symbol`, `from_symbol_and_exchange`, `from_figi`.
+- Prediction: new `paft_prediction::PredictionInstrument` parallels `Instrument` for prediction-market outcomes.
+- Prediction: `EventID` and `OutcomeID` now live in `paft-prediction` (re-exported from the facade's `prediction` module).
+- Aggregates: new `Snapshot` type — a 12-field, all-optional snapshot focused strictly on instant-in-time market data.
+- New crate `paft-prediction` (replaces `paft-polymarket`) exposing `Market`, `Token`, and `PredictionInstrument`; gated behind the `prediction` feature on the facade.
 - New crate `paft-decimal` exposing backend-agnostic decimal helpers (parsing, rounding, canonical rendering) without depending on higher-level money types.
 
 ### Breaking Change
 
-- Domain: `Instrument` now stores `id: IdentifierScheme` (replacing top-level `figi`, `isin`, `symbol`, `exchange`, `token_id`, `condition_id` fields). JSON shape reflects this (`{ "id": { "Security": { ... } } }` or `{ "id": { "Prediction": { ... } } }`).
-- Domain: removed legacy setters like `try_set_isin/try_set_figi` and the `try_new` constructor; use `from_symbol[_and_exchange]`, `from_figi`, `from_prediction_market`, or `Instrument::new`.
+- Domain: removed `IdentifierScheme`, `SecurityId`, `PredictionID`. `Instrument` is now a flat struct `{ symbol, exchange, figi, isin, kind }`. JSON shape is no longer wrapped in `{ "id": ... }`.
+- Domain: removed legacy setters like `try_set_isin/try_set_figi` and the `try_new` constructor; use `from_symbol[_and_exchange]`, `from_figi`, or `Instrument::new`.
+- Domain: removed `AssetKind::PredictionMarket`. Prediction markets are not an asset kind.
+- Domain: removed `Instrument::from_prediction_market` and `from_prediction_market_ids`. Use `paft_prediction::PredictionInstrument::new` instead.
+- Domain: `EventID` and `OutcomeID` moved from `paft-domain` to `paft-prediction`. Import via `paft_prediction::{EventID, OutcomeID}` or via the facade's `paft::prediction` module.
+- Aggregates: removed `Info` and `FastInfo`. Replaced by `Snapshot` (12 strictly-snapshot fields). Fundamentals/analyst/ESG fields that lived on `Info` belong in `paft-fundamentals` types.
 - Money: `Decimal` and `RoundingStrategy` have moved to the standalone `paft-decimal` crate; import them from `paft_decimal` (or via the facade root) instead of `paft_money::decimal` or `paft::money::Decimal`.
 - Market/Aggregates/Fundamentals: analytics fields that previously exposed `f64` (option greeks, implied volatility, P/E, dividend yield, recommendation scores, growth rates, ESG metrics, holder percentages) now use `paft_decimal::Decimal` for consistent precision.
 
@@ -30,11 +36,20 @@ All notable changes to this project will be documented in this file.
 
 - Facade: `full` feature now includes `prediction`.
 - Facade: re-exports `paft_decimal::{Decimal, RoundingStrategy}` from the root module; downstream crates (`paft-market`, `paft-fundamentals`, etc.) now depend on `paft-decimal` directly for numeric helpers.
-- Market: `DownloadResponse::iter_by_symbol()` now omits prediction instruments (only yields security symbols), preserving symbol-centric semantics.
+- Market: `DownloadResponse::iter_by_symbol()` returns `(&Symbol, &HistoryResponse)` directly, no filtering required.
+
+### Migration notes
+
+- **Instrument access**: `match instrument.id() { IdentifierScheme::Security(s) => &s.symbol, _ => unreachable!() }` becomes `&instrument.symbol`. Likewise `s.exchange`, `s.figi`, `s.isin` become `instrument.exchange`, `instrument.figi`, `instrument.isin` (no enum match required).
+- **Prediction markets**: `Instrument::from_prediction_market(event, outcome)` becomes `PredictionInstrument::new(event, outcome)` (from `paft_prediction`). The containing data structure's `Instrument` field must change to `PredictionInstrument` or the prediction path must be removed.
+- **`AssetKind::PredictionMarket`**: removed entirely. Prediction markets are not an asset class — use `PredictionInstrument` to model them.
+- **Snapshot**: `Info` fundamentals live in `paft_fundamentals::analysis` (`PriceTarget`, `RecommendationSummary`), `paft_fundamentals::esg` (`EsgScores`), and `paft_fundamentals::profile` for shares/cap. 52-week ranges are intentionally cut from the snapshot — derive them from `HistoryResponse`.
+- **`EventID`/`OutcomeID` imports**: `use paft_domain::{EventID, OutcomeID}` becomes `use paft_prediction::{EventID, OutcomeID}` (or via the facade's `paft::prediction` module).
+- For yfinance-rs, see `../yfinance-rs/MIGRATION-paft-0.8.md`. For borsa, see `../borsa-workspace/MIGRATION-paft-0.8.md`.
 
 ### Documentation
 
-- Updated `paft` and `paft-domain` READMEs and examples to use `IdentifierScheme`, `SecurityID`, `EventID`/`OutcomeID`, and the new `Instrument` constructors.
+- Updated `paft` and `paft-domain` READMEs and examples to use the flat `Instrument` and the new constructors.
 - Documented `paft-money` layered usage with `MoneyAmount`, including README and crate-level examples of decimal facade helpers.
 
 ## [0.7.1] - 2025-10-31
