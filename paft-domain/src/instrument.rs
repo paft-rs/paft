@@ -218,9 +218,12 @@ impl std::fmt::Display for Instrument {
 #[cfg(feature = "dataframe")]
 mod dataframe_impl {
     use super::Instrument;
+    use crate::Exchange;
     use paft_utils::dataframe::{Columnar, ToDataFrame};
     use polars::datatypes::DataType;
-    use polars::prelude::{DataFrame, NamedFrom, PolarsResult, Series};
+    use polars::prelude::{
+        DataFrame, IntoSeries, NewChunkedArray, PolarsResult, Series, StringChunked,
+    };
 
     impl ToDataFrame for Instrument {
         fn to_dataframe(&self) -> PolarsResult<DataFrame> {
@@ -253,32 +256,45 @@ mod dataframe_impl {
 
     impl Columnar for Instrument {
         fn columnar_to_dataframe(items: &[Self]) -> PolarsResult<DataFrame> {
-            let kinds: Vec<String> = items.iter().map(|i| i.kind.to_string()).collect();
-            let symbols: Vec<String> = items.iter().map(|i| i.symbol.to_string()).collect();
-            let exchanges: Vec<Option<String>> = items
-                .iter()
-                .map(|i| i.exchange.as_ref().map(std::string::ToString::to_string))
-                .collect();
-            let figis: Vec<Option<String>> = items
-                .iter()
-                .map(|i| i.figi.as_ref().map(|f| f.as_ref().to_string()))
-                .collect();
-            let isins: Vec<Option<String>> = items
-                .iter()
-                .map(|i| i.isin.as_ref().map(|v| v.as_ref().to_string()))
-                .collect();
+            // `from_iter_values` / `from_iter_options` write straight into the
+            // Arrow string buffer from `&str` iterators — no per-row `String`
+            // allocation, no intermediate `Vec`.
+            let kind =
+                StringChunked::from_iter_values("kind".into(), items.iter().map(|i| i.kind.code()))
+                    .into_series();
+            let symbol = StringChunked::from_iter_values(
+                "symbol".into(),
+                items.iter().map(|i| i.symbol.as_str()),
+            )
+            .into_series();
+            let exchange = StringChunked::from_iter_options(
+                "exchange".into(),
+                items
+                    .iter()
+                    .map(|i| i.exchange.as_ref().map(Exchange::code)),
+            )
+            .into_series();
+            let figi = StringChunked::from_iter_options(
+                "figi".into(),
+                items.iter().map(|i| i.figi.as_ref().map(AsRef::as_ref)),
+            )
+            .into_series();
+            let isin = StringChunked::from_iter_options(
+                "isin".into(),
+                items.iter().map(|i| i.isin.as_ref().map(AsRef::as_ref)),
+            )
+            .into_series();
 
-            let df = DataFrame::new(
+            DataFrame::new(
                 items.len(),
                 vec![
-                    Series::new("kind".into(), kinds).into(),
-                    Series::new("symbol".into(), symbols).into(),
-                    Series::new("exchange".into(), exchanges).into(),
-                    Series::new("figi".into(), figis).into(),
-                    Series::new("isin".into(), isins).into(),
+                    kind.into(),
+                    symbol.into(),
+                    exchange.into(),
+                    figi.into(),
+                    isin.into(),
                 ],
-            )?;
-            Ok(df)
+            )
         }
     }
 }

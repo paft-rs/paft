@@ -57,7 +57,9 @@ mod dataframe_impl {
     use super::PredictionInstrument;
     use paft_utils::dataframe::{Columnar, ToDataFrame};
     use polars::datatypes::DataType;
-    use polars::prelude::{DataFrame, NamedFrom, PolarsResult, Series};
+    use polars::prelude::{
+        DataFrame, IntoSeries, NewChunkedArray, PolarsResult, Series, StringChunked,
+    };
 
     impl ToDataFrame for PredictionInstrument {
         fn to_dataframe(&self) -> PolarsResult<DataFrame> {
@@ -84,23 +86,21 @@ mod dataframe_impl {
 
     impl Columnar for PredictionInstrument {
         fn columnar_to_dataframe(items: &[Self]) -> PolarsResult<DataFrame> {
-            let event_ids: Vec<String> = items
-                .iter()
-                .map(|i| i.event_id.as_ref().to_string())
-                .collect();
-            let outcome_ids: Vec<String> = items
-                .iter()
-                .map(|i| i.outcome_id.as_ref().to_string())
-                .collect();
+            // `from_iter_values` writes straight into the Arrow string buffer
+            // from a `&str` iterator — no per-row `String` allocation, no
+            // intermediate `Vec`.
+            let event_id = StringChunked::from_iter_values(
+                "event_id".into(),
+                items.iter().map(|i| i.event_id.as_ref()),
+            )
+            .into_series();
+            let outcome_id = StringChunked::from_iter_values(
+                "outcome_id".into(),
+                items.iter().map(|i| i.outcome_id.as_ref()),
+            )
+            .into_series();
 
-            let df = DataFrame::new(
-                items.len(),
-                vec![
-                    Series::new("event_id".into(), event_ids).into(),
-                    Series::new("outcome_id".into(), outcome_ids).into(),
-                ],
-            )?;
-            Ok(df)
+            DataFrame::new(items.len(), vec![event_id.into(), outcome_id.into()])
         }
     }
 }
