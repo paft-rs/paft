@@ -176,6 +176,12 @@ impl std::fmt::Display for Currency {
     }
 }
 
+impl AsRef<str> for Currency {
+    fn as_ref(&self) -> &str {
+        self.code()
+    }
+}
+
 impl Serialize for Currency {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

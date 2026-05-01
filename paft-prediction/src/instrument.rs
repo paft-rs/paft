@@ -10,10 +10,13 @@ use std::borrow::Cow;
 /// Pairs the event/question identifier with the specific tradeable outcome
 /// identifier. Parallels `paft_domain::Instrument` for prediction markets.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(df_derive::ToDataFrame))]
 pub struct PredictionInstrument {
     /// Identifier of the event/question this outcome belongs to.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub event_id: EventID,
     /// Identifier of the specific tradeable outcome.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub outcome_id: OutcomeID,
 }
 
@@ -49,58 +52,5 @@ impl PredictionInstrument {
 impl std::fmt::Display for PredictionInstrument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.unique_key())
-    }
-}
-
-#[cfg(feature = "dataframe")]
-mod dataframe_impl {
-    use super::PredictionInstrument;
-    use paft_utils::dataframe::{Columnar, ToDataFrame};
-    use polars::datatypes::DataType;
-    use polars::prelude::{
-        DataFrame, IntoSeries, NewChunkedArray, PolarsResult, Series, StringChunked,
-    };
-
-    impl ToDataFrame for PredictionInstrument {
-        fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-            <Self as Columnar>::columnar_to_dataframe(std::slice::from_ref(self))
-        }
-
-        fn empty_dataframe() -> PolarsResult<DataFrame> {
-            DataFrame::new(
-                0,
-                vec![
-                    Series::new_empty("event_id".into(), &DataType::String).into(),
-                    Series::new_empty("outcome_id".into(), &DataType::String).into(),
-                ],
-            )
-        }
-
-        fn schema() -> PolarsResult<Vec<(&'static str, DataType)>> {
-            Ok(vec![
-                ("event_id", DataType::String),
-                ("outcome_id", DataType::String),
-            ])
-        }
-    }
-
-    impl Columnar for PredictionInstrument {
-        fn columnar_to_dataframe(items: &[Self]) -> PolarsResult<DataFrame> {
-            // `from_iter_values` writes straight into the Arrow string buffer
-            // from a `&str` iterator — no per-row `String` allocation, no
-            // intermediate `Vec`.
-            let event_id = StringChunked::from_iter_values(
-                "event_id".into(),
-                items.iter().map(|i| i.event_id.as_ref()),
-            )
-            .into_series();
-            let outcome_id = StringChunked::from_iter_values(
-                "outcome_id".into(),
-                items.iter().map(|i| i.outcome_id.as_ref()),
-            )
-            .into_series();
-
-            DataFrame::new(items.len(), vec![event_id.into(), outcome_id.into()])
-        }
     }
 }

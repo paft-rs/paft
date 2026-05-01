@@ -111,16 +111,22 @@ impl AssetKind {
 
 /// Logical instrument identity for a security.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(df_derive::ToDataFrame))]
 pub struct Instrument {
     /// Canonical ticker symbol.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub symbol: Symbol,
     /// Optional trading venue context for disambiguation.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub exchange: Option<Exchange>,
     /// Optional global identifier (preferred).
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub figi: Option<Figi>,
     /// Optional global identifier (fallback).
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub isin: Option<Isin>,
     /// Asset class and behavior.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub kind: AssetKind,
 }
 
@@ -212,89 +218,5 @@ impl Instrument {
 impl std::fmt::Display for Instrument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.unique_key())
-    }
-}
-
-#[cfg(feature = "dataframe")]
-mod dataframe_impl {
-    use super::Instrument;
-    use crate::Exchange;
-    use paft_utils::dataframe::{Columnar, ToDataFrame};
-    use polars::datatypes::DataType;
-    use polars::prelude::{
-        DataFrame, IntoSeries, NewChunkedArray, PolarsResult, Series, StringChunked,
-    };
-
-    impl ToDataFrame for Instrument {
-        fn to_dataframe(&self) -> PolarsResult<DataFrame> {
-            <Self as Columnar>::columnar_to_dataframe(std::slice::from_ref(self))
-        }
-
-        fn empty_dataframe() -> PolarsResult<DataFrame> {
-            DataFrame::new(
-                0,
-                vec![
-                    Series::new_empty("kind".into(), &DataType::String).into(),
-                    Series::new_empty("symbol".into(), &DataType::String).into(),
-                    Series::new_empty("exchange".into(), &DataType::String).into(),
-                    Series::new_empty("figi".into(), &DataType::String).into(),
-                    Series::new_empty("isin".into(), &DataType::String).into(),
-                ],
-            )
-        }
-
-        fn schema() -> PolarsResult<Vec<(&'static str, DataType)>> {
-            Ok(vec![
-                ("kind", DataType::String),
-                ("symbol", DataType::String),
-                ("exchange", DataType::String),
-                ("figi", DataType::String),
-                ("isin", DataType::String),
-            ])
-        }
-    }
-
-    impl Columnar for Instrument {
-        fn columnar_to_dataframe(items: &[Self]) -> PolarsResult<DataFrame> {
-            // `from_iter_values` / `from_iter_options` write straight into the
-            // Arrow string buffer from `&str` iterators — no per-row `String`
-            // allocation, no intermediate `Vec`.
-            let kind =
-                StringChunked::from_iter_values("kind".into(), items.iter().map(|i| i.kind.code()))
-                    .into_series();
-            let symbol = StringChunked::from_iter_values(
-                "symbol".into(),
-                items.iter().map(|i| i.symbol.as_str()),
-            )
-            .into_series();
-            let exchange = StringChunked::from_iter_options(
-                "exchange".into(),
-                items
-                    .iter()
-                    .map(|i| i.exchange.as_ref().map(Exchange::code)),
-            )
-            .into_series();
-            let figi = StringChunked::from_iter_options(
-                "figi".into(),
-                items.iter().map(|i| i.figi.as_ref().map(AsRef::as_ref)),
-            )
-            .into_series();
-            let isin = StringChunked::from_iter_options(
-                "isin".into(),
-                items.iter().map(|i| i.isin.as_ref().map(AsRef::as_ref)),
-            )
-            .into_series();
-
-            DataFrame::new(
-                items.len(),
-                vec![
-                    kind.into(),
-                    symbol.into(),
-                    exchange.into(),
-                    figi.into(),
-                    isin.into(),
-                ],
-            )
-        }
     }
 }

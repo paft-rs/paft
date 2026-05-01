@@ -19,12 +19,14 @@ paft-money = { workspace = true }
 paft-utils = { workspace = true }
 df-derive = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
+polars-arrow = { workspace = true, optional = true }
 
 [features]
 default = []
 
 dataframe = [
   "polars",
+  "polars-arrow",
   "df-derive",
   "paft-utils/dataframe",
   "paft-domain/dataframe",
@@ -33,4 +35,5 @@ dataframe = [
 
 bigdecimal = [
   "paft-money/bigdecimal",
+  "paft-utils/bigdecimal",
 ]

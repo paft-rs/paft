@@ -26,10 +26,10 @@ pub struct GenericSearchResult<M = ()> {
     /// Display name.
     pub name: Option<String>,
     /// Exchange identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub exchange: Option<Exchange>,
     /// Classified asset kind.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub kind: AssetKind,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]

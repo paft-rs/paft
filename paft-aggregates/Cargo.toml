@@ -20,6 +20,7 @@ paft-fundamentals = { workspace = true }
 paft-decimal = { workspace = true, default-features = false }
 paft-utils = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
+polars-arrow = { workspace = true, optional = true }
 df-derive = { workspace = true, optional = true }
 
 [features]
@@ -30,6 +31,7 @@ bigdecimal = [
   "paft-money/bigdecimal",
   "paft-market/bigdecimal",
   "paft-decimal/bigdecimal",
+  "paft-utils?/bigdecimal",
 ]
 
 # Optional: expose panicking money ops for tests/consumers
@@ -38,6 +40,7 @@ panicking-money-ops = ["paft-money/panicking-money-ops"]
 # Placeholder for facade forwarding; this crate has no dataframe code
 dataframe = [
   "polars",
+  "polars-arrow",
   "df-derive",
   "paft-domain/dataframe",
   "paft-market/dataframe",

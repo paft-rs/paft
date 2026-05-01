@@ -98,17 +98,17 @@ impl ToDataFrame for Action {
         ActionRow::empty_dataframe()
     }
 
-    fn schema() -> polars::prelude::PolarsResult<Vec<(&'static str, polars::datatypes::DataType)>> {
+    fn schema() -> polars::prelude::PolarsResult<Vec<(String, polars::datatypes::DataType)>> {
         ActionRow::schema()
     }
 }
 
 #[cfg(feature = "dataframe")]
 impl Columnar for Action {
-    fn columnar_to_dataframe(
-        items: &[Self],
+    fn columnar_from_refs(
+        items: &[&Self],
     ) -> polars::prelude::PolarsResult<polars::prelude::DataFrame> {
-        let rows: Vec<ActionRow> = items.iter().map(ActionRow::from).collect();
+        let rows: Vec<ActionRow> = items.iter().copied().map(ActionRow::from).collect();
         rows.as_slice().to_dataframe()
     }
 }

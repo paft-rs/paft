@@ -10,8 +10,6 @@ use paft_core::error::PaftError;
 use paft_decimal::Decimal;
 use paft_domain::{Canonical, DomainError, Period};
 use paft_money::Money;
-#[cfg(feature = "dataframe")]
-use paft_utils::dataframe::ToDataFrame;
 
 /// Analyst recommendation grades with canonical variants and extensible fallback.
 ///
@@ -262,13 +260,13 @@ pub struct UpgradeDowngradeRow {
     /// Research firm name.
     pub firm: Option<String>,
     /// Previous rating with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub from_grade: Option<RecommendationGrade>,
     /// New rating with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub to_grade: Option<RecommendationGrade>,
     /// Action description with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub action: Option<RecommendationAction>,
 }
 

@@ -229,6 +229,10 @@ macro_rules! string_enum_with_code {
             }
         }
 
+        impl ::std::convert::AsRef<str> for $Type {
+            fn as_ref(&self) -> &str { self.code() }
+        }
+
         $crate::__string_enum_base! {
             $Type, $enum_name, other($Type::$Other),
             { $( $canon_token => $canon_variant ),+ $(, $alias => $variant )* }
@@ -264,6 +268,10 @@ macro_rules! string_enum_closed_with_code {
                     $( $canon_variant => $canon_token, )+
                 }
             }
+        }
+
+        impl ::std::convert::AsRef<str> for $Type {
+            fn as_ref(&self) -> &str { self.code() }
         }
 
         $crate::__string_enum_base! {

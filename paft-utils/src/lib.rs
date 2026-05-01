@@ -27,5 +27,5 @@ pub mod dataframe;
 pub mod string_canonical;
 
 #[cfg(feature = "dataframe")]
-pub use dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
+pub use dataframe::{Columnar, Decimal128Encode, ToDataFrame, ToDataFrameVec};
 pub use string_canonical::{Canonical, CanonicalError, StringCode, canonicalize};

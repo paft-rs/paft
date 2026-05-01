@@ -553,7 +553,7 @@ checksum = "7eed2c4702fa172d1ce21078faa7c5203e69f5394d48cc436d25928394a867a2"
 [[package]]
 name = "df-derive"
 version = "0.3.0"
-source = "git+https://github.com/gramistella/df-derive.git#d97e6c161131fc3713dd89cc0db05f119db35ca1"
+source = "git+https://github.com/gramistella/df-derive.git#02f8a2a0e1e6d7411eb802e95932bcfc3efbf174"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1538,6 +1538,7 @@ dependencies = [
  "paft-prediction",
  "paft-utils",
  "polars",
+ "polars-arrow",
  "rust_decimal",
  "serde",
  "serde_json",
@@ -1559,6 +1560,7 @@ dependencies = [
  "paft-money",
  "paft-utils",
  "polars",
+ "polars-arrow",
  "pretty_assertions",
  "serde",
  "serde_json",
@@ -1595,6 +1597,7 @@ dependencies = [
  "paft-money",
  "paft-utils",
  "polars",
+ "polars-arrow",
  "serde",
  "serde_json",
  "thiserror",
@@ -1614,6 +1617,7 @@ dependencies = [
  "paft-money",
  "paft-utils",
  "polars",
+ "polars-arrow",
  "serde",
  "serde_json",
  "thiserror",
@@ -1635,6 +1639,7 @@ dependencies = [
  "paft-money",
  "paft-utils",
  "polars",
+ "polars-arrow",
  "serde",
  "serde_json",
  "thiserror",
@@ -1650,6 +1655,7 @@ dependencies = [
  "paft-decimal",
  "paft-utils",
  "polars",
+ "polars-arrow",
  "serde",
  "serde_json",
  "thiserror",
@@ -1667,6 +1673,7 @@ dependencies = [
  "paft-money",
  "paft-utils",
  "polars",
+ "polars-arrow",
  "serde",
 ]
 
@@ -1674,7 +1681,9 @@ dependencies = [
 name = "paft-utils"
 version = "0.8.0"
 dependencies = [
+ "bigdecimal",
  "polars",
+ "rust_decimal",
  "smol_str",
  "thiserror",
 ]

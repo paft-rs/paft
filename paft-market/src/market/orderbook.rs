@@ -10,9 +10,6 @@ use paft_money::Money; // Money for priced values
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
-use paft_utils::dataframe::ToDataFrame;
-
-#[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 
 /// A single entry (bid or ask) in an order book.

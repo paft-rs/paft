@@ -31,6 +31,7 @@ default = ["domain", "market", "fundamentals"]
 
 bigdecimal = [
   "paft-money/bigdecimal",
+  "paft-utils/bigdecimal",
   "paft-market?/bigdecimal",
   "paft-fundamentals?/bigdecimal",
   "paft-aggregates?/bigdecimal",
@@ -75,6 +76,7 @@ chrono-tz = { workspace = true }
 rust_decimal = { workspace = true }
 df-derive = { workspace = true }
 polars = { workspace = true, features = ["dtype-datetime", "dtype-decimal"] }
+polars-arrow = { workspace = true }
 
 [package.metadata.docs.rs]
 all-features = true

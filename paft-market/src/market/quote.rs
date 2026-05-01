@@ -12,8 +12,6 @@ use chrono::{DateTime, Utc};
 use df_derive::ToDataFrame;
 use paft_domain::{Exchange, Instrument, MarketState};
 use paft_money::Money;
-#[cfg(feature = "dataframe")]
-use paft_utils::dataframe::ToDataFrame;
 
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -35,10 +33,10 @@ pub struct GenericQuote<M = ()> {
     /// Day volume.
     pub day_volume: Option<u64>,
     /// Exchange identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub exchange: Option<Exchange>,
     /// Market state.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]

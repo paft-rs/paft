@@ -14,8 +14,6 @@ use chrono_tz::Tz;
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 use paft_domain::Instrument;
-#[cfg(feature = "dataframe")]
-use paft_utils::dataframe::ToDataFrame;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]

@@ -13,8 +13,6 @@ use df_derive::ToDataFrame;
 use paft_decimal::Decimal;
 use paft_domain::Instrument;
 use paft_money::Money;
-#[cfg(feature = "dataframe")]
-use paft_utils::dataframe::ToDataFrame;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]

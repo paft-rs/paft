@@ -11,8 +11,6 @@ use paft_decimal::Decimal;
 use paft_domain::Canonical;
 use paft_domain::Period;
 use paft_money::Money;
-#[cfg(feature = "dataframe")]
-use paft_utils::dataframe::ToDataFrame;
 
 /// Transaction types for insider activities with canonical variants and extensible fallback.
 ///
@@ -197,10 +195,10 @@ pub struct InsiderTransaction {
     /// The name of the insider who executed the transaction.
     pub insider: String,
     /// The insider's relationship to the company with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub position: InsiderPosition,
     /// The type of transaction with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub transaction_type: TransactionType,
     /// The number of shares involved in the transaction.
     pub shares: Option<u64>,
@@ -220,10 +218,10 @@ pub struct InsiderRosterHolder {
     /// The name of the insider.
     pub name: String,
     /// The insider's position in the company with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub position: InsiderPosition,
     /// A description of the most recent transaction made by this insider.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub most_recent_transaction: TransactionType,
     /// The date of the latest transaction as a Unix timestamp.
     #[serde(with = "chrono::serde::ts_seconds")]

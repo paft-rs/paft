@@ -118,7 +118,7 @@ pub struct CompanyProfile {
     /// Business summary.
     pub summary: Option<String>,
     /// International Securities Identification Number.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub isin: Option<Isin>,
 }
 
@@ -131,10 +131,10 @@ pub struct FundProfile {
     /// Fund family (e.g., Vanguard, iShares).
     pub family: Option<String>,
     /// Fund type with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub kind: FundKind,
     /// International Securities Identification Number.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub isin: Option<Isin>,
 }
 
@@ -216,17 +216,17 @@ impl ToDataFrame for Profile {
         ProfileRow::empty_dataframe()
     }
 
-    fn schema() -> polars::prelude::PolarsResult<Vec<(&'static str, polars::datatypes::DataType)>> {
+    fn schema() -> polars::prelude::PolarsResult<Vec<(String, polars::datatypes::DataType)>> {
         ProfileRow::schema()
     }
 }
 
 #[cfg(feature = "dataframe")]
 impl Columnar for Profile {
-    fn columnar_to_dataframe(
-        items: &[Self],
+    fn columnar_from_refs(
+        items: &[&Self],
     ) -> polars::prelude::PolarsResult<polars::prelude::DataFrame> {
-        let rows: Vec<ProfileRow> = items.iter().map(ProfileRow::from).collect();
+        let rows: Vec<ProfileRow> = items.iter().copied().map(ProfileRow::from).collect();
         rows.as_slice().to_dataframe()
     }
 }

@@ -15,8 +15,6 @@ use chrono::{DateTime, Utc};
 use df_derive::ToDataFrame;
 use paft_domain::{Exchange, Instrument, MarketState};
 use paft_money::{Currency, Money};
-#[cfg(feature = "dataframe")]
-use paft_utils::dataframe::ToDataFrame;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -36,13 +34,13 @@ pub struct GenericSnapshot<M = ()> {
     /// Human-friendly instrument name.
     pub name: Option<String>,
     /// Primary listing exchange, if known.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub exchange: Option<Exchange>,
     /// Quote currency used for monetary values in this snapshot.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub currency: Option<Currency>,
     /// Current market session state (for example: Pre, Regular, Post).
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
     /// Timestamp (UTC) when this snapshot was taken.
     #[serde(with = "chrono::serde::ts_seconds_option")]
