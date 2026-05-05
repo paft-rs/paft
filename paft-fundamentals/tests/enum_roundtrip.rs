@@ -56,6 +56,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
                 assert_eq!(enum_name, "RecommendationGrade");
                 assert_eq!(value, (*input).to_string());
             }
+            _ => panic!("expected InvalidEnumValue"),
         }
 
         // RecommendationAction
@@ -65,6 +66,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
                 assert_eq!(enum_name, "RecommendationAction");
                 assert_eq!(value, (*input).to_string());
             }
+            _ => panic!("expected InvalidEnumValue"),
         }
 
         // TransactionType
@@ -74,6 +76,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
                 assert_eq!(enum_name, "TransactionType");
                 assert_eq!(value, (*input).to_string());
             }
+            _ => panic!("expected InvalidEnumValue"),
         }
 
         // InsiderPosition
@@ -83,6 +86,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
                 assert_eq!(enum_name, "InsiderPosition");
                 assert_eq!(value, (*input).to_string());
             }
+            _ => panic!("expected InvalidEnumValue"),
         }
 
         // FundKind
@@ -92,6 +96,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
                 assert_eq!(enum_name, "FundKind");
                 assert_eq!(value, (*input).to_string());
             }
+            _ => panic!("expected InvalidEnumValue"),
         }
     }
 }

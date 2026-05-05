@@ -15,6 +15,7 @@ use std::str::FromStr;
 
 /// Rounding strategy supported by decimal operations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RoundingStrategy {
     /// Round halves toward the nearest even digit.
     MidpointNearestEven,

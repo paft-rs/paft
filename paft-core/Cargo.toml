@@ -2,6 +2,7 @@
 name = "paft-core"
 version.workspace = true
 edition = "2024"
+rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 description = "Core domain types, errors, and shared utilities for paft."
@@ -11,6 +12,9 @@ documentation = "https://docs.rs/paft-core"
 readme = "README.md"
 keywords = ["finance", "market-data", "dataframe", "serde", "polars"]
 categories = ["data-structures", "finance"]
+
+[lints]
+workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }

@@ -2,6 +2,7 @@
 name = "paft"
 version.workspace = true
 edition = "2024"
+rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 description = "Facade crate for paft: unified public API over the paft ecosystem."
@@ -11,6 +12,9 @@ homepage = "https://github.com/paft-rs/paft"
 documentation = "https://docs.rs/paft"
 keywords = ["finance", "types", "stocks", "trading", "polars"]
 categories = ["finance", "data-structures", "api-bindings"]
+
+[lints]
+workspace = true
 
 [dependencies]
 paft-core = { workspace = true }
@@ -47,10 +51,10 @@ prediction = ["dep:paft-prediction", "domain", "market"]
 
 tracing = [
   "dep:tracing",
-  "paft-domain/tracing",
+  "paft-domain?/tracing",
   "paft-money/tracing",
-  "paft-market/tracing",
-  "paft-fundamentals/tracing"
+  "paft-market?/tracing",
+  "paft-fundamentals?/tracing"
 ]
 
 dataframe = [

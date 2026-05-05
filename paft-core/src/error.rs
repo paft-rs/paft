@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 /// Domain-oriented errors shared across the paft workspace.
 pub enum PaftError {
     /// Invalid value provided for an enum parser.
