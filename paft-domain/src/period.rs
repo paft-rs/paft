@@ -273,7 +273,8 @@ fn date_or_err(year: i32, month: u32, day: u32) -> Result<Period, ()> {
 }
 
 impl Period {
-    /// Parse quarterly period format: "2023Q4", "2023-Q4", "2023 Q4".
+    /// Parse quarterly period format: "2023Q4", "2023-Q4", "2023 Q4",
+    /// "2023  Q4", "2023\tQ4", "2023 \t Q4".
     fn parse_quarterly(s: &str) -> PeriodAttempt {
         let b = s.as_bytes();
         // Minimum form is `YYYYQ#` (6 bytes).
@@ -284,12 +285,21 @@ impl Period {
         let year = read_4_digits(b, 0)?;
         let mut idx = 4;
 
-        // Optional single ASCII separator: '-' or whitespace.
-        if b[idx] == b'-' || b[idx].is_ascii_whitespace() {
+        // Optional separator between the year and the `Q`:
+        //   - a single `-`, or
+        //   - a run of ASCII whitespace (matches `parse_year`'s "Fiscal "
+        //     handling — `is_ascii_whitespace` covers space, tab, CR, LF and
+        //     form feed but, importantly, no Unicode whitespace).
+        // The two forms are mutually exclusive: we don't mix `-` with spaces.
+        if b[idx] == b'-' {
             idx += 1;
-            if idx >= b.len() {
-                return None;
+        } else {
+            while idx < b.len() && b[idx].is_ascii_whitespace() {
+                idx += 1;
             }
+        }
+        if idx >= b.len() {
+            return None;
         }
 
         // Case-insensitive 'Q'.
@@ -471,6 +481,21 @@ impl<'de> Deserialize<'de> for Period {
 impl std::str::FromStr for Period {
     type Err = DomainError;
 
+    /// Invariant: the canonical form of a `Period::Other` produced here is
+    /// guaranteed not to parse as any structured variant on a subsequent
+    /// deserialize. Without this, inputs like `"-2023Q4"` (rejected by the
+    /// structured parsers because of the leading `-`) would canonicalize to
+    /// `"2023Q4"` and serialize back to a string that re-parses as
+    /// `Period::Quarter`, breaking round-trip identity.
+    ///
+    /// To maintain the invariant we re-run the structured parsers on the
+    /// canonicalized form before returning `Other`. If any of them succeed
+    /// with a valid structured variant we return that; only when every
+    /// parser declines the canonical form do we fall back to `Other`. A
+    /// "structurally matched but invalid" result on the canonical form (e.g.
+    /// `"2023Q5"` after canonicalization) is treated as a rejection — `Other`
+    /// is still produced — because the canonical token does not parse to any
+    /// structured variant on subsequent deserialize, so the invariant holds.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim();
@@ -502,6 +527,22 @@ impl std::str::FromStr for Period {
         }
 
         let canonical = Canonical::try_new(trimmed).map_err(|_| invalid())?;
+
+        // Re-run the structured parsers against the canonical token. If any
+        // recognizes it as a valid structured variant, we must return that
+        // variant rather than `Other` — otherwise serialize/deserialize would
+        // round-trip an `Other` to a different (structured) variant.
+        let canonical_str = canonical.as_ref();
+        if let Some(Ok(period)) = Self::parse_quarterly(canonical_str) {
+            return Ok(period);
+        }
+        if let Some(period) = Self::parse_year(canonical_str) {
+            return Ok(period);
+        }
+        if let Some(Ok(period)) = Self::parse_date(canonical_str) {
+            return Ok(period);
+        }
+
         Ok(Self::Other(canonical))
     }
 }
