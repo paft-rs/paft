@@ -1,7 +1,7 @@
 //! Logical identity for a prediction-market outcome.
 
+use crate::error::PredictionError;
 use crate::identifiers::{EventID, OutcomeID};
-use paft_domain::DomainError;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -24,9 +24,9 @@ impl PredictionInstrument {
     /// Construct a new `PredictionInstrument` from string ids, validating each.
     ///
     /// # Errors
-    /// Returns `DomainError::InvalidEventId` or `DomainError::InvalidOutcomeId`
-    /// if validation fails.
-    pub fn new(event_id: &str, outcome_id: &str) -> Result<Self, DomainError> {
+    /// Returns [`PredictionError::InvalidEventId`] or
+    /// [`PredictionError::InvalidOutcomeId`] if validation fails.
+    pub fn new(event_id: &str, outcome_id: &str) -> Result<Self, PredictionError> {
         Ok(Self {
             event_id: EventID::new(event_id)?,
             outcome_id: OutcomeID::new(outcome_id)?,

@@ -20,6 +20,11 @@ pub enum Error {
     #[error(transparent)]
     Market(#[from] paft_market::MarketError),
 
+    /// Error originating from `paft-prediction`.
+    #[cfg(feature = "prediction")]
+    #[error(transparent)]
+    Prediction(#[from] paft_prediction::PredictionError),
+
     /// Error originating from `paft-money` operations.
     #[error(transparent)]
     Money(#[from] paft_money::MoneyError),

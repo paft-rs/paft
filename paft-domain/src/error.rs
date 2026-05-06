@@ -42,22 +42,4 @@ pub enum DomainError {
         /// The original invalid symbol input.
         value: String,
     },
-
-    /// Invalid event ID encountered while parsing or validating.
-    #[error(
-        "Invalid event ID: '{value}' - expected 66 characters starting with '0x' followed by 64 hexadecimal characters"
-    )]
-    InvalidEventId {
-        /// The original invalid event ID input.
-        value: String,
-    },
-
-    /// Invalid outcome ID encountered while parsing or validating.
-    #[error(
-        "Invalid outcome ID: '{value}' - expected 1-78 ASCII digits with no leading +, -, or whitespace"
-    )]
-    InvalidOutcomeId {
-        /// The original invalid outcome ID input.
-        value: String,
-    },
 }

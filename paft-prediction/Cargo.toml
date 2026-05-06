@@ -16,6 +16,7 @@ workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
 chrono = { workspace = true }
 paft-core = { workspace = true }
 paft-domain = { workspace = true }
@@ -24,6 +25,9 @@ paft-utils = { workspace = true }
 df-derive = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
 polars-arrow = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
 
 [features]
 default = []
