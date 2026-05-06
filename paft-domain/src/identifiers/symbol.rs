@@ -1,7 +1,8 @@
 //! Symbol newtype for instrument codes.
 
 use crate::DomainError;
-use serde::{Deserialize, Deserializer, Serialize, de};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+use smol_str::SmolStr;
 use std::{convert::TryFrom, fmt, str::FromStr};
 
 #[inline]
@@ -11,7 +12,7 @@ fn invalid_symbol(value: &str) -> DomainError {
     }
 }
 
-fn normalize_symbol(input: &str) -> Result<String, DomainError> {
+fn normalize_symbol(input: &str) -> Result<SmolStr, DomainError> {
     let trimmed = input.trim();
     if trimmed.is_empty() {
         return Err(invalid_symbol(input));
@@ -28,13 +29,21 @@ fn normalize_symbol(input: &str) -> Result<String, DomainError> {
         return Err(invalid_symbol(input));
     }
 
-    let normalized = trimmed.to_ascii_uppercase();
-
-    if normalized.len() > 64 {
-        return Err(invalid_symbol(input));
+    // ASCII-uppercase normalization preserves byte length, so the 64-byte cap
+    // already enforced on `trimmed` carries through to the canonical form.
+    // We avoid the extra allocation a `String::to_ascii_uppercase()` would
+    // require when the input is already canonical (a common case for tickers
+    // that arrive pre-uppercased from providers).
+    if trimmed.bytes().all(|b| !b.is_ascii_lowercase()) {
+        // Already canonical: SmolStr::new copies the bytes inline when ≤ 23.
+        Ok(SmolStr::new(trimmed))
+    } else {
+        let mut buf = String::with_capacity(trimmed.len());
+        for ch in trimmed.chars() {
+            buf.push(ch.to_ascii_uppercase());
+        }
+        Ok(SmolStr::new(buf))
     }
-
-    Ok(normalized)
 }
 
 /// Opaque wrapper for validated symbol strings used by markets and data providers.
@@ -44,9 +53,12 @@ fn normalize_symbol(input: &str) -> Result<String, DomainError> {
 /// numerics are preserved verbatim so that provider-specific conventions
 /// (class suffixes, exchange codes, contract metadata, etc.) round-trip without
 /// transformation.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
-#[serde(transparent)]
-pub struct Symbol(String);
+///
+/// Backed by [`SmolStr`] so that typical equity tickers (≤ 23 bytes) live
+/// inline without heap allocation, and longer symbols share an `Arc<str>` so
+/// clones are O(1) refcount bumps.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Symbol(SmolStr);
 
 impl Symbol {
     /// Construct a new validated symbol.
@@ -70,25 +82,28 @@ impl Symbol {
     }
 
     /// Returns the canonical symbol string slice.
+    #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.0
+        self.0.as_str()
     }
 
     /// Returns the byte length of the canonical symbol.
+    #[inline]
     #[must_use]
-    pub const fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    /// Returns true if the symbol is empty. This should always be `false`.
+    /// Returns `false` unconditionally.
+    ///
+    /// `Symbol` is constructor-validated to be non-empty (see [`Symbol::new`]),
+    /// so the only reason this method exists is to satisfy the lint that
+    /// expects every `len()` method to be paired with `is_empty()`.
+    #[inline]
     #[must_use]
-    pub fn is_empty(&self) -> bool {
-        debug_assert!(
-            !self.0.is_empty(),
-            "Symbol invariant violated: empty symbol"
-        );
-        self.0.is_empty()
+    pub const fn is_empty(&self) -> bool {
+        false
     }
 }
 
@@ -129,7 +144,16 @@ impl TryFrom<String> for Symbol {
 
 impl From<Symbol> for String {
     fn from(value: Symbol) -> Self {
-        value.0
+        value.0.into()
+    }
+}
+
+impl Serialize for Symbol {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_str())
     }
 }
 

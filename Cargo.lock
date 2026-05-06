@@ -1601,6 +1601,7 @@ dependencies = [
  "polars-arrow",
  "serde",
  "serde_json",
+ "smol_str",
  "thiserror",
  "tracing",
 ]

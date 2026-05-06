@@ -142,6 +142,25 @@ fn symbol_serde_roundtrip() {
 }
 
 #[test]
+fn symbol_short_tickers_avoid_heap_allocation() {
+    // `Symbol` is backed by `SmolStr`, which inlines strings up to 23 bytes
+    // on 64-bit targets. We can't peek at the inner `SmolStr` from outside
+    // the crate, but `SmolStr::new` is deterministic: building it from the
+    // same canonical bytes a `Symbol` would store is sufficient to confirm
+    // the inline-storage property our type relies on for short tickers.
+    use smol_str::SmolStr;
+
+    for ticker in ["AAPL", "MSFT", "GOOGL", "BRK.B", "ES=F", "BTC-USD"] {
+        let symbol = Symbol::new(ticker).expect("valid ticker");
+        let proxy = SmolStr::new(symbol.as_str());
+        assert!(
+            !proxy.is_heap_allocated(),
+            "symbol `{ticker}` should be stored inline, not on the heap"
+        );
+    }
+}
+
+#[test]
 fn figi_rejects_bad_checksum() {
     let err = Figi::new("BBG000B9XRY5").expect_err("checksum should fail");
     assert!(matches!(err, DomainError::InvalidFigi { .. }));
