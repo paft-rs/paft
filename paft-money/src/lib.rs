@@ -48,9 +48,11 @@
 //! as ISO codes), and `DataFrame` integration remain stable across backends. The
 //! primary trade-offs are performance (the `bigdecimal` backend may allocate
 //! more often) and precision (see [`MAX_DECIMAL_PRECISION`]). Minor-unit scaling
-//! always uses 64-bit integers and therefore remains capped at 18 decimal
-//! places so that `10^scale` fits inside an `i128` when performing
-//! conversions.
+//! always uses 64-bit integers (`10_i64.pow(scale)`) and is therefore capped
+//! at 18 decimal places — see [`MAX_MINOR_UNIT_DECIMALS`]. Beyond that, the
+//! cap-line shift would push `10^scale` outside `i64`. The minor-unit
+//! integer itself is widened to `i128` before/after scaling, so values can
+//! still occupy the full `i128` range as long as `scale <= 18`.
 //!
 //! # Money layers
 //!

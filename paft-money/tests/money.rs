@@ -407,3 +407,208 @@ fn test_money_dataframe_bigdecimal_backend() {
         other => panic!("expected string value, got {other:?}"),
     }
 }
+
+#[test]
+fn money_new_exact_rejects_overprecise_input() {
+    let amount = Decimal::from_str("1.234").unwrap();
+    let err = Money::new_exact(amount, Currency::Iso(IsoCurrency::USD)).unwrap_err();
+    match err {
+        paft_money::MoneyError::PrecisionExceeded {
+            currency_code,
+            max_scale,
+            actual_scale,
+        } => {
+            assert_eq!(currency_code, "USD");
+            assert_eq!(max_scale, 2);
+            assert_eq!(actual_scale, 3);
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+#[test]
+fn money_new_exact_accepts_trailing_zeros() {
+    let amount = Decimal::from_str("1.230").unwrap();
+    let money = Money::new_exact(amount, Currency::Iso(IsoCurrency::USD)).unwrap();
+    let canonical = Money::from_canonical_str("1.23", Currency::Iso(IsoCurrency::USD)).unwrap();
+    assert_eq!(money, canonical);
+}
+
+#[test]
+fn money_new_still_rounds() {
+    let rounded = Money::new(
+        Decimal::from_str("1.234").unwrap(),
+        Currency::Iso(IsoCurrency::USD),
+    )
+    .unwrap();
+    assert_eq!(rounded.amount(), Decimal::from_str("1.23").unwrap());
+
+    let rounded_up = Money::new(
+        Decimal::from_str("1.235").unwrap(),
+        Currency::Iso(IsoCurrency::USD),
+    )
+    .unwrap();
+    assert_eq!(rounded_up.amount(), Decimal::from_str("1.24").unwrap());
+}
+
+#[test]
+fn money_from_canonical_str_defers_to_new_exact() {
+    let ok = Money::from_canonical_str("1.23", Currency::Iso(IsoCurrency::USD)).unwrap();
+    assert_eq!(ok.amount(), Decimal::from_str("1.23").unwrap());
+
+    let err = Money::from_canonical_str("1.234", Currency::Iso(IsoCurrency::USD)).unwrap_err();
+    assert!(matches!(
+        err,
+        paft_money::MoneyError::PrecisionExceeded { .. }
+    ));
+}
+
+#[test]
+fn money_hash_eq_consistency_across_scales() {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let trailing = Money::from_canonical_str("1.230", Currency::Iso(IsoCurrency::USD)).unwrap();
+    let canonical = Money::from_canonical_str("1.23", Currency::Iso(IsoCurrency::USD)).unwrap();
+
+    assert_eq!(trailing, canonical);
+
+    let mut hasher_a = DefaultHasher::new();
+    trailing.hash(&mut hasher_a);
+    let mut hasher_b = DefaultHasher::new();
+    canonical.hash(&mut hasher_b);
+    assert_eq!(hasher_a.finish(), hasher_b.finish());
+}
+
+#[test]
+fn money_serde_rejects_overprecise_amount() {
+    // Bypass the Money struct's own constructors and feed serde a value
+    // whose scale exceeds USD's exponent. Without the custom Deserialize
+    // impl this would silently produce a malformed Money; with it, serde
+    // returns an error.
+    let raw = "{\"amount\":\"1.234\",\"currency\":\"USD\"}";
+    let err = serde_json::from_str::<Money>(raw).unwrap_err();
+    assert!(
+        err.to_string().contains("precision exceeded"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn money_serde_accepts_trailing_zero_amount() {
+    let raw = "{\"amount\":\"1.230\",\"currency\":\"USD\"}";
+    let money: Money = serde_json::from_str(raw).unwrap();
+    let expected = Money::from_canonical_str("1.23", Currency::Iso(IsoCurrency::USD)).unwrap();
+    assert_eq!(money, expected);
+}
+
+#[test]
+fn exchange_rate_new_accepts_identity_with_one() {
+    let rate = ExchangeRate::new(
+        Currency::Iso(IsoCurrency::USD),
+        Currency::Iso(IsoCurrency::USD),
+        Decimal::from(1),
+    )
+    .unwrap();
+    assert_eq!(rate.rate(), Decimal::from(1));
+
+    let usd = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
+    let converted = usd.try_convert(&rate).unwrap();
+    assert_eq!(converted, usd);
+}
+
+#[test]
+fn exchange_rate_new_rejects_identity_with_non_one() {
+    let err = ExchangeRate::new(
+        Currency::Iso(IsoCurrency::USD),
+        Currency::Iso(IsoCurrency::USD),
+        Decimal::from_str("1.5").unwrap(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        paft_money::MoneyError::InvalidExchangeRate { .. }
+    ));
+}
+
+#[test]
+fn exchange_rate_new_rejects_negative_or_zero_rate() {
+    assert!(matches!(
+        ExchangeRate::new(
+            Currency::Iso(IsoCurrency::USD),
+            Currency::Iso(IsoCurrency::EUR),
+            Decimal::from(0),
+        )
+        .unwrap_err(),
+        paft_money::MoneyError::InvalidExchangeRate { .. }
+    ));
+    assert!(matches!(
+        ExchangeRate::new(
+            Currency::Iso(IsoCurrency::USD),
+            Currency::Iso(IsoCurrency::EUR),
+            Decimal::from(-1),
+        )
+        .unwrap_err(),
+        paft_money::MoneyError::InvalidExchangeRate { .. }
+    ));
+}
+
+#[test]
+fn exchange_rate_serde_rejects_invalid_payload() {
+    // Negative rate would have been accepted by `#[derive(Deserialize)]`
+    // before; the custom Deserialize impl now routes through
+    // `ExchangeRate::new` and surfaces the validation error.
+    let raw = "{\"from\":\"USD\",\"to\":\"EUR\",\"rate\":\"-1\"}";
+    assert!(serde_json::from_str::<ExchangeRate>(raw).is_err());
+
+    // Identity with non-1 rate is also rejected.
+    let raw_identity = "{\"from\":\"USD\",\"to\":\"USD\",\"rate\":\"2\"}";
+    assert!(serde_json::from_str::<ExchangeRate>(raw_identity).is_err());
+
+    // Zero rate is rejected.
+    let raw_zero = "{\"from\":\"USD\",\"to\":\"EUR\",\"rate\":\"0\"}";
+    assert!(serde_json::from_str::<ExchangeRate>(raw_zero).is_err());
+}
+
+#[test]
+fn exchange_rate_serde_accepts_valid_payload() {
+    let raw = "{\"from\":\"USD\",\"to\":\"EUR\",\"rate\":\"0.9\"}";
+    let parsed: ExchangeRate = serde_json::from_str(raw).unwrap();
+    assert_eq!(parsed.from(), &Currency::Iso(IsoCurrency::USD));
+    assert_eq!(parsed.to(), &Currency::Iso(IsoCurrency::EUR));
+    assert_eq!(parsed.rate(), Decimal::from_str("0.9").unwrap());
+}
+
+#[cfg(not(feature = "bigdecimal"))]
+#[test]
+fn money_as_minor_units_returns_error_on_overflow() {
+    use std::str::FromStr;
+
+    // ETH has 18 decimal places, so the multiplier is 10^18. A value just
+    // shy of `i128::MAX / 10^18` already pushes the conversion close to
+    // the i128 bound; the constant below is well past `i128::MAX` once
+    // multiplied. With unchecked `*`, this used to panic; now it surfaces
+    // as ConversionError.
+    let huge = Decimal::from_str("99999999999999999999.123456789012345678").unwrap();
+    let money = Money::new(huge, Currency::ETH).unwrap();
+    let err = money.as_minor_units().unwrap_err();
+    assert!(matches!(err, paft_money::MoneyError::ConversionError));
+}
+
+#[cfg(feature = "bigdecimal")]
+#[test]
+fn money_as_minor_units_returns_error_on_i128_overflow_under_bigdecimal() {
+    use std::str::FromStr;
+
+    // BigDecimal has unbounded precision, so the *multiplication* never
+    // overflows. The conversion to `i128`, however, can still fail when
+    // the scaled value exceeds the `i128` range — and that path must
+    // still surface as ConversionError, not a panic.
+    let huge = Decimal::from_str(
+        "999999999999999999999999999999999999999999999999.123456789012345678",
+    )
+    .unwrap();
+    let money = Money::new(huge, Currency::ETH).unwrap();
+    let err = money.as_minor_units().unwrap_err();
+    assert!(matches!(err, paft_money::MoneyError::ConversionError));
+}

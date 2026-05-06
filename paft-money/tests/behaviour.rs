@@ -52,11 +52,18 @@ fn money_new_quantizes_to_currency_scale() {
 
 #[test]
 fn money_format_is_stable() {
-    let money = Money::from_canonical_str("123456.789", usd()).unwrap();
+    // `from_canonical_str` is strict — over-precise input is rejected
+    // rather than silently rounded. To exercise the rounding path we go
+    // through `Money::new` explicitly. The point of the test is that the
+    // canonical format renders consistently regardless of trailing
+    // zeros, not that the parser rounds.
+    let money = Money::new(dec("123456.789"), usd()).unwrap();
     assert_eq!(money.format(), "123456.79 USD");
 
     let negative = Money::from_canonical_str("-0.5", usd()).unwrap();
     assert_eq!(negative.format(), "-0.5 USD");
+
+    assert!(Money::from_canonical_str("123456.789", usd()).is_err());
 }
 
 #[test]
@@ -95,8 +102,15 @@ fn panicking_ops_mirror_try_semantics() {
 
 #[test]
 fn exchange_rate_validation_and_inverse() {
-    assert!(ExchangeRate::new(usd(), usd(), dec("1.0")).is_err());
+    // Identity rates are now permitted only when the rate is exactly 1 —
+    // anything else describes a non-existent translation. Trailing-zero
+    // forms are accepted because the comparison is numeric. Negative or
+    // zero rates remain rejected regardless of currency pairing.
+    assert!(ExchangeRate::new(usd(), usd(), decimal::one()).is_ok());
+    assert!(ExchangeRate::new(usd(), usd(), dec("1.0")).is_ok());
+    assert!(ExchangeRate::new(usd(), usd(), dec("1.5")).is_err());
     assert!(ExchangeRate::new(usd(), jpy(), decimal::zero()).is_err());
+    assert!(ExchangeRate::new(usd(), jpy(), dec("-1")).is_err());
 
     let rate = ExchangeRate::new(usd(), jpy(), dec("110.0")).unwrap();
     let inverse = rate.inverse();

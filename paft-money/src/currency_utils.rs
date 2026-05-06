@@ -10,7 +10,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
-use std::sync::{LazyLock, RwLock};
+use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use paft_utils::canonicalize;
 
@@ -147,6 +147,37 @@ static BUILTIN_METADATA: LazyLock<HashMap<String, CurrencyMetadata>> =
 static CUSTOM_METADATA: LazyLock<RwLock<HashMap<String, CurrencyMetadata>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
+/// Acquires a read guard on the custom metadata registry, recovering from a
+/// poisoned lock instead of dropping the read silently.
+///
+/// A poisoned lock indicates a panic occurred while holding the write guard;
+/// the underlying `HashMap` is still intact, so we clear the poison and
+/// proceed. The trade-off is that we can never observe the panic from a
+/// metadata lookup; the previous implementation hid the same fact by
+/// returning `None`, so callers see a strict improvement (data is still
+/// returned) without any new behaviour they can rely on.
+fn read_custom_metadata() -> RwLockReadGuard<'static, HashMap<String, CurrencyMetadata>> {
+    match CUSTOM_METADATA.read() {
+        Ok(guard) => guard,
+        Err(poisoned) => {
+            CUSTOM_METADATA.clear_poison();
+            poisoned.into_inner()
+        }
+    }
+}
+
+/// Acquires a write guard on the custom metadata registry, recovering from a
+/// poisoned lock so that registrations and clears never silently disappear.
+fn write_custom_metadata() -> RwLockWriteGuard<'static, HashMap<String, CurrencyMetadata>> {
+    match CUSTOM_METADATA.write() {
+        Ok(guard) => guard,
+        Err(poisoned) => {
+            CUSTOM_METADATA.clear_poison();
+            poisoned.into_inner()
+        }
+    }
+}
+
 /// Attempts to normalize a currency code to a canonical variant or common `Other` value.
 ///
 /// # Errors
@@ -194,19 +225,15 @@ pub fn set_currency_metadata(
         default_locale,
     };
 
-    Ok(CUSTOM_METADATA
-        .write()
-        .map_or(None, |mut map| map.insert(canonical.into_owned(), metadata)))
+    Ok(write_custom_metadata().insert(canonical.into_owned(), metadata))
 }
 
 /// Retrieves metadata for a custom currency, if registered.
+#[must_use]
 pub fn currency_metadata(code: &str) -> Option<CurrencyMetadata> {
     let canonical = canonicalize(code);
-    if let Some(custom) = CUSTOM_METADATA
-        .read()
-        .ok()
-        .and_then(|map| map.get(canonical.as_ref()).cloned())
-    {
+    let custom = read_custom_metadata().get(canonical.as_ref()).cloned();
+    if let Some(custom) = custom {
         return Some(custom);
     }
 
@@ -214,9 +241,102 @@ pub fn currency_metadata(code: &str) -> Option<CurrencyMetadata> {
 }
 
 /// Removes metadata for a custom currency and any associated minor-unit overrides.
+///
+/// The previous `CurrencyMetadata`, if any, is returned. Callers commonly
+/// only care about the side effect, so the result is intentionally not
+/// `#[must_use]`.
+#[allow(clippy::must_use_candidate)]
 pub fn clear_currency_metadata(code: &str) -> Option<CurrencyMetadata> {
     let canonical = canonicalize(code);
-    CUSTOM_METADATA
-        .write()
-        .map_or(None, |mut map| map.remove(canonical.as_ref()))
+    write_custom_metadata().remove(canonical.as_ref())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+    use std::sync::Mutex;
+
+    // The metadata registry is global, so a poison test must run alone
+    // against the CUSTOM_METADATA lock. We use a per-process mutex to
+    // serialize against any other tests in the same binary that touch
+    // the registry.
+    static SERIALIZE: Mutex<()> = Mutex::new(());
+
+    fn poison_lock() {
+        let _ = catch_unwind(AssertUnwindSafe(|| {
+            // Acquire the write lock and panic while holding it. The
+            // panic poisons the lock; subsequent acquisitions through
+            // `read_custom_metadata`/`write_custom_metadata` must still
+            // succeed (recovering via `clear_poison`).
+            let _guard = CUSTOM_METADATA.write().unwrap();
+            panic!("intentionally poisoning the metadata lock");
+        }));
+        // Sanity: the lock should now be poisoned. We don't assert this
+        // directly because `RwLock::is_poisoned` is non-portable, but
+        // any caller using `.read()`/`.write()` directly would now see
+        // a poison error.
+        assert!(CUSTOM_METADATA.is_poisoned());
+    }
+
+    #[test]
+    fn write_recovers_after_poisoned_lock() {
+        let _guard = SERIALIZE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+
+        let code = "POISON_WRITE_TEST";
+        // Start clean.
+        clear_currency_metadata(code);
+
+        poison_lock();
+
+        // After poison: the previous behaviour was a silent `Ok(None)`
+        // and the registration was lost. With recovery, the write
+        // succeeds and is observable on the next read.
+        let result = set_currency_metadata(
+            code,
+            "Recovered",
+            4,
+            "RC",
+            true,
+            crate::locale::Locale::EnUs,
+        )
+        .expect("write should succeed after poison");
+        assert!(result.is_none(), "no prior entry expected for fresh code");
+
+        let metadata = currency_metadata(code).expect("metadata is visible after poisoned write");
+        assert_eq!(metadata.minor_units, 4);
+        assert_eq!(metadata.full_name.as_ref(), "Recovered");
+
+        // Cleanup, also via the recovering write path.
+        clear_currency_metadata(code);
+        assert!(currency_metadata(code).is_none());
+    }
+
+    #[test]
+    fn read_recovers_after_poisoned_lock() {
+        let _guard = SERIALIZE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+
+        let code = "POISON_READ_TEST";
+        clear_currency_metadata(code);
+
+        // Pre-populate so a successful read has something to find.
+        set_currency_metadata(
+            code,
+            "Pre-Poison",
+            2,
+            "PP",
+            true,
+            crate::locale::Locale::EnUs,
+        )
+        .expect("setup write");
+
+        poison_lock();
+
+        // Read path must continue to return data instead of silently
+        // dropping to `None` because of the poison.
+        let metadata = currency_metadata(code).expect("read survives poisoned lock");
+        assert_eq!(metadata.full_name.as_ref(), "Pre-Poison");
+
+        clear_currency_metadata(code);
+    }
 }

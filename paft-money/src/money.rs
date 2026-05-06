@@ -2,7 +2,7 @@
 
 use crate::decimal::{self, Decimal, RoundingStrategy, ToPrimitive};
 use crate::error::MoneyError;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::hash::{Hash, Hasher};
 #[cfg(feature = "panicking-money-ops")]
 use std::ops::{Add, Div, Mul, Sub};
@@ -27,21 +27,100 @@ use crate::locale::Locale;
 #[cfg(feature = "money-formatting")]
 use crate::parser;
 
+// `Decimal` is `Copy` under `rust_decimal` but not under `bigdecimal`. The two
+// definitions below let the rest of the module say `copy_decimal(&value)`
+// without sprinkling `cfg` on every call site, while still keeping the no-op
+// path `const`-eligible under the default backend.
+#[cfg(not(feature = "bigdecimal"))]
 #[inline]
-#[allow(clippy::missing_const_for_fn)]
+const fn copy_decimal(value: &Decimal) -> Decimal {
+    *value
+}
+
+#[cfg(feature = "bigdecimal")]
+#[inline]
 fn copy_decimal(value: &Decimal) -> Decimal {
+    value.clone()
+}
+
+// Backend-agnostic checked arithmetic. Under `rust_decimal` these can
+// genuinely overflow because the type is fixed-width (96-bit mantissa);
+// under `bigdecimal` the type is arbitrary precision so the helpers always
+// return `Some(_)`. The `unnecessary_wraps` lint fires on the bigdecimal
+// build because of that — silence it explicitly so the wrapper stays
+// uniform across backends and call sites do not have to branch.
+
+/// Backend-agnostic checked multiplication of two decimals.
+///
+/// Returns `None` on overflow. `rust_decimal` is fixed-width and can overflow
+/// when the product exceeds 96 mantissa bits; `bigdecimal` is arbitrary
+/// precision and never overflows, so the operation is unconditionally
+/// successful there.
+#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
+fn checked_mul_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
     #[cfg(not(feature = "bigdecimal"))]
     {
-        *value
+        lhs.checked_mul(*rhs)
     }
     #[cfg(feature = "bigdecimal")]
     {
-        value.clone()
+        Some(lhs * rhs)
+    }
+}
+
+/// Backend-agnostic checked addition of two decimals.
+#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
+fn checked_add_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    #[cfg(not(feature = "bigdecimal"))]
+    {
+        lhs.checked_add(*rhs)
+    }
+    #[cfg(feature = "bigdecimal")]
+    {
+        Some(lhs + rhs)
+    }
+}
+
+/// Backend-agnostic checked subtraction of two decimals.
+#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
+fn checked_sub_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    #[cfg(not(feature = "bigdecimal"))]
+    {
+        lhs.checked_sub(*rhs)
+    }
+    #[cfg(feature = "bigdecimal")]
+    {
+        Some(lhs - rhs)
+    }
+}
+
+/// Number of fractional digits the underlying `Decimal` is currently
+/// representing.
+///
+/// Both backends store an explicit scale, but expose it via different
+/// methods. The returned value is widened to `i64` to match
+/// `bigdecimal`'s native type — `rust_decimal` uses `u32`, which always
+/// fits.
+fn decimal_scale(value: &Decimal) -> i64 {
+    #[cfg(not(feature = "bigdecimal"))]
+    {
+        i64::from(value.scale())
+    }
+    #[cfg(feature = "bigdecimal")]
+    {
+        value.fractional_digit_count()
     }
 }
 
 /// Represents an exchange rate between two currencies.
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+///
+/// Construct via [`ExchangeRate::new`] or by deserialization. Both paths
+/// enforce the same invariants — the `Deserialize` impl funnels through
+/// [`ExchangeRate::new`] so a stray JSON document like
+/// `{"from":"USD","to":"USD","rate":"-1"}` is rejected, not silently
+/// accepted as a structurally valid rate that downstream code would have
+/// to re-validate.
+#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct ExchangeRate {
     /// The source currency.
@@ -57,13 +136,18 @@ pub struct ExchangeRate {
 impl ExchangeRate {
     /// Creates a new `ExchangeRate` instance with validation.
     ///
+    /// Identity rates (`from == to`) are accepted only when the rate is
+    /// exactly `1` — anything else describes a non-existent currency
+    /// translation. Negative or zero rates are always rejected.
+    ///
     /// # Errors
-    /// Returns `MoneyError::InvalidExchangeRate` when `from == to` or `rate` is not strictly positive.
+    /// Returns `MoneyError::InvalidExchangeRate` when `rate` is not strictly
+    /// positive, or when `from == to` and `rate != 1`.
     pub fn new(from: Currency, to: Currency, rate: Decimal) -> Result<Self, MoneyError> {
-        if from == to {
+        if rate <= decimal::zero() {
             return Err(MoneyError::InvalidExchangeRate { rate });
         }
-        if rate <= decimal::zero() {
+        if from == to && rate != decimal::one() {
             return Err(MoneyError::InvalidExchangeRate { rate });
         }
         Ok(Self { from, to, rate })
@@ -82,7 +166,18 @@ impl ExchangeRate {
     }
 
     /// Returns the exchange rate.
+    ///
+    /// `const`-qualified under `rust_decimal` (which is `Copy`); under
+    /// `bigdecimal` the underlying clone must run at runtime.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn rate(&self) -> Decimal {
+        copy_decimal(&self.rate)
+    }
+
+    /// Returns the exchange rate.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn rate(&self) -> Decimal {
         copy_decimal(&self.rate)
     }
@@ -104,7 +199,39 @@ impl ExchangeRate {
     }
 }
 
+/// Shadow type used for deserializing [`ExchangeRate`].
+///
+/// Captures the on-the-wire shape and then routes through
+/// [`ExchangeRate::new`] so validation cannot be skipped. Any field added to
+/// `ExchangeRate` must be reflected here too.
+#[derive(Deserialize)]
+struct ExchangeRateShadow {
+    from: Currency,
+    to: Currency,
+    rate: Decimal,
+}
+
+impl<'de> Deserialize<'de> for ExchangeRate {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let shadow = ExchangeRateShadow::deserialize(deserializer)?;
+        Self::new(shadow.from, shadow.to, shadow.rate).map_err(serde::de::Error::custom)
+    }
+}
+
 /// Represents a financial value with its currency, enforcing safe operations.
+///
+/// Construct via [`Money::new`] (rounds to the currency's exponent),
+/// [`Money::new_exact`] (rejects over-precise input), or
+/// [`Money::from_canonical_str`] (which delegates to `new_exact`).
+/// Deserialization also funnels through `new_exact`, so untrusted JSON cannot
+/// produce a `Money` with a scale beyond the currency's `decimal_places()`.
+///
+/// `Hash` and `PartialEq` use a canonical string representation of the
+/// numeric value, so two `Money` values that differ only in trailing
+/// zero-scale digits compare equal and hash to the same bucket.
 ///
 /// ```
 /// # use iso_currency::Currency as IsoCurrency;
@@ -113,7 +240,7 @@ impl ExchangeRate {
 /// let json = serde_json::to_string(&usd).unwrap();
 /// assert_eq!(json, "{\"amount\":\"12.34\",\"currency\":\"USD\"}");
 /// ```
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct Money {
     /// The numeric value.
@@ -133,11 +260,14 @@ impl Hash for Money {
 }
 
 impl Money {
-    /// Creates a new `Money` instance rounded to the currency's minor units.
+    /// Creates a new `Money` instance, **rounding** the amount to the
+    /// currency's minor units using
+    /// [`RoundingStrategy::MidpointAwayFromZero`].
     ///
-    /// The supplied amount is quantized using
-    /// [`RoundingStrategy::MidpointAwayFromZero`], ensuring the resulting
-    /// quantity can be settled precisely with the currency's minor units.
+    /// Use this when callers explicitly want lossy quantization (e.g. a UI
+    /// computation, an unrounded fraction from a calculation pipeline). When
+    /// the input scale must be preserved exactly — including for
+    /// deserialization or string parsing — use [`Money::new_exact`] instead.
     ///
     /// # Errors
     /// Returns `MoneyError::MetadataNotFound` when metadata is not registered for a custom currency.
@@ -146,6 +276,53 @@ impl Money {
         let rounded = Self::round_amount(amount, &currency)?;
         Ok(Self {
             amount: rounded,
+            currency,
+        })
+    }
+
+    /// Creates a new `Money` instance, **rejecting** any amount whose
+    /// fractional precision exceeds the currency's `decimal_places()`.
+    ///
+    /// Trailing zeros do not count as precision (so `1.230` is a valid USD
+    /// amount because rounding to two places leaves `1.23` numerically
+    /// unchanged). The accepted amount is canonicalized to the currency's
+    /// exact scale, which guarantees that two `Money` values built from
+    /// equal numbers — for example one constructed via the API and one
+    /// arriving over the wire — share the same internal representation
+    /// regardless of how their string form was written.
+    ///
+    /// This is the constructor used by [`Money::from_canonical_str`] and by
+    /// `serde::Deserialize`, so untrusted JSON cannot smuggle in an over-
+    /// precise amount.
+    ///
+    /// # Errors
+    /// - Returns `MoneyError::MetadataNotFound` when metadata is not registered.
+    /// - Returns `MoneyError::PrecisionExceeded` when the supplied amount has
+    ///   more fractional digits than the currency's exponent permits.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
+    // We take `amount` by value to mirror `Money::new` and avoid forcing
+    // callers (notably the deserialize path) to clone before construction.
+    // Under `bigdecimal` the body uses `&amount` for the round and
+    // comparison, and only consumes the canonical value; the lint is
+    // suppressed to keep the signatures consistent across backends.
+    #[cfg_attr(feature = "bigdecimal", allow(clippy::needless_pass_by_value))]
+    pub fn new_exact(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
+        let decimals = Self::decimals_for_currency(&currency)?;
+        let scale = Self::ensure_scale_within_limits(decimals)?;
+        // Round toward zero so any rounding "decision" turns into a pure
+        // truncation: if even one fractional digit would have been dropped,
+        // the truncated value differs from the original.
+        let canonical = decimal::round_dp_with_strategy(&amount, scale, RoundingStrategy::ToZero);
+        if canonical != amount {
+            let actual_scale = u32::try_from(decimal_scale(&amount)).unwrap_or(u32::MAX);
+            return Err(MoneyError::PrecisionExceeded {
+                currency_code: currency.code().to_string(),
+                max_scale: scale,
+                actual_scale,
+            });
+        }
+        Ok(Self {
+            amount: canonical,
             currency,
         })
     }
@@ -165,6 +342,14 @@ impl Money {
     /// allocation proportional to the number of digits when the `bigdecimal`
     /// feature is enabled.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn amount(&self) -> Decimal {
+        copy_decimal(&self.amount)
+    }
+
+    /// Returns the amount as a [`Decimal`].
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }
@@ -177,29 +362,44 @@ impl Money {
 
     /// Returns the amount as the smallest currency unit (minor units).
     ///
+    /// Uses checked multiplication so a value that would overflow the
+    /// fixed-width `rust_decimal` backend surfaces as
+    /// `MoneyError::ConversionError` instead of panicking.
+    ///
     /// # Errors
     /// Returns `MoneyError::ConversionError` or `MoneyError::MetadataNotFound` when conversion cannot be performed.
     pub fn as_minor_units(&self) -> Result<i128, MoneyError> {
         let decimals = Self::decimals_for_currency(&self.currency)?;
         let scale = Self::ensure_scale_within_limits(decimals)?;
 
+        // The cap on `scale` is enforced by `ensure_scale_within_limits`
+        // (currently 18 dp) so `10^scale` always fits inside `i64`.
         let multiplier = Decimal::from(10_i64.pow(scale));
-        (copy_decimal(&self.amount) * multiplier)
-            .to_i128()
-            .ok_or(MoneyError::ConversionError)
+        let scaled = checked_mul_decimal(&self.amount, &multiplier)
+            .ok_or(MoneyError::ConversionError)?;
+        scaled.to_i128().ok_or(MoneyError::ConversionError)
     }
 
     /// Creates a new `Money` instance from a canonical decimal string and currency.
     ///
+    /// Delegates to [`Money::new_exact`], so a string that carries more
+    /// fractional precision than the currency exponent allows is rejected
+    /// rather than silently rounded. Use [`Money::new`] explicitly if you
+    /// want rounding behaviour from a previously parsed `Decimal`.
+    ///
     /// # Errors
-    /// Returns an error when the string cannot be parsed as a decimal.
+    /// - Returns `MoneyError::InvalidDecimal` when the string cannot be
+    ///   parsed as a decimal.
+    /// - Returns `MoneyError::PrecisionExceeded` when the parsed amount has
+    ///   more fractional digits than the currency exponent permits.
+    ///
     /// Leading and trailing whitespace is ignored and an optional leading `+`
     /// sign is supported. Scientific notation is rejected so that behaviour is
     /// consistent across decimal backends.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_canonical_str(amount: &str, currency: Currency) -> Result<Self, MoneyError> {
         let amount = decimal::parse_decimal(amount).ok_or(MoneyError::InvalidDecimal)?;
-        Self::new(amount, currency)
+        Self::new_exact(amount, currency)
     }
 
     /// Creates a new Money instance from an integer amount in the currency's minor units.
@@ -295,7 +495,10 @@ impl Money {
     /// Addition that returns an error for currency mismatch.
     ///
     /// # Errors
-    /// Returns `MoneyError::CurrencyMismatch` when the operands use different currencies.
+    /// - Returns `MoneyError::CurrencyMismatch` when the operands use
+    ///   different currencies.
+    /// - Returns `MoneyError::ConversionError` when the sum overflows the
+    ///   active decimal backend (only possible under `rust_decimal`).
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
@@ -307,16 +510,18 @@ impl Money {
                 found: rhs.currency.clone(),
             });
         }
-        Self::new(
-            copy_decimal(&self.amount) + copy_decimal(&rhs.amount),
-            self.currency.clone(),
-        )
+        let sum = checked_add_decimal(&self.amount, &rhs.amount)
+            .ok_or(MoneyError::ConversionError)?;
+        Self::new(sum, self.currency.clone())
     }
 
     /// Subtraction that returns an error for currency mismatch.
     ///
     /// # Errors
-    /// Returns `MoneyError::CurrencyMismatch` when the operands use different currencies.
+    /// - Returns `MoneyError::CurrencyMismatch` when the operands use
+    ///   different currencies.
+    /// - Returns `MoneyError::ConversionError` when the difference overflows
+    ///   the active decimal backend (only possible under `rust_decimal`).
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
@@ -328,22 +533,31 @@ impl Money {
                 found: rhs.currency.clone(),
             });
         }
-        Self::new(
-            copy_decimal(&self.amount) - copy_decimal(&rhs.amount),
-            self.currency.clone(),
-        )
+        let diff = checked_sub_decimal(&self.amount, &rhs.amount)
+            .ok_or(MoneyError::ConversionError)?;
+        Self::new(diff, self.currency.clone())
     }
 
     /// Multiplication that preserves the currency.
     ///
     /// # Errors
-    /// Returns `MoneyError::MetadataNotFound` when metadata is missing for the currency.
+    /// - Returns `MoneyError::MetadataNotFound` when metadata is missing for the currency.
+    /// - Returns `MoneyError::ConversionError` when the product overflows the
+    ///   active decimal backend (only possible under `rust_decimal`).
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
+    // The public signature takes `Decimal` by value to keep the existing
+    // API stable. Under `bigdecimal`, `Decimal` is not `Copy`, so the
+    // borrow checker would otherwise complain about a needless pass-by-
+    // value; allowing this lint here preserves the API contract while
+    // still avoiding an extra clone in the helper call below.
+    #[allow(clippy::needless_pass_by_value)]
     pub fn try_mul(&self, rhs: Decimal) -> Result<Self, MoneyError> {
-        Self::new(copy_decimal(&self.amount) * rhs, self.currency.clone())
+        let product =
+            checked_mul_decimal(&self.amount, &rhs).ok_or(MoneyError::ConversionError)?;
+        Self::new(product, self.currency.clone())
     }
 
     /// Division that returns an error for division by zero.
@@ -389,8 +603,15 @@ impl Money {
 
     /// Converts this money to another currency using the provided exchange rate and rounding strategy.
     ///
+    /// Identity conversions (`from == to`, rate `1`) bypass arithmetic and
+    /// rounding, returning a clone of `self`. The conversion uses
+    /// `checked_mul`, so a multiplication that would overflow the
+    /// fixed-width `rust_decimal` backend surfaces as
+    /// `MoneyError::ConversionError` instead of panicking.
+    ///
     /// # Errors
-    /// Returns `MoneyError::IncompatibleExchangeRate` when the exchange rate does not match the money's currency.
+    /// - Returns `MoneyError::IncompatibleExchangeRate` when the exchange rate does not match the money's currency.
+    /// - Returns `MoneyError::ConversionError` when the rate-scaled amount overflows the active decimal backend.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rate), err)
@@ -408,9 +629,18 @@ impl Money {
             });
         }
 
+        // Identity rate fast path. By construction (`ExchangeRate::new`),
+        // `from == to` implies `rate == 1`, so the conversion is a no-op
+        // and we can avoid both the multiplication and the re-rounding
+        // step that might pull a value off-scale.
+        if rate.from == rate.to {
+            return Ok(self.clone());
+        }
+
         let decimals = rate.to.decimal_places()?;
         let scale = Self::ensure_scale_within_limits(decimals)?;
-        let product = copy_decimal(&self.amount) * rate.rate();
+        let product = checked_mul_decimal(&self.amount, &rate.rate)
+            .ok_or(MoneyError::ConversionError)?;
         let converted_amount = decimal::round_dp_with_strategy(&product, scale, rounding);
         Self::new(converted_amount, rate.to.clone())
     }
@@ -528,6 +758,31 @@ impl Money {
         amount =
             decimal::round_dp_with_strategy(&amount, scale, RoundingStrategy::MidpointAwayFromZero);
         Ok(amount)
+    }
+}
+
+/// Shadow type used for deserializing [`Money`].
+///
+/// Matches the on-the-wire shape produced by the `Serialize` derive but
+/// routes the deserialised values through [`Money::new_exact`] so that
+/// validation, scale canonicalization, and metadata lookup happen on the
+/// deserialised path. Without this, `#[derive(Deserialize)]` would build a
+/// `Money` whose `amount` retained whatever scale was in the JSON,
+/// breaking `Hash`/`Eq` consistency under `bigdecimal` and silently
+/// admitting over-precise values.
+#[derive(Deserialize)]
+struct MoneyShadow {
+    amount: Decimal,
+    currency: Currency,
+}
+
+impl<'de> Deserialize<'de> for Money {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let shadow = MoneyShadow::deserialize(deserializer)?;
+        Self::new_exact(shadow.amount, shadow.currency).map_err(serde::de::Error::custom)
     }
 }
 

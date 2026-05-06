@@ -111,11 +111,21 @@ fn symbol_positioning_respects_metadata() {
 
 #[test]
 fn exponent_specific_formatting() {
-    let jpy_value = Money::from_canonical_str("1234.5", Currency::Iso(IsoCurrency::JPY)).unwrap();
+    // The input strings carry more fractional digits than the currency
+    // exponent permits, so we go through `Money::new` (rounding) instead
+    // of `from_canonical_str` (strict).
+    let jpy_value = Money::new(
+        paft_decimal::parse_decimal("1234.5").unwrap(),
+        Currency::Iso(IsoCurrency::JPY),
+    )
+    .unwrap();
     assert_eq!(jpy_value.to_localized_string().unwrap(), "¥1,235");
 
-    let bhd_value =
-        Money::from_canonical_str("1234.5674", Currency::Iso(IsoCurrency::BHD)).unwrap();
+    let bhd_value = Money::new(
+        paft_decimal::parse_decimal("1234.5674").unwrap(),
+        Currency::Iso(IsoCurrency::BHD),
+    )
+    .unwrap();
     assert_eq!(bhd_value.to_localized_string().unwrap(), "BD 1,234.567");
 }
 
@@ -133,7 +143,10 @@ fn crypto_precision_formatting() {
 
 #[test]
 fn amount_string_supports_custom_digits() {
-    let usd_value = Money::from_canonical_str("1234.56789", usd()).unwrap();
+    // Same story as `exponent_specific_formatting`: the input has 5
+    // fractional digits but USD allows only 2, so we round at construction.
+    let usd_value =
+        Money::new(paft_decimal::parse_decimal("1234.56789").unwrap(), usd()).unwrap();
     assert_eq!(
         usd_value
             .amount_string_with_locale(Locale::EnEu, 4)

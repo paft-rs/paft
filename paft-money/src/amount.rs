@@ -10,6 +10,14 @@ use crate::error::MoneyError;
 use crate::money::Money;
 
 /// High-precision decimal amount with an optional [`Currency`] hint.
+///
+/// `PartialEq`, `Eq`, and `Hash` consider both the amount and the
+/// currency hint as a tuple. Two `MoneyAmount` values with equal numeric
+/// magnitude but different hints (e.g. `100 USD` vs `100 EUR`) are
+/// **not** equal, because they are not interchangeable in the contexts
+/// where the hint matters (currency-aware sums, dataframe keys, dedup).
+/// Hashing matches `Eq`, so storing them in `HashMap`/`HashSet` does
+/// the right thing.
 #[derive(Debug, Clone)]
 pub struct MoneyAmount {
     amount: Decimal,
@@ -62,7 +70,19 @@ impl MoneyAmount {
     }
 
     /// Returns the underlying [`Decimal`], cloning when required by the backend.
+    ///
+    /// `const`-qualified under the default `rust_decimal` backend, which is a
+    /// pure copy. Under `bigdecimal`, the body invokes `Clone::clone` and
+    /// must run at runtime.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn amount(&self) -> Decimal {
+        copy_decimal(&self.amount)
+    }
+
+    /// Returns the underlying [`Decimal`], cloning when required by the backend.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }
@@ -74,7 +94,20 @@ impl MoneyAmount {
     }
 
     /// Produces a new `MoneyAmount` with the same numeric value and a provided hint.
+    ///
+    /// See [`MoneyAmount::amount`] for the `const`-fn split rationale.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn with_currency_hint(&self, currency: Currency) -> Self {
+        Self {
+            amount: copy_decimal(&self.amount),
+            currency_hint: Some(currency),
+        }
+    }
+
+    /// Produces a new `MoneyAmount` with the same numeric value and a provided hint.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn with_currency_hint(&self, currency: Currency) -> Self {
         Self {
             amount: copy_decimal(&self.amount),
@@ -190,7 +223,7 @@ impl From<Money> for MoneyAmount {
 
 impl PartialEq for MoneyAmount {
     fn eq(&self, other: &Self) -> bool {
-        self.amount == other.amount
+        self.amount == other.amount && self.currency_hint == other.currency_hint
     }
 }
 
@@ -199,6 +232,7 @@ impl Eq for MoneyAmount {}
 impl Hash for MoneyAmount {
     fn hash<H: Hasher>(&self, state: &mut H) {
         decimal::to_canonical_string(&self.amount).hash(state);
+        self.currency_hint.hash(state);
     }
 }
 
@@ -243,13 +277,17 @@ fn merge_currency_hints(lhs: Option<&Currency>, rhs: Option<&Currency>) -> Optio
     }
 }
 
+// Two cfg-gated definitions instead of one body with `cfg!` arms — the
+// `rust_decimal` path is a pure copy and is `const`-eligible, while the
+// `bigdecimal` path performs a heap allocation through `Clone`.
+#[cfg(not(feature = "bigdecimal"))]
+#[inline]
+const fn copy_decimal(value: &Decimal) -> Decimal {
+    *value
+}
+
+#[cfg(feature = "bigdecimal")]
+#[inline]
 fn copy_decimal(value: &Decimal) -> Decimal {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        *value
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        value.clone()
-    }
+    value.clone()
 }

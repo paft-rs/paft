@@ -56,39 +56,33 @@ impl Currency {
 
     /// Returns the number of decimal places (minor units) for this currency.
     ///
-    /// Policy: If ISO defines a minor unit exponent, we use it. If ISO is silent
-    /// (for example metals like "XAU" or special drawing rights like "XDR"), we
-    /// consult the metadata registry by ISO code. If metadata is present, its
+    /// Policy: If ISO defines a minor unit exponent, we use it. Otherwise (for
+    /// ISO currencies without a registered exponent such as `XAU`/`XDR`, for
+    /// the built-in non-ISO variants, and for `Other` codes), we consult the
+    /// metadata registry by canonical code. If metadata is present, its
     /// `minor_units` value is used. Otherwise, an error is returned.
     ///
+    /// Routing every non-ISO variant through the registry keeps the source of
+    /// truth in one place (`BUILTIN_CURRENCY_METADATA`) so a future drift
+    /// between hard-coded arms and registered metadata cannot occur.
+    ///
     /// # Errors
-    /// - Returns `MoneyError::MetadataNotFound` when:
-    ///   - The currency is `Other` and no metadata is registered, or
-    ///   - The currency is `Iso(_)` whose ISO entry has no exponent and no
-    ///     metadata overlay is registered for its code.
+    /// - Returns `MoneyError::MetadataNotFound` when no metadata can be
+    ///   resolved for the currency (e.g. an `Other` code without a registered
+    ///   overlay, or an ISO code whose ISO entry has no exponent and which has
+    ///   no overlay registered).
     pub fn decimal_places(&self) -> Result<u8, MoneyError> {
-        match self {
-            Self::Iso(iso) => {
-                if let Some(exp) = iso.exponent().and_then(|e| u8::try_from(e).ok()) {
-                    return Ok(exp);
-                }
-                if let Some(meta) = currency_metadata(iso.code()) {
-                    return Ok(meta.minor_units);
-                }
-                Err(MoneyError::MetadataNotFound {
-                    currency: Self::Iso(*iso),
-                })
-            }
-            Self::ETH => Ok(18),
-            Self::XMR => Ok(12),
-            Self::BTC => Ok(8),
-            Self::USDC | Self::USDT => Ok(6),
-            Self::Other(code) => currency_metadata(code.as_ref())
-                .map(|meta| meta.minor_units)
-                .ok_or_else(|| MoneyError::MetadataNotFound {
-                    currency: self.clone(),
-                }),
+        if let Self::Iso(iso) = self
+            && let Some(exp) = iso.exponent().and_then(|e| u8::try_from(e).ok())
+        {
+            return Ok(exp);
         }
+
+        currency_metadata(self.code())
+            .map(|meta| meta.minor_units)
+            .ok_or_else(|| MoneyError::MetadataNotFound {
+                currency: self.clone(),
+            })
     }
 
     /// Returns the human-readable name for this currency.
@@ -109,6 +103,10 @@ impl Currency {
     }
 
     /// Returns the scaling factor for converting between major and minor units (`10^decimal_places`).
+    ///
+    /// The result is computed as `10_i64.pow(decimal_places)`, which is why
+    /// `MAX_MINOR_UNIT_DECIMALS` is capped at 18 — beyond that, `10^scale`
+    /// no longer fits in `i64`.
     ///
     /// # Errors
     /// Returns `MoneyError::ConversionError` when the required precision exceeds `MAX_MINOR_UNIT_DECIMALS`.

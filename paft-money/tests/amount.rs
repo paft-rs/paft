@@ -86,28 +86,41 @@ fn money_amount_currency_hint_behaviour() {
 
 #[test]
 fn money_amount_equality_and_hash() {
+    // `MoneyAmount`'s equality is now (amount, currency_hint) tuple
+    // equality. Two amounts that differ only by hint are no longer
+    // considered interchangeable — that was the old, surprising behaviour
+    // because consumers (sum aggregation, dataframe keys) treat the hint
+    // as load-bearing.
     let base = MoneyAmount::from_str("123.45").unwrap();
     let usd_amount = base.with_currency_hint(usd());
     let eur_amount = base.with_currency_hint(eur());
+    let usd_amount_again = base.with_currency_hint(usd());
 
-    assert_eq!(usd_amount, eur_amount);
+    assert_ne!(usd_amount, eur_amount);
+    assert_eq!(usd_amount, usd_amount_again);
 
-    let mut hasher1 = DefaultHasher::new();
-    usd_amount.hash(&mut hasher1);
-    let hash1 = hasher1.finish();
+    let mut hasher_usd_a = DefaultHasher::new();
+    usd_amount.hash(&mut hasher_usd_a);
+    let hash_usd_a = hasher_usd_a.finish();
 
-    let mut hasher2 = DefaultHasher::new();
-    eur_amount.hash(&mut hasher2);
-    let hash2 = hasher2.finish();
+    let mut hasher_usd_b = DefaultHasher::new();
+    usd_amount_again.hash(&mut hasher_usd_b);
+    let hash_usd_b = hasher_usd_b.finish();
 
-    assert_eq!(hash1, hash2);
+    assert_eq!(hash_usd_a, hash_usd_b);
 
+    // Plain hint-less amounts still compare equal across each other.
+    let plain_a = MoneyAmount::from_str("123.45").unwrap();
+    let plain_b = MoneyAmount::from_str("123.45").unwrap();
+    assert_eq!(plain_a, plain_b);
+
+    // A different magnitude hashes differently regardless of hint.
     let different = MoneyAmount::from_str("999.99").unwrap();
     assert_ne!(usd_amount, different);
 
-    let mut hasher3 = DefaultHasher::new();
-    different.hash(&mut hasher3);
-    assert_ne!(hash1, hasher3.finish());
+    let mut hasher_diff = DefaultHasher::new();
+    different.hash(&mut hasher_diff);
+    assert_ne!(hash_usd_a, hasher_diff.finish());
 }
 
 #[test]

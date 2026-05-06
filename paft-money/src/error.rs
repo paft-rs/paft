@@ -62,11 +62,21 @@ pub enum MoneyError {
     /// Occurs when parsing a decimal amount fails.
     #[error("invalid decimal")]
     InvalidDecimal,
-    /// Occurs when parsing a currency fails.
-    #[error("invalid currency: {source}")]
-    InvalidCurrency {
-        /// Underlying currency parsing error.
-        source: MoneyParseError,
+    /// Occurs when an amount cannot be represented exactly at the currency's
+    /// scale. Returned by [`crate::Money::new_exact`] (and therefore by
+    /// [`crate::Money::from_canonical_str`] and serde deserialization) when
+    /// the supplied value carries more fractional precision than the
+    /// currency's `decimal_places()`.
+    #[error(
+        "precision exceeded for {currency_code}: max scale {max_scale}, actual scale {actual_scale}"
+    )]
+    PrecisionExceeded {
+        /// Canonical code of the currency whose scale was exceeded.
+        currency_code: String,
+        /// Maximum fractional digits permitted by the currency exponent.
+        max_scale: u32,
+        /// Fractional digits present in the supplied amount.
+        actual_scale: u32,
     },
     /// Occurs when a localized amount has invalid separators or characters.
     #[cfg(feature = "money-formatting")]
