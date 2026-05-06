@@ -1,6 +1,33 @@
-//! Example demonstrating how to properly handle the Other(Canonical) extensible enum pattern
-//! in paft. This example shows best practices for consuming paft types that use the
-//! extensible enum pattern.
+// Pedagogical example — shape and clarity are intentional.
+#![allow(
+    clippy::unnecessary_wraps,
+    clippy::missing_errors_doc,
+    clippy::doc_markdown,
+    clippy::too_many_lines,
+    clippy::missing_panics_doc
+)]
+
+//! Extensible enum pattern in paft.
+//!
+//! Many paft enums (`Currency`, `Exchange`, `AssetKind`, `MarketState`,
+//! `Period`, `RecommendationGrade`, ...) are open: they have a fixed set of
+//! canonical variants plus a single `Other(Canonical)` fallback for tokens
+//! the library does not model directly. Parsing never fails on unknown
+//! tokens — they round-trip losslessly through `Other(Canonical("..."))`.
+//!
+//! Run with:
+//!     cargo run -p paft --example extensible_enums --features full
+//!
+//! What this example demonstrates:
+//! 1. Parsing well-known codes (`USD`, `EUR`) into ISO canonical variants.
+//! 2. Parsing crypto aliases (`BTC`, `ETH`, plus the `XBT`/`BITCOIN` synonyms)
+//!    into the canonical non-ISO variants — or into `Other` when no canonical
+//!    equivalent exists.
+//! 3. Working with `RecommendationGrade`, including a provider synonym
+//!    (`MARKET_PERFORM`) that maps onto a canonical variant.
+//! 4. The honest output for unknown provider codes: `Other(Canonical("..."))`.
+//!    The provider sent the token, paft normalized it, and we preserve it
+//!    even though it is not in our known set.
 
 use iso_currency::Currency as IsoCurrency;
 #[cfg(feature = "fundamentals")]
@@ -21,7 +48,13 @@ fn main() {
     normalize_provider_data();
 }
 
-/// Example 1: Properly handling currencies with Other variants
+/// Example 1: Handling currencies. Some inputs (`USD`, `EUR`, `BTC`, `ETH`)
+/// parse directly into canonical variants. Others (`xbt`, `bitcoin`,
+/// `UNKNOWN_CURRENCY`) are preserved verbatim as `Other(Canonical(..))` —
+/// the parser uppercases and normalizes them but does not promote them onto
+/// `Currency::BTC`. Mapping aliases onto canonical variants is the job of
+/// your provider adapter (see also `handle_currencies` and the docs/
+/// BEST_PRACTICES.md guide).
 fn handle_currencies() {
     println!("1. Handling Currencies:");
 
@@ -41,14 +74,15 @@ fn handle_currencies() {
 
     for currency in currencies {
         if currency == Currency::Iso(IsoCurrency::USD) {
-            println!("  ✓ US Dollar - major reserve currency");
+            println!("  US Dollar - major reserve currency");
         } else if currency == Currency::Iso(IsoCurrency::EUR) {
-            println!("  ✓ Euro - major reserve currency");
+            println!("  Euro - major reserve currency");
         } else if currency == Currency::BTC || currency == Currency::ETH {
-            println!("  ✓ {currency} - known currency");
+            println!("  {currency} - canonical non-ISO variant");
         } else {
+            // Anything that didn't match above lands in Other(Canonical(..)).
             println!(
-                "  ⚠ Unknown currency: {} - needs investigation",
+                "  Unknown currency: {} - kept as Other(Canonical), needs investigation",
                 currency.code()
             );
         }
@@ -56,7 +90,7 @@ fn handle_currencies() {
     println!();
 }
 
-/// Example 2: Working with recommendation grades
+/// Example 2: Working with recommendation grades.
 #[cfg(feature = "fundamentals")]
 fn handle_recommendation_grades() {
     println!("2. Processing Recommendation Grades:");
@@ -71,17 +105,21 @@ fn handle_recommendation_grades() {
 
     for grade in grades {
         match grade {
-            RecommendationGrade::StrongBuy => println!("  ✓ Strong Buy - very bullish"),
-            RecommendationGrade::Buy => println!("  ✓ Buy - bullish"),
-            RecommendationGrade::Outperform => println!("  ✓ Outperform - bullish"),
-            RecommendationGrade::Hold => println!("  ✓ Hold - neutral"),
-            other => println!("  ⚠ Unknown grade: {other} - needs interpretation"),
+            RecommendationGrade::StrongBuy => println!("  Strong Buy - very bullish"),
+            RecommendationGrade::Buy => println!("  Buy - bullish"),
+            RecommendationGrade::Outperform => println!("  Outperform - bullish"),
+            RecommendationGrade::Hold => println!("  Hold - neutral"),
+            other => println!("  Unknown grade: {other} - needs interpretation"),
         }
     }
     println!();
 }
 
-/// Example 3: Normalizing provider-specific data
+/// Example 3: Normalizing provider-specific data. The output here intentionally
+/// distinguishes between true canonical variants and `Other(Canonical(..))`
+/// fallbacks. Provider tokens like `BITCOIN`, `DOLLAR`, `EURO`, `XBT` are
+/// preserved verbatim by the parser but are NOT canonical — your provider
+/// adapter is the right place to map them onto canonical variants.
 fn normalize_provider_data() {
     println!("3. Normalizing Provider-Specific Data:");
 
@@ -92,25 +130,29 @@ fn normalize_provider_data() {
     println!("  Generic provider currencies:");
     for code in generic_currencies {
         let currency = code.parse::<Currency>().unwrap();
-        println!("    {} -> {}", code, format_currency(&currency));
+        println!("    {} -> {}", code, classify(&currency));
     }
 
     println!("  Alpha Vantage currencies:");
     for code in alpha_vantage_currencies {
         let currency = code.parse::<Currency>().unwrap();
-        println!("    {} -> {}", code, format_currency(&currency));
+        println!("    {} -> {}", code, classify(&currency));
     }
     println!();
 }
 
-/// Normalize generic provider currency codes
-/// Format currency for display
-fn format_currency(currency: &Currency) -> String {
-    if currency == &Currency::Iso(IsoCurrency::USD) {
-        "USD (canonical)".to_string()
-    } else if currency == &Currency::Iso(IsoCurrency::EUR) {
-        "EUR (canonical)".to_string()
-    } else {
-        format!("{currency} (canonical)")
+/// Classify a parsed currency: was it a canonical variant, or did it fall
+/// through to `Other(Canonical(..))`? This is the honest version of what
+/// most consumer code wants to know.
+fn classify(currency: &Currency) -> String {
+    match currency {
+        // ISO 4217 codes — canonical, well-defined.
+        Currency::Iso(iso) => format!("{} (canonical, ISO 4217)", iso.code()),
+        // Non-ISO canonical variants paft models directly.
+        Currency::BTC | Currency::ETH | Currency::XMR | Currency::USDC | Currency::USDT => {
+            format!("{} (canonical, non-ISO)", currency.code())
+        }
+        // Everything else: provider-supplied token paft preserved verbatim.
+        Currency::Other(canonical) => format!("Other(Canonical({canonical})) - not in known set"),
     }
 }

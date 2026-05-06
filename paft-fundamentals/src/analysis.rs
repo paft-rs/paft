@@ -1,4 +1,4 @@
-//! Analyst, recommendations, and earnings-related types under `paft_fundamentals::fundamentals::analysis`.
+//! Analyst, recommendations, and earnings-related types under `paft_fundamentals::analysis`.
 
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;

@@ -115,7 +115,7 @@ struct HftMeta {
 fn hft_quote_round_trip() -> Result<()> {
     // Construct a quote enriched with HFT metadata. Everything else looks
     // identical to the standard case, except the type is the generic
-    // `GenericQuote<HftMeta>` and `meta` carries a real value.
+    // `GenericQuote<HftMeta>` and the `provider` field carries a real value.
     let quote: GenericQuote<HftMeta> = GenericQuote {
         instrument: Instrument::from_symbol_and_exchange(
             "AAPL",
@@ -135,9 +135,10 @@ fn hft_quote_round_trip() -> Result<()> {
         },
     };
 
-    // Because of `#[serde(flatten)]` on `meta`, the provider-specific keys
-    // appear at the top level of the JSON document — alongside the canonical
-    // fields — rather than nested under a "meta" object.
+    // Because of `#[serde(flatten)]` on the `provider` field, the
+    // provider-specific keys appear at the top level of the JSON document —
+    // alongside the canonical fields — rather than nested under a "provider"
+    // object.
     let json = serde_json::to_string_pretty(&quote).unwrap();
     println!("HFT-enriched quote JSON (provider keys are flattened):");
     println!("{json}");

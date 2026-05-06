@@ -26,7 +26,7 @@ paft-aggregates = { version = "0.8.0", default-features = false }
 What’s inside
 --------------
 
-- `info`: `FastInfo`, `Info` — lightweight instrument snapshots (identity, prices, ranges, and timestamp)
+- `Snapshot` — strictly instant-in-time snapshot for an instrument: identity, the current session's prices/ranges, and the snapshot timestamp. Generic over a provider-metadata payload (defaults to `()`); fundamentals/analyst/ESG fields belong in `paft-fundamentals`.
 
 Features
 --------

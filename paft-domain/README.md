@@ -52,22 +52,21 @@ Quickstart
 ----------
 
 ```rust
-use paft_domain::{
-    AssetKind, Exchange, Figi, IdentifierScheme, Instrument, Isin, Period, SecurityId, Symbol,
-};
+use paft_domain::{AssetKind, Exchange, Figi, Instrument, Isin, Period, Symbol};
 
 // Minimal: instrument from symbol + exchange
 let aapl = Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
     .unwrap();
 
-// Globally-identified: provide FIGI/ISIN (preferred over symbol)
-let id = SecurityId {
+// Globally-identified: build the flat struct directly to attach FIGI/ISIN
+// (preferred over symbol when available).
+let aapl_pro = Instrument {
     symbol: Symbol::new("AAPL").unwrap(),
     exchange: Some(Exchange::NASDAQ),
     figi: Some(Figi::new("BBG000B9XRY4").unwrap()),
     isin: Some(Isin::new("US0378331005").unwrap()),
+    kind: AssetKind::Equity,
 };
-let aapl_pro = Instrument::new(IdentifierScheme::Security(id), AssetKind::Equity);
 assert_eq!(aapl_pro.unique_key(), "BBG000B9XRY4");
 
 // Period parsing with canonical output (wire = Display)
@@ -78,16 +77,18 @@ assert_eq!(q4.to_string(), "2023Q4");
 Prediction markets
 ------------------
 
+Prediction-market identity lives in the separate `paft-prediction` crate:
+
 ```rust
-use paft_domain::Instrument;
+use paft_prediction::PredictionInstrument;
 
 // Create an instrument for a prediction market outcome
-let pm = Instrument::from_prediction_market(
+let pm = PredictionInstrument::new(
     "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de",
     "73470541315377973562501025254719659796416871135081220986683321361000395461644",
 ).unwrap();
 
-// Unique key for prediction markets is the outcome_id
+// Unique key for prediction markets is the outcome id
 assert_eq!(
     pm.unique_key(),
     "73470541315377973562501025254719659796416871135081220986683321361000395461644"

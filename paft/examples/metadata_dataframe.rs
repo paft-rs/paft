@@ -19,9 +19,10 @@
 //!    metadata escape hatch.
 //!
 //! 2. A custom `M` that itself derives `ToDataFrame` is **flattened** into
-//!    extra columns, prefixed with `meta.`. So adding HFT timestamps does
-//!    not require changing your downstream Polars pipeline — the metadata
-//!    columns just appear alongside the canonical ones.
+//!    extra columns, prefixed with `provider.` (the parent field's name).
+//!    So adding HFT timestamps does not require changing your downstream
+//!    Polars pipeline — the metadata columns just appear alongside the
+//!    canonical ones.
 //!
 //! Run with:
 //!     cargo run -p paft --example metadata_dataframe --features full
@@ -41,8 +42,9 @@ use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};
 
 /// Minimal HFT metadata struct that itself derives `ToDataFrame`. Each field
-/// becomes its own column in the resulting `DataFrame` (under a `meta.`
-/// prefix when nested inside a bigger payload).
+/// becomes its own column in the resulting `DataFrame` (under a `provider.`
+/// prefix when nested inside a bigger payload — `provider` is the field name
+/// used by the parent `GenericQuote<M>` / `GenericCandle<M>` etc.).
 ///
 /// The `#[df_derive(...)]` container attributes are only required because
 /// this example lives inside the `paft` crate's `examples/` directory.
@@ -72,8 +74,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// With `M = ()`, the `meta` field contributes zero columns. The schema is
-/// identical to what you'd get from paft 0.7.x — no surprises for existing
+/// With `M = ()`, the `provider` field contributes zero columns. The schema
+/// is identical to what you'd get from paft 0.7.x — no surprises for existing
 /// downstream pipelines.
 fn standard_quote_schema() -> Result<()> {
     let q = Quote {
@@ -94,8 +96,8 @@ fn standard_quote_schema() -> Result<()> {
 }
 
 /// Same shape, but with a real `HftMeta` payload. Notice the new columns:
-/// `meta.rx_ns`, `meta.seq`, `meta.venue` — derived automatically from
-/// `HftMeta`'s `ToDataFrame` impl.
+/// `provider.rx_ns`, `provider.seq`, `provider.venue` — derived automatically
+/// from `HftMeta`'s `ToDataFrame` impl.
 fn enriched_quote_dataframe() -> Result<()> {
     let quotes: Vec<GenericQuote<HftMeta>> = vec![
         GenericQuote {
@@ -136,7 +138,7 @@ fn enriched_quote_dataframe() -> Result<()> {
 }
 
 /// `M` flows down into `Vec<GenericCandle<M>>` too. Every candle row gets
-/// its own `meta.*` columns automatically.
+/// its own `provider.*` columns automatically.
 fn history_dataframe() -> Result<()> {
     let response: GenericHistoryResponse<HftMeta> = GenericHistoryResponse {
         candles: vec![

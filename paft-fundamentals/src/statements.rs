@@ -1,4 +1,4 @@
-//! Financial statements and calendar types under `paft_fundamentals::fundamentals::statements`.
+//! Financial statements and calendar types under `paft_fundamentals::statements`.
 
 use serde::{Deserialize, Serialize};
 

@@ -111,14 +111,14 @@ impl From<GenericProviderCurrency> for Currency {
             "USD" => Currency::Iso(IsoCurrency::USD),
             "EUR" => Currency::Iso(IsoCurrency::EUR),
             "GBP" => Currency::Iso(IsoCurrency::GBP),
-            
+
             // Normalize crypto currencies
             "BTC" | "BITCOIN" => Currency::BTC,
             "ETH" | "ETHEREUM" => Currency::ETH,
-            
-            // Preserve other values
+
+            // Preserve other values; the parser canonicalizes for us.
             other => Currency::try_from_str(other)
-                .unwrap_or_else(|_| Currency::Other(other.trim().to_uppercase())),
+                .unwrap_or_else(|_| Currency::Other(paft_utils::Canonical::try_new(other).unwrap())),
         }
     }
 }
@@ -200,13 +200,15 @@ impl CurrencyProcessor {
             Currency::Other(code) => {
                 // Track unknown currencies for analysis
                 self.unknown_currencies.insert(code.as_ref().to_string());
-                
+
                 // Log for monitoring
                 log::warn!("Unknown currency encountered: {}", code);
-                
+
                 // Return error or generic info based on your needs
                 Err(Error::UnsupportedCurrency(code.as_ref().to_string()))
             }
+            // Other canonical, non-ISO variants (BTC, ETH, USDC, ...) — handle as needed.
+            other => Err(Error::UnsupportedCurrency(other.code().to_string())),
         }
     }
     
@@ -384,25 +386,30 @@ fn process_currencies(currencies: Vec<Currency>) {
 }
 ```
 
-### 2. Use String Interning for Common Other Values
+### 2. Cache Constructed Other Values
 
 ```rust
 use std::sync::OnceLock;
 
-pub struct CurrencyCache {
-    btc: OnceLock<Currency>,
-    eth: OnceLock<Currency>,
-}
+/// `BTC` and `ETH` are already canonical variants of `Currency`, so prefer
+/// `Currency::BTC` / `Currency::ETH` directly. The cache below is the
+/// pattern to use when a provider sends a non-canonical token (e.g.
+/// `"WBTC"`, `"USDT-ERC20"`) you want to materialize once.
+pub struct CurrencyCache;
 
 impl CurrencyCache {
-    pub fn btc() -> Currency {
+    pub fn wrapped_btc() -> &'static Currency {
         static CACHE: OnceLock<Currency> = OnceLock::new();
-        *CACHE.get_or_init(|| Currency::Other("BTC".to_string()))
+        CACHE.get_or_init(|| {
+            Currency::Other(paft_utils::Canonical::try_new("WBTC").unwrap())
+        })
     }
-    
-    pub fn eth() -> Currency {
+
+    pub fn tether_erc20() -> &'static Currency {
         static CACHE: OnceLock<Currency> = OnceLock::new();
-        *CACHE.get_or_init(|| Currency::Other("ETH".to_string()))
+        CACHE.get_or_init(|| {
+            Currency::Other(paft_utils::Canonical::try_new("USDT_ERC20").unwrap())
+        })
     }
 }
 ```
@@ -422,23 +429,29 @@ mod tests {
         // Test canonical variants
         assert_eq!(process_currency(Currency::Iso(IsoCurrency::USD)), "US Dollar");
         assert_eq!(process_currency(Currency::Iso(IsoCurrency::EUR)), "Euro");
-        
-        // Test Other variants
+
+        // `BTC` is a canonical (non-ISO) variant of Currency.
         assert_eq!(
-            process_currency(Currency::Other("BTC".to_string())),
-            "Unknown currency: BTC"
+            process_currency(Currency::BTC),
+            "Bitcoin"
         );
+
+        // Truly unknown tokens land in Other(Canonical).
+        let unknown = Currency::Other(paft_utils::Canonical::try_new("UNKNOWN").unwrap());
         assert_eq!(
-            process_currency(Currency::Other("UNKNOWN".to_string())),
+            process_currency(unknown),
             "Unknown currency: UNKNOWN"
         );
     }
-    
+
     #[test]
     fn test_currency_normalization() {
         assert_eq!(normalize_currency("DOLLAR"), Currency::Iso(IsoCurrency::USD));
         assert_eq!(normalize_currency("BITCOIN"), Currency::BTC);
-        assert_eq!(normalize_currency("UNKNOWN"), Currency::Other("UNKNOWN".to_string()));
+        assert_eq!(
+            normalize_currency("UNKNOWN"),
+            Currency::Other(paft_utils::Canonical::try_new("UNKNOWN").unwrap()),
+        );
     }
 }
 ```
@@ -460,7 +473,8 @@ proptest! {
     fn test_currency_normalization_preserves_other(
         code in "[A-Z]{1,10}"
     ) {
-        let currency = Currency::Other(code.clone());
+        let canonical = paft_utils::Canonical::try_new(&code).unwrap();
+        let currency = Currency::Other(canonical);
         assert_eq!(currency.to_string(), code);
     }
 }
@@ -475,9 +489,12 @@ fn test_generic_provider_currency_mapping() {
         ("USD", Currency::Iso(IsoCurrency::USD)),
         ("EUR", Currency::Iso(IsoCurrency::EUR)),
         ("BTC", Currency::BTC),
-        ("UNKNOWN", Currency::Other("UNKNOWN".to_string())),
+        (
+            "UNKNOWN",
+            Currency::Other(paft_utils::Canonical::try_new("UNKNOWN").unwrap()),
+        ),
     ];
-    
+
     for (provider_code, expected) in test_cases {
         let result = normalize_generic_provider_currency(provider_code);
         assert_eq!(result, expected, "Failed for provider code: {}", provider_code);

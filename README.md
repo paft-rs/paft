@@ -65,8 +65,9 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 
 ### Core Types
 
-- **Instruments & Identifiers**: `Instrument`, `AssetKind`, `Exchange`, `IdentifierScheme` (`SecurityId`, `PredictionId`)
-  - IDs: `Symbol`, `Figi`, `Isin`, `EventID`, `OutcomeID`
+- **Instruments & Identifiers**: `Instrument` (flat: `symbol`, `exchange`, `figi`, `isin`, `kind`), `AssetKind`, `Exchange`
+  - IDs: `Symbol`, `Figi`, `Isin`
+  - Prediction-market identity (in `paft-prediction`): `PredictionInstrument`, `EventID`, `OutcomeID`
   - Time periods: `Period`
 - **Market Data**: `Quote`, `QuoteUpdate`, `Candle`, `Action`, `MarketState`
 - **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `Interval`, `Range`
@@ -80,7 +81,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 - **News & Search**: `NewsArticle`, `SearchRequest`, `SearchResponse`, `SearchResult`
 - **Downloads**: `DownloadResponse`
 - **Prediction Markets** (feature `prediction`): `Market`, `Token`
-- **Aggregates** (with `paft/aggregates`): `FastInfo`, `Info`
+- **Aggregates** (with `paft/aggregates`): `Snapshot` instrument snapshots
 - **Errors**: `Error`, `Result`
 
 ### Advanced Features
@@ -96,7 +97,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   - `paft/panicking-money-ops` (opt-in): Enables ergonomic arithmetic operators on `Money` that panic on currency mismatch or division by zero. By default, operator overloads are disabled and you should use the safe `try_add`, `try_sub`, and `try_div` methods instead.
   - `paft/money-formatting` (opt-in): Locale‑aware money formatting and strict parsing APIs (re‑exports `Locale`/`LocalizedMoney`).
   - `paft/prediction` (opt-in): Prediction market data models (`Market`, `Token`).
-  - `paft/aggregates` (opt-in): Aggregated snapshot types (`FastInfo`, `Info`).
+  - `paft/aggregates` (opt-in): Aggregated snapshot type (`Snapshot`).
   - `paft/bigdecimal` (opt-in): Switches the money backend to `BigDecimal`; `rust_decimal` is the implicit default.
   - `paft/tracing` (opt-in): Enables instrumentation via `tracing` across the workspace; zero-cost when disabled; no subscriber bundled; propagates to member crates.
   - `paft/full`: Convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, `prediction`, and `dataframe`.
@@ -248,17 +249,29 @@ impl GenericProvider {
 // Conversion handles provider-specific mappings
 impl GenericQuoteWire {
     fn into_paft_quote(self, symbol: &str) -> paft::Quote {
-        paft::Quote {
-            symbol: paft::Symbol::new(symbol).expect("validated upstream"),
-            price: self.regularMarketPrice.map(|amount|
-                paft::Money::new(amount, paft::Currency::Iso(paft::IsoCurrency::USD))
+        let instrument = paft::Instrument::from_symbol(symbol, paft::AssetKind::Equity)
+            .expect("validated upstream");
+        let exchange = self.exchange.as_ref().map(|ex| match ex.as_ref() {
+            "NASDAQ" => paft::Exchange::NASDAQ,
+            "NYSE" => paft::Exchange::NYSE,
+            // Graceful handling: paft canonicalizes the token for us.
+            other => paft::Exchange::Other(
+                paft_utils::Canonical::try_new(other).expect("non-empty exchange code"),
             ),
-            exchange: self.exchange.as_ref().map(|ex| match ex.as_ref() {
-                "NASDAQ" => paft::Exchange::NASDAQ,
-                "NYSE" => paft::Exchange::NYSE,
-                other => paft::Exchange::Other(other.to_string()), // Graceful handling
-            }),
-            // ... other mappings
+        });
+        paft::Quote {
+            instrument,
+            shortname: None,
+            price: self.regularMarketPrice.and_then(|amount|
+                paft::Money::new(amount, paft::Currency::Iso(paft::IsoCurrency::USD)).ok()
+            ),
+            previous_close: self.regularMarketPreviousClose.and_then(|amount|
+                paft::Money::new(amount, paft::Currency::Iso(paft::IsoCurrency::USD)).ok()
+            ),
+            day_volume: None,
+            exchange,
+            market_state: None,
+            provider: (),
         }
     }
 }

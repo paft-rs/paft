@@ -1,4 +1,4 @@
-//! Profile-related types under `paft_fundamentals::fundamentals::profile`.
+//! Profile-related types under `paft_fundamentals::profile`.
 
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
