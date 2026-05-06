@@ -35,6 +35,12 @@ pub mod error;
 /// Private serde helper modules for custom serialization patterns.
 pub mod serde_helpers;
 
+/// Internal re-export of `paft_utils` so the `string_enum_*` macros can resolve
+/// canonicalization helpers via `$crate::__utils::...` regardless of how the
+/// consumer crate names or vendors `paft-utils`. Not part of the public API.
+#[doc(hidden)]
+pub use paft_utils as __utils;
+
 /// Internal macro exports for string-backed enums used across the paft workspace.
 /// These remain public for crate interoperability but are not covered by semver guarantees.
 #[doc(hidden)]
@@ -45,7 +51,7 @@ macro_rules! __string_enum_base {
             $( $alias:literal => $variant:path ),+ $(,)?
         }
     ) => {
-        impl paft_utils::StringCode for $Type {
+        impl $crate::__utils::StringCode for $Type {
             fn code(&self) -> &str { $Type::code(self) }
         }
 
@@ -79,7 +85,7 @@ macro_rules! __string_enum_base {
                         value: input.to_string(),
                     });
                 }
-                let token = paft_utils::canonicalize(trimmed);
+                let token = $crate::__utils::canonicalize(trimmed);
                 let parsed = match token.as_ref() {
                     $( $alias => $variant, )*
                     _ => {
@@ -118,7 +124,7 @@ macro_rules! __string_enum_base {
             $( $alias:literal => $variant:path ),+ $(,)?
         }
     ) => {
-        impl paft_utils::StringCode for $Type {
+        impl $crate::__utils::StringCode for $Type {
             fn code(&self) -> &str { $Type::code(self) }
             fn is_canonical(&self) -> bool { $Type::is_canonical(self) }
         }
@@ -159,11 +165,11 @@ macro_rules! __string_enum_base {
                         value: input.to_string(),
                     });
                 }
-                let token = paft_utils::canonicalize(trimmed);
+                let token = $crate::__utils::canonicalize(trimmed);
                 let parsed = match token.as_ref() {
                     $( $alias => $variant, )*
                     _ => {
-                        let canon = paft_utils::Canonical::try_new(trimmed)
+                        let canon = $crate::__utils::Canonical::try_new(trimmed)
                             .map_err(|_| $crate::error::PaftError::InvalidEnumValue {
                                 enum_name: $enum_name,
                                 value: input.to_string(),
