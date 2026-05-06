@@ -53,7 +53,7 @@ pub use market_state::MarketState;
 pub use period::Period;
 
 #[cfg(feature = "dataframe")]
-pub use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
+pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
 
 pub use paft_utils::{Canonical, CanonicalError, StringCode, canonicalize};
 

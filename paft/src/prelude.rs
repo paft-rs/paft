@@ -22,7 +22,7 @@ pub use crate::{Decimal, Error, Result, RoundingStrategy};
 
 // Re-export dataframe traits
 #[cfg(feature = "dataframe")]
-pub use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
+pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
 
 // Re-export fundamentals types (flattened via namespace)
 #[cfg(feature = "fundamentals")]

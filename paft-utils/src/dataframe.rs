@@ -100,33 +100,51 @@ pub trait Decimal128Encode {
     fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128>;
 }
 
+/// Polars `Decimal(38, _)` columns require `|mantissa| < 10^38` (matches
+/// polars's own `dec128_fits` strict-less-than precision check). `i128::MAX`
+/// is `~1.7 × 10^38`, so the band `10^38 ≤ |m| ≤ i128::MAX` would otherwise
+/// slip through `i128` arithmetic and violate the column's declared
+/// precision. Both backend implementations reject any rescaled mantissa
+/// whose absolute value reaches this constant.
+#[cfg(feature = "dataframe")]
+const MAX_I128_MANTISSA: i128 = 10_i128.pow(38);
+
 #[cfg(feature = "dataframe")]
 impl Decimal128Encode for rust_decimal::Decimal {
     #[inline]
     fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
         let source_scale = self.scale();
         let mantissa: i128 = self.mantissa();
-        if source_scale == target_scale {
-            return Some(mantissa);
-        }
-        if source_scale < target_scale {
-            let diff = target_scale - source_scale;
-            let pow = 10i128.pow(diff);
-            return mantissa.checked_mul(pow);
-        }
-        let diff = source_scale - target_scale;
-        let pow = 10i128.pow(diff).cast_unsigned();
-        let neg = mantissa < 0;
-        let abs = mantissa.unsigned_abs();
-        let q = (abs / pow).cast_signed();
-        let r = abs % pow;
-        let half = pow / 2;
-        let rounded = match r.cmp(&half) {
-            std::cmp::Ordering::Greater => q + 1,
-            std::cmp::Ordering::Less => q,
-            std::cmp::Ordering::Equal => q + (q & 1),
+        let rescaled = match source_scale.cmp(&target_scale) {
+            std::cmp::Ordering::Equal => mantissa,
+            std::cmp::Ordering::Less => {
+                let diff = target_scale - source_scale;
+                let pow = 10i128.pow(diff);
+                mantissa.checked_mul(pow)?
+            }
+            std::cmp::Ordering::Greater => {
+                let diff = source_scale - target_scale;
+                let pow = 10i128.pow(diff).cast_unsigned();
+                let neg = mantissa < 0;
+                let abs = mantissa.unsigned_abs();
+                let q = (abs / pow).cast_signed();
+                let r = abs % pow;
+                let half = pow / 2;
+                let rounded = match r.cmp(&half) {
+                    std::cmp::Ordering::Greater => q + 1,
+                    std::cmp::Ordering::Less => q,
+                    std::cmp::Ordering::Equal => q + (q & 1),
+                };
+                if neg { -rounded } else { rounded }
+            }
         };
-        Some(if neg { -rounded } else { rounded })
+        // Match the `bigdecimal` arm and polars's own `dec128_fits`: reject
+        // any mantissa in the band `[10^38, i128::MAX]` so we never emit a
+        // value that violates the declared `Decimal(38, _)` precision.
+        if rescaled.unsigned_abs() >= MAX_I128_MANTISSA.cast_unsigned() {
+            return None;
+        }
+        Some(rescaled)
     }
 }
 

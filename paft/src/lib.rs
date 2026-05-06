@@ -47,7 +47,7 @@ pub mod domain {
         MarketState, Period, StringCode, Symbol, canonicalize,
     };
     #[cfg(feature = "dataframe")]
-    pub use paft_domain::{ToDataFrame, ToDataFrameVec};
+    pub use paft_domain::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
 }
 
 /// Namespaced access to `paft-market` (feature-gated).
