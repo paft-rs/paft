@@ -327,6 +327,9 @@ fn statements_row_to_dataframe() {
         gross_profit: None,
         operating_income: None,
         net_income: None,
+        interest_expense: None,
+        tax_expense: None,
+        depreciation_and_amortization: None,
     };
     let df = row.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -342,6 +345,13 @@ fn balance_sheet_row_to_dataframe() {
         cash: Some(usd(500)),
         long_term_debt: Some(usd(1_200)),
         shares_outstanding: Some(1_000_000),
+        accounts_receivable: None,
+        inventory: None,
+        accounts_payable: None,
+        current_assets: None,
+        current_liabilities: None,
+        net_ppe: None,
+        intangible_assets: None,
     };
 
     let df = row.to_dataframe().unwrap();
@@ -356,6 +366,7 @@ fn cashflow_row_to_dataframe() {
         capital_expenditures: Some(usd(300)),
         free_cash_flow: Some(usd(900)),
         net_income: Some(usd(700)),
+        depreciation_and_amortization: None,
     };
 
     let df = row.to_dataframe().unwrap();

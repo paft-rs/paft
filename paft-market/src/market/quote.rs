@@ -2,9 +2,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
+use paft_decimal::Decimal;
 use paft_domain::{Exchange, Instrument, MarketState};
 use paft_money::Money;
 #[cfg(feature = "dataframe")]
@@ -21,10 +22,34 @@ pub struct Quote {
     pub shortname: Option<String>,
     /// Market price.
     pub price: Option<Money>,
+    /// Opening price for the current session.
+    pub open: Option<Money>,
+    /// Intraday high.
+    pub day_range_high: Option<Money>,
+    /// Intraday low.
+    pub day_range_low: Option<Money>,
+    /// 52-week high.
+    pub fifty_two_week_high: Option<Money>,
+    /// 52-week low.
+    pub fifty_two_week_low: Option<Money>,
     /// Previous close price.
     pub previous_close: Option<Money>,
     /// Day volume.
     pub day_volume: Option<u64>,
+    /// Average daily volume (3-month).
+    pub average_volume: Option<u64>,
+    /// Market capitalisation.
+    pub market_cap: Option<Money>,
+    /// Shares outstanding.
+    pub shares_outstanding: Option<u64>,
+    /// Earnings per share, trailing twelve months.
+    pub eps_ttm: Option<Money>,
+    /// Price-to-earnings ratio, trailing twelve months.
+    pub pe_ttm: Option<Decimal>,
+    /// Trailing annual dividend yield as a fraction.
+    pub dividend_yield: Option<Decimal>,
+    /// Most recent ex-dividend date.
+    pub ex_dividend_date: Option<NaiveDate>,
     /// Exchange identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub exchange: Option<Exchange>,

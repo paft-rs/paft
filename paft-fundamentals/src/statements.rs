@@ -25,6 +25,12 @@ pub struct IncomeStatementRow {
     pub operating_income: Option<Money>,
     /// Net income.
     pub net_income: Option<Money>,
+    /// Interest expense.
+    pub interest_expense: Option<Money>,
+    /// Tax expense.
+    pub tax_expense: Option<Money>,
+    /// Depreciation and amortization.
+    pub depreciation_and_amortization: Option<Money>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -46,6 +52,20 @@ pub struct BalanceSheetRow {
     pub long_term_debt: Option<Money>,
     /// Shares outstanding.
     pub shares_outstanding: Option<u64>,
+    /// Accounts receivable.
+    pub accounts_receivable: Option<Money>,
+    /// Inventory.
+    pub inventory: Option<Money>,
+    /// Accounts payable.
+    pub accounts_payable: Option<Money>,
+    /// Current assets.
+    pub current_assets: Option<Money>,
+    /// Current liabilities.
+    pub current_liabilities: Option<Money>,
+    /// Net property, plant & equipment.
+    pub net_ppe: Option<Money>,
+    /// Intangible assets.
+    pub intangible_assets: Option<Money>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -63,6 +83,8 @@ pub struct CashflowRow {
     pub free_cash_flow: Option<Money>,
     /// Net income.
     pub net_income: Option<Money>,
+    /// Depreciation and amortization.
+    pub depreciation_and_amortization: Option<Money>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
