@@ -64,6 +64,10 @@ fn vec_quote_to_dataframe_smoke() {
         pe_ttm: None,
         dividend_yield: None,
         ex_dividend_date: None,
+        bid: None,
+        ask: None,
+        forward_dividend: None,
+        forward_yield: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: None,
     }];
@@ -93,6 +97,10 @@ fn quote_to_dataframe_smoke() {
         pe_ttm: None,
         dividend_yield: None,
         ex_dividend_date: None,
+        bid: None,
+        ask: None,
+        forward_dividend: None,
+        forward_yield: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: None,
     };

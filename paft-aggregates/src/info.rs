@@ -116,6 +116,16 @@ pub struct Info {
     /// Most recent ex-dividend date.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub ex_dividend_date: Option<NaiveDate>,
+    /// Best bid price.
+    pub bid: Option<Money>,
+    /// Best ask price.
+    pub ask: Option<Money>,
+    /// Beta (market sensitivity coefficient).
+    pub beta: Option<Decimal>,
+    /// Forward (declared) dividend per share.
+    pub forward_dividend: Option<Money>,
+    /// Forward dividend yield as a fraction.
+    pub forward_yield: Option<Decimal>,
 
     // Analyst coverage & ESG
     /// Analyst price target summary.

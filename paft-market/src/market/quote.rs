@@ -50,6 +50,14 @@ pub struct Quote {
     pub dividend_yield: Option<Decimal>,
     /// Most recent ex-dividend date.
     pub ex_dividend_date: Option<NaiveDate>,
+    /// Best bid price.
+    pub bid: Option<Money>,
+    /// Best ask price.
+    pub ask: Option<Money>,
+    /// Forward (declared) dividend per share.
+    pub forward_dividend: Option<Money>,
+    /// Forward dividend yield as a fraction.
+    pub forward_yield: Option<Decimal>,
     /// Exchange identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub exchange: Option<Exchange>,

@@ -114,6 +114,10 @@ fn end_to_end_workflow() {
         pe_ttm: None,
         dividend_yield: None,
         ex_dividend_date: None,
+        bid: None,
+        ask: None,
+        forward_dividend: None,
+        forward_yield: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
@@ -240,6 +244,10 @@ fn serialization_workflow() {
         pe_ttm: None,
         dividend_yield: None,
         ex_dividend_date: None,
+        bid: None,
+        ask: None,
+        forward_dividend: None,
+        forward_yield: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };

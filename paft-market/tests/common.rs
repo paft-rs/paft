@@ -30,6 +30,10 @@ pub fn build_quote() -> paft_market::market::quote::Quote {
         pe_ttm: None,
         dividend_yield: None,
         ex_dividend_date: None,
+        bid: None,
+        ask: None,
+        forward_dividend: None,
+        forward_yield: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     }
@@ -61,6 +65,10 @@ fn quote_construction_smoke() {
         pe_ttm: None,
         dividend_yield: None,
         ex_dividend_date: None,
+        bid: None,
+        ask: None,
+        forward_dividend: None,
+        forward_yield: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
     };
