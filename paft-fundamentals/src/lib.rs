@@ -47,6 +47,7 @@ pub mod esg;
 pub mod holders;
 pub mod profile;
 pub mod statements;
+pub mod statistics;
 
 pub use analysis::{
     AnalysisSummary, Earnings, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
@@ -60,3 +61,4 @@ pub use holders::{
 };
 pub use profile::{Address, CompanyProfile, FundKind, FundProfile, Profile, ShareCount};
 pub use statements::{BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow};
+pub use statistics::KeyStatistics;

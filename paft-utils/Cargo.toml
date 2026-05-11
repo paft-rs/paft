@@ -23,6 +23,6 @@ bigdecimal = { workspace = true, optional = true }
 
 [features]
 default = []
-dataframe = ["dep:polars", "dep:rust_decimal"]
+dataframe = ["dep:polars", "dep:rust_decimal", "polars/fmt"]
 bigdecimal = ["dep:bigdecimal"]
 

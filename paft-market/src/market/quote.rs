@@ -13,6 +13,8 @@ use df_derive::ToDataFrame;
 use paft_domain::{Exchange, Instrument, MarketState};
 use paft_money::Money;
 
+use crate::market::orderbook::GenericBookLevel;
+
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 /// Snapshot quote data for an instrument at a single point in time.
@@ -26,8 +28,12 @@ pub struct GenericQuote<M = ()> {
     pub instrument: Instrument,
     /// Short display name.
     pub shortname: Option<String>,
-    /// Market price.
+    /// Market price (most recent trade).
     pub price: Option<Money>,
+    /// Best bid: top-of-book quoted price on the buy side, with optional size.
+    pub bid: Option<GenericBookLevel<M>>,
+    /// Best ask: top-of-book quoted price on the sell side, with optional size.
+    pub ask: Option<GenericBookLevel<M>>,
     /// Previous close price.
     pub previous_close: Option<Money>,
     /// Day volume.
@@ -52,6 +58,8 @@ impl<M: Default> GenericQuote<M> {
             instrument,
             shortname: None,
             price: None,
+            bid: None,
+            ask: None,
             previous_close: None,
             day_volume: None,
             exchange: None,

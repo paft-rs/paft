@@ -17,6 +17,7 @@ use paft_fundamentals::{
     },
     profile::{Address, CompanyProfile, FundKind, FundProfile, Profile, ShareCount},
     statements::{BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow},
+    statistics::KeyStatistics,
 };
 use paft_money::Money;
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
@@ -327,6 +328,9 @@ fn statements_row_to_dataframe() {
         gross_profit: None,
         operating_income: None,
         net_income: None,
+        interest_expense: None,
+        income_tax_expense: None,
+        depreciation_and_amortization: None,
     };
     let df = row.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -342,6 +346,14 @@ fn balance_sheet_row_to_dataframe() {
         cash: Some(usd(500)),
         long_term_debt: Some(usd(1_200)),
         shares_outstanding: Some(1_000_000),
+        current_assets: Some(usd(2_500)),
+        current_liabilities: Some(usd(1_100)),
+        accounts_receivable: Some(usd(400)),
+        inventory: Some(usd(600)),
+        accounts_payable: Some(usd(350)),
+        net_property_plant_equipment: Some(usd(1_800)),
+        goodwill: Some(usd(700)),
+        intangible_assets: Some(usd(250)),
     };
 
     let df = row.to_dataframe().unwrap();
@@ -356,6 +368,7 @@ fn cashflow_row_to_dataframe() {
         capital_expenditures: Some(usd(300)),
         free_cash_flow: Some(usd(900)),
         net_income: Some(usd(700)),
+        depreciation_and_amortization: Some(usd(250)),
     };
 
     let df = row.to_dataframe().unwrap();
@@ -371,6 +384,34 @@ fn calendar_to_dataframe() {
     };
 
     let df = calendar.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+}
+
+#[test]
+fn key_statistics_to_dataframe() {
+    let stats = KeyStatistics {
+        as_of: Some(sample_ts(1_700_000_000)),
+        market_cap: Some(usd(2_500_000_000_000)),
+        shares_outstanding: Some(15_500_000_000),
+        eps_trailing_twelve_months: Some(usd(6)),
+        pe_trailing_twelve_months: Some(dec("28.4")),
+        dividend_per_share_forward: Some(usd(1)),
+        dividend_yield_trailing: Some(dec("0.0050")),
+        dividend_yield_forward: Some(dec("0.0055")),
+        ex_dividend_date: Some(sample_ts(1_700_086_400)),
+        fifty_two_week_high: Some(usd(200)),
+        fifty_two_week_low: Some(usd(120)),
+        average_daily_volume_3m: Some(55_000_000),
+        beta: Some(dec("1.23")),
+    };
+    let df = stats.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+}
+
+#[test]
+fn key_statistics_default_to_dataframe() {
+    let stats = KeyStatistics::default();
+    let df = stats.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
 }
 

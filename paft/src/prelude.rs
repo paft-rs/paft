@@ -46,6 +46,8 @@ pub use crate::fundamentals::profile::{
 pub use crate::fundamentals::statements::{
     BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow,
 };
+#[cfg(feature = "fundamentals")]
+pub use crate::fundamentals::statistics::KeyStatistics;
 
 // Re-export market types (flattened via namespace)
 #[cfg(feature = "market")]
@@ -55,7 +57,7 @@ pub use crate::market::news::NewsArticle;
 #[cfg(feature = "market")]
 pub use crate::market::options::{OptionChain, OptionContract};
 #[cfg(feature = "market")]
-pub use crate::market::orderbook::{OrderBook, OrderBookEntry};
+pub use crate::market::orderbook::{BookLevel, OrderBook};
 #[cfg(feature = "market")]
 pub use crate::market::quote::{Quote, QuoteUpdate};
 #[cfg(feature = "market")]

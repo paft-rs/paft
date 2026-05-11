@@ -23,6 +23,12 @@ pub struct IncomeStatementRow {
     pub operating_income: Option<Money>,
     /// Net income.
     pub net_income: Option<Money>,
+    /// Interest expense.
+    pub interest_expense: Option<Money>,
+    /// Income tax expense (provision for income taxes).
+    pub income_tax_expense: Option<Money>,
+    /// Depreciation and amortization recognized on the income statement.
+    pub depreciation_and_amortization: Option<Money>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -44,6 +50,22 @@ pub struct BalanceSheetRow {
     pub long_term_debt: Option<Money>,
     /// Shares outstanding.
     pub shares_outstanding: Option<u64>,
+    /// Total current assets.
+    pub current_assets: Option<Money>,
+    /// Total current liabilities.
+    pub current_liabilities: Option<Money>,
+    /// Accounts receivable, net.
+    pub accounts_receivable: Option<Money>,
+    /// Inventory.
+    pub inventory: Option<Money>,
+    /// Accounts payable.
+    pub accounts_payable: Option<Money>,
+    /// Property, plant, and equipment, net of accumulated depreciation.
+    pub net_property_plant_equipment: Option<Money>,
+    /// Goodwill.
+    pub goodwill: Option<Money>,
+    /// Intangible assets excluding goodwill.
+    pub intangible_assets: Option<Money>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -61,6 +83,8 @@ pub struct CashflowRow {
     pub free_cash_flow: Option<Money>,
     /// Net income.
     pub net_income: Option<Money>,
+    /// Depreciation and amortization added back to net income.
+    pub depreciation_and_amortization: Option<Money>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

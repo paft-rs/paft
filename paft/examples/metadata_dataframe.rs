@@ -86,6 +86,8 @@ fn standard_quote_schema() -> Result<()> {
         day_volume: Some(78_900_000),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+        bid: None,
+        ask: None,
         provider: (),
     };
     let df = q.to_dataframe().unwrap();
@@ -108,6 +110,8 @@ fn enriched_quote_dataframe() -> Result<()> {
             day_volume: Some(78_900_000),
             exchange: Some(Exchange::NASDAQ),
             market_state: Some(MarketState::Regular),
+            bid: None,
+            ask: None,
             provider: HftMeta {
                 rx_ns: 1_700_000_000_000_000_001,
                 seq: 1,
@@ -122,6 +126,8 @@ fn enriched_quote_dataframe() -> Result<()> {
             day_volume: Some(20_000_000),
             exchange: Some(Exchange::NASDAQ),
             market_state: Some(MarketState::Regular),
+            bid: None,
+            ask: None,
             provider: HftMeta {
                 rx_ns: 1_700_000_000_000_000_002,
                 seq: 2,

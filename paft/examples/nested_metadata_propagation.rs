@@ -13,7 +13,7 @@
 //! Nested metadata propagation.
 //!
 //! When a parent type holds nested refactored types (e.g.
-//! `GenericOrderBook<M>::asks: Vec<GenericOrderBookEntry<M>>`), `M` is
+//! `GenericOrderBook<M>::asks: Vec<GenericBookLevel<M>>`), `M` is
 //! propagated to the inner element. This means a single metadata type flows
 //! through the whole tree — every entry in the order book carries the same
 //! metadata shape, every candle in the history response, every contract in
@@ -23,7 +23,7 @@
 //!     cargo run -p paft --example nested_metadata_propagation --features full
 //!
 //! What this example demonstrates:
-//! 1. `GenericOrderBook<M>` propagates `M` down into each `GenericOrderBookEntry<M>`.
+//! 1. `GenericOrderBook<M>` propagates `M` down into each `GenericBookLevel<M>`.
 //! 2. `GenericHistoryResponse<M>` propagates `M` down into each `GenericCandle<M>`.
 //! 3. `GenericOptionChain<M>` propagates `M` into both `calls` and `puts`.
 //! 4. `GenericDownloadResponse<M>` propagates `M` two levels deep
@@ -34,7 +34,7 @@
 use chrono::{DateTime, Utc};
 use iso_currency::Currency as IsoCurrency;
 use paft::market::options::{GenericOptionChain, GenericOptionContract, OptionGreeks};
-use paft::market::orderbook::{GenericOrderBook, GenericOrderBookEntry};
+use paft::market::orderbook::{GenericBookLevel, GenericOrderBook};
 use paft::market::quote::GenericQuote;
 use paft::market::responses::download::{GenericDownloadEntry, GenericDownloadResponse};
 use paft::market::responses::history::{
@@ -86,7 +86,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// `GenericOrderBook<FeedMeta>::asks` is `Vec<GenericOrderBookEntry<FeedMeta>>`.
+/// `GenericOrderBook<FeedMeta>::asks` is `Vec<GenericBookLevel<FeedMeta>>`.
 /// Each entry carries its own per-tick `FeedMeta`, AND the book itself has
 /// one (e.g. for the snapshot timestamp).
 fn order_book_propagation() -> Result<()> {
@@ -109,7 +109,9 @@ fn order_book_propagation() -> Result<()> {
     );
     println!(
         "Top of book ask: price={} size={} (entry seq={})",
-        book.asks[0].price, book.asks[0].size, book.asks[0].provider.seq,
+        book.asks[0].price,
+        book.asks[0].size.clone().unwrap_or_default(),
+        book.asks[0].provider.seq,
     );
 
     // Round-trip preserves the per-entry metadata, not just the snapshot one.
@@ -277,6 +279,8 @@ fn candle_update_propagation() -> Result<()> {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
         shortname: None,
         price: Some(money(150)),
+        bid: None,
+        ask: None,
         previous_close: None,
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
@@ -292,14 +296,14 @@ fn candle_update_propagation() -> Result<()> {
 
 // ---- helpers ----
 
-fn entry(price_cents: i64, size_units: i64, provider: FeedMeta) -> GenericOrderBookEntry<FeedMeta> {
-    GenericOrderBookEntry {
+fn entry(price_cents: i64, size_units: i64, provider: FeedMeta) -> GenericBookLevel<FeedMeta> {
+    GenericBookLevel {
         price: Money::new(
             Decimal::from(price_cents) / Decimal::from(100),
             Currency::Iso(IsoCurrency::USD),
         )
         .unwrap(),
-        size: Decimal::from(size_units),
+        size: Some(Decimal::from(size_units)),
         provider,
     }
 }

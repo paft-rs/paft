@@ -20,6 +20,8 @@ pub fn build_quote() -> paft_market::market::quote::Quote {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+        bid: None,
+        ask: None,
         provider: (),
     }
 }
@@ -40,6 +42,8 @@ fn quote_construction_smoke() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
+        bid: None,
+        ask: None,
         provider: (),
     };
     assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL");

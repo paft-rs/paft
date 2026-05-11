@@ -82,7 +82,7 @@ pub use paft_utils::dataframe;
 /// Namespaced access to `paft-fundamentals` (feature-gated).
 #[cfg(feature = "fundamentals")]
 pub mod fundamentals {
-    pub use paft_fundamentals::{analysis, esg, holders, profile, statements};
+    pub use paft_fundamentals::{analysis, esg, holders, profile, statements, statistics};
 }
 
 /// Namespaced access to `paft-aggregates` (feature-gated).

@@ -39,7 +39,7 @@ default = []
 # rust-decimal feature removed; rust_decimal backend is implied by default
 bigdecimal = ["paft-money/bigdecimal", "paft-decimal/bigdecimal", "paft-utils/bigdecimal"]
 
-dataframe = ["paft-utils/dataframe", "polars", "polars-arrow", "df-derive", "paft-domain/dataframe", "paft-money/dataframe"]
+dataframe = ["paft-utils/dataframe", "polars", "polars/fmt", "polars-arrow", "df-derive", "paft-domain/dataframe", "paft-money/dataframe"]
 
 tracing = ["dep:tracing"]
 

@@ -44,6 +44,7 @@ panicking-money-ops = ["paft-money/panicking-money-ops"]
 # Forwards the dataframe feature; `Snapshot` derives `ToDataFrame`.
 dataframe = [
   "polars",
+  "polars/fmt",
   "polars-arrow",
   "df-derive",
   "paft-domain/dataframe",

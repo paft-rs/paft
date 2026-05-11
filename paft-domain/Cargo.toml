@@ -32,7 +32,7 @@ default = []
 
 tracing = ["dep:tracing"]
 
-dataframe = ["polars", "polars-arrow", "df-derive", "paft-utils/dataframe"]
+dataframe = ["polars", "polars/fmt", "polars-arrow", "df-derive", "paft-utils/dataframe"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

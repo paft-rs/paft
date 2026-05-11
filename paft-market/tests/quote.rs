@@ -2,6 +2,7 @@ use chrono::DateTime;
 use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
+use paft_market::market::orderbook::BookLevel;
 use paft_market::market::quote::{Quote, QuoteUpdate};
 use paft_money::{Currency, Money};
 use std::str::FromStr;
@@ -26,7 +27,8 @@ fn quote_construction() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -60,7 +62,8 @@ fn quote_minimal_construction() {
         day_volume: None,
         exchange: None,
         market_state: None,
-
+        bid: None,
+        ask: None,
         provider: (),
     };
     assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL");
@@ -87,7 +90,8 @@ fn quote_clone() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -111,7 +115,8 @@ fn quote_debug_formatting() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -137,7 +142,8 @@ fn quote_currency_consistency() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -163,7 +169,8 @@ fn quote_currency_none() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -185,7 +192,8 @@ fn quote_money_fields() {
         day_volume: None,
         exchange: None,
         market_state: None,
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -211,7 +219,8 @@ fn quote_money_fields() {
         day_volume: None,
         exchange: None,
         market_state: None,
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -346,7 +355,8 @@ fn quote_serialization() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -367,7 +377,8 @@ fn quote_with_none_fields() {
         day_volume: None,
         exchange: None,
         market_state: None,
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -438,7 +449,8 @@ fn serialization_roundtrip_preserves_precision() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -452,6 +464,46 @@ fn serialization_roundtrip_preserves_precision() {
 }
 
 #[test]
+fn quote_with_bid_and_ask_roundtrips() {
+    let bid = BookLevel {
+        price: Money::new(Decimal::from(149), Currency::Iso(IsoCurrency::USD)).unwrap(),
+        size: Some(Decimal::from(200)),
+        provider: (),
+    };
+    let ask = BookLevel {
+        price: Money::new(Decimal::from(151), Currency::Iso(IsoCurrency::USD)).unwrap(),
+        size: None,
+        provider: (),
+    };
+    let quote = Quote {
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        shortname: None,
+        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
+        bid: Some(bid),
+        ask: Some(ask),
+        previous_close: None,
+        day_volume: None,
+        exchange: None,
+        market_state: None,
+        provider: (),
+    };
+    let json = serde_json::to_string(&quote).unwrap();
+    let decoded: Quote = serde_json::from_str(&json).unwrap();
+    assert_eq!(quote, decoded);
+    let decoded_ask = decoded.ask.as_ref().unwrap();
+    assert!(decoded_ask.size.is_none(), "ask size None preserved");
+    let decoded_bid = decoded.bid.as_ref().unwrap();
+    assert_eq!(decoded_bid.size, Some(Decimal::from(200)));
+}
+
+#[test]
+fn quote_new_initialises_bid_and_ask_to_none() {
+    let quote = Quote::new(Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap());
+    assert!(quote.bid.is_none());
+    assert!(quote.ask.is_none());
+}
+
+#[test]
 fn deserialization_handles_missing_optional_fields() {
     // Test that missing optional fields are handled gracefully via roundtrip
     let quote = Quote {
@@ -462,7 +514,8 @@ fn deserialization_handles_missing_optional_fields() {
         day_volume: None,
         exchange: None,
         market_state: None,
-
+        bid: None,
+        ask: None,
         provider: (),
     };
     let json = serde_json::to_string(&quote).unwrap();

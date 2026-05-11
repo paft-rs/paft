@@ -1,4 +1,4 @@
-//! Order book types under the `paft_market::market::orderbook` namespace.
+//! Order book and book-level types under the `paft_market::market::orderbook` namespace.
 
 // `Eq` is intentionally NOT derived on the generic payload types: the
 // metadata payload `M` is meant to accept user types that don't satisfy
@@ -12,30 +12,40 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "dataframe")]
 use df_derive::ToDataFrame;
 
-/// A single entry (bid or ask) in an order book.
+/// A single price level on one side of the market: a quoted price with an
+/// optional displayed size.
+///
+/// Used both as one row of a depth snapshot in [`GenericOrderBook`] and as
+/// the top-of-book bid/ask payload on [`crate::market::quote::GenericQuote`].
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation. Use the [`OrderBookEntry`] alias for the
-/// standard shape (no extra metadata).
+/// serialized representation. Use the [`BookLevel`] alias for the standard
+/// shape (no extra metadata).
+///
+/// `price` is mandatory: a level with no price isn't meaningful. `size` is
+/// optional because real-world feeds frequently emit price-without-size —
+/// delayed and aggregated equity feeds often strip sizes, and some real-time
+/// venues' BBO updates routinely carry the size for only one side of the
+/// market per message.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-pub struct GenericOrderBookEntry<M = ()> {
-    /// The price point for this entry.
+pub struct GenericBookLevel<M = ()> {
+    /// The price at this level.
     pub price: Money,
 
-    /// The total quantity (size) available at this price point.
-    pub size: Decimal,
+    /// The displayed size at this price, when reported by the source.
+    pub size: Option<Decimal>,
 
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
 }
 
-impl<M: Default> GenericOrderBookEntry<M> {
-    /// Build an order-book entry with the given price and size; `provider` is
-    /// initialised via `M::default()`.
+impl<M: Default> GenericBookLevel<M> {
+    /// Build a book level with the given price and (optional) size; `provider`
+    /// is initialised via `M::default()`.
     #[must_use]
-    pub fn new(price: Money, size: Decimal) -> Self {
+    pub fn new(price: Money, size: Option<Decimal>) -> Self {
         Self {
             price,
             size,
@@ -44,22 +54,22 @@ impl<M: Default> GenericOrderBookEntry<M> {
     }
 }
 
-/// Standard `OrderBookEntry` with no extra provider metadata.
-pub type OrderBookEntry = GenericOrderBookEntry<()>;
+/// Standard `BookLevel` with no extra provider metadata.
+pub type BookLevel = GenericBookLevel<()>;
 
 /// A snapshot of the order book for a specific instrument.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation and propagated into each entry. Use the
+/// serialized representation and propagated into each level. Use the
 /// [`OrderBook`] alias for the standard shape (no extra metadata).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOrderBook<M = ()> {
-    /// A vector of ask (sell) entries, typically sorted by price ascending.
-    pub asks: Vec<GenericOrderBookEntry<M>>,
+    /// A vector of ask (sell) levels, typically sorted by price ascending.
+    pub asks: Vec<GenericBookLevel<M>>,
 
-    /// A vector of bid (buy) entries, typically sorted by price descending.
-    pub bids: Vec<GenericOrderBookEntry<M>>,
+    /// A vector of bid (buy) levels, typically sorted by price descending.
+    pub bids: Vec<GenericBookLevel<M>>,
 
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]

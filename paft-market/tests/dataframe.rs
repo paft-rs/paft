@@ -9,6 +9,7 @@ use paft_market::{
         action::Action,
         news::NewsArticle,
         options::{OptionChain, OptionContract, OptionGreeks},
+        orderbook::{BookLevel, OrderBook},
         quote::Quote,
     },
     responses::{
@@ -29,6 +30,39 @@ fn dec(value: &str) -> Decimal {
 }
 fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
     Utc.timestamp_opt(secs, 0).unwrap()
+}
+
+#[test]
+fn book_level_to_dataframe_with_size() {
+    let level = BookLevel {
+        price: usd(100),
+        size: Some(Decimal::from(500)),
+        provider: (),
+    };
+    let df = level.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+}
+
+#[test]
+fn book_level_to_dataframe_without_size() {
+    let level = BookLevel {
+        price: usd(100),
+        size: None,
+        provider: (),
+    };
+    let df = level.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+}
+
+#[test]
+fn order_book_to_dataframe_smoke() {
+    let book = OrderBook {
+        asks: vec![BookLevel::new(usd(101), Some(Decimal::from(200)))],
+        bids: vec![BookLevel::new(usd(99), None)],
+        provider: (),
+    };
+    let df = book.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
 }
 
 #[test]
@@ -56,7 +90,8 @@ fn vec_quote_to_dataframe_smoke() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: None,
-
+        bid: None,
+        ask: None,
         provider: (),
     }];
 
@@ -75,7 +110,8 @@ fn quote_to_dataframe_smoke() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: None,
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 

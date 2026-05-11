@@ -103,7 +103,8 @@ fn end_to_end_workflow() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
@@ -218,7 +219,8 @@ fn serialization_workflow() {
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
-
+        bid: None,
+        ask: None,
         provider: (),
     };
 
