@@ -68,7 +68,7 @@ fn main() -> Result<()> {
 fn standard_quote_unchanged() -> Result<()> {
     // (1) the ergonomic constructor:
     let mut quote = Quote::new(Instrument::from_symbol("AAPL", AssetKind::Equity)?);
-    quote.shortname = Some("Apple Inc.".to_string());
+    quote.name = Some("Apple Inc.".to_string());
     quote.price = Some(money(150));
     quote.previous_close = Some(money(147));
     quote.day_volume = Some(78_900_000);
@@ -80,7 +80,7 @@ fn standard_quote_unchanged() -> Result<()> {
     //     needs this form for the no-metadata case.
     let _equivalent = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(money(150)),
         previous_close: Some(money(147)),
         day_volume: Some(78_900_000),
@@ -124,7 +124,7 @@ fn hft_quote_round_trip() -> Result<()> {
             Exchange::NASDAQ,
             AssetKind::Equity,
         )?,
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(money(150)),
         previous_close: Some(money(147)),
         day_volume: Some(78_900_000),
@@ -167,7 +167,7 @@ fn parse_provider_json() -> Result<()> {
             "isin": null,
             "kind": "EQUITY"
         },
-        "shortname": "Apple Inc.",
+        "name": "Apple Inc.",
         "price": { "amount": "150", "currency": "USD" },
         "previous_close": { "amount": "147", "currency": "USD" },
         "day_volume": 78900000,
@@ -206,7 +206,7 @@ fn different_meta_per_stream() -> Result<()> {
     // Quote stream: HFT-flavoured metadata.
     let market_data: GenericQuote<HftMeta> = GenericQuote {
         instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
-        shortname: Some("Microsoft".to_string()),
+        name: Some("Microsoft".to_string()),
         price: Some(money(420)),
         previous_close: Some(money(418)),
         day_volume: None,

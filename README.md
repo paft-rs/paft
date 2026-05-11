@@ -261,10 +261,12 @@ impl GenericQuoteWire {
         });
         paft::Quote {
             instrument,
-            shortname: None,
+            name: None,
             price: self.regularMarketPrice.and_then(|amount|
                 paft::Money::new(amount, paft::Currency::Iso(paft::IsoCurrency::USD)).ok()
             ),
+            bid: None,
+            ask: None,
             previous_close: self.regularMarketPreviousClose.and_then(|amount|
                 paft::Money::new(amount, paft::Currency::Iso(paft::IsoCurrency::USD)).ok()
             ),

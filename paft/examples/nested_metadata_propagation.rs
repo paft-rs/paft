@@ -277,7 +277,7 @@ fn candle_update_propagation() -> Result<()> {
     // The standard alias is also still streamable — same shape, just with `()`.
     let plain_quote = GenericQuote::<()> {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
-        shortname: None,
+        name: None,
         price: Some(money(150)),
         bid: None,
         ask: None,

@@ -102,8 +102,10 @@ let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto)
 // volume and a provider-metadata escape hatch (use `()` for "no metadata").
 let quote = Quote {
     instrument: apple.clone(),
-    shortname: Some("Apple Inc.".to_string()),
+    name: Some("Apple Inc.".to_string()),
     price: Some(Money::from_canonical_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
+    bid: None,
+    ask: None,
     previous_close: Some(Money::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
     day_volume: Some(78_900_000),
     exchange: Some(Exchange::NASDAQ),

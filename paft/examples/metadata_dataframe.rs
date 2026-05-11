@@ -80,7 +80,7 @@ fn main() -> Result<()> {
 fn standard_quote_schema() -> Result<()> {
     let q = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(money(150)),
         previous_close: Some(money(147)),
         day_volume: Some(78_900_000),
@@ -104,7 +104,7 @@ fn enriched_quote_dataframe() -> Result<()> {
     let quotes: Vec<GenericQuote<HftMeta>> = vec![
         GenericQuote {
             instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
-            shortname: Some("Apple Inc.".to_string()),
+            name: Some("Apple Inc.".to_string()),
             price: Some(money(150)),
             previous_close: Some(money(147)),
             day_volume: Some(78_900_000),
@@ -120,7 +120,7 @@ fn enriched_quote_dataframe() -> Result<()> {
         },
         GenericQuote {
             instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
-            shortname: Some("Microsoft".to_string()),
+            name: Some("Microsoft".to_string()),
             price: Some(money(420)),
             previous_close: Some(money(418)),
             day_volume: Some(20_000_000),

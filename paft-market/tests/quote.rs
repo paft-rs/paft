@@ -15,7 +15,7 @@ use std::str::FromStr;
 fn quote_construction() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(
@@ -33,7 +33,7 @@ fn quote_construction() {
     };
 
     assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL");
-    assert_eq!(quote.shortname, Some("Apple Inc.".to_string()));
+    assert_eq!(quote.name, Some("Apple Inc.".to_string()));
     assert_eq!(
         quote.price,
         Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap())
@@ -56,7 +56,7 @@ fn quote_construction() {
 fn quote_minimal_construction() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: None,
+        name: None,
         price: None,
         previous_close: None,
         day_volume: None,
@@ -67,7 +67,7 @@ fn quote_minimal_construction() {
         provider: (),
     };
     assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL");
-    assert!(quote.shortname.is_none());
+    assert!(quote.name.is_none());
     assert!(quote.price.is_none());
     assert!(quote.previous_close.is_none());
     assert!(quote.exchange.is_none());
@@ -78,7 +78,7 @@ fn quote_minimal_construction() {
 fn quote_clone() {
     let original = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(
@@ -103,7 +103,7 @@ fn quote_clone() {
 fn quote_debug_formatting() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(
@@ -130,7 +130,7 @@ fn quote_currency_consistency() {
     // Test that currency is embedded in Money fields
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(
@@ -163,7 +163,7 @@ fn quote_currency_none() {
     // Test that when no Money fields are present, currency access returns None
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: None, // No price fields
         previous_close: None,
         day_volume: None,
@@ -184,7 +184,7 @@ fn quote_money_fields() {
     // Test that Money fields work correctly
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: None,
+        name: None,
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),
@@ -213,7 +213,7 @@ fn quote_money_fields() {
     // Test with None prices
     let quote_no_prices = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: None,
+        name: None,
         price: None,
         previous_close: None,
         day_volume: None,
@@ -343,7 +343,7 @@ fn quote_update_debug_formatting() {
 fn quote_serialization() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(
@@ -369,7 +369,7 @@ fn quote_serialization() {
 fn quote_with_none_fields() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: None,
+        name: None,
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: Some(
             Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),
@@ -431,7 +431,7 @@ fn quote_update_with_none_fields() {
 fn serialization_roundtrip_preserves_precision() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: Some("Apple Inc.".to_string()),
+        name: Some("Apple Inc.".to_string()),
         price: Some(
             Money::new(
                 Decimal::from_str("150.123456789").unwrap(),
@@ -477,7 +477,7 @@ fn quote_with_bid_and_ask_roundtrips() {
     };
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: None,
+        name: None,
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         bid: Some(bid),
         ask: Some(ask),
@@ -508,7 +508,7 @@ fn deserialization_handles_missing_optional_fields() {
     // Test that missing optional fields are handled gracefully via roundtrip
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        shortname: None,
+        name: None,
         price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
         previous_close: None,
         day_volume: None,
