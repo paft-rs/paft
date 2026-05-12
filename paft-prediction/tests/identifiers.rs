@@ -24,7 +24,10 @@ fn event_id_rejects_empty_string() {
 #[test]
 fn event_id_rejects_whitespace_only_string() {
     let result = EventID::new("   ");
-    assert!(result.is_err(), "Whitespace-only EventID should be rejected");
+    assert!(
+        result.is_err(),
+        "Whitespace-only EventID should be rejected"
+    );
 }
 
 #[test]
@@ -92,7 +95,10 @@ fn event_id_normalizes_uppercase_0x_prefix() {
     // 0X (uppercase X) should be normalized to lowercase 0x.
     let upper_x = "0X5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de";
     let lower_x = "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de";
-    assert_eq!(EventID::new(upper_x).unwrap(), EventID::new(lower_x).unwrap());
+    assert_eq!(
+        EventID::new(upper_x).unwrap(),
+        EventID::new(lower_x).unwrap()
+    );
 }
 
 #[test]

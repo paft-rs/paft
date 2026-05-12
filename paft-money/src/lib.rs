@@ -170,7 +170,7 @@
 //! # Feature flags
 //!
 //! - `bigdecimal`: switch to arbitrary precision decimals (slower, allocates for large values).
-//! - `dataframe`: enables `serde`/`polars`/`df-derive` integration for dataframes.
+//! - `dataframe`: enables `serde`/`polars`/`df-derive-macros` integration for dataframes.
 //! - `panicking-money-ops`: implements `Add`/`Sub`/`Mul`/`Div` for `Money` that
 //!   assert on invalid operations. Prefer the `try_*` methods for fallible APIs.
 //! - `money-formatting`: opt-in locale-aware formatting and strict parsing for [`Money`].

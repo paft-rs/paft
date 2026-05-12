@@ -25,7 +25,7 @@ paft-decimal = { workspace = true, default-features = false }
 paft-utils = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
 polars-arrow = { workspace = true, optional = true }
-df-derive = { workspace = true, optional = true }
+df-derive-macros = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -46,7 +46,7 @@ dataframe = [
   "polars",
   "polars/fmt",
   "polars-arrow",
-  "df-derive",
+  "df-derive-macros",
   "paft-domain/dataframe",
   "paft-market/dataframe",
   "paft-fundamentals/dataframe",

@@ -11,8 +11,8 @@
 
 #![allow(clippy::items_after_statements)]
 
-use paft_core::PaftError;
 use paft_core::__utils::{Canonical, StringCode};
+use paft_core::PaftError;
 use std::str::FromStr;
 
 // ---------- Closed enum ----------

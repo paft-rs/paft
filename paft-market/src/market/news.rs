@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]

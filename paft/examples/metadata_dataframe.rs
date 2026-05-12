@@ -31,7 +31,6 @@
 //! set that enables `dataframe` together with `market`).
 
 use chrono::{DateTime, Utc};
-use df_derive::ToDataFrame;
 use iso_currency::Currency as IsoCurrency;
 use paft::market::quote::{GenericQuote, Quote};
 use paft::market::responses::history::{GenericCandle, GenericHistoryResponse};
@@ -46,15 +45,12 @@ use serde::{Deserialize, Serialize};
 /// prefix when nested inside a bigger payload — `provider` is the field name
 /// used by the parent `GenericQuote<M>` / `GenericCandle<M>` etc.).
 ///
-/// The `#[df_derive(...)]` container attributes are only required because
-/// this example lives inside the `paft` crate's `examples/` directory.
-/// In a downstream crate that simply depends on `paft`, you can drop those
-/// attributes and the macro will resolve `::paft::dataframe::*` automatically.
+/// The `#[df_derive(...)]` container attribute is only required because this
+/// example lives inside the `paft` package's `examples/` directory. In a
+/// downstream crate that depends on `paft`, you can drop the attribute and the
+/// macro will resolve `::paft::dataframe::*` automatically.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, ToDataFrame)]
-#[df_derive(
-    trait = "::paft_utils::dataframe::ToDataFrame",
-    columnar = "::paft_utils::dataframe::Columnar"
-)]
+#[df_derive(trait = "::paft::dataframe::ToDataFrame")]
 struct HftMeta {
     rx_ns: u64,
     seq: u64,

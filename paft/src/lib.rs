@@ -73,11 +73,14 @@ pub mod money {
 /// Direct access to Decimal type
 pub use paft_decimal::{Decimal, RoundingStrategy};
 
-/// Top-level re-export of the dataframe traits so user-defined types deriving
-/// `ToDataFrame` from `df-derive` resolve to the right paths via the `paft`
-/// facade.
+/// Top-level re-export of the dataframe runtime traits so user-defined types
+/// deriving `ToDataFrame` resolve to the right paths via the `paft` facade.
 #[cfg(feature = "dataframe")]
 pub use paft_utils::dataframe;
+
+/// Derive macro for implementing [`dataframe::ToDataFrame`].
+#[cfg(feature = "dataframe")]
+pub use df_derive_macros::ToDataFrame;
 
 /// Namespaced access to `paft-fundamentals` (feature-gated).
 #[cfg(feature = "fundamentals")]

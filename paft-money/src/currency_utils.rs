@@ -281,7 +281,9 @@ mod tests {
 
     #[test]
     fn write_recovers_after_poisoned_lock() {
-        let _guard = SERIALIZE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let _guard = SERIALIZE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let code = "POISON_WRITE_TEST";
         // Start clean.
@@ -314,7 +316,9 @@ mod tests {
 
     #[test]
     fn read_recovers_after_poisoned_lock() {
-        let _guard = SERIALIZE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let _guard = SERIALIZE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let code = "POISON_READ_TEST";
         clear_currency_metadata(code);

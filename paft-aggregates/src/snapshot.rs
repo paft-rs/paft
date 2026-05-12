@@ -12,7 +12,7 @@
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 use paft_domain::{Exchange, Instrument, MarketState};
 use paft_money::{Currency, Money};
 use serde::{Deserialize, Serialize};

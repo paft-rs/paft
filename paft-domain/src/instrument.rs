@@ -111,7 +111,7 @@ impl AssetKind {
 
 /// Logical instrument identity for a security.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(df_derive::ToDataFrame))]
+#[cfg_attr(feature = "dataframe", derive(df_derive_macros::ToDataFrame))]
 pub struct Instrument {
     /// Canonical ticker symbol.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]

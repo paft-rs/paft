@@ -86,7 +86,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 
 ### Advanced Features
 
-- **DataFrame Support**: Optional Polars integration with `ToDataFrame` trait (via `df-derive` proc-macros; enable with the `dataframe` feature)
+- **DataFrame Support**: Optional Polars integration with `ToDataFrame` trait (via `df-derive-macros`; enable with the `dataframe` feature)
 - **Validated Identifiers**: `Figi`/`Isin` enforce checksum validation; prediction IDs (`EventID`, `OutcomeID`) validate format and length. Invalid identifiers fail at construction and during serde.
 - **Flexible Enums**: Type-safe enums with fallback variants for unknown values
 - **Comprehensive Validation**: Built-in request validation and error handling

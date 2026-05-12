@@ -11,7 +11,7 @@
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 use paft_decimal::Decimal;
 use paft_money::Money;
 use serde::{Deserialize, Serialize};

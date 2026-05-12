@@ -4,7 +4,7 @@ use paft_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]

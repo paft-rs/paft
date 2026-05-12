@@ -10,7 +10,7 @@ use std::borrow::Cow;
 /// Pairs the event/question identifier with the specific tradeable outcome
 /// identifier. Parallels `paft_domain::Instrument` for prediction markets.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(df_derive::ToDataFrame))]
+#[cfg_attr(feature = "dataframe", derive(df_derive_macros::ToDataFrame))]
 pub struct PredictionInstrument {
     /// Identifier of the event/question this outcome belongs to.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]

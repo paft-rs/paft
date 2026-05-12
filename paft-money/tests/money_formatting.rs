@@ -145,8 +145,7 @@ fn crypto_precision_formatting() {
 fn amount_string_supports_custom_digits() {
     // Same story as `exponent_specific_formatting`: the input has 5
     // fractional digits but USD allows only 2, so we round at construction.
-    let usd_value =
-        Money::new(paft_decimal::parse_decimal("1234.56789").unwrap(), usd()).unwrap();
+    let usd_value = Money::new(paft_decimal::parse_decimal("1234.56789").unwrap(), usd()).unwrap();
     assert_eq!(
         usd_value
             .amount_string_with_locale(Locale::EnEu, 4)

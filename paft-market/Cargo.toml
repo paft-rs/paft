@@ -25,7 +25,7 @@ paft-domain = { workspace = true }
 paft-utils = { workspace = true }
 paft-money = { workspace = true, default-features = false }
 paft-decimal = { workspace = true, default-features = false }
-df-derive = { workspace = true, optional = true }
+df-derive-macros = { workspace = true, optional = true }
 polars = { workspace = true, features = ["dtype-datetime","dtype-decimal"], optional = true }
 polars-arrow = { workspace = true, optional = true }
 iso_currency = { workspace = true }
@@ -39,7 +39,7 @@ default = []
 # rust-decimal feature removed; rust_decimal backend is implied by default
 bigdecimal = ["paft-money/bigdecimal", "paft-decimal/bigdecimal", "paft-utils/bigdecimal"]
 
-dataframe = ["paft-utils/dataframe", "polars", "polars/fmt", "polars-arrow", "df-derive", "paft-domain/dataframe", "paft-money/dataframe"]
+dataframe = ["paft-utils/dataframe", "polars", "polars/fmt", "polars-arrow", "df-derive-macros", "paft-domain/dataframe", "paft-money/dataframe"]
 
 tracing = ["dep:tracing"]
 

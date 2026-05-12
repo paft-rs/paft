@@ -22,7 +22,7 @@ paft-core = { workspace = true }
 paft-domain = { workspace = true }
 paft-money = { workspace = true }
 paft-utils = { workspace = true }
-df-derive = { workspace = true, optional = true }
+df-derive-macros = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
 polars-arrow = { workspace = true, optional = true }
 
@@ -36,7 +36,7 @@ dataframe = [
   "polars",
   "polars/fmt",
   "polars-arrow",
-  "df-derive",
+  "df-derive-macros",
   "paft-utils/dataframe",
   "paft-domain/dataframe",
   "paft-money/dataframe",

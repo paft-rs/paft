@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 use paft_core::error::PaftError;
 use paft_decimal::Decimal;
 use paft_domain::{Canonical, DomainError, Period};

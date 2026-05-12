@@ -10,7 +10,7 @@ use paft_money::Money; // Money for priced values
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 
 /// A single price level on one side of the market: a quoted price with an
 /// optional displayed size.

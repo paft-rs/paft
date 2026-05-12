@@ -34,7 +34,7 @@
 //! # Feature flags
 //! - `rust-decimal` (default): `paft-money` uses `rust-decimal`
 //! - `bigdecimal`: `paft-money` uses `bigdecimal`
-//! - `dataframe`: enable `polars`/`df-derive` integration for dataframe export
+//! - `dataframe`: enable `polars`/`df-derive-macros` integration for dataframe export
 //!
 //! # Serde
 //! All models serialize with stable, human-readable representations; dataframe

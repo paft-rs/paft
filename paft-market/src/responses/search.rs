@@ -8,7 +8,7 @@
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 
 use paft_domain::{AssetKind, Exchange, Instrument};
 

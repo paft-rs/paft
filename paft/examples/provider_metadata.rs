@@ -88,7 +88,7 @@ fn standard_quote_unchanged() -> Result<()> {
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
-        provider:(),
+        provider: (),
     };
 
     let json = serde_json::to_string_pretty(&quote).unwrap();
@@ -132,7 +132,7 @@ fn hft_quote_round_trip() -> Result<()> {
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
-        provider:HftMeta {
+        provider: HftMeta {
             received_ns: 1_700_000_000_123_456_789,
             exchange_seq: 42_424_242,
             correlation_id: "trace-abc-1".into(),
@@ -214,7 +214,7 @@ fn different_meta_per_stream() -> Result<()> {
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
-        provider:HftMeta {
+        provider: HftMeta {
             received_ns: 1_700_000_000_222_333_444,
             exchange_seq: 99,
             correlation_id: "msft-quote-1".into(),

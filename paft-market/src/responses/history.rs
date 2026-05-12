@@ -12,7 +12,7 @@ use crate::requests::history::Interval;
 use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 use paft_domain::Instrument;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

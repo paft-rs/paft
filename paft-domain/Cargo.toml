@@ -21,7 +21,7 @@ chrono = { workspace = true }
 paft-utils = { workspace = true }
 polars = { workspace = true, optional = true }
 polars-arrow = { workspace = true, optional = true }
-df-derive = { workspace = true, optional = true }
+df-derive-macros = { workspace = true, optional = true }
 paft-core = { workspace = true }
 isin = { workspace = true }
 smol_str = { workspace = true }
@@ -32,7 +32,7 @@ default = []
 
 tracing = ["dep:tracing"]
 
-dataframe = ["polars", "polars/fmt", "polars-arrow", "df-derive", "paft-utils/dataframe"]
+dataframe = ["polars", "polars/fmt", "polars-arrow", "df-derive-macros", "paft-utils/dataframe"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

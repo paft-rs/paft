@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 use paft_money::Money;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};

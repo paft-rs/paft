@@ -14,7 +14,7 @@ use std::fmt;
 use std::borrow::Cow;
 
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 
 use crate::currency::Currency;
 #[cfg(not(feature = "bigdecimal"))]
@@ -375,8 +375,8 @@ impl Money {
         // The cap on `scale` is enforced by `ensure_scale_within_limits`
         // (currently 18 dp) so `10^scale` always fits inside `i64`.
         let multiplier = Decimal::from(10_i64.pow(scale));
-        let scaled = checked_mul_decimal(&self.amount, &multiplier)
-            .ok_or(MoneyError::ConversionError)?;
+        let scaled =
+            checked_mul_decimal(&self.amount, &multiplier).ok_or(MoneyError::ConversionError)?;
         scaled.to_i128().ok_or(MoneyError::ConversionError)
     }
 
@@ -510,8 +510,8 @@ impl Money {
                 found: rhs.currency.clone(),
             });
         }
-        let sum = checked_add_decimal(&self.amount, &rhs.amount)
-            .ok_or(MoneyError::ConversionError)?;
+        let sum =
+            checked_add_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)?;
         Self::new(sum, self.currency.clone())
     }
 
@@ -533,8 +533,8 @@ impl Money {
                 found: rhs.currency.clone(),
             });
         }
-        let diff = checked_sub_decimal(&self.amount, &rhs.amount)
-            .ok_or(MoneyError::ConversionError)?;
+        let diff =
+            checked_sub_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)?;
         Self::new(diff, self.currency.clone())
     }
 
@@ -555,8 +555,7 @@ impl Money {
     // still avoiding an extra clone in the helper call below.
     #[allow(clippy::needless_pass_by_value)]
     pub fn try_mul(&self, rhs: Decimal) -> Result<Self, MoneyError> {
-        let product =
-            checked_mul_decimal(&self.amount, &rhs).ok_or(MoneyError::ConversionError)?;
+        let product = checked_mul_decimal(&self.amount, &rhs).ok_or(MoneyError::ConversionError)?;
         Self::new(product, self.currency.clone())
     }
 
@@ -639,8 +638,8 @@ impl Money {
 
         let decimals = rate.to.decimal_places()?;
         let scale = Self::ensure_scale_within_limits(decimals)?;
-        let product = checked_mul_decimal(&self.amount, &rate.rate)
-            .ok_or(MoneyError::ConversionError)?;
+        let product =
+            checked_mul_decimal(&self.amount, &rate.rate).ok_or(MoneyError::ConversionError)?;
         let converted_amount = decimal::round_dp_with_strategy(&product, scale, rounding);
         Self::new(converted_amount, rate.to.clone())
     }

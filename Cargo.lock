@@ -585,9 +585,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7eed2c4702fa172d1ce21078faa7c5203e69f5394d48cc436d25928394a867a2"
 
 [[package]]
-name = "df-derive"
+name = "df-derive-core"
 version = "0.3.0"
-source = "git+https://github.com/gramistella/df-derive.git#64f42f6c1504c5a5313e87a4352af06f419c90bb"
+source = "git+https://github.com/gramistella/df-derive.git#b49127b58614932669e0feecfe6c0be564a04d9a"
+dependencies = [
+ "polars",
+]
+
+[[package]]
+name = "df-derive-macros"
+version = "0.3.0"
+source = "git+https://github.com/gramistella/df-derive.git#b49127b58614932669e0feecfe6c0be564a04d9a"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1575,7 +1583,7 @@ version = "0.8.0"
 dependencies = [
  "chrono",
  "chrono-tz",
- "df-derive",
+ "df-derive-macros",
  "iso_currency",
  "paft-aggregates",
  "paft-core",
@@ -1600,7 +1608,7 @@ name = "paft-aggregates"
 version = "0.8.0"
 dependencies = [
  "chrono",
- "df-derive",
+ "df-derive-macros",
  "iso_currency",
  "paft-decimal",
  "paft-domain",
@@ -1641,7 +1649,7 @@ name = "paft-domain"
 version = "0.8.0"
 dependencies = [
  "chrono",
- "df-derive",
+ "df-derive-macros",
  "isin",
  "paft-core",
  "paft-money",
@@ -1660,7 +1668,7 @@ name = "paft-fundamentals"
 version = "0.8.0"
 dependencies = [
  "chrono",
- "df-derive",
+ "df-derive-macros",
  "iso_currency",
  "paft-core",
  "paft-decimal",
@@ -1682,7 +1690,7 @@ dependencies = [
  "bitflags",
  "chrono",
  "chrono-tz",
- "df-derive",
+ "df-derive-macros",
  "iso_currency",
  "paft-core",
  "paft-decimal",
@@ -1701,7 +1709,7 @@ dependencies = [
 name = "paft-money"
 version = "0.8.0"
 dependencies = [
- "df-derive",
+ "df-derive-macros",
  "iso_currency",
  "paft-decimal",
  "paft-utils",
@@ -1718,7 +1726,7 @@ name = "paft-prediction"
 version = "0.8.0"
 dependencies = [
  "chrono",
- "df-derive",
+ "df-derive-macros",
  "paft-core",
  "paft-domain",
  "paft-money",
@@ -1735,6 +1743,7 @@ name = "paft-utils"
 version = "0.8.0"
 dependencies = [
  "bigdecimal",
+ "df-derive-core",
  "polars",
  "rust_decimal",
  "smol_str",
@@ -1832,6 +1841,7 @@ dependencies = [
  "polars-io",
  "polars-lazy",
  "polars-ops",
+ "polars-parquet",
  "polars-sql",
  "polars-time",
  "polars-utils",
@@ -2025,6 +2035,7 @@ dependencies = [
  "blake3",
  "bytes",
  "chrono",
+ "chrono-tz",
  "fast-float2",
  "fs4",
  "futures",
@@ -2064,6 +2075,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55581d4cc8f4122cae92d12aec997e6713ac483871391a7db09501604007be4b"
 dependencies = [
  "chrono",
+ "chrono-tz",
  "fallible-streaming-iterator",
  "hashbrown 0.16.1",
  "indexmap",

@@ -56,10 +56,7 @@ fn normalize_event_id(input: &str) -> Result<String, PredictionError> {
     if !normalized.starts_with("0x") {
         return Err(invalid_event_id(input));
     }
-    if !normalized.as_bytes()[2..]
-        .iter()
-        .all(u8::is_ascii_hexdigit)
-    {
+    if !normalized.as_bytes()[2..].iter().all(u8::is_ascii_hexdigit) {
         return Err(invalid_event_id(input));
     }
 

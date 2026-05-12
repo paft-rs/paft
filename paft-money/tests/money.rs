@@ -604,10 +604,9 @@ fn money_as_minor_units_returns_error_on_i128_overflow_under_bigdecimal() {
     // overflows. The conversion to `i128`, however, can still fail when
     // the scaled value exceeds the `i128` range — and that path must
     // still surface as ConversionError, not a panic.
-    let huge = Decimal::from_str(
-        "999999999999999999999999999999999999999999999999.123456789012345678",
-    )
-    .unwrap();
+    let huge =
+        Decimal::from_str("999999999999999999999999999999999999999999999999.123456789012345678")
+            .unwrap();
     let money = Money::new(huge, Currency::ETH).unwrap();
     let err = money.as_minor_units().unwrap_err();
     assert!(matches!(err, paft_money::MoneyError::ConversionError));

@@ -27,7 +27,7 @@ use paft_money::{Currency, Money};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
-use df_derive::ToDataFrame;
+use df_derive_macros::ToDataFrame;
 
 /// A single tradeable outcome of a [`Market`].
 ///
