@@ -24,7 +24,6 @@ paft-fundamentals = { workspace = true }
 paft-decimal = { workspace = true, default-features = false }
 paft-utils = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
-polars-arrow = { workspace = true, optional = true }
 df-derive-macros = { workspace = true, optional = true }
 
 [features]
@@ -45,7 +44,6 @@ panicking-money-ops = ["paft-money/panicking-money-ops"]
 dataframe = [
   "polars",
   "polars/fmt",
-  "polars-arrow",
   "df-derive-macros",
   "paft-domain/dataframe",
   "paft-market/dataframe",

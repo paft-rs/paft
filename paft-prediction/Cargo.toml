@@ -24,7 +24,6 @@ paft-money = { workspace = true }
 paft-utils = { workspace = true }
 df-derive-macros = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
-polars-arrow = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
@@ -35,7 +34,6 @@ default = []
 dataframe = [
   "polars",
   "polars/fmt",
-  "polars-arrow",
   "df-derive-macros",
   "paft-utils/dataframe",
   "paft-domain/dataframe",

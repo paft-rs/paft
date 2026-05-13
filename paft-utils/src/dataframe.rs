@@ -8,6 +8,13 @@
 
 pub use df_derive_core::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 
+/// Hidden dependency re-exports used by `df-derive` generated code when the
+/// paft runtime is the selected default dataframe facade.
+#[doc(hidden)]
+pub mod __private {
+    pub use df_derive_core::dataframe::__private::{polars, polars_arrow};
+}
+
 /// Encodes a decimal value into the i128 mantissa expected by polars
 /// `DataType::Decimal(_, _)` columns.
 ///
