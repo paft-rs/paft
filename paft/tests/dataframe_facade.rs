@@ -1,33 +1,29 @@
 #![cfg(feature = "dataframe")]
 
-use paft::prelude::{ToDataFrame, ToDataFrameVec};
-
-#[derive(Clone, ToDataFrame)]
-#[df_derive(trait = "::paft::dataframe::ToDataFrame")]
-struct FacadeRow {
-    id: u64,
-    symbol: String,
-}
+use paft::Decimal;
+use paft::money::IsoCurrency;
+use paft::prelude::{Currency, ExchangeRate, ToDataFrame, ToDataFrameVec};
 
 #[test]
-fn paft_reexports_macro_and_dataframe_traits() {
+fn paft_reexports_dataframe_traits_for_paft_types() {
     fn assert_paft_dataframe<T: paft::dataframe::ToDataFrame + paft::dataframe::Columnar>() {}
-    assert_paft_dataframe::<FacadeRow>();
+    assert_paft_dataframe::<ExchangeRate>();
 
-    let rows = vec![
-        FacadeRow {
-            id: 1,
-            symbol: "AAPL".into(),
-        },
-        FacadeRow {
-            id: 2,
-            symbol: "MSFT".into(),
-        },
-    ];
+    let rate = ExchangeRate::new(
+        Currency::Iso(IsoCurrency::USD),
+        Currency::Iso(IsoCurrency::EUR),
+        Decimal::from(1),
+    )
+    .unwrap();
 
-    let df = rows.as_slice().to_dataframe().unwrap();
-    assert_eq!(df.height(), 2);
+    let df = rate.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
     let columns = df.get_column_names();
-    assert!(columns.iter().any(|c| c.as_str() == "id"));
-    assert!(columns.iter().any(|c| c.as_str() == "symbol"));
+    assert!(columns.iter().any(|c| c.as_str() == "from"));
+    assert!(columns.iter().any(|c| c.as_str() == "to"));
+    assert!(columns.iter().any(|c| c.as_str() == "rate"));
+
+    let rows = vec![rate];
+    let df = rows.as_slice().to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
 }

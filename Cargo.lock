@@ -587,7 +587,7 @@ checksum = "7eed2c4702fa172d1ce21078faa7c5203e69f5394d48cc436d25928394a867a2"
 [[package]]
 name = "df-derive-core"
 version = "0.3.0"
-source = "git+https://github.com/gramistella/df-derive.git#7a8677f08a5f5923043fb64c2812d5ed39b7d3c4"
+source = "git+https://github.com/gramistella/df-derive.git#02deed2e2f3bffc96a88555f166f57ca1d8105b5"
 dependencies = [
  "polars",
  "polars-arrow",
@@ -596,7 +596,7 @@ dependencies = [
 [[package]]
 name = "df-derive-macros"
 version = "0.3.0"
-source = "git+https://github.com/gramistella/df-derive.git#7a8677f08a5f5923043fb64c2812d5ed39b7d3c4"
+source = "git+https://github.com/gramistella/df-derive.git#02deed2e2f3bffc96a88555f166f57ca1d8105b5"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",

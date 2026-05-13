@@ -11,14 +11,15 @@
 //! Provider metadata in Polars `DataFrame` exports.
 //!
 //! When the `dataframe` feature is enabled, the canonical fields of every
-//! payload type round-trip into Polars columns via the `ToDataFrame` derive.
+//! payload type round-trip into Polars columns via their `ToDataFrame` impls.
 //! This example shows two complementary stories:
 //!
 //! 1. The default `M = ()` case is **completely transparent**: no extra
 //!    columns appear, the schema is identical to what you'd have without the
 //!    metadata escape hatch.
 //!
-//! 2. A custom `M` that itself derives `ToDataFrame` is **flattened** into
+//! 2. A custom `M` that itself derives `ToDataFrame` via `df-derive` is
+//!    **flattened** into
 //!    extra columns, prefixed with `provider.` (the parent field's name).
 //!    So adding HFT timestamps does not require changing your downstream
 //!    Polars pipeline — the metadata columns just appear alongside the
@@ -45,11 +46,11 @@ use serde::{Deserialize, Serialize};
 /// prefix when nested inside a bigger payload — `provider` is the field name
 /// used by the parent `GenericQuote<M>` / `GenericCandle<M>` etc.).
 ///
-/// The `#[df_derive(...)]` container attribute is only required because this
-/// example lives inside the `paft` package's `examples/` directory. In a
-/// downstream crate that depends on `paft`, you can drop the attribute and the
-/// macro will resolve `::paft::dataframe::*` automatically.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, ToDataFrame)]
+/// Custom payload structs should derive dataframe support through
+/// `df-derive` directly and target paft's runtime traits.
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, df_derive_macros::ToDataFrame,
+)]
 #[df_derive(trait = "::paft::dataframe::ToDataFrame")]
 struct HftMeta {
     rx_ns: u64,
