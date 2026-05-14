@@ -3,6 +3,8 @@
 use paft::Decimal;
 use paft::money::IsoCurrency;
 use paft::prelude::{Currency, ExchangeRate, ToDataFrame, ToDataFrameVec};
+use paft_decimal::from_minor_units;
+use polars::prelude::{AnyValue, DataType};
 
 #[test]
 fn paft_reexports_dataframe_traits_for_paft_types() {
@@ -26,4 +28,34 @@ fn paft_reexports_dataframe_traits_for_paft_types() {
     let rows = vec![rate];
     let df = rows.as_slice().to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
+}
+
+#[derive(Clone, df_derive_macros::ToDataFrame)]
+struct TupleDecimalRow {
+    maybe: Option<(Decimal,)>,
+}
+
+#[test]
+fn paft_decimal_runtime_handles_parent_option_tuple_projection() {
+    let rows = vec![
+        TupleDecimalRow {
+            maybe: Some((from_minor_units(123, 2),)),
+        },
+        TupleDecimalRow { maybe: None },
+    ];
+
+    let df = rows.as_slice().to_dataframe().unwrap();
+    assert_eq!(df.shape(), (2, 1));
+    assert_eq!(
+        df.column("maybe.field_0").unwrap().dtype(),
+        &DataType::Decimal(38, 10),
+    );
+    assert_eq!(
+        df.column("maybe.field_0").unwrap().get(0).unwrap(),
+        AnyValue::Decimal(12_300_000_000, 38, 10),
+    );
+    assert_eq!(
+        df.column("maybe.field_0").unwrap().get(1).unwrap(),
+        AnyValue::Null,
+    );
 }
