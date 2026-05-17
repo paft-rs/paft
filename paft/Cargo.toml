@@ -86,6 +86,14 @@ polars-arrow = { workspace = true }
 name = "metadata_dataframe"
 required-features = ["full"]
 
+[[example]]
+name = "nested_metadata_propagation"
+required-features = ["full"]
+
+[[example]]
+name = "provider_metadata"
+required-features = ["full"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

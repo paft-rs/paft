@@ -37,8 +37,8 @@ fn decimal_facade_behaviour() {
 #[test]
 fn money_amount_construction() {
     let decimal = parse_decimal("42.5");
-    let from_decimal = MoneyAmount::new(decimal.clone());
-    assert_eq!(from_decimal.amount(), decimal);
+    let from_decimal = MoneyAmount::new(decimal);
+    assert_eq!(from_decimal.amount(), parse_decimal("42.5"));
     assert!(from_decimal.currency_hint().is_none());
 
     let from_str = MoneyAmount::from_str("42.5").unwrap();
@@ -173,7 +173,7 @@ fn money_amount_serde_roundtrip() {
     assert_eq!(serialized_amount, serialized_decimal);
 
     let value_amount: Value = serde_json::to_value(&amount).unwrap();
-    let value_decimal: Value = serde_json::to_value(&decimal).unwrap();
+    let value_decimal: Value = serde_json::to_value(parse_decimal("12.340")).unwrap();
     assert_eq!(value_amount, value_decimal);
 
     let decoded: MoneyAmount = serde_json::from_str(&serialized_amount).unwrap();
