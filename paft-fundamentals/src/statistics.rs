@@ -27,7 +27,7 @@ pub struct KeyStatistics {
     /// Timestamp at which these statistics were observed. Useful when
     /// snapshotting price-driven values like `market_cap` that move
     /// intraday.
-    #[serde(with = "chrono::serde::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub as_of: Option<DateTime<Utc>>,
 
     // ---- Valuation ----
@@ -51,7 +51,7 @@ pub struct KeyStatistics {
     /// Forward dividend yield expressed as a fraction.
     pub dividend_yield_forward: Option<Decimal>,
     /// Next or most recent ex-dividend date.
-    #[serde(with = "paft_core::serde_helpers::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub ex_dividend_date: Option<DateTime<Utc>>,
 
     // ---- 52-week range ----

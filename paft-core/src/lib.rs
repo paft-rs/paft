@@ -26,7 +26,7 @@
 //! ```
 //!
 //! # Serde helpers
-//! See [`serde_helpers`] for helpers like `ts_seconds_vec` and `ts_seconds_option`.
+//! See [`serde_helpers`] for helpers like `ts_seconds_vec`.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 

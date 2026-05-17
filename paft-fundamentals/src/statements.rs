@@ -95,9 +95,9 @@ pub struct Calendar {
     #[serde(with = "paft_core::serde_helpers::ts_seconds_vec")]
     pub earnings_dates: Vec<DateTime<Utc>>,
     /// Ex-dividend date.
-    #[serde(with = "paft_core::serde_helpers::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub ex_dividend_date: Option<DateTime<Utc>>,
     /// Dividend payment date.
-    #[serde(with = "paft_core::serde_helpers::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub dividend_payment_date: Option<DateTime<Utc>>,
 }

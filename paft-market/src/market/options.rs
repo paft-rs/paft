@@ -61,10 +61,10 @@ pub struct GenericOptionContract<M = ()> {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub expiration_date: NaiveDate,
     /// Exact UTC expiration instant, if known.
-    #[serde(with = "paft_core::serde_helpers::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub expiration_at: Option<DateTime<Utc>>,
     /// Exact UTC last trade instant, if known.
-    #[serde(with = "paft_core::serde_helpers::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub last_trade_at: Option<DateTime<Utc>>,
     /// Optional first-order greeks for the contract.
     pub greeks: Option<OptionGreeks>,
