@@ -2,3 +2,6 @@
 .idea
 .stitchworkspace/
 .DS_Store
+
+# Stitch workspace (per-user)
+.stitchworkspace/local/

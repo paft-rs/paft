@@ -17,7 +17,7 @@ members = [
 version = "0.8.0"
 authors = ["G. Ramistella <heydays_micron_7m@icloud.com>"]
 edition = "2024"
-rust-version = "1.87"
+rust-version = "1.90"
 license = "MIT"
 repository = "https://github.com/paft-rs/paft"
 
