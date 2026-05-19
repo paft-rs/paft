@@ -276,7 +276,7 @@ impl Default for TimeSpec {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 /// Request parameters for fetching history.
 ///
 /// Use `HistoryRequest::builder()` to create instances.
@@ -287,6 +287,35 @@ pub struct HistoryRequest {
     interval: Interval,
     /// Additional behavior flags.
     flags: HistoryFlags,
+}
+
+/// Shadow type used for deserializing [`HistoryRequest`].
+///
+/// Matches the serialized wire shape, then routes through
+/// [`HistoryRequestBuilder::build`] so period validation cannot be skipped.
+#[derive(Deserialize)]
+struct HistoryRequestShadow {
+    time_spec: TimeSpec,
+    interval: Interval,
+    flags: HistoryFlags,
+}
+
+impl<'de> Deserialize<'de> for HistoryRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let shadow = HistoryRequestShadow::deserialize(deserializer)?;
+
+        let mut builder = Self::builder().interval(shadow.interval);
+        match shadow.time_spec {
+            TimeSpec::Range(range) => builder = builder.range(range),
+            TimeSpec::Period { start, end } => builder = builder.period(start, end),
+        }
+        builder.flags = shadow.flags;
+
+        builder.build().map_err(serde::de::Error::custom)
+    }
 }
 
 /// Builder for creating validated `HistoryRequest` instances.

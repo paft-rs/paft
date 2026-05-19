@@ -6,7 +6,7 @@ use paft_domain::AssetKind;
 
 use crate::error::MarketError;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 /// Request to search for instruments by free-text query.
 ///
 /// Use `SearchRequest::builder()` to create instances.
@@ -21,6 +21,44 @@ pub struct SearchRequest {
     lang: Option<String>,
     /// Optional region code to scope results (e.g., "US", "EU").
     region: Option<String>,
+}
+
+/// Shadow type used for deserializing [`SearchRequest`].
+///
+/// Matches the serialized wire shape, then routes through
+/// [`SearchRequestBuilder::build`] so request validation cannot be skipped.
+#[derive(Deserialize)]
+struct SearchRequestShadow {
+    query: String,
+    kind: Option<AssetKind>,
+    limit: Option<usize>,
+    lang: Option<String>,
+    region: Option<String>,
+}
+
+impl<'de> Deserialize<'de> for SearchRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let shadow = SearchRequestShadow::deserialize(deserializer)?;
+
+        let mut builder = Self::builder(shadow.query);
+        if let Some(kind) = shadow.kind {
+            builder = builder.kind(kind);
+        }
+        if let Some(limit) = shadow.limit {
+            builder = builder.limit(limit);
+        }
+        if let Some(lang) = shadow.lang {
+            builder = builder.lang(lang);
+        }
+        if let Some(region) = shadow.region {
+            builder = builder.region(region);
+        }
+
+        builder.build().map_err(serde::de::Error::custom)
+    }
 }
 
 /// Builder for creating validated `SearchRequest` instances.

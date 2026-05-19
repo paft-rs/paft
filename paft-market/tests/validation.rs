@@ -1,7 +1,7 @@
 use chrono::DateTime;
 use paft_domain::AssetKind;
 use paft_market::MarketError;
-use paft_market::requests::{HistoryRequest, Range, SearchRequest};
+use paft_market::requests::{HistoryRequest, Interval, Range, SearchRequest};
 
 #[test]
 fn search_request_validation_empty_query_rejected() {
@@ -37,6 +37,24 @@ fn search_request_validation_zero_limit_rejected() {
     } else {
         panic!("Expected InvalidSearchLimit error for zero limit");
     }
+}
+
+#[test]
+fn search_request_deserialization_empty_query_rejected() {
+    let result = serde_json::from_str::<SearchRequest>(
+        r#"{"query":"","kind":null,"limit":10,"lang":null,"region":null}"#,
+    );
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn search_request_deserialization_zero_limit_rejected() {
+    let result = serde_json::from_str::<SearchRequest>(
+        r#"{"query":"AAPL","kind":null,"limit":0,"lang":null,"region":null}"#,
+    );
+
+    assert!(result.is_err());
 }
 
 #[test]
@@ -112,6 +130,24 @@ fn history_request_validation_period_start_eq_end_rejected() {
     } else {
         panic!("Expected InvalidPeriod error for equal start and end");
     }
+}
+
+#[test]
+fn history_request_deserialization_period_start_ge_end_rejected() {
+    let invalid = serde_json::json!({
+        "time_spec": {
+            "Period": {
+                "start": "1970-01-01T00:33:20Z",
+                "end": "1970-01-01T00:16:40Z"
+            }
+        },
+        "interval": Interval::D1,
+        "flags": 6
+    });
+
+    let result = serde_json::from_value::<HistoryRequest>(invalid);
+
+    assert!(result.is_err());
 }
 
 #[test]
