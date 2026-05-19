@@ -222,8 +222,8 @@ pub mod money;
 pub use amount::MoneyAmount;
 pub use currency::Currency;
 pub use currency_utils::{
-    MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS, MinorUnitError, clear_currency_metadata,
-    currency_metadata, set_currency_metadata, try_normalize_currency_code,
+    CurrencyMetadata, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS, MinorUnitError,
+    clear_currency_metadata, currency_metadata, set_currency_metadata, try_normalize_currency_code,
 };
 pub use error::{MoneyError, MoneyParseError};
 pub use locale::Locale;

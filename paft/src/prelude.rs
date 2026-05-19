@@ -10,12 +10,10 @@ pub use crate::domain::{
     Symbol, canonicalize,
 };
 #[cfg(feature = "money-formatting")]
-pub use crate::money::Locale;
-#[cfg(feature = "money-formatting")]
 pub use crate::money::LocalizedMoney;
 pub use crate::money::{
-    Currency, MoneyAmount, clear_currency_metadata, currency_metadata, set_currency_metadata,
-    try_normalize_currency_code,
+    Currency, CurrencyMetadata, Locale, MoneyAmount, clear_currency_metadata, currency_metadata,
+    set_currency_metadata, try_normalize_currency_code,
 };
 pub use crate::money::{ExchangeRate, Money};
 pub use crate::{Decimal, Error, Result, RoundingStrategy};
