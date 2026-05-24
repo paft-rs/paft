@@ -138,7 +138,8 @@ pub struct GenericOptionUpdate<M = ()> {
     /// Underlying instrument used for routing and monotonic filtering.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
-    /// Timestamp of the update.
+    /// Timestamp of the update (Unix seconds).
+    #[serde(with = "chrono::serde::ts_seconds")]
     pub ts: DateTime<Utc>,
     /// Best bid for the contract, if available.
     pub bid: Option<Money>,
