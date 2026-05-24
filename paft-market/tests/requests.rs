@@ -35,8 +35,11 @@ fn history_request_serialization() {
         .build()
         .unwrap();
 
-    let json = serde_json::to_string(&request).unwrap();
-    let deserialized: HistoryRequest = serde_json::from_str(&json).unwrap();
+    let value = serde_json::to_value(&request).unwrap();
+    assert_eq!(value["time_spec"], serde_json::json!({ "Range": "1d" }));
+    assert_eq!(value["interval"], serde_json::json!("1d"));
+
+    let deserialized: HistoryRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
 }
 
@@ -65,19 +68,52 @@ fn history_request_with_period() {
 #[test]
 fn interval_serialization() {
     let intervals = [
-        Interval::I1m,
-        Interval::I5m,
-        Interval::I15m,
-        Interval::I30m,
-        Interval::I1h,
-        Interval::D1,
-        Interval::W1,
-        Interval::M1,
+        (Interval::I1s, "1s"),
+        (Interval::I2s, "2s"),
+        (Interval::I3s, "3s"),
+        (Interval::I5s, "5s"),
+        (Interval::I6s, "6s"),
+        (Interval::I10s, "10s"),
+        (Interval::I15s, "15s"),
+        (Interval::I30s, "30s"),
+        (Interval::I90s, "90s"),
+        (Interval::I1m, "1m"),
+        (Interval::I2m, "2m"),
+        (Interval::I3m, "3m"),
+        (Interval::I5m, "5m"),
+        (Interval::I6m, "6m"),
+        (Interval::I10m, "10m"),
+        (Interval::I15m, "15m"),
+        (Interval::I30m, "30m"),
+        (Interval::I90m, "90m"),
+        (Interval::I1h, "1h"),
+        (Interval::I2h, "2h"),
+        (Interval::I3h, "3h"),
+        (Interval::I4h, "4h"),
+        (Interval::I6h, "6h"),
+        (Interval::I8h, "8h"),
+        (Interval::I12h, "12h"),
+        (Interval::D1, "1d"),
+        (Interval::D5, "5d"),
+        (Interval::W1, "1wk"),
+        (Interval::M1, "1mo"),
+        (Interval::M3, "3mo"),
+        (Interval::M6, "6mo"),
+        (Interval::Y1, "1y"),
+        (Interval::Y2, "2y"),
+        (Interval::Y5, "5y"),
+        (Interval::Y10, "10y"),
     ];
 
-    for interval in intervals {
-        let json = serde_json::to_string(&interval).unwrap();
-        let deserialized: Interval = serde_json::from_str(&json).unwrap();
+    for (interval, code) in intervals {
+        assert_eq!(interval.code(), code);
+        assert_eq!(interval.to_string(), code);
+        assert_eq!(
+            serde_json::to_value(interval).unwrap(),
+            serde_json::json!(code)
+        );
+
+        let deserialized: Interval = serde_json::from_value(serde_json::json!(code)).unwrap();
         assert_eq!(interval, deserialized);
     }
 }
@@ -85,22 +121,39 @@ fn interval_serialization() {
 #[test]
 fn range_serialization() {
     let ranges = [
-        Range::D1,
-        Range::D5,
-        Range::M1,
-        Range::M3,
-        Range::M6,
-        Range::Y1,
-        Range::Y2,
-        Range::Y5,
-        Range::Y10,
-        Range::Ytd,
-        Range::Max,
+        (Range::I1m, "1m"),
+        (Range::I2m, "2m"),
+        (Range::I5m, "5m"),
+        (Range::I10m, "10m"),
+        (Range::I15m, "15m"),
+        (Range::I30m, "30m"),
+        (Range::I1h, "1h"),
+        (Range::I4h, "4h"),
+        (Range::I6h, "6h"),
+        (Range::I8h, "8h"),
+        (Range::I12h, "12h"),
+        (Range::D1, "1d"),
+        (Range::D5, "5d"),
+        (Range::M1, "1mo"),
+        (Range::M3, "3mo"),
+        (Range::M6, "6mo"),
+        (Range::Y1, "1y"),
+        (Range::Y2, "2y"),
+        (Range::Y5, "5y"),
+        (Range::Y10, "10y"),
+        (Range::Ytd, "ytd"),
+        (Range::Max, "max"),
     ];
 
-    for range in ranges {
-        let json = serde_json::to_string(&range).unwrap();
-        let deserialized: Range = serde_json::from_str(&json).unwrap();
+    for (range, code) in ranges {
+        assert_eq!(range.code(), code);
+        assert_eq!(range.to_string(), code);
+        assert_eq!(
+            serde_json::to_value(range).unwrap(),
+            serde_json::json!(code)
+        );
+
+        let deserialized: Range = serde_json::from_value(serde_json::json!(code)).unwrap();
         assert_eq!(range, deserialized);
     }
 }
