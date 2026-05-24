@@ -745,7 +745,7 @@ impl Money {
         params.symbol = symbol;
         params.code = code;
 
-        // clone the amount once (cheap in rust-decimal; explicit clone in bigdecimal)
+        // clone the amount once (cheap in rust_decimal; explicit clone in bigdecimal)
         let amount = copy_decimal(&self.amount);
 
         Formatter::new(amount, locale, params).format()

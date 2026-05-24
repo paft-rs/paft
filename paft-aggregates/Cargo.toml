@@ -29,7 +29,7 @@ df-derive-macros = { workspace = true, optional = true }
 [features]
 default = []
 
-# rust-decimal feature removed; rust_decimal backend is implied by default
+# No feature flag is needed for the default rust_decimal backend.
 bigdecimal = [
   "paft-money/bigdecimal",
   "paft-market/bigdecimal",

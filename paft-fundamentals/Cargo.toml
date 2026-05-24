@@ -33,7 +33,7 @@ tracing = { workspace = true, optional = true }
 [features]
 default = []
 
-# rust-decimal feature removed; rust_decimal backend is implied by default
+# No feature flag is needed for the default rust_decimal backend.
 bigdecimal = ["paft-money/bigdecimal", "paft-decimal/bigdecimal", "paft-utils/bigdecimal"]
 
 dataframe = ["polars", "polars/fmt", "df-derive-macros", "paft-utils/dataframe", "paft-domain/dataframe", "paft-money/dataframe"]

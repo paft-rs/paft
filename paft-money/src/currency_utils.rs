@@ -20,7 +20,7 @@ use crate::locale::Locale;
 
 /// Maximum precision supported by the active decimal backend for safe scaling operations.
 ///
-/// * With the default `rust-decimal` backend this reflects the 28 fractional digits that
+/// * With the default `rust_decimal` backend this reflects the 28 fractional digits that
 ///   `rust_decimal::Decimal` can represent safely.
 #[cfg(not(feature = "bigdecimal"))]
 pub const MAX_DECIMAL_PRECISION: u8 = 28;
