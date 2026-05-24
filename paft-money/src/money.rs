@@ -125,12 +125,12 @@ fn decimal_scale(value: &Decimal) -> i64 {
 pub struct ExchangeRate {
     /// The source currency.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub from: Currency,
+    from: Currency,
     /// The target currency.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub to: Currency,
+    to: Currency,
     /// The exchange rate (how many units of 'to' currency per 1 unit of 'from' currency).
-    pub rate: Decimal,
+    rate: Decimal,
 }
 
 impl ExchangeRate {
