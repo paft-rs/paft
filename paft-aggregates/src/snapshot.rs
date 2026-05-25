@@ -27,6 +27,10 @@ use serde::{Deserialize, Serialize};
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`Snapshot`] alias for the
 /// standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericSnapshot<M = ()> {
     /// Primary instrument as provided by the data source.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]

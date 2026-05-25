@@ -37,6 +37,10 @@ pub struct OptionGreeks {
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`OptionContract`] alias for the
 /// standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericOptionContract<M = ()> {
     /// Instrument identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
@@ -110,6 +114,10 @@ pub type OptionContract = GenericOptionContract<()>;
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation and propagated into each contract. Use the
 /// [`OptionChain`] alias for the standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericOptionChain<M = ()> {
     /// Call contracts.
     pub calls: Vec<GenericOptionContract<M>>,
@@ -132,6 +140,10 @@ pub type OptionChain = GenericOptionChain<()>;
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`OptionUpdate`] alias for the
 /// standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOptionUpdate<M = ()> {

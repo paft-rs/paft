@@ -24,6 +24,10 @@ use paft_domain::Instrument;
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`Candle`] alias for the standard
 /// shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericCandle<M = ()> {
     /// Timestamp for the bar (Unix seconds).
     #[serde(with = "chrono::serde::ts_seconds")]
@@ -75,6 +79,10 @@ pub type Candle = GenericCandle<()>;
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation and propagated into the inner candle. Use
 /// the [`CandleUpdate`] alias for the standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericCandleUpdate<M = ()> {
     /// Instrument identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
@@ -131,6 +139,10 @@ pub struct HistoryMeta {
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation and propagated into each candle. Use the
 /// [`HistoryResponse`] alias for the standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericHistoryResponse<M = ()> {
     /// Ordered candles.
     pub candles: Vec<GenericCandle<M>>,

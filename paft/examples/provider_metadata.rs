@@ -26,6 +26,9 @@
 //!    numbers.
 //! 3. `#[serde(flatten)]` means the extra fields land at the **top level** of
 //!    the JSON, side-by-side with the canonical fields.
+//!    Choose metadata field names that do not collide with paft fields
+//!    (`price`, `exchange`, `provider`, `volume`, `currency`, etc.); use
+//!    provider-specific prefixes when in doubt.
 //! 4. Inbound provider JSON with extra keys deserializes losslessly into
 //!    `GenericQuote<HftMeta>` — no manual extraction step.
 //! 5. Multiple metadata shapes can coexist in the same program (e.g. one for

@@ -17,6 +17,10 @@ use paft_domain::{Instrument, Symbol};
 /// serialized representation and propagated into the inner history
 /// response. Use the [`DownloadEntry`] alias for the standard shape
 /// (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericDownloadEntry<M = ()> {
     /// Full instrument identity (symbol, kind, optional identifiers/venue).
     pub instrument: Instrument,
@@ -36,6 +40,10 @@ pub type DownloadEntry = GenericDownloadEntry<()>;
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation and propagated into each entry. Use the
 /// [`DownloadResponse`] alias for the standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericDownloadResponse<M = ()> {
     /// Entries keyed by full `Instrument` identity.
     pub entries: Vec<GenericDownloadEntry<M>>,

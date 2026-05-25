@@ -19,6 +19,10 @@ use paft_domain::{AssetKind, Exchange, Instrument};
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`SearchResult`] alias for the
 /// standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericSearchResult<M = ()> {
     /// Instrument identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
@@ -45,6 +49,10 @@ pub type SearchResult = GenericSearchResult<()>;
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation and propagated into each result. Use the
 /// [`SearchResponse`] alias for the standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericSearchResponse<M = ()> {
     /// De-duplicated search results.
     pub results: Vec<GenericSearchResult<M>>,

@@ -22,6 +22,10 @@ use df_derive_macros::ToDataFrame;
 /// serialized representation. Use the [`BookLevel`] alias for the standard
 /// shape (no extra metadata).
 ///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
+///
 /// `price` is mandatory: a level with no price isn't meaningful. `size` is
 /// optional because real-world feeds frequently emit price-without-size —
 /// delayed and aggregated equity feeds often strip sizes, and some real-time
@@ -62,6 +66,10 @@ pub type BookLevel = GenericBookLevel<()>;
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation and propagated into each level. Use the
 /// [`OrderBook`] alias for the standard shape (no extra metadata).
+///
+/// **Collision warning:** provider metadata is flattened into the same object
+/// as paft fields. Metadata field names must not collide with paft field
+/// names; prefer provider-specific prefixes when in doubt.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOrderBook<M = ()> {
