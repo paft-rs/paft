@@ -72,8 +72,8 @@ pub mod money {
     pub use paft_money::LocalizedMoney;
     pub use paft_money::{
         Currency, CurrencyMetadata, ExchangeRate, IsoCurrency, Locale, MinorUnitError,
-        MonetaryAmount, Money, MoneyError, Price, clear_currency_metadata, currency_metadata,
-        set_currency_metadata, try_normalize_currency_code,
+        MonetaryAmount, Money, MoneyError, MoneyParseError, Price, clear_currency_metadata,
+        currency_metadata, set_currency_metadata, try_normalize_currency_code,
     };
 }
 

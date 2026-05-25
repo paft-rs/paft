@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Dataframe: switched derive dependencies to the `df-derive` 0.3 split (`df-derive-macros` for derives, `df-derive-core` for shared trait identity). `paft-utils` now re-exports the core `ToDataFrame`, `Columnar`, and `ToDataFrameVec` traits while retaining its paft-owned `Decimal128Encode` trait for foreign decimal backends.
 - Facade: flattened the release-facing market and fundamentals surface through `paft::market`, `paft::fundamentals`, and `paft::prelude`, including option updates/greeks/expiration responses, news requests, and analysis helper rows.
+- Facade: re-export `MoneyParseError` from `paft::money` so currency parsing errors exposed by `Currency::try_from_str` are available through the facade.
 
 ## [0.8.0] - 2025-11-XX
 

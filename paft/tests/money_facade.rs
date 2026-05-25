@@ -1,5 +1,6 @@
 use paft::money::{
-    CurrencyMetadata, Locale, clear_currency_metadata, currency_metadata, set_currency_metadata,
+    Currency, CurrencyMetadata, Locale, MoneyParseError, clear_currency_metadata,
+    currency_metadata, set_currency_metadata,
 };
 use paft::prelude::{
     CurrencyMetadata as PreludeCurrencyMetadata, Locale as PreludeLocale,
@@ -31,4 +32,18 @@ fn facade_reexports_metadata_types_without_formatting() {
     );
 
     clear_currency_metadata(code);
+}
+
+#[test]
+fn facade_reexports_currency_parse_error() {
+    let err: MoneyParseError =
+        Currency::try_from_str("").expect_err("empty currency should fail to parse");
+
+    assert!(matches!(
+        err,
+        MoneyParseError::InvalidEnumValue {
+            enum_name: "Currency",
+            ..
+        }
+    ));
 }
