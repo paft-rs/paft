@@ -50,6 +50,7 @@ pub struct CurrencyMetadata {
 
 /// Errors that can occur when configuring minor-unit overrides.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum MinorUnitError {
     /// The requested precision exceeds the decimal backend's supported limit.
     ExceedsDecimalPrecision {

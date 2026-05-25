@@ -175,6 +175,7 @@ pub trait StringCode {
 
 /// Errors that can occur when constructing canonical strings.
 #[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CanonicalError {
     /// Invalid canonical token produced by normalization helpers.
     #[error("Invalid canonical token: '{value}' - canonicalized value must be non-empty")]

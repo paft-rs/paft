@@ -5,6 +5,7 @@
 /// This enum aggregates error types from the various `paft` crates, enabling
 /// ergonomic error handling when composing functionality across modules.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     /// Error originating from `paft-core`.
     #[error(transparent)]

@@ -1,6 +1,13 @@
 use paft_utils::{Canonical, CanonicalError, StringCode, canonicalize};
 use std::borrow::Cow;
 
+fn invalid_canonical_value(err: CanonicalError) -> String {
+    let CanonicalError::InvalidCanonicalToken { value } = err else {
+        panic!("unexpected canonical error variant");
+    };
+    value
+}
+
 #[test]
 fn canonicalize_applies_normalization_rules() {
     assert_eq!(canonicalize("usd"), "USD");
@@ -18,12 +25,12 @@ fn canonicalize_collapses_and_trims_underscores() {
 #[test]
 fn canonical_try_new_rejects_empty_tokens() {
     let err = Canonical::try_new("***").unwrap_err();
-    let CanonicalError::InvalidCanonicalToken { value } = err;
+    let value = invalid_canonical_value(err);
     assert_eq!(value, "***");
 
     // Empty string should also be rejected
     let err = Canonical::try_new("").unwrap_err();
-    let CanonicalError::InvalidCanonicalToken { value } = err;
+    let value = invalid_canonical_value(err);
     assert_eq!(value, "");
 }
 
@@ -38,7 +45,7 @@ fn canonical_try_new_rejects_all_separator_inputs() {
 
     for input in separator_inputs {
         let err = Canonical::try_new(input).unwrap_err();
-        let CanonicalError::InvalidCanonicalToken { value } = err;
+        let value = invalid_canonical_value(err);
         assert_eq!(
             value, input,
             "Failed to reject all-separator input: {input}"
@@ -74,7 +81,7 @@ fn canonical_try_new_rejects_all_non_ascii_inputs() {
 
     for input in non_ascii_inputs {
         let err = Canonical::try_new(input).unwrap_err();
-        let CanonicalError::InvalidCanonicalToken { value } = err;
+        let value = invalid_canonical_value(err);
         assert_eq!(
             value, input,
             "Failed to reject all-non-ASCII input: {input}"

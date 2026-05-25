@@ -7,6 +7,7 @@ use crate::locale::Locale;
 
 /// Errors emitted by the paft-money crate.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum MoneyParseError {
     /// Invalid value provided for an enum parser.
     #[error("Invalid {enum_name} value: '{value}'")]
@@ -20,6 +21,7 @@ pub enum MoneyParseError {
 
 /// Errors that can occur when performing operations on Money values.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum MoneyError {
     /// Occurs when attempting to perform arithmetic operations on Money values with different currencies.
     #[error("currency mismatch: expected {expected}, found {found}")]

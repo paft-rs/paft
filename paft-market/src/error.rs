@@ -4,6 +4,7 @@ use thiserror::Error;
 
 /// Errors returned when validating market requests before execution.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum MarketError {
     /// Search query must not be empty.
     #[error("Search query must not be empty")]
