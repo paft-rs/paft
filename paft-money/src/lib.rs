@@ -62,7 +62,8 @@
 //!   such as [`paft_decimal::parse_decimal`], [`paft_decimal::from_minor_units`],
 //!   [`paft_decimal::zero`], and [`paft_decimal::one`].
 //! - [`MoneyAmount`]: a high-precision numeric wrapper with optional
-//!   [`Currency`] hints and lossless serde integration.
+//!   [`Currency`] hints and lossless serde integration that preserves both
+//!   amount and hint.
 //! - [`Money`]: a currency-attached value that enforces exponents,
 //!   metadata lookups, and settlement-ready rounding.
 //!

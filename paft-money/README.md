@@ -57,7 +57,7 @@ Money layers
 Choose the level of structure you need:
 
 - [`paft-decimal`](https://crates.io/crates/paft-decimal) exposes helpers such as `parse_decimal`, `from_minor_units`, `zero`, and `one`
-- `MoneyAmount` keeps high-precision values with optional `Currency` hints and serde parity with `Decimal`
+- `MoneyAmount` keeps high-precision values with optional `Currency` hints; serde includes both the amount and hint so round-trips preserve identity
 - `Money` attaches a currency, enforces metadata-driven rounding, and remains settlement-safe
 
 ```rust

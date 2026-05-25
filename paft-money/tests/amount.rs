@@ -2,7 +2,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use iso_currency::Currency as IsoCurrency;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
 use paft_money::{Currency, Money, MoneyAmount, MoneyError};
@@ -165,18 +165,49 @@ fn money_amount_serde_roundtrip() {
     let usd = usd();
     let amount = MoneyAmount::from_str("12.340")
         .unwrap()
-        .with_currency_hint(usd);
+        .with_currency_hint(usd.clone());
     let serialized_amount = serde_json::to_string(&amount).unwrap();
 
-    let decimal = parse_decimal("12.340");
-    let serialized_decimal = serde_json::to_string(&decimal).unwrap();
-    assert_eq!(serialized_amount, serialized_decimal);
-
     let value_amount: Value = serde_json::to_value(&amount).unwrap();
-    let value_decimal: Value = serde_json::to_value(parse_decimal("12.340")).unwrap();
-    assert_eq!(value_amount, value_decimal);
+    assert_eq!(
+        value_amount,
+        json!({
+            "amount": "12.340",
+            "currency_hint": "USD",
+        })
+    );
 
     let decoded: MoneyAmount = serde_json::from_str(&serialized_amount).unwrap();
+    assert_eq!(decoded, amount);
+    assert_eq!(decoded.currency_hint(), Some(&usd));
+}
+
+#[test]
+fn money_amount_serde_preserves_hintless_identity() {
+    let amount = MoneyAmount::from_str("12.340").unwrap();
+
+    assert_eq!(
+        serde_json::to_value(&amount).unwrap(),
+        json!({
+            "amount": "12.340",
+            "currency_hint": null,
+        })
+    );
+
+    let decoded: MoneyAmount = serde_json::from_value(json!({
+        "amount": "12.340",
+    }))
+    .unwrap();
+    assert_eq!(decoded, amount);
+    assert!(decoded.currency_hint().is_none());
+}
+
+#[test]
+fn money_amount_deserializes_legacy_decimal_wire_format() {
+    let decimal = parse_decimal("12.340");
+    let serialized_decimal = serde_json::to_string(&decimal).unwrap();
+
+    let decoded: MoneyAmount = serde_json::from_str(&serialized_decimal).unwrap();
     assert_eq!(decoded.amount(), decimal);
     assert!(decoded.currency_hint().is_none());
 }

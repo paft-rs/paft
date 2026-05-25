@@ -18,6 +18,11 @@ use crate::money::Money;
 /// where the hint matters (currency-aware sums, dataframe keys, dedup).
 /// Hashing matches `Eq`, so storing them in `HashMap`/`HashSet` does
 /// the right thing.
+///
+/// Serde uses an object representation with both `amount` and
+/// `currency_hint`, so serialization preserves the same identity used by
+/// `Eq` and `Hash`. Deserialization also accepts the older decimal-only
+/// representation and treats it as a hint-less amount.
 #[derive(Debug, Clone)]
 pub struct MoneyAmount {
     amount: Decimal,
@@ -247,7 +252,11 @@ impl Serialize for MoneyAmount {
     where
         S: Serializer,
     {
-        serde::Serialize::serialize(&self.amount, serializer)
+        MoneyAmountRef {
+            amount: &self.amount,
+            currency_hint: self.currency_hint.as_ref(),
+        }
+        .serialize(serializer)
     }
 }
 
@@ -256,9 +265,34 @@ impl<'de> Deserialize<'de> for MoneyAmount {
     where
         D: Deserializer<'de>,
     {
-        let amount = <Decimal as serde::Deserialize>::deserialize(deserializer)?;
-        Ok(Self::new(amount))
+        match MoneyAmountWire::deserialize(deserializer)? {
+            MoneyAmountWire::Structured(shadow) => Ok(Self {
+                amount: shadow.amount,
+                currency_hint: shadow.currency_hint,
+            }),
+            MoneyAmountWire::Legacy(amount) => Ok(Self::new(amount)),
+        }
     }
+}
+
+#[derive(Serialize)]
+struct MoneyAmountRef<'a> {
+    amount: &'a Decimal,
+    currency_hint: Option<&'a Currency>,
+}
+
+#[derive(Deserialize)]
+struct MoneyAmountShadow {
+    amount: Decimal,
+    #[serde(default)]
+    currency_hint: Option<Currency>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum MoneyAmountWire {
+    Structured(MoneyAmountShadow),
+    Legacy(Decimal),
 }
 
 impl FromStr for MoneyAmount {
