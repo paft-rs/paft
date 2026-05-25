@@ -8,6 +8,6 @@ pub mod quote;
 
 pub use action::Action;
 pub use news::NewsArticle;
-pub use options::{OptionChain, OptionContract, OptionGreeks};
+pub use options::{OptionChain, OptionContract, OptionGreeks, OptionUpdate};
 pub use orderbook::{BookLevel, OrderBook};
 pub use quote::{Quote, QuoteUpdate};

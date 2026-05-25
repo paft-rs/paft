@@ -1,5 +1,6 @@
 use chrono::{DateTime, NaiveDate};
 use paft_domain::{AssetKind, Instrument};
+use paft_market::market::OptionUpdate as MarketOptionUpdate;
 use paft_market::{
     OptionChainRequest, OptionExpirationsRequest, OptionExpirationsResponse, OptionUpdate,
 };
@@ -40,7 +41,7 @@ fn option_expirations_response_roundtrip() {
 
 #[test]
 fn option_update_ts_serde_uses_unix_seconds() {
-    let update = OptionUpdate::new(
+    let update: MarketOptionUpdate = OptionUpdate::new(
         Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
     );
