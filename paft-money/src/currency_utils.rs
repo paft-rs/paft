@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use paft_utils::canonicalize;
+use paft_utils::{Canonical, canonicalize};
 
 use crate::currency::Currency;
 use crate::error::MoneyParseError;
@@ -52,6 +52,11 @@ pub struct CurrencyMetadata {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum MinorUnitError {
+    /// The provided currency code cannot produce a non-empty canonical token.
+    InvalidCurrencyCode {
+        /// The offending input value.
+        code: String,
+    },
     /// The requested precision exceeds the decimal backend's supported limit.
     ExceedsDecimalPrecision {
         /// Requested fractional digits.
@@ -67,6 +72,9 @@ pub enum MinorUnitError {
 impl fmt::Display for MinorUnitError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidCurrencyCode { code } => {
+                write!(f, "invalid currency code: '{code}'")
+            }
             Self::ExceedsDecimalPrecision { decimals } => write!(
                 f,
                 "decimal precision {decimals} exceeds maximum of {MAX_DECIMAL_PRECISION}"
@@ -190,7 +198,8 @@ pub fn try_normalize_currency_code(code: &str) -> Result<Currency, MoneyParseErr
 /// Registers metadata for a custom currency.
 ///
 /// # Errors
-/// Returns a `MinorUnitError` when the requested precision exceeds supported limits.
+/// Returns a `MinorUnitError` when the currency code cannot be canonicalized
+/// to a non-empty token or when the requested precision exceeds supported limits.
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(full_name, symbol), err)
@@ -203,6 +212,10 @@ pub fn set_currency_metadata(
     symbol_first: bool,
     default_locale: Locale,
 ) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
+    let canonical = Canonical::try_new(code).map_err(|_| MinorUnitError::InvalidCurrencyCode {
+        code: code.to_string(),
+    })?;
+
     #[cfg(not(feature = "bigdecimal"))]
     if minor_units > MAX_DECIMAL_PRECISION {
         return Err(MinorUnitError::ExceedsDecimalPrecision {
@@ -215,7 +228,6 @@ pub fn set_currency_metadata(
         });
     }
 
-    let canonical = canonicalize(code);
     let full_name: String = full_name.into();
     let symbol: String = symbol.into();
     let metadata = CurrencyMetadata {
@@ -226,7 +238,7 @@ pub fn set_currency_metadata(
         default_locale,
     };
 
-    Ok(write_custom_metadata().insert(canonical.into_owned(), metadata))
+    Ok(write_custom_metadata().insert(canonical.into_inner(), metadata))
 }
 
 /// Retrieves metadata for a custom currency, if registered.

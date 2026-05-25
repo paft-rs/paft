@@ -120,6 +120,24 @@ fn test_currency_metadata_rejects_overflowing_precision() {
     }
 }
 
+#[test]
+fn test_currency_metadata_rejects_empty_canonical_codes() {
+    for code in ["", "   ", "!@#", "€—"] {
+        let err = call_set_metadata(code, "Token", 2).unwrap_err();
+        assert!(matches!(
+            err,
+            MinorUnitError::InvalidCurrencyCode { code: rejected } if rejected == code
+        ));
+        assert!(currency_metadata(code).is_none());
+    }
+
+    let err = call_set_metadata("", "Token", 19).unwrap_err();
+    assert!(matches!(
+        err,
+        MinorUnitError::InvalidCurrencyCode { code } if code.is_empty()
+    ));
+}
+
 #[cfg(feature = "bigdecimal")]
 #[test]
 fn test_bigdecimal_accepts_large_magnitudes() {
