@@ -21,6 +21,31 @@ struct PeriodCase {
     canonical: &'static str,
 }
 
+fn assert_invalid_period_format(input: &str) {
+    let err = input.parse::<Period>().unwrap_err();
+    match err {
+        DomainError::InvalidPeriodFormat { format } => {
+            assert_eq!(format, input);
+        }
+        other => panic!("unexpected error variant for {input:?}: {other:?}"),
+    }
+}
+
+fn assert_period_roundtrips(input: &str) -> Period {
+    let p: Period = input.parse().unwrap();
+    let display = p.to_string();
+    let display_reparsed: Period = display.parse().unwrap();
+    assert_eq!(
+        p, display_reparsed,
+        "display round-trip failed for {input:?} ({display:?})"
+    );
+
+    let json = serde_json::to_string(&p).unwrap();
+    let reparsed: Period = serde_json::from_str(&json).unwrap();
+    assert_eq!(p, reparsed, "serde round-trip failed for {input:?}");
+    p
+}
+
 #[test]
 fn period_round_trips_display_fromstr_serde() {
     for case in period_cases() {
@@ -109,6 +134,13 @@ fn period_invalid_matches_raise_error() {
             }
             other => panic!("unexpected error variant: {other:?}"),
         }
+    }
+}
+
+#[test]
+fn period_rejects_inputs_that_canonicalize_to_invalid_structured_tokens() {
+    for input in ["-2023Q5", "(2023Q5)", "!2023Q5!", "2023Q5!"] {
+        assert_invalid_period_format(input);
     }
 }
 
@@ -312,25 +344,20 @@ fn period_other_round_trip_for_genuine_other_inputs() {
     // date parsing rejects it (length 15 > 10), and after canonicalization
     // (`"2023_01_01EXTRA"`) no structured parser accepts it either, so we
     // store it as Other and the canonical token round-trips.
-    let inputs = ["2023-01-01extra", "ALPHA", "FY 2023", "2023-12/31"];
+    let inputs = [
+        "2023-01-01extra",
+        "ALPHA",
+        "FY 2023",
+        "2023-12/31",
+        "x2023Q5",
+    ];
 
     for input in inputs {
-        let p: Period = input.parse().unwrap();
+        let p = assert_period_roundtrips(input);
         assert!(
             matches!(p, Period::Other(_)),
             "expected Other for {input:?}, got {p:?}"
         );
-
-        let s = p.to_string();
-        let p_disp: Period = s.parse().unwrap();
-        assert_eq!(
-            p_disp, p,
-            "Display round-trip for {input:?} (display: {s:?})"
-        );
-
-        let json = serde_json::to_string(&p).unwrap();
-        let p2: Period = serde_json::from_str(&json).unwrap();
-        assert_eq!(p, p2, "serde round-trip identity for {input:?} ({p:?})");
     }
 }
 

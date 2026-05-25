@@ -489,13 +489,12 @@ impl std::str::FromStr for Period {
     /// `Period::Quarter`, breaking round-trip identity.
     ///
     /// To maintain the invariant we re-run the structured parsers on the
-    /// canonicalized form before returning `Other`. If any of them succeed
-    /// with a valid structured variant we return that; only when every
-    /// parser declines the canonical form do we fall back to `Other`. A
-    /// "structurally matched but invalid" result on the canonical form (e.g.
-    /// `"2023Q5"` after canonicalization) is treated as a rejection — `Other`
-    /// is still produced — because the canonical token does not parse to any
-    /// structured variant on subsequent deserialize, so the invariant holds.
+    /// canonicalized form before returning `Other`. If any parser succeeds
+    /// with a valid structured variant we return that variant. If any parser
+    /// recognizes the canonical form structurally but rejects its values (for
+    /// example `"2023Q5"` after canonicalization), we return
+    /// `InvalidPeriodFormat`; otherwise serializing an `Other("2023Q5")`
+    /// would produce a token that later fails deserialization.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim();
@@ -528,19 +527,22 @@ impl std::str::FromStr for Period {
 
         let canonical = Canonical::try_new(trimmed).map_err(|_| invalid())?;
 
-        // Re-run the structured parsers against the canonical token. If any
-        // recognizes it as a valid structured variant, we must return that
-        // variant rather than `Other` — otherwise serialize/deserialize would
-        // round-trip an `Other` to a different (structured) variant.
+        // Re-run the structured parsers against the canonical token. Valid
+        // structured matches are promoted, while structurally invalid matches
+        // are rejected; both cases would make `Other` fail serde identity.
         let canonical_str = canonical.as_ref();
-        if let Some(Ok(period)) = Self::parse_quarterly(canonical_str) {
-            return Ok(period);
+        match Self::parse_quarterly(canonical_str) {
+            Some(Ok(period)) => return Ok(period),
+            Some(Err(())) => return Err(invalid()),
+            None => {}
         }
         if let Some(period) = Self::parse_year(canonical_str) {
             return Ok(period);
         }
-        if let Some(Ok(period)) = Self::parse_date(canonical_str) {
-            return Ok(period);
+        match Self::parse_date(canonical_str) {
+            Some(Ok(period)) => return Ok(period),
+            Some(Err(())) => return Err(invalid()),
+            None => {}
         }
 
         Ok(Self::Other(canonical))
