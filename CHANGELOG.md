@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
   - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
 - Domain: `Instrument` is a flat struct with security identifier fields (`symbol`, optional `exchange`, `figi`, `isin`) plus `kind: AssetKind`.
 - Domain: constructors on `Instrument`: `new(Symbol, AssetKind)`, `from_symbol`, `from_symbol_and_exchange`, `from_figi`.
+- Domain: `AssetKind` is now extensible via `AssetKind::Other(Canonical)`. Unknown provider asset/security type labels deserialize and parse to canonical `Other` values instead of failing.
 - Prediction: new `paft_prediction::PredictionInstrument` parallels `Instrument` for prediction-market outcomes.
 - Prediction: `EventID` and `OutcomeID` now live in `paft-prediction` (re-exported from the facade's `prediction` module).
 - Aggregates: new `Snapshot` type — a 12-field, all-optional snapshot focused strictly on instant-in-time market data.
@@ -54,6 +55,7 @@ All notable changes to this project will be documented in this file.
 - Domain: removed `AssetKind::PredictionMarket`. Prediction markets are not an asset kind.
 - Domain: removed `Instrument::from_prediction_market` and `from_prediction_market_ids`. Use `paft_prediction::PredictionInstrument::new` instead.
 - Domain: `EventID` and `OutcomeID` moved from `paft-domain` to `paft-prediction`. Import via `paft_prediction::{EventID, OutcomeID}` or via the facade's `paft::prediction` module.
+- Domain/Market: `AssetKind` no longer implements `Copy` because `AssetKind::Other(Canonical)` owns the provider token. `AssetKind::code()` and `paft_market::SearchRequestBuilder::kind()` are no longer `const`, `paft_market::SearchRequest::kind()` now returns `Option<&AssetKind>`, and `AssetKind::full_name()` now returns `Cow<'static, str>` so unknown asset kinds can surface their canonical code.
 - Aggregates: removed `Info` and `FastInfo`. Replaced by `Snapshot` (12 strictly-snapshot fields). Fundamentals/analyst/ESG fields that lived on `Info` belong in `paft-fundamentals` types.
 - Money: `Decimal` and `RoundingStrategy` have moved to the standalone `paft-decimal` crate; import them from `paft_decimal` (or via the facade root) instead of `paft_money::decimal` or `paft::money::Decimal`.
 - Money: removed `impl Default for Currency` (previously returned `IsoCurrency::USD`). There is no globally-correct default currency, so callers must now select one explicitly. Use `Option<Currency>` for fields that may be unset, or pass an explicit `Currency` value.

@@ -31,7 +31,7 @@ Detailed best practices guide with practical implementation strategies:
 
 ### Key Concepts
 
-1. **Extensible Enums**: All paft enums use `Other(Canonical)` for unknown values
+1. **Extensible Enums**: Provider-facing paft enums use `Other(Canonical)` for unknown values
 2. **Graceful Degradation**: Never fails on unknown provider values
 3. **Ecosystem Convergence**: Map provider-specific strings to canonical variants
 4. **Type Safety**: Compile-time checks for known variants, runtime handling for unknown
@@ -59,6 +59,7 @@ Many paft enums provide helper methods:
 match asset {
     AssetKind::Equity => "Stock",
     AssetKind::Crypto => "Crypto",
+    AssetKind::Other(_) => "Other",
     _ => "Other",
 }
 ```

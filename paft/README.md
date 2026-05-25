@@ -225,7 +225,7 @@ match currency {
 }
 
 // Same pattern for exchanges, asset types, etc.
-let exchange: Exchange = "BATS".parse().unwrap(); // Unknown exchange handled via Other
+let exchange: Exchange = "DARK_POOL_X".parse().unwrap(); // Unknown exchange handled via Other
 ```
 
 This pattern ensures your code never breaks when providers return new or unexpected values.

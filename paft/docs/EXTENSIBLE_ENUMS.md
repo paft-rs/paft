@@ -3,7 +3,7 @@
 Overview
 --------
 
-paft uses a consistent `Other(Canonical)` extensible enum pattern across enums (`Currency`, `Exchange`, `AssetKind`, `MarketState`, `Period`, `RecommendationGrade`, etc.). This embraces the reality that providers invent new tokens and aliases over time. Instead of failing on unknown values, paft parses known canonical tokens and falls back to `Other(Canonical)` for the rest.
+paft uses a consistent `Other(Canonical)` extensible enum pattern across provider-facing enums (`Currency`, `Exchange`, `AssetKind`, `Period`, `RecommendationGrade`, etc.). This embraces the reality that providers invent new tokens and aliases over time. Instead of failing on unknown values, these enums parse known canonical tokens and fall back to `Other(Canonical)` for the rest.
 
 Rules at a glance
 -----------------

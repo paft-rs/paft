@@ -27,6 +27,11 @@ fn other_roundtrip_is_stable_for_core_enums() {
     let other_exchange = Exchange::from_str("some-ex").unwrap();
     assert_eq!(other_exchange.to_string(), "SOME_EX");
 
+    // AssetKind
+    assert_display_parse_display_idempotent::<AssetKind, _>("EQUITY");
+    let other_asset = AssetKind::from_str("structured note").unwrap();
+    assert_eq!(other_asset.to_string(), "STRUCTURED_NOTE");
+
     // Period
     assert_display_parse_display_idempotent::<Period, _>("2023Q4");
     assert_display_parse_display_idempotent::<Period, _>("2023-12-31");
@@ -46,6 +51,14 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
             err,
             paft_money::MoneyParseError::InvalidEnumValue { enum_name, value }
                 if enum_name == "Currency" && value.as_str() == *input
+        ));
+
+        // AssetKind
+        let err = AssetKind::from_str(input).unwrap_err();
+        assert!(matches!(
+            err,
+            paft_core::PaftError::InvalidEnumValue { enum_name, value }
+                if enum_name == "AssetKind" && value.as_str() == *input
         ));
 
         // Exchange
@@ -76,7 +89,6 @@ fn display_matches_wire_codes_for_core_enums() {
 
 #[test]
 fn closed_enums_reject_unknown_tokens() {
-    assert!(AssetKind::from_str("UNKNOWN_KIND").is_err());
     assert!(MarketState::from_str("UNKNOWN_STATE").is_err());
 }
 
@@ -91,6 +103,18 @@ fn extensible_enums_preserve_other_canonical_tokens() {
     let venue = Exchange::from_str("my-exchange").unwrap();
     match venue {
         Exchange::Other(ref canon) => assert_eq!(canon.as_ref(), "MY_EXCHANGE"),
+        other => panic!("expected Other variant, got {other:?}"),
+    }
+
+    let asset = AssetKind::from_str("structured note").unwrap();
+    match asset {
+        AssetKind::Other(ref canon) => assert_eq!(canon.as_ref(), "STRUCTURED_NOTE"),
+        other => panic!("expected Other variant, got {other:?}"),
+    }
+
+    let asset: AssetKind = serde_json::from_str("\"structured note\"").unwrap();
+    match asset {
+        AssetKind::Other(ref canon) => assert_eq!(canon.as_ref(), "STRUCTURED_NOTE"),
         other => panic!("expected Other variant, got {other:?}"),
     }
 }

@@ -2,14 +2,21 @@
 
 use super::Exchange;
 use crate::{
-    DomainError,
+    Canonical, DomainError,
     identifiers::{Figi, Isin, Symbol},
 };
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, str::FromStr};
 
-/// Kinds of financial instruments
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+/// Kinds of financial instruments.
+///
+/// Canonical/serde rules:
+/// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
+/// - Parser accepts a superset of tokens (aliases, case-insensitive)
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
+/// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum AssetKind {
     /// Common stock or equity-like instruments.
@@ -49,10 +56,12 @@ pub enum AssetKind {
     LST,
     /// Real-world assets (tokenized physical assets).
     RWA,
+    /// Provider-specific asset kind not modeled as a canonical variant.
+    Other(Canonical),
 }
 
-crate::string_enum_closed_with_code!(
-    AssetKind,
+crate::string_enum_with_code!(
+    AssetKind, Other,
     "AssetKind",
     {
         "EQUITY" => AssetKind::Equity,
@@ -85,26 +94,27 @@ crate::impl_display_via_code!(AssetKind);
 impl AssetKind {
     /// Human-readable label for displaying this asset kind.
     #[must_use]
-    pub const fn full_name(&self) -> &'static str {
+    pub fn full_name(&self) -> Cow<'static, str> {
         match self {
-            Self::Equity => "Equity",
-            Self::Crypto => "Crypto",
-            Self::Fund => "Fund",
-            Self::Index => "Index",
-            Self::Forex => "Forex",
-            Self::Bond => "Bond",
-            Self::Commodity => "Commodity",
-            Self::Option => "Option",
-            Self::Future => "Future",
-            Self::REIT => "REIT",
-            Self::Warrant => "Warrant",
-            Self::Convertible => "Convertible",
-            Self::NFT => "NFT",
-            Self::PerpetualFuture => "Perpetual Future",
-            Self::LeveragedToken => "Leveraged Token",
-            Self::LPToken => "LP Token",
-            Self::LST => "Liquid Staking Token",
-            Self::RWA => "Real-World Asset",
+            Self::Equity => Cow::Borrowed("Equity"),
+            Self::Crypto => Cow::Borrowed("Crypto"),
+            Self::Fund => Cow::Borrowed("Fund"),
+            Self::Index => Cow::Borrowed("Index"),
+            Self::Forex => Cow::Borrowed("Forex"),
+            Self::Bond => Cow::Borrowed("Bond"),
+            Self::Commodity => Cow::Borrowed("Commodity"),
+            Self::Option => Cow::Borrowed("Option"),
+            Self::Future => Cow::Borrowed("Future"),
+            Self::REIT => Cow::Borrowed("REIT"),
+            Self::Warrant => Cow::Borrowed("Warrant"),
+            Self::Convertible => Cow::Borrowed("Convertible"),
+            Self::NFT => Cow::Borrowed("NFT"),
+            Self::PerpetualFuture => Cow::Borrowed("Perpetual Future"),
+            Self::LeveragedToken => Cow::Borrowed("Leveraged Token"),
+            Self::LPToken => Cow::Borrowed("LP Token"),
+            Self::LST => Cow::Borrowed("Liquid Staking Token"),
+            Self::RWA => Cow::Borrowed("Real-World Asset"),
+            Self::Other(code) => Cow::Owned(code.as_ref().to_string()),
         }
     }
 }

@@ -9,7 +9,7 @@
 
 //! Extensible enum pattern in paft.
 //!
-//! Many paft enums (`Currency`, `Exchange`, `AssetKind`, `MarketState`,
+//! Many provider-facing paft enums (`Currency`, `Exchange`, `AssetKind`,
 //! `Period`, `RecommendationGrade`, ...) are open: they have a fixed set of
 //! canonical variants plus a single `Other(Canonical)` fallback for tokens
 //! the library does not model directly. Parsing never fails on unknown

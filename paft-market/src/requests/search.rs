@@ -85,7 +85,7 @@ impl SearchRequestBuilder {
 
     /// Set the asset kind filter.
     #[must_use]
-    pub const fn kind(mut self, kind: AssetKind) -> Self {
+    pub fn kind(mut self, kind: AssetKind) -> Self {
         self.kind = Some(kind);
         self
     }
@@ -170,8 +170,8 @@ impl SearchRequest {
 
     /// Get the asset kind filter if set.
     #[must_use]
-    pub const fn kind(&self) -> Option<AssetKind> {
-        self.kind
+    pub const fn kind(&self) -> Option<&AssetKind> {
+        self.kind.as_ref()
     }
 
     /// Get the result limit if set.

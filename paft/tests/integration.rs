@@ -263,7 +263,7 @@ fn asset_kind_workflow() {
         let instrument = Instrument::from_symbol_and_exchange(
             "TEST",
             Exchange::try_from_str("TEST").unwrap(),
-            asset_kind,
+            asset_kind.clone(),
         )
         .expect("valid instrument for asset kind");
         assert_eq!(instrument.kind, asset_kind);
