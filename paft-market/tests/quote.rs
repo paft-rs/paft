@@ -4,7 +4,7 @@ use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
 use paft_market::market::orderbook::BookLevel;
 use paft_market::market::quote::{Quote, QuoteUpdate};
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Price};
 use std::str::FromStr;
 
 // -----------------
@@ -16,14 +16,14 @@ fn quote_construction() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -36,17 +36,17 @@ fn quote_construction() {
     assert_eq!(quote.name, Some("Apple Inc.".to_string()));
     assert_eq!(
         quote.price,
-        Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap())
+        Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD)
+        ))
     );
     assert_eq!(
         quote.previous_close,
-        Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap()
-        )
+        Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        ))
     );
     assert_eq!(quote.exchange, Some(Exchange::NASDAQ));
     assert_eq!(quote.market_state, Some(MarketState::Regular));
@@ -79,14 +79,14 @@ fn quote_clone() {
     let original = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -104,14 +104,14 @@ fn quote_debug_formatting() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -127,18 +127,18 @@ fn quote_debug_formatting() {
 
 #[test]
 fn quote_currency_consistency() {
-    // Test that currency is embedded in Money fields
+    // Test that currency is embedded in Price fields
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -147,7 +147,7 @@ fn quote_currency_consistency() {
         provider: (),
     };
 
-    // The currency should be accessible from the Money fields
+    // The currency should be accessible from the Price fields
     assert_eq!(
         quote.price.as_ref().unwrap().currency(),
         &Currency::Iso(IsoCurrency::USD)
@@ -160,7 +160,7 @@ fn quote_currency_consistency() {
 
 #[test]
 fn quote_currency_none() {
-    // Test that when no Money fields are present, currency access returns None
+    // Test that when no Price fields are present, currency access returns None
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
@@ -174,21 +174,25 @@ fn quote_currency_none() {
         provider: (),
     };
 
-    // Should return None when no Money fields are present
+    // Should return None when no Price fields are present
     assert!(quote.price.is_none());
     assert!(quote.previous_close.is_none());
 }
 
 #[test]
-fn quote_money_fields() {
-    // Test that Money fields work correctly
+fn quote_price_fields() {
+    // Test that Price fields work correctly
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: None,
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(147),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: None,
         market_state: None,
@@ -198,15 +202,15 @@ fn quote_money_fields() {
     };
 
     // Test price
-    let price_money = quote.price.as_ref().unwrap();
-    assert_eq!(price_money.amount(), Decimal::from(150));
-    assert_eq!(price_money.currency(), &Currency::Iso(IsoCurrency::USD));
+    let price_value = quote.price.as_ref().unwrap();
+    assert_eq!(price_value.amount(), Decimal::from(150));
+    assert_eq!(price_value.currency(), &Currency::Iso(IsoCurrency::USD));
 
     // Test previous_close
-    let prev_close_money = quote.previous_close.as_ref().unwrap();
-    assert_eq!(prev_close_money.amount(), Decimal::from(147));
+    let prev_close_price = quote.previous_close.as_ref().unwrap();
+    assert_eq!(prev_close_price.amount(), Decimal::from(147));
     assert_eq!(
-        prev_close_money.currency(),
+        prev_close_price.currency(),
         &Currency::Iso(IsoCurrency::USD)
     );
 
@@ -237,14 +241,14 @@ fn quote_money_fields() {
 fn quote_update_construction() {
     let update = QuoteUpdate {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
 
@@ -254,17 +258,17 @@ fn quote_update_construction() {
     assert_eq!(update.instrument.unique_key().as_ref(), "AAPL");
     assert_eq!(
         update.price,
-        Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap(),)
+        Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD)
+        ),)
     );
     assert_eq!(
         update.previous_close,
-        Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        )
+        Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        ),)
     );
     assert_eq!(update.ts.timestamp(), 1_640_995_200);
 }
@@ -273,7 +277,10 @@ fn quote_update_construction() {
 fn quote_update_partial_fields() {
     let update = QuoteUpdate {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: None,
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
@@ -284,7 +291,10 @@ fn quote_update_partial_fields() {
     assert_eq!(update.instrument.unique_key().as_ref(), "AAPL");
     assert_eq!(
         update.price,
-        Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap(),)
+        Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD)
+        ),)
     );
     assert_eq!(update.previous_close, None);
     assert_eq!(update.ts.timestamp(), 1_640_995_200);
@@ -294,14 +304,14 @@ fn quote_update_partial_fields() {
 fn quote_update_clone() {
     let original = QuoteUpdate {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
 
@@ -316,14 +326,14 @@ fn quote_update_clone() {
 fn quote_update_debug_formatting() {
     let update = QuoteUpdate {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
 
@@ -344,14 +354,14 @@ fn quote_serialization() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -370,10 +380,14 @@ fn quote_with_none_fields() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: None,
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(147),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: None,
         market_state: None,
@@ -391,14 +405,14 @@ fn quote_with_none_fields() {
 fn quote_update_serialization() {
     let update = QuoteUpdate {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
 
@@ -432,20 +446,14 @@ fn serialization_roundtrip_preserves_precision() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(
-            Money::new(
-                Decimal::from_str("150.123456789").unwrap(),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
-        previous_close: Some(
-            Money::new(
-                Decimal::from_str("147.135802469").unwrap(),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from_str("150.123456789").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from_str("147.135802469").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -466,19 +474,22 @@ fn serialization_roundtrip_preserves_precision() {
 #[test]
 fn quote_with_bid_and_ask_roundtrips() {
     let bid = BookLevel {
-        price: Money::new(Decimal::from(149), Currency::Iso(IsoCurrency::USD)).unwrap(),
+        price: Price::new(Decimal::from(149), Currency::Iso(IsoCurrency::USD)),
         size: Some(Decimal::from(200)),
         provider: (),
     };
     let ask = BookLevel {
-        price: Money::new(Decimal::from(151), Currency::Iso(IsoCurrency::USD)).unwrap(),
+        price: Price::new(Decimal::from(151), Currency::Iso(IsoCurrency::USD)),
         size: None,
         provider: (),
     };
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: None,
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         bid: Some(bid),
         ask: Some(ask),
         previous_close: None,
@@ -509,7 +520,10 @@ fn deserialization_handles_missing_optional_fields() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: None,
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         previous_close: None,
         day_volume: None,
         exchange: None,

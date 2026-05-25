@@ -13,7 +13,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_decimal::Decimal;
-use paft_money::Money;
+use paft_money::{Money, Price};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -38,13 +38,13 @@ pub struct KeyStatistics {
 
     // ---- Earnings (trailing) ----
     /// Earnings per share over the trailing twelve months.
-    pub eps_trailing_twelve_months: Option<Money>,
+    pub eps_trailing_twelve_months: Option<Price>,
     /// Price-to-earnings ratio computed against trailing-twelve-month EPS.
     pub pe_trailing_twelve_months: Option<Decimal>,
 
     // ---- Dividends ----
     /// Forward (declared / expected) dividend per share.
-    pub dividend_per_share_forward: Option<Money>,
+    pub dividend_per_share_forward: Option<Price>,
     /// Trailing twelve-month dividend yield expressed as a fraction
     /// (e.g. 0.025 for 2.5%).
     pub dividend_yield_trailing: Option<Decimal>,
@@ -56,9 +56,9 @@ pub struct KeyStatistics {
 
     // ---- 52-week range ----
     /// 52-week high price.
-    pub fifty_two_week_high: Option<Money>,
+    pub fifty_two_week_high: Option<Price>,
     /// 52-week low price.
-    pub fifty_two_week_low: Option<Money>,
+    pub fifty_two_week_low: Option<Price>,
 
     // ---- Volume statistic ----
     /// Average daily traded volume over the last three months.

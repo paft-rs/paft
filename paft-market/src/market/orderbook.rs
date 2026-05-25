@@ -6,7 +6,7 @@
 #![allow(clippy::derive_partial_eq_without_eq)]
 
 use paft_decimal::Decimal; // Decimal for size
-use paft_money::Money; // Money for priced values
+use paft_money::Price;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
@@ -31,7 +31,7 @@ use df_derive_macros::ToDataFrame;
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericBookLevel<M = ()> {
     /// The price at this level.
-    pub price: Money,
+    pub price: Price,
 
     /// The displayed size at this price, when reported by the source.
     pub size: Option<Decimal>,
@@ -45,7 +45,7 @@ impl<M: Default> GenericBookLevel<M> {
     /// Build a book level with the given price and (optional) size; `provider`
     /// is initialised via `M::default()`.
     #[must_use]
-    pub fn new(price: Money, size: Option<Decimal>) -> Self {
+    pub fn new(price: Price, size: Option<Decimal>) -> Self {
         Self {
             price,
             size,

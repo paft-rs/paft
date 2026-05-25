@@ -41,7 +41,7 @@ use paft::market::responses::history::{
 };
 use paft::money::IsoCurrency;
 use paft::prelude::{
-    Action, AssetKind, Currency, Exchange, HistoryMeta, Instrument, Interval, MarketState, Money,
+    Action, AssetKind, Currency, Exchange, HistoryMeta, Instrument, Interval, MarketState, Price,
 };
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};
@@ -156,7 +156,7 @@ fn history_propagation() -> Result<()> {
         ],
         actions: vec![Action::Dividend {
             ts: ts(1_699_900_000),
-            amount: money(0),
+            amount: price(0),
         }],
         adjusted: true,
         meta: Some(HistoryMeta {
@@ -278,7 +278,7 @@ fn candle_update_propagation() -> Result<()> {
     let plain_quote = GenericQuote::<()> {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
         name: None,
-        price: Some(money(150)),
+        price: Some(price(150)),
         bid: None,
         ask: None,
         previous_close: None,
@@ -298,11 +298,10 @@ fn candle_update_propagation() -> Result<()> {
 
 fn entry(price_cents: i64, size_units: i64, provider: FeedMeta) -> GenericBookLevel<FeedMeta> {
     GenericBookLevel {
-        price: Money::new(
+        price: Price::new(
             Decimal::from(price_cents) / Decimal::from(100),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
+        ),
         size: Some(Decimal::from(size_units)),
         provider,
     }
@@ -318,10 +317,10 @@ fn candle(
 ) -> GenericCandle<FeedMeta> {
     GenericCandle {
         ts: ts(ts_secs),
-        open: money(open),
-        high: money(high),
-        low: money(low),
-        close: money(close),
+        open: price(open),
+        high: price(high),
+        low: price(low),
+        close: price(close),
         close_unadj: None,
         volume: Some(1_000),
         provider,
@@ -336,10 +335,10 @@ fn option_contract(
 ) -> GenericOptionContract<FeedMeta> {
     GenericOptionContract {
         instrument: Instrument::from_symbol(symbol, AssetKind::Option).unwrap(),
-        strike: money(strike),
-        price: Some(money(5)),
-        bid: Some(money(4)),
-        ask: Some(money(6)),
+        strike: price(strike),
+        price: Some(price(5)),
+        bid: Some(price(4)),
+        ask: Some(price(6)),
         volume: Some(100),
         open_interest: Some(500),
         implied_volatility: Some(Decimal::from(25) / Decimal::from(100)),
@@ -370,8 +369,8 @@ fn download_entry(
     }
 }
 
-fn money(units: i64) -> Money {
-    Money::new(Decimal::from(units), Currency::Iso(IsoCurrency::USD)).unwrap()
+fn price(units: i64) -> Price {
+    Price::new(Decimal::from(units), Currency::Iso(IsoCurrency::USD))
 }
 
 const fn ts(secs: i64) -> DateTime<Utc> {

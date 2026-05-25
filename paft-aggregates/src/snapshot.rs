@@ -14,7 +14,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_domain::{Exchange, Instrument, MarketState};
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Price};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -46,15 +46,15 @@ pub struct GenericSnapshot<M = ()> {
     #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Most recent traded/quoted price.
-    pub last: Option<Money>,
+    pub last: Option<Price>,
     /// Previous session's official close price.
-    pub previous_close: Option<Money>,
+    pub previous_close: Option<Price>,
     /// Opening price for the current session.
-    pub open: Option<Money>,
+    pub open: Option<Price>,
     /// Highest traded price observed during the current session.
-    pub day_high: Option<Money>,
+    pub day_high: Option<Price>,
     /// Lowest traded price observed during the current session.
-    pub day_low: Option<Money>,
+    pub day_low: Option<Price>,
     /// Today's trading volume.
     pub volume: Option<u64>,
     /// Provider-specific payload, flattened into the serialized form.

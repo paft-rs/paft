@@ -54,42 +54,39 @@
 //! integer itself is widened to `i128` before/after scaling, so values can
 //! still occupy the full `i128` range as long as `scale <= 18`.
 //!
-//! # Money layers
+//! # Currency value types
 //!
-//! The ecosystem exposes complementary layers so you can opt into as much structure
-//! as you need:
+//! The ecosystem exposes complementary concrete types for different financial
+//! meanings:
 //! - [`paft_decimal`](https://docs.rs/paft-decimal): backend-agnostic helpers
 //!   such as [`paft_decimal::parse_decimal`], [`paft_decimal::from_minor_units`],
 //!   [`paft_decimal::zero`], and [`paft_decimal::one`].
-//! - [`MoneyAmount`]: a high-precision numeric wrapper with optional
-//!   [`Currency`] hints and lossless serde integration that preserves both
-//!   amount and hint.
-//! - [`Money`]: a currency-attached value that enforces exponents,
-//!   metadata lookups, and settlement-ready rounding.
+//! - [`Money`]: settled or payable amounts that enforce currency exponents and
+//!   settlement-ready rounding.
+//! - [`Price`]: full-precision per-unit/per-share quoted values.
+//! - [`MonetaryAmount`]: full-precision currency-denominated totals and
+//!   intermediate values before final settlement rounding.
 //!
 //! ```rust
 //! # use paft_money::IsoCurrency;
-//! # use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
-//! # use paft_money::{Currency, Money, MoneyAmount, MoneyError};
+//! # use paft_decimal::{self as decimal, RoundingStrategy};
+//! # use paft_money::{Currency, MonetaryAmount, MoneyError, Price};
 //! # fn run() -> Result<(), MoneyError> {
-//! // Build a Decimal using the facade helpers.
-//! let raw = decimal::from_minor_units(123_456, 4); // 12.3456
+//! let usd = Currency::Iso(IsoCurrency::USD);
 //!
-//! // Lift it into a MoneyAmount and combine with a parsed adjustment.
-//! let amount = MoneyAmount::new(raw);
-//! let adjustment = MoneyAmount::from_str("1.25")?;
-//! let subtotal = amount.add(&adjustment);
+//! // Quotes preserve provider precision beyond settlement minor units.
+//! let quote = Price::from_canonical_str("1.3578", usd.clone())?;
+//! let exact_total = quote.try_total(decimal::from_minor_units(250, 2))?;
 //!
-//! // Optionally carry a currency hint for downstream consumers.
-//! let hinted = subtotal.with_currency_hint(Currency::Iso(IsoCurrency::USD));
+//! // Intermediate totals stay exact until settlement.
+//! let adjustment = MonetaryAmount::from_canonical_str("0.0049", usd)?;
+//! let subtotal = exact_total.try_add(&adjustment)?;
 //!
-//! // Finalize into Money with explicit rounding rules.
-//! let settled = hinted.to_money_with(
-//!     Currency::Iso(IsoCurrency::USD),
+//! let settled = subtotal.to_money_with(
 //!     RoundingStrategy::MidpointAwayFromZero,
 //!     None,
 //! )?;
-//! assert_eq!(settled.format(), "13.6 USD");
+//! assert_eq!(settled.format(), "3.4 USD");
 //! # Ok(()) }
 //! # run().unwrap();
 //! ```
@@ -208,6 +205,7 @@
 
 mod amount;
 pub(crate) mod decimal;
+mod exact;
 #[cfg(feature = "money-formatting")]
 mod format;
 mod locale;
@@ -219,8 +217,9 @@ pub mod currency_utils;
 /// Error types shared across the money crate.
 pub mod error;
 pub mod money;
+mod price;
 
-pub use amount::MoneyAmount;
+pub use amount::MonetaryAmount;
 pub use currency::Currency;
 pub use currency_utils::{
     CurrencyMetadata, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS, MinorUnitError,
@@ -231,6 +230,7 @@ pub use locale::Locale;
 #[cfg(feature = "money-formatting")]
 pub use money::LocalizedMoney;
 pub use money::{ExchangeRate, Money};
+pub use price::Price;
 
 /// Re-export `iso_currency::Currency` for convenience.
 pub use iso_currency::Currency as IsoCurrency;

@@ -2,12 +2,16 @@ use chrono::{TimeZone, Utc};
 use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_fundamentals::statistics::KeyStatistics;
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Money, Price};
 use serde_json::{from_str, to_string};
 use std::str::FromStr;
 
 fn usd(amount: i64) -> Money {
     Money::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD)).unwrap()
+}
+
+fn usd_price(amount: i64) -> Price {
+    Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
 }
 
 fn dec(value: &str) -> Decimal {
@@ -38,14 +42,14 @@ fn key_statistics_serde_roundtrip_populated() {
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
         market_cap: Some(usd(2_500_000_000_000)),
         shares_outstanding: Some(15_500_000_000),
-        eps_trailing_twelve_months: Some(usd(6)),
+        eps_trailing_twelve_months: Some(usd_price(6)),
         pe_trailing_twelve_months: Some(dec("28.4")),
-        dividend_per_share_forward: Some(usd(1)),
+        dividend_per_share_forward: Some(usd_price(1)),
         dividend_yield_trailing: Some(dec("0.0050")),
         dividend_yield_forward: Some(dec("0.0055")),
         ex_dividend_date: Some(Utc.timestamp_opt(1_700_086_400, 0).unwrap()),
-        fifty_two_week_high: Some(usd(200)),
-        fifty_two_week_low: Some(usd(120)),
+        fifty_two_week_high: Some(usd_price(200)),
+        fifty_two_week_low: Some(usd_price(120)),
         average_daily_volume_3m: Some(55_000_000),
         beta: Some(dec("1.23")),
     };

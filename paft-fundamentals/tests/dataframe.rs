@@ -12,7 +12,7 @@ use paft_fundamentals::{
     RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
     ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
 };
-use paft_money::Money;
+use paft_money::{Money, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 use std::str::FromStr;
 
@@ -22,6 +22,13 @@ fn usd(amount: i64) -> Money {
         paft_money::Currency::Iso(IsoCurrency::USD),
     )
     .unwrap()
+}
+
+fn usd_price(amount: i64) -> Price {
+    Price::new(
+        Decimal::from(amount),
+        paft_money::Currency::Iso(IsoCurrency::USD),
+    )
 }
 
 fn dec(value: &str) -> Decimal {
@@ -52,8 +59,8 @@ fn earnings_to_dataframe() {
                 year: 2024,
                 quarter: 1,
             },
-            actual: Some(usd(2)),
-            estimate: Some(usd(1)),
+            actual: Some(usd_price(2)),
+            estimate: Some(usd_price(1)),
         }],
     };
 
@@ -94,8 +101,8 @@ fn earnings_quarter_eps_to_dataframe() {
             year: 2024,
             quarter: 2,
         },
-        actual: Some(usd(3)),
-        estimate: Some(usd(2)),
+        actual: Some(usd_price(3)),
+        estimate: Some(usd_price(2)),
     };
 
     let df = eps.to_dataframe().unwrap();
@@ -105,9 +112,9 @@ fn earnings_quarter_eps_to_dataframe() {
 #[test]
 fn price_target_to_dataframe() {
     let target = PriceTarget {
-        mean: Some(usd(180)),
-        high: Some(usd(220)),
-        low: Some(usd(150)),
+        mean: Some(usd_price(180)),
+        high: Some(usd_price(220)),
+        low: Some(usd_price(150)),
         number_of_analysts: Some(25),
     };
 
@@ -166,9 +173,9 @@ fn upgrade_downgrade_row_to_dataframe() {
 #[test]
 fn analysis_summary_to_dataframe() {
     let summary = AnalysisSummary {
-        target_mean_price: Some(usd(200)),
-        target_high_price: Some(usd(250)),
-        target_low_price: Some(usd(150)),
+        target_mean_price: Some(usd_price(200)),
+        target_high_price: Some(usd_price(250)),
+        target_low_price: Some(usd_price(150)),
         number_of_analyst_opinions: Some(15),
         recommendation_mean: Some(dec("1.2")),
         recommendation_text: Some("Buy".to_string()),
@@ -181,10 +188,10 @@ fn analysis_summary_to_dataframe() {
 #[test]
 fn earnings_estimate_to_dataframe() {
     let estimate = EarningsEstimate {
-        avg: Some(usd(3)),
-        low: Some(usd(2)),
-        high: Some(usd(4)),
-        year_ago_eps: Some(usd(1)),
+        avg: Some(usd_price(3)),
+        low: Some(usd_price(2)),
+        high: Some(usd_price(4)),
+        year_ago_eps: Some(usd_price(1)),
         num_analysts: Some(10),
         growth: Some(dec("0.15")),
     };
@@ -215,7 +222,7 @@ fn trend_point_to_dataframe() {
             year: 2023,
             quarter: 4,
         },
-        usd(2),
+        usd_price(2),
     );
 
     let df = point.to_dataframe().unwrap();
@@ -225,8 +232,8 @@ fn trend_point_to_dataframe() {
 #[test]
 fn eps_trend_to_dataframe() {
     let trend = EpsTrend {
-        current: Some(usd(3)),
-        historical: vec![TrendPoint::new(Period::Year { year: 2022 }, usd(2))],
+        current: Some(usd_price(3)),
+        historical: vec![TrendPoint::new(Period::Year { year: 2022 }, usd_price(2))],
     };
 
     let df = trend.to_dataframe().unwrap();
@@ -261,10 +268,10 @@ fn eps_revisions_to_dataframe() {
 #[test]
 fn earnings_trend_row_to_dataframe() {
     let earnings_estimate = EarningsEstimate {
-        avg: Some(usd(3)),
-        low: Some(usd(2)),
-        high: Some(usd(4)),
-        year_ago_eps: Some(usd(1)),
+        avg: Some(usd_price(3)),
+        low: Some(usd_price(2)),
+        high: Some(usd_price(4)),
+        year_ago_eps: Some(usd_price(1)),
         num_analysts: Some(10),
         growth: Some(dec("0.15")),
     };
@@ -277,13 +284,13 @@ fn earnings_trend_row_to_dataframe() {
         growth: Some(dec("0.2")),
     };
     let eps_trend = EpsTrend {
-        current: Some(usd(3)),
+        current: Some(usd_price(3)),
         historical: vec![TrendPoint::new(
             Period::Quarter {
                 year: 2023,
                 quarter: 4,
             },
-            usd(2),
+            usd_price(2),
         )],
     };
     let eps_revisions = EpsRevisions {
@@ -386,14 +393,14 @@ fn key_statistics_to_dataframe() {
         as_of: Some(sample_ts(1_700_000_000)),
         market_cap: Some(usd(2_500_000_000_000)),
         shares_outstanding: Some(15_500_000_000),
-        eps_trailing_twelve_months: Some(usd(6)),
+        eps_trailing_twelve_months: Some(usd_price(6)),
         pe_trailing_twelve_months: Some(dec("28.4")),
-        dividend_per_share_forward: Some(usd(1)),
+        dividend_per_share_forward: Some(usd_price(1)),
         dividend_yield_trailing: Some(dec("0.0050")),
         dividend_yield_forward: Some(dec("0.0055")),
         ex_dividend_date: Some(sample_ts(1_700_086_400)),
-        fifty_two_week_high: Some(usd(200)),
-        fifty_two_week_low: Some(usd(120)),
+        fifty_two_week_high: Some(usd_price(200)),
+        fifty_two_week_low: Some(usd_price(120)),
         average_daily_volume_3m: Some(55_000_000),
         beta: Some(dec("1.23")),
     };

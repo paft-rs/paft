@@ -1,36 +1,31 @@
 use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_fundamentals::{EpsRevisions, EpsTrend, RecommendationSummary, RevisionPoint, TrendPoint};
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Price};
 use std::str::FromStr;
 
 #[test]
 fn eps_trend_helpers() {
     let t = EpsTrend::new(
-        Some(
-            Money::new(
-                Decimal::from_str("1.00").unwrap(),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        Some(Price::new(
+            Decimal::from_str("1.00").unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         vec![
             TrendPoint::try_new_str(
                 "7d",
-                Money::new(
+                Price::new(
                     Decimal::from_str("1.01").unwrap(),
                     Currency::Iso(IsoCurrency::USD),
-                )
-                .unwrap(),
+                ),
             )
             .unwrap(),
             TrendPoint::try_new_str(
                 "30d",
-                Money::new(
+                Price::new(
                     Decimal::from_str("0.98").unwrap(),
                     Currency::Iso(IsoCurrency::USD),
-                )
-                .unwrap(),
+                ),
             )
             .unwrap(),
         ],

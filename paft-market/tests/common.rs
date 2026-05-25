@@ -2,7 +2,7 @@ use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
 use paft_market::market::quote::Quote;
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Price};
 
 #[must_use]
 /// Builds a sample quote for testing.
@@ -13,10 +13,14 @@ pub fn build_quote() -> paft_market::market::quote::Quote {
     paft_market::market::quote::Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(Decimal::from(147), Currency::Iso(IsoCurrency::USD)).unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(147),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -31,14 +35,14 @@ fn quote_construction_smoke() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),

@@ -4,11 +4,11 @@ use iso_currency::Currency as IsoCurrency;
 use paft_aggregates::Snapshot;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
-fn usd(amount: i64) -> Money {
-    Money::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD)).unwrap()
+fn usd(amount: i64) -> Price {
+    Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
 }
 
 #[test]

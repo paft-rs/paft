@@ -103,10 +103,10 @@ let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto)
 let quote = Quote {
     instrument: apple.clone(),
     name: Some("Apple Inc.".to_string()),
-    price: Some(Money::from_canonical_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
+    price: Some(Price::from_canonical_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
     bid: None,
     ask: None,
-    previous_close: Some(Money::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
+    previous_close: Some(Price::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
     day_volume: Some(78_900_000),
     exchange: Some(Exchange::NASDAQ),
     market_state: Some(MarketState::Regular),

@@ -1,3 +1,6 @@
+//! Full-precision price type for quoted per-unit values.
+
+use crate::amount::MonetaryAmount;
 use crate::currency::Currency;
 use crate::decimal::{self, Decimal, RoundingStrategy};
 use crate::error::MoneyError;
@@ -13,29 +16,27 @@ use std::hash::{Hash, Hasher};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 
-/// Full-precision currency-denominated amount for totals and intermediate values.
+/// Full-precision currency price for per-unit quoted values.
 ///
-/// `MonetaryAmount` always carries a [`Currency`] and never rounds to the
-/// currency's minor-unit exponent. Use it for exact totals that are not yet
-/// settlement-ready, such as price-times-quantity products, prorations, fee
-/// calculations, or FX intermediates. Convert to [`Money`] explicitly when
-/// final settlement rounding is required.
+/// `Price` always carries a [`Currency`] but does not enforce the currency's
+/// settlement exponent. Use it for quotes, OHLC values, option strikes, EPS,
+/// dividend-per-share values, and other provider-quoted per-unit data.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-pub struct MonetaryAmount {
+pub struct Price {
     amount: Decimal,
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     currency: Currency,
 }
 
-impl MonetaryAmount {
-    /// Creates a full-precision monetary amount.
+impl Price {
+    /// Creates a full-precision price.
     #[must_use]
     pub const fn new(amount: Decimal, currency: Currency) -> Self {
         Self { amount, currency }
     }
 
-    /// Parses a decimal string using [`decimal::parse_decimal`].
+    /// Parses a canonical decimal string and attaches the given currency.
     ///
     /// # Errors
     ///
@@ -45,7 +46,7 @@ impl MonetaryAmount {
         Ok(Self::new(decimal, currency))
     }
 
-    /// Creates a full-precision amount from integer units and an explicit scale.
+    /// Creates a price from integer units and an explicit scale.
     ///
     /// # Errors
     ///
@@ -61,27 +62,27 @@ impl MonetaryAmount {
         ))
     }
 
-    /// Returns the zero amount for the given currency.
+    /// Returns the zero price for the given currency.
     #[must_use]
     pub fn zero(currency: Currency) -> Self {
         Self::new(decimal::zero(), currency)
     }
 
-    /// Returns the underlying [`Decimal`], cloning when required by the backend.
+    /// Returns the underlying decimal amount.
     #[must_use]
     #[cfg(not(feature = "bigdecimal"))]
     pub const fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }
 
-    /// Returns the underlying [`Decimal`], cloning when required by the backend.
+    /// Returns the underlying decimal amount.
     #[must_use]
     #[cfg(feature = "bigdecimal")]
     pub fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }
 
-    /// Returns the amount currency.
+    /// Returns the price currency.
     #[must_use]
     pub const fn currency(&self) -> &Currency {
         &self.currency
@@ -93,7 +94,7 @@ impl MonetaryAmount {
         canonical_format(&self.amount, &self.currency)
     }
 
-    /// Adds another amount with the same currency.
+    /// Adds another price with the same currency.
     ///
     /// # Errors
     ///
@@ -106,7 +107,7 @@ impl MonetaryAmount {
         Ok(Self::new(amount, self.currency.clone()))
     }
 
-    /// Subtracts another amount with the same currency.
+    /// Subtracts another price with the same currency.
     ///
     /// # Errors
     ///
@@ -119,7 +120,9 @@ impl MonetaryAmount {
         Ok(Self::new(amount, self.currency.clone()))
     }
 
-    /// Multiplies the amount by a decimal factor.
+    /// Multiplies the price by a scalar and returns another price.
+    ///
+    /// For price-times-quantity totals, use [`Price::try_total`] instead.
     ///
     /// # Errors
     ///
@@ -131,7 +134,7 @@ impl MonetaryAmount {
         Ok(Self::new(amount, self.currency.clone()))
     }
 
-    /// Divides the amount by a decimal divisor.
+    /// Divides the price by a scalar.
     ///
     /// # Errors
     ///
@@ -147,7 +150,19 @@ impl MonetaryAmount {
         Ok(Self::new(amount, self.currency.clone()))
     }
 
-    /// Converts the amount into [`Money`], rounding to the currency exponent with
+    /// Multiplies this price by a quantity and returns an exact monetary total.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn try_total(&self, quantity: Decimal) -> Result<MonetaryAmount, MoneyError> {
+        let amount =
+            checked_mul_decimal(&self.amount, &quantity).ok_or(MoneyError::ConversionError)?;
+        Ok(MonetaryAmount::new(amount, self.currency.clone()))
+    }
+
+    /// Converts the price into [`Money`], rounding to the currency exponent with
     /// [`RoundingStrategy::MidpointAwayFromZero`].
     ///
     /// # Errors
@@ -157,7 +172,7 @@ impl MonetaryAmount {
         self.to_money_with(RoundingStrategy::MidpointAwayFromZero, None)
     }
 
-    /// Converts the amount into [`Money`] using an explicit rounding strategy and precision.
+    /// Converts the price into [`Money`] using an explicit rounding strategy and precision.
     ///
     /// # Errors
     ///
@@ -188,20 +203,20 @@ impl MonetaryAmount {
     }
 }
 
-impl Hash for MonetaryAmount {
+impl Hash for Price {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.currency.hash(state);
         decimal::to_canonical_string(&self.amount).hash(state);
     }
 }
 
-impl fmt::Display for MonetaryAmount {
+impl fmt::Display for Price {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.format())
     }
 }
 
-impl From<Money> for MonetaryAmount {
+impl From<Money> for Price {
     fn from(money: Money) -> Self {
         Self::new(money.amount(), money.currency().clone())
     }

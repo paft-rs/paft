@@ -7,7 +7,7 @@ use iso_currency::Currency as IsoCurrency;
 use paft::market::MarketError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
-    Instrument, Interval, MarketState, Money, Quote, QuoteUpdate, Range, SearchRequest,
+    Instrument, Interval, MarketState, Price, Quote, QuoteUpdate, Range, SearchRequest,
 };
 use paft_decimal::Decimal;
 use std::str::FromStr;
@@ -44,26 +44,22 @@ fn end_to_end_workflow() {
     // 4. Create sample history data
     let candle = Candle {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        open: Money::new(
+        open: Price::new(
             Decimal::from_str("100.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        high: Money::new(
+        ),
+        high: Price::new(
             Decimal::from_str("110.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        low: Money::new(
+        ),
+        low: Price::new(
             Decimal::from_str("95.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        close: Money::new(
+        ),
+        close: Price::new(
             Decimal::from_str("105.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
+        ),
         close_unadj: None,
         volume: Some(1_000_000),
 
@@ -72,11 +68,10 @@ fn end_to_end_workflow() {
 
     let action = Action::Dividend {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        amount: Money::new(
+        amount: Price::new(
             Decimal::from_str("0.5").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
+        ),
     };
 
     let meta = HistoryMeta {
@@ -96,10 +91,14 @@ fn end_to_end_workflow() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(105), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(105),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(100),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -111,10 +110,14 @@ fn end_to_end_workflow() {
     // 6. Create a quote update
     let quote_update = QuoteUpdate {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        price: Some(Money::new(Decimal::from(106), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(106),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(100),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         volume: None,
         ts: DateTime::from_timestamp(1_640_995_260, 0).unwrap(),
 
@@ -208,14 +211,14 @@ fn serialization_workflow() {
     let quote = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Money::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)).unwrap()),
-        previous_close: Some(
-            Money::new(
-                Decimal::from(1475) / Decimal::from(10),
-                Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-        ),
+        price: Some(Price::new(
+            Decimal::from(150),
+            Currency::Iso(IsoCurrency::USD),
+        )),
+        previous_close: Some(Price::new(
+            Decimal::from(1475) / Decimal::from(10),
+            Currency::Iso(IsoCurrency::USD),
+        )),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -339,11 +342,10 @@ fn action_types_workflow() {
     let actions = [
         Action::Dividend {
             ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-            amount: Money::new(
+            amount: Price::new(
                 Decimal::from_str("0.5").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
+            ),
         },
         Action::Split {
             ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
@@ -352,11 +354,10 @@ fn action_types_workflow() {
         },
         Action::CapitalGain {
             ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-            gain: Money::new(
+            gain: Price::new(
                 Decimal::from_str("1.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
+            ),
         },
     ];
 

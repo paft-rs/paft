@@ -8,8 +8,9 @@ Currency and money primitives for the paft ecosystem.
 
 - `Currency` with ISO 4217 integration and extensible fallback
 - Integrates with [`paft-decimal`](https://crates.io/crates/paft-decimal) for backend-agnostic decimal helpers
-- `MoneyAmount` for high-precision values with optional currency hints
-- `Money` with safe arithmetic and explicit conversions via `ExchangeRate`
+- `Money` for settled/payable amounts with currency minor-unit enforcement
+- `Price` for full-precision per-unit quotes
+- `MonetaryAmount` for exact currency totals before settlement rounding
 - Runtime currency metadata overlays for non-ISO minor units (e.g., `XAU`, `XDR`)
 
 Install
@@ -51,31 +52,31 @@ Features
 - `panicking-money-ops`: opt-in operator overloading that panics on invalid operations
 - `money-formatting`: locale-aware formatting and strict parsing for `Money`
 
-Money layers
-------------
+Currency value types
+--------------------
 
 Choose the level of structure you need:
 
 - [`paft-decimal`](https://crates.io/crates/paft-decimal) exposes helpers such as `parse_decimal`, `from_minor_units`, `zero`, and `one`
-- `MoneyAmount` keeps high-precision values with optional `Currency` hints; serde includes both the amount and hint so round-trips preserve identity
-- `Money` attaches a currency, enforces metadata-driven rounding, and remains settlement-safe
+- `Money` carries a currency and enforces settlement minor units
+- `Price` carries a currency and preserves provider quote precision
+- `MonetaryAmount` carries a currency and preserves exact totals/intermediates until final settlement rounding
 
 ```rust
 use paft_decimal::{self as decimal, RoundingStrategy};
-use paft_money::{Currency, IsoCurrency, Money, MoneyAmount, MoneyError};
+use paft_money::{Currency, IsoCurrency, MonetaryAmount, MoneyError, Price};
 
 fn run() -> Result<(), MoneyError> {
-    let raw = decimal::from_minor_units(123_456, 4); // 12.3456
-    let amount = MoneyAmount::new(raw);
-    let shipping = MoneyAmount::from_str("1.25")?;
-    let subtotal = amount.add(&shipping);
-    let hinted = subtotal.with_currency_hint(Currency::Iso(IsoCurrency::USD));
-    let money = hinted.to_money_with(
-        Currency::Iso(IsoCurrency::USD),
+    let usd = Currency::Iso(IsoCurrency::USD);
+    let quote = Price::from_canonical_str("1.3578", usd.clone())?;
+    let exact_total = quote.try_total(decimal::from_minor_units(250, 2))?;
+    let adjustment = MonetaryAmount::from_canonical_str("0.0049", usd)?;
+    let subtotal = exact_total.try_add(&adjustment)?;
+    let money = subtotal.to_money_with(
         RoundingStrategy::MidpointAwayFromZero,
         None,
     )?;
-    assert_eq!(money.format(), "13.60 USD");
+    assert_eq!(money.format(), "3.4 USD");
     Ok(())
 }
 

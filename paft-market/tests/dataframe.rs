@@ -17,12 +17,12 @@ use paft_market::{
         search::SearchResult,
     },
 };
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 use std::str::FromStr;
 
-fn usd(amount: i64) -> Money {
-    Money::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD)).unwrap()
+fn usd(amount: i64) -> Price {
+    Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
 }
 
 fn dec(value: &str) -> Decimal {

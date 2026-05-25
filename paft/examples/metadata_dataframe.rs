@@ -36,7 +36,7 @@ use paft::market::quote::{GenericQuote, Quote};
 use paft::market::responses::history::{GenericCandle, GenericHistoryResponse};
 use paft::money::IsoCurrency;
 use paft::prelude::{
-    AssetKind, Currency, Exchange, Instrument, MarketState, Money, ToDataFrame, ToDataFrameVec,
+    AssetKind, Currency, Exchange, Instrument, MarketState, Price, ToDataFrame, ToDataFrameVec,
 };
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};
@@ -78,8 +78,8 @@ fn standard_quote_schema() -> Result<()> {
     let q = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
         name: Some("Apple Inc.".to_string()),
-        price: Some(money(150)),
-        previous_close: Some(money(147)),
+        price: Some(price(150)),
+        previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -102,8 +102,8 @@ fn enriched_quote_dataframe() -> Result<()> {
         GenericQuote {
             instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
             name: Some("Apple Inc.".to_string()),
-            price: Some(money(150)),
-            previous_close: Some(money(147)),
+            price: Some(price(150)),
+            previous_close: Some(price(147)),
             day_volume: Some(78_900_000),
             exchange: Some(Exchange::NASDAQ),
             market_state: Some(MarketState::Regular),
@@ -118,8 +118,8 @@ fn enriched_quote_dataframe() -> Result<()> {
         GenericQuote {
             instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
             name: Some("Microsoft".to_string()),
-            price: Some(money(420)),
-            previous_close: Some(money(418)),
+            price: Some(price(420)),
+            previous_close: Some(price(418)),
             day_volume: Some(20_000_000),
             exchange: Some(Exchange::NASDAQ),
             market_state: Some(MarketState::Regular),
@@ -176,10 +176,10 @@ fn mk_candle(
 ) -> GenericCandle<HftMeta> {
     GenericCandle {
         ts: ts(ts_secs),
-        open: money(open),
-        high: money(high),
-        low: money(low),
-        close: money(close),
+        open: price(open),
+        high: price(high),
+        low: price(low),
+        close: price(close),
         close_unadj: None,
         volume: Some(1_000),
         provider: HftMeta {
@@ -190,8 +190,8 @@ fn mk_candle(
     }
 }
 
-fn money(units: i64) -> Money {
-    Money::new(Decimal::from(units), Currency::Iso(IsoCurrency::USD)).unwrap()
+fn price(units: i64) -> Price {
+    Price::new(Decimal::from(units), Currency::Iso(IsoCurrency::USD))
 }
 
 const fn ts(secs: i64) -> DateTime<Utc> {

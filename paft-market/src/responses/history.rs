@@ -5,7 +5,7 @@
 // `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
 #![allow(clippy::derive_partial_eq_without_eq)]
 
-use paft_money::Money;
+use paft_money::Price;
 use serde::{Deserialize, Serialize};
 
 use crate::requests::history::Interval;
@@ -29,16 +29,16 @@ pub struct GenericCandle<M = ()> {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub ts: DateTime<Utc>,
     /// Open price.
-    pub open: Money,
+    pub open: Price,
     /// High price.
-    pub high: Money,
+    pub high: Price,
     /// Low price.
-    pub low: Money,
+    pub low: Price,
     /// Close or adjusted close depending on provider and request.
-    pub close: Money,
+    pub close: Price,
     /// Original unadjusted close price, if available.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub close_unadj: Option<paft_money::Money>,
+    pub close_unadj: Option<Price>,
     /// Volume if available.
     pub volume: Option<u64>,
     /// Provider-specific payload, flattened into the serialized form.
@@ -51,7 +51,7 @@ impl<M: Default> GenericCandle<M> {
     /// `close_unadj` and `volume` default to `None`; `provider` is initialised
     /// via `M::default()`.
     #[must_use]
-    pub fn new(ts: DateTime<Utc>, open: Money, high: Money, low: Money, close: Money) -> Self {
+    pub fn new(ts: DateTime<Utc>, open: Price, high: Price, low: Price, close: Price) -> Self {
         Self {
             ts,
             open,

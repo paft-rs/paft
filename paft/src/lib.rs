@@ -71,9 +71,9 @@ pub mod money {
     #[cfg(feature = "money-formatting")]
     pub use paft_money::LocalizedMoney;
     pub use paft_money::{
-        Currency, CurrencyMetadata, ExchangeRate, IsoCurrency, Locale, MinorUnitError, Money,
-        MoneyAmount, MoneyError, clear_currency_metadata, currency_metadata, set_currency_metadata,
-        try_normalize_currency_code,
+        Currency, CurrencyMetadata, ExchangeRate, IsoCurrency, Locale, MinorUnitError,
+        MonetaryAmount, Money, MoneyError, Price, clear_currency_metadata, currency_metadata,
+        set_currency_metadata, try_normalize_currency_code,
     };
 }
 

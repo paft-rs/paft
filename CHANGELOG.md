@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 - Money (panicking-money-ops): `Div<Money> for Money` and `Div<&Money> for &Money` now produce a `Decimal` ratio, complementing the existing `Div<Decimal>` impls that scale a single `Money` value.
 - Market: expanded `requests::history::Interval` coverage and provided second/minute conversion helpers for the new variants.
 - Money: implement `Hash` for `paft_money::Money` using currency and canonicalized amount.
-- Money: add `MoneyAmount` for high-precision decimal values with optional currency hints, now backed by the shared `paft-decimal` facade for construction and hint-preserving serde.
+- Money: add `Price` for full-precision per-unit quoted values and `MonetaryAmount` for full-precision currency totals/intermediates. `Money` remains the settlement-oriented type that enforces currency minor units.
 - Market: derive `Hash` for `paft_market::market::action::Action`.
   - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
 - Domain: `Instrument` is a flat struct with security identifier fields (`symbol`, optional `exchange`, `figi`, `isin`) plus `kind: AssetKind`.
@@ -57,6 +57,8 @@ All notable changes to this project will be documented in this file.
 - Aggregates: removed `Info` and `FastInfo`. Replaced by `Snapshot` (12 strictly-snapshot fields). Fundamentals/analyst/ESG fields that lived on `Info` belong in `paft-fundamentals` types.
 - Money: `Decimal` and `RoundingStrategy` have moved to the standalone `paft-decimal` crate; import them from `paft_decimal` (or via the facade root) instead of `paft_money::decimal` or `paft::money::Decimal`.
 - Money: removed `impl Default for Currency` (previously returned `IsoCurrency::USD`). There is no globally-correct default currency, so callers must now select one explicitly. Use `Option<Currency>` for fields that may be unset, or pass an explicit `Currency` value.
+- Money: removed `MoneyAmount`. Use `MonetaryAmount` for exact currency-denominated totals/intermediates; it requires a real `Currency` and has no hint-less or legacy serde form.
+- Market/Aggregates/Fundamentals/Prediction: per-unit quoted values now use `Price` instead of `Money` so provider precision such as `1.3578 USD` survives deserialization. This includes quote prices, OHLC candles, book levels, option strikes/bid/ask/last prices, EPS values, price targets, dividend-per-share values, 52-week prices, and tick sizes.
 - Market/Aggregates/Fundamentals: analytics fields that previously exposed `f64` (option greeks, implied volatility, P/E, dividend yield, recommendation scores, growth rates, ESG metrics, holder percentages) now use `paft_decimal::Decimal` for consistent precision.
 - Market: every market data payload struct now carries a `pub provider: M` field. Code that constructs these structs with literal syntax must add `provider: ()` (or use the new `::new(...)` constructors / `Default` impl). Existing match patterns and field accessors are unaffected. The serialized JSON shape of the standard `M = ()` aliases is unchanged because `()` flattens to no extra keys.
 - Market: dropped `Eq` and `Hash` derives from every refactored generic payload. The standard aliases still satisfy `PartialEq`. Downstream code that relied on `Quote: Eq` / `Quote: Hash` (e.g. for `HashSet<Quote>`) needs to either wrap the value or compare on a derived key.
@@ -88,13 +90,14 @@ All notable changes to this project will be documented in this file.
 - **`EventID`/`OutcomeID` imports**: `use paft_domain::{EventID, OutcomeID}` becomes `use paft_prediction::{EventID, OutcomeID}` (or via the facade's `paft::prediction` module).
 - **Provider metadata (`provider: M`)**: every constructed market payload struct now needs a `provider` field. The cheapest no-metadata migration is to use the new `::new(...)` constructors (`Quote::new(instrument)`, `Candle::new(ts, open, high, low, close)`, …) which default `provider` to `()`. If you keep struct-literal construction, add `provider: ()`. To carry HFT timestamps, broker-specific flags, or other provider-only fields, define a small struct that derives `Serialize + Deserialize + Clone + Default + Debug + PartialEq` and instantiate the generic shape, e.g. `GenericQuote::<MyMeta> { …, provider: MyMeta { … } }`. See `paft/examples/provider_metadata.rs`, `paft/examples/nested_metadata_propagation.rs`, and `paft/examples/metadata_dataframe.rs` for full walkthroughs covering JSON round-trips, propagation through nested `Vec<Generic*<M>>`, and `provider.*` columns in Polars exports.
 - **No `Eq` / `Hash` on payload types**: if you previously used `HashSet<Quote>` or compared `Quote` via `Eq`, fall back to a key-based comparison (e.g. `Hash`/`Eq` on `(instrument, ts)` pairs). The relaxation is deliberate — it lets `M` carry non-`Eq` fields like `f64` hardware timestamps.
+- **Money / Price split**: use `Money` for settled or payable aggregate amounts, `Price` for quoted per-unit values, and `MonetaryAmount` for exact currency totals before settlement. `Price` and `MonetaryAmount` serialize as `{ "amount": "...", "currency": "USD" }` like `Money`, but they do not reject fractional precision beyond the currency exponent.
 - **`Exchange::full_name()`**: returns `Cow<'static, str>` instead of `&str`. Replace `assert_eq!(ex.full_name(), "Nasdaq")` with `assert_eq!(ex.full_name().as_ref(), "Nasdaq")`, and use `&*ex.full_name()` (or bind to a `let`) where a `&str` is needed.
 - For yfinance-rs, see `../yfinance-rs/MIGRATION-paft-0.8.md`. For borsa, see `../borsa-workspace/MIGRATION-paft-0.8.md`.
 
 ### Documentation
 
 - Updated `paft` and `paft-domain` READMEs and examples to use the flat `Instrument` and the new constructors.
-- Documented `paft-money` layered usage with `MoneyAmount`, including README and crate-level examples of decimal facade helpers.
+- Documented the `Money` / `Price` / `MonetaryAmount` model, including README and crate-level examples of decimal facade helpers.
 
 ## [0.7.1] - 2025-10-31
 

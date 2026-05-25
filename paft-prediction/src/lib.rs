@@ -3,7 +3,7 @@
 //! Provides validated identifier newtypes ([`EventID`], [`OutcomeID`]), a
 //! [`PredictionInstrument`] that pairs them, and the higher-level [`Market`] and
 //! [`Token`] aggregates used to describe a tradeable outcome of a prediction
-//! market. Money values reuse [`paft_money`] so amounts compose cleanly with
+//! market. Money and price values reuse [`paft_money`] so amounts compose cleanly with
 //! the rest of the workspace.
 //!
 //! # Feature flags
@@ -23,7 +23,7 @@ pub use error::PredictionError;
 pub use identifiers::{EventID, OutcomeID};
 pub use instrument::PredictionInstrument;
 
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Money, Price};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
@@ -69,7 +69,7 @@ pub struct Market {
     /// Smallest order size accepted by the venue for this market.
     pub minimum_order_size: Money,
     /// Smallest price increment accepted by the venue for this market.
-    pub minimum_tick_size: Money,
+    pub minimum_tick_size: Price,
     /// Whether the market is currently accepting orders.
     pub is_active: bool,
     /// Whether the market has been closed (resolution may or may not have

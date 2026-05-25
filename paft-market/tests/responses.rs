@@ -5,33 +5,29 @@ use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::action::Action;
 use paft_market::{Candle, CandleUpdate, HistoryMeta, HistoryResponse, Interval};
-use paft_money::{Currency, Money};
+use paft_money::{Currency, Price};
 use std::str::FromStr;
 
 #[test]
 fn candle_serialization() {
     let candle = Candle {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        open: Money::new(
+        open: Price::new(
             Decimal::from_str("100.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        high: Money::new(
+        ),
+        high: Price::new(
             Decimal::from_str("110.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        low: Money::new(
+        ),
+        low: Price::new(
             Decimal::from_str("95.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        close: Money::new(
+        ),
+        close: Price::new(
             Decimal::from_str("105.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
+        ),
         close_unadj: None,
         volume: Some(1_000_000),
 
@@ -47,26 +43,22 @@ fn candle_serialization() {
 fn candle_with_none_volume() {
     let candle = Candle {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        open: Money::new(
+        open: Price::new(
             Decimal::from_str("100.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        high: Money::new(
+        ),
+        high: Price::new(
             Decimal::from_str("110.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        low: Money::new(
+        ),
+        low: Price::new(
             Decimal::from_str("95.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        close: Money::new(
+        ),
+        close: Price::new(
             Decimal::from_str("105.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
+        ),
         close_unadj: None,
         volume: None,
 
@@ -82,11 +74,10 @@ fn candle_with_none_volume() {
 fn action_dividend_serialization() {
     let action = Action::Dividend {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        amount: Money::new(
+        amount: Price::new(
             Decimal::from_str("0.5").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
+        ),
     };
 
     let json = serde_json::to_string(&action).unwrap();
@@ -111,11 +102,10 @@ fn action_split_serialization() {
 fn action_capital_gain_serialization() {
     let action = Action::CapitalGain {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        gain: Money::new(
+        gain: Price::new(
             Decimal::from_str("1.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
+        ),
     };
 
     let json = serde_json::to_string(&action).unwrap();
@@ -151,26 +141,22 @@ fn history_meta_with_none_fields() {
 fn responses_smoke() {
     let candles = vec![Candle {
         ts: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        open: Money::new(
+        open: Price::new(
             Decimal::from_str("100.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        high: Money::new(
+        ),
+        high: Price::new(
             Decimal::from_str("110.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        low: Money::new(
+        ),
+        low: Price::new(
             Decimal::from_str("95.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
-        close: Money::new(
+        ),
+        close: Price::new(
             Decimal::from_str("105.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
-        )
-        .unwrap(),
+        ),
         close_unadj: None,
         volume: Some(1_000_000),
 
@@ -202,26 +188,22 @@ fn complex_nested_serialization() {
         }),
         candles: vec![Candle {
             ts: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-            open: Money::new(
+            open: Price::new(
                 Decimal::from_str("100.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-            high: Money::new(
+            ),
+            high: Price::new(
                 Decimal::from_str("110.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-            low: Money::new(
+            ),
+            low: Price::new(
                 Decimal::from_str("95.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
-            close: Money::new(
+            ),
+            close: Price::new(
                 Decimal::from_str("105.0").unwrap(),
                 Currency::Iso(IsoCurrency::USD),
-            )
-            .unwrap(),
+            ),
             close_unadj: None,
             volume: Some(1_000_000),
             provider: (),
@@ -241,26 +223,22 @@ fn candle_update_serialization() {
     let instrument = Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap();
     let candle = Candle {
         ts: chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap(),
-        open: Money::new(
+        open: Price::new(
             Decimal::from_str("150.0").unwrap(),
             Currency::Iso(iso_currency::Currency::USD),
-        )
-        .unwrap(),
-        high: Money::new(
+        ),
+        high: Price::new(
             Decimal::from_str("155.0").unwrap(),
             Currency::Iso(iso_currency::Currency::USD),
-        )
-        .unwrap(),
-        low: Money::new(
+        ),
+        low: Price::new(
             Decimal::from_str("148.0").unwrap(),
             Currency::Iso(iso_currency::Currency::USD),
-        )
-        .unwrap(),
-        close: Money::new(
+        ),
+        close: Price::new(
             Decimal::from_str("152.0").unwrap(),
             Currency::Iso(iso_currency::Currency::USD),
-        )
-        .unwrap(),
+        ),
         close_unadj: None,
         volume: Some(2_500_000),
 

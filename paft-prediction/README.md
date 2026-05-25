@@ -33,8 +33,9 @@ What's inside
 - `PredictionInstrument` — pairs an `EventID` with an `OutcomeID` to identify
   a single tradeable outcome. Parallels `paft_domain::Instrument`.
 - `Market`, `Token` — higher-level aggregates describing the question being
-  predicted and the tokens used to bet on its outcomes. Money-valued fields
-  reuse `paft_money` so they compose cleanly with the rest of the workspace.
+  predicted and the tokens used to bet on its outcomes. `Money` and `Price`
+  fields reuse `paft_money` so they compose cleanly with the rest of the
+  workspace.
 - `PredictionError` — error type returned by identifier constructors.
 
 Quickstart

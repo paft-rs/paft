@@ -9,7 +9,7 @@ use df_derive_macros::ToDataFrame;
 use paft_core::error::PaftError;
 use paft_decimal::Decimal;
 use paft_domain::{Canonical, DomainError, Period};
-use paft_money::Money;
+use paft_money::{Money, Price};
 
 /// Analyst recommendation grades with canonical variants and extensible fallback.
 ///
@@ -189,9 +189,9 @@ pub struct EarningsQuarterEps {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub period: Period,
     /// Actual EPS.
-    pub actual: Option<Money>,
+    pub actual: Option<Price>,
     /// Estimated EPS.
-    pub estimate: Option<Money>,
+    pub estimate: Option<Price>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -199,11 +199,11 @@ pub struct EarningsQuarterEps {
 /// Analyst price target summary.
 pub struct PriceTarget {
     /// Mean price target.
-    pub mean: Option<Money>,
+    pub mean: Option<Price>,
     /// High price target.
-    pub high: Option<Money>,
+    pub high: Option<Price>,
     /// Low price target.
-    pub low: Option<Money>,
+    pub low: Option<Price>,
     /// Number of contributing analysts.
     pub number_of_analysts: Option<u32>,
 }
@@ -275,11 +275,11 @@ pub struct UpgradeDowngradeRow {
 /// Summary of key analysis metrics extracted from detailed analysis data.
 pub struct AnalysisSummary {
     /// Analyst target mean price.
-    pub target_mean_price: Option<Money>,
+    pub target_mean_price: Option<Price>,
     /// Analyst target high price.
-    pub target_high_price: Option<Money>,
+    pub target_high_price: Option<Price>,
     /// Analyst target low price.
-    pub target_low_price: Option<Money>,
+    pub target_low_price: Option<Price>,
     /// Number of analyst opinions contributing to the recommendation.
     pub number_of_analyst_opinions: Option<u32>,
     /// Numeric recommendation score (provider-defined scale).
@@ -293,13 +293,13 @@ pub struct AnalysisSummary {
 /// Earnings estimate data with analyst consensus.
 pub struct EarningsEstimate {
     /// Average earnings estimate.
-    pub avg: Option<Money>,
+    pub avg: Option<Price>,
     /// Low earnings estimate.
-    pub low: Option<Money>,
+    pub low: Option<Price>,
     /// High earnings estimate.
-    pub high: Option<Money>,
+    pub high: Option<Price>,
     /// Earnings per share from a year ago.
-    pub year_ago_eps: Option<Money>,
+    pub year_ago_eps: Option<Price>,
     /// Number of analysts providing earnings estimates.
     pub num_analysts: Option<u32>,
     /// Estimated earnings growth.
@@ -336,13 +336,13 @@ pub struct TrendPoint {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub period: Period,
     /// The value for this time period.
-    pub value: Money,
+    pub value: Price,
 }
 
 impl TrendPoint {
     /// Creates a new trend point with the specified period and value.
     #[must_use]
-    pub const fn new(period: Period, value: Money) -> Self {
+    pub const fn new(period: Period, value: Price) -> Self {
         Self { period, value }
     }
 
@@ -351,7 +351,7 @@ impl TrendPoint {
     /// # Errors
     /// Returns an error if the period string cannot be parsed.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_new_str(period: &str, value: Money) -> Result<Self, DomainError> {
+    pub fn try_new_str(period: &str, value: Price) -> Result<Self, DomainError> {
         Ok(Self {
             period: period.parse()?,
             value,
@@ -367,7 +367,7 @@ impl TrendPoint {
 /// hardcoded time buckets, making it provider-agnostic.
 pub struct EpsTrend {
     /// Current EPS trend.
-    pub current: Option<Money>,
+    pub current: Option<Price>,
     /// Historical EPS trend data points with flexible time periods.
     /// Each provider can populate this with their available time periods
     /// (e.g., a generic provider might use "7d", "30d", "60d", "90d" while another
@@ -378,7 +378,7 @@ pub struct EpsTrend {
 impl EpsTrend {
     /// Creates a new EPS trend with the specified current value and historical data.
     #[must_use]
-    pub const fn new(current: Option<Money>, historical: Vec<TrendPoint>) -> Self {
+    pub const fn new(current: Option<Price>, historical: Vec<TrendPoint>) -> Self {
         Self {
             current,
             historical,

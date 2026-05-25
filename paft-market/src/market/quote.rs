@@ -11,7 +11,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_domain::{Exchange, Instrument, MarketState};
-use paft_money::Money;
+use paft_money::Price;
 
 use crate::market::orderbook::GenericBookLevel;
 
@@ -29,13 +29,13 @@ pub struct GenericQuote<M = ()> {
     /// Display name.
     pub name: Option<String>,
     /// Market price (most recent trade).
-    pub price: Option<Money>,
+    pub price: Option<Price>,
     /// Best bid: top-of-book quoted price on the buy side, with optional size.
     pub bid: Option<GenericBookLevel<M>>,
     /// Best ask: top-of-book quoted price on the sell side, with optional size.
     pub ask: Option<GenericBookLevel<M>>,
     /// Previous close price.
-    pub previous_close: Option<Money>,
+    pub previous_close: Option<Price>,
     /// Day volume.
     pub day_volume: Option<u64>,
     /// Exchange identifier.
@@ -84,9 +84,9 @@ pub struct GenericQuoteUpdate<M = ()> {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Last traded price, if present.
-    pub price: Option<Money>,
+    pub price: Option<Price>,
     /// Previous close price.
-    pub previous_close: Option<Money>,
+    pub previous_close: Option<Price>,
     /// Volume traded since the previous update.
     pub volume: Option<u64>,
     /// Event timestamp (Unix seconds).

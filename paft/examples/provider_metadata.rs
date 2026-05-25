@@ -12,8 +12,8 @@
 //!
 //! Every market data payload type in paft is now generic over a metadata
 //! payload `M`. The standard public API (`Quote`, `Candle`, `OrderBook`, …)
-//! is preserved as a type alias resolving `M = ()`, so existing call sites
-//! continue to work unchanged. Power users — typically HFT / market-data
+//! is preserved as a type alias resolving `M = ()`, while quoted monetary
+//! fields use `Price` to preserve provider precision. Power users — typically HFT / market-data
 //! integrators — can plug in a custom `M` and get strongly-typed access to
 //! provider-specific JSON fields without forking the crate.
 //!
@@ -21,7 +21,7 @@
 //!     cargo run -p paft --example provider_metadata --features full
 //!
 //! What this example demonstrates:
-//! 1. The standard `Quote` (i.e. `GenericQuote<()>`) keeps its old behaviour.
+//! 1. The standard `Quote` (i.e. `GenericQuote<()>`) remains the no-metadata shape.
 //! 2. A custom `HftMeta` carries provider-specific timestamps and sequence
 //!    numbers.
 //! 3. `#[serde(flatten)]` means the extra fields land at the **top level** of
@@ -34,13 +34,13 @@
 use chrono::{DateTime, Utc};
 use paft::market::quote::{GenericQuote, GenericQuoteUpdate, Quote, QuoteUpdate};
 use paft::money::IsoCurrency;
-use paft::prelude::{AssetKind, Currency, Exchange, Instrument, MarketState, Money};
+use paft::prelude::{AssetKind, Currency, Exchange, Instrument, MarketState, Price};
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};
 
 fn main() -> Result<()> {
     println!("== 1. Standard Quote (M = ()) ==");
-    standard_quote_unchanged()?;
+    standard_quote_no_metadata()?;
 
     println!("\n== 2. Custom HFT metadata round-trip ==");
     hft_quote_round_trip()?;
@@ -54,8 +54,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// `Quote` is `GenericQuote<()>`. Existing code keeps compiling: every field
-/// is the same; the only new thing is `provider: ()`, which serialises to
+/// `Quote` is `GenericQuote<()>`: the standard no-metadata shape. Quoted
+/// amounts use `Price`, and `provider: ()` serialises to
 /// nothing (because `()` flattens to no keys) and deserialises from any JSON
 /// object regardless of unknown extra keys.
 ///
@@ -65,12 +65,12 @@ fn main() -> Result<()> {
 ///    `None`, `provider` defaults to `()`.
 /// 2. The full struct literal — useful when you want to set every field
 ///    explicitly and is the only option for non-`Default` `M` types.
-fn standard_quote_unchanged() -> Result<()> {
+fn standard_quote_no_metadata() -> Result<()> {
     // (1) the ergonomic constructor:
     let mut quote = Quote::new(Instrument::from_symbol("AAPL", AssetKind::Equity)?);
     quote.name = Some("Apple Inc.".to_string());
-    quote.price = Some(money(150));
-    quote.previous_close = Some(money(147));
+    quote.price = Some(price(150));
+    quote.previous_close = Some(price(147));
     quote.day_volume = Some(78_900_000);
     quote.exchange = Some(Exchange::NASDAQ);
     quote.market_state = Some(MarketState::Regular);
@@ -81,8 +81,8 @@ fn standard_quote_unchanged() -> Result<()> {
     let _equivalent = Quote {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
         name: Some("Apple Inc.".to_string()),
-        price: Some(money(150)),
-        previous_close: Some(money(147)),
+        price: Some(price(150)),
+        previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -125,8 +125,8 @@ fn hft_quote_round_trip() -> Result<()> {
             AssetKind::Equity,
         )?,
         name: Some("Apple Inc.".to_string()),
-        price: Some(money(150)),
-        previous_close: Some(money(147)),
+        price: Some(price(150)),
+        previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -207,8 +207,8 @@ fn different_meta_per_stream() -> Result<()> {
     let market_data: GenericQuote<HftMeta> = GenericQuote {
         instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
         name: Some("Microsoft".to_string()),
-        price: Some(money(420)),
-        previous_close: Some(money(418)),
+        price: Some(price(420)),
+        previous_close: Some(price(418)),
         day_volume: None,
         exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
@@ -231,8 +231,8 @@ fn different_meta_per_stream() -> Result<()> {
     // updates rather than on quotes themselves.
     let broker_update: GenericQuoteUpdate<BrokerMeta> = GenericQuoteUpdate {
         instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
-        price: Some(money(421)),
-        previous_close: Some(money(418)),
+        price: Some(price(421)),
+        previous_close: Some(price(418)),
         volume: Some(100),
         ts: ts(1_700_000_000),
         provider: BrokerMeta {
@@ -251,8 +251,8 @@ fn different_meta_per_stream() -> Result<()> {
     // metadata at all.
     let plain: QuoteUpdate = QuoteUpdate {
         instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
-        price: Some(money(421)),
-        previous_close: Some(money(418)),
+        price: Some(price(421)),
+        previous_close: Some(price(418)),
         volume: Some(100),
         ts: ts(1_700_000_000),
         provider: (),
@@ -265,8 +265,8 @@ fn different_meta_per_stream() -> Result<()> {
     Ok(())
 }
 
-fn money(units: i64) -> Money {
-    Money::new(Decimal::from(units), Currency::Iso(IsoCurrency::USD)).unwrap()
+fn price(units: i64) -> Price {
+    Price::new(Decimal::from(units), Currency::Iso(IsoCurrency::USD))
 }
 
 const fn ts(secs: i64) -> DateTime<Utc> {

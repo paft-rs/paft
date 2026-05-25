@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_money::Money;
+use paft_money::Price;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 
@@ -18,7 +18,7 @@ pub enum Action {
         #[serde(with = "chrono::serde::ts_seconds")]
         ts: DateTime<Utc>,
         /// Amount paid per share.
-        amount: Money,
+        amount: Price,
     },
     /// Stock split.
     Split {
@@ -36,7 +36,7 @@ pub enum Action {
         #[serde(with = "chrono::serde::ts_seconds")]
         ts: DateTime<Utc>,
         /// Distribution amount.
-        gain: Money,
+        gain: Price,
     },
 }
 
@@ -46,10 +46,10 @@ pub enum Action {
 struct ActionRow {
     pub action_type: String,
     pub ts: DateTime<Utc>,
-    pub amount: Option<Money>,
+    pub amount: Option<Price>,
     pub numerator: Option<u32>,
     pub denominator: Option<u32>,
-    pub gain: Option<Money>,
+    pub gain: Option<Price>,
 }
 
 #[cfg(feature = "dataframe")]

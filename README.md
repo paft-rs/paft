@@ -71,7 +71,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   - Time periods: `Period`
 - **Market Data**: `Quote`, `QuoteUpdate`, `Candle`, `Action`, `MarketState`
 - **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `Interval`, `Range`
-- **Money & Currency**: `Money`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
+- **Money & Currency**: `Money`, `Price`, `MonetaryAmount`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
 - **Fundamentals – Profile**: `CompanyProfile`, `FundProfile`, `FundKind`, `Profile`, `Address`, `ShareCount`
 - **Fundamentals – Statements**: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`, `Calendar`
 - **Fundamentals – Analysis**: `AnalysisSummary`, `Earnings`, `EarningsYear`, `EarningsQuarter`, `EarningsQuarterEps`, `EarningsEstimate`, `RevenueEstimate`, `EarningsTrendRow`, `TrendPoint`, `EpsTrend`, `RevisionPoint`, `EpsRevisions`, `PriceTarget`, `RecommendationAction`, `RecommendationGrade`, `RecommendationRow`, `RecommendationSummary`, `UpgradeDowngradeRow`
@@ -128,7 +128,7 @@ paft ships with optional, feature-gated instrumentation using the `tracing` crat
 ### What’s instrumented
 
 - `paft-domain`: `Isin::new`, `Figi::new`, `Symbol::new`, `Period::from_str`, `Exchange::try_from_str`, `Instrument` fallible helpers
-- `paft-money`: `Money::{new, from_canonical_str, from_minor_units}`, arithmetic ops (`try_add`, `try_sub`, `try_mul`, `try_div`, `try_convert_with`), parser, `currency_utils::set_currency_metadata`
+- `paft-money`: `Money::{new, from_canonical_str, from_minor_units}`, `Price`, `MonetaryAmount`, arithmetic ops (`try_add`, `try_sub`, `try_mul`, `try_div`, `try_convert_with`), parser, `currency_utils::set_currency_metadata`
 - `paft-market`: `HistoryRequestBuilder::build`, `SearchRequestBuilder::build`, `SearchRequest::new`
 - `paft-fundamentals`: enum `try_from_str` and `TrendPoint/RevisionPoint::try_new_str`
 
@@ -231,7 +231,7 @@ Data provider crates are the bridge between proprietary APIs and standardized pa
 
 ```rust
 use paft::money::IsoCurrency;
-use paft::prelude::{AssetKind, Canonical, Currency, Exchange, Instrument, Money, Quote};
+use paft::prelude::{AssetKind, Canonical, Currency, Exchange, Instrument, Price, Quote};
 
 // Internal wire types (efficient for serialization)
 #[derive(Deserialize)]
@@ -265,13 +265,13 @@ impl GenericQuoteWire {
         Quote {
             instrument,
             name: None,
-            price: self.regularMarketPrice.and_then(|amount|
-                Money::new(amount, Currency::Iso(IsoCurrency::USD)).ok()
+            price: self.regularMarketPrice.map(|amount|
+                Price::new(amount, Currency::Iso(IsoCurrency::USD))
             ),
             bid: None,
             ask: None,
-            previous_close: self.regularMarketPreviousClose.and_then(|amount|
-                Money::new(amount, Currency::Iso(IsoCurrency::USD)).ok()
+            previous_close: self.regularMarketPreviousClose.map(|amount|
+                Price::new(amount, Currency::Iso(IsoCurrency::USD))
             ),
             day_volume: None,
             exchange,

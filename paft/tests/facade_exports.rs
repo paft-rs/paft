@@ -41,7 +41,7 @@ fn analysis_helpers_are_available_from_facade_and_prelude() {
     use paft::money::IsoCurrency;
     use paft::prelude::{
         Currency, EarningsEstimate as PreludeEarningsEstimate, EpsRevisions as PreludeEpsRevisions,
-        EpsTrend as PreludeEpsTrend, Money, Period, RevenueEstimate as PreludeRevenueEstimate,
+        EpsTrend as PreludeEpsTrend, Period, Price, RevenueEstimate as PreludeRevenueEstimate,
         RevisionPoint as PreludeRevisionPoint, TrendPoint as PreludeTrendPoint,
     };
 
@@ -57,8 +57,8 @@ fn analysis_helpers_are_available_from_facade_and_prelude() {
     let eps_revisions: FacadeEpsRevisions = PreludeEpsRevisions::default();
     let _: PreludeEpsRevisions = eps_revisions;
 
-    let money = Money::from_canonical_str("1.00", Currency::Iso(IsoCurrency::USD)).unwrap();
-    let trend_point: FacadeTrendPoint = PreludeTrendPoint::new(Period::Year { year: 2024 }, money);
+    let price = Price::from_canonical_str("1.00", Currency::Iso(IsoCurrency::USD)).unwrap();
+    let trend_point: FacadeTrendPoint = PreludeTrendPoint::new(Period::Year { year: 2024 }, price);
     let _: PreludeTrendPoint = trend_point;
 
     let revision_point: FacadeRevisionPoint =

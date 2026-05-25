@@ -12,7 +12,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use df_derive_macros::ToDataFrame;
 use paft_decimal::Decimal;
 use paft_domain::Instrument;
-use paft_money::Money;
+use paft_money::Price;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
@@ -42,13 +42,13 @@ pub struct GenericOptionContract<M = ()> {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Strike price of the contract.
-    pub strike: Money,
+    pub strike: Price,
     /// Last traded price.
-    pub price: Option<Money>,
+    pub price: Option<Price>,
     /// Best bid.
-    pub bid: Option<Money>,
+    pub bid: Option<Price>,
     /// Best ask.
-    pub ask: Option<Money>,
+    pub ask: Option<Price>,
     /// Traded volume.
     pub volume: Option<u64>,
     /// Open interest at the time of fetch.
@@ -80,7 +80,7 @@ impl<M: Default> GenericOptionContract<M> {
     /// default to `None`. `in_the_money` defaults to `false`. `provider` is
     /// initialised via `M::default()`.
     #[must_use]
-    pub fn new(instrument: Instrument, strike: Money, expiration_date: NaiveDate) -> Self {
+    pub fn new(instrument: Instrument, strike: Price, expiration_date: NaiveDate) -> Self {
         Self {
             instrument,
             strike,
@@ -142,11 +142,11 @@ pub struct GenericOptionUpdate<M = ()> {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub ts: DateTime<Utc>,
     /// Best bid for the contract, if available.
-    pub bid: Option<Money>,
+    pub bid: Option<Price>,
     /// Best ask for the contract, if available.
-    pub ask: Option<Money>,
+    pub ask: Option<Price>,
     /// Last traded price, if available.
-    pub last_price: Option<Money>,
+    pub last_price: Option<Price>,
     /// Implied volatility estimate, if available.
     pub implied_volatility: Option<Decimal>,
     /// Provider-specific payload, flattened into the serialized form.
