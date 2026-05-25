@@ -29,9 +29,9 @@
 //!    The provider sent the token, paft normalized it, and we preserve it
 //!    even though it is not in our known set.
 
-use iso_currency::Currency as IsoCurrency;
 #[cfg(feature = "fundamentals")]
 use paft::fundamentals::analysis::RecommendationGrade;
+use paft::money::IsoCurrency;
 use paft::prelude::Currency;
 
 fn main() {

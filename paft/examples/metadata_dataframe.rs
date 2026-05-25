@@ -32,9 +32,9 @@
 //! set that enables `dataframe` together with `market`).
 
 use chrono::{DateTime, Utc};
-use iso_currency::Currency as IsoCurrency;
 use paft::market::quote::{GenericQuote, Quote};
 use paft::market::responses::history::{GenericCandle, GenericHistoryResponse};
+use paft::money::IsoCurrency;
 use paft::prelude::{
     AssetKind, Currency, Exchange, Instrument, MarketState, Money, ToDataFrame, ToDataFrameVec,
 };

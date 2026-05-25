@@ -32,8 +32,8 @@
 //!    quotes, another for candles).
 
 use chrono::{DateTime, Utc};
-use iso_currency::Currency as IsoCurrency;
 use paft::market::quote::{GenericQuote, GenericQuoteUpdate, Quote, QuoteUpdate};
+use paft::money::IsoCurrency;
 use paft::prelude::{AssetKind, Currency, Exchange, Instrument, MarketState, Money};
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};

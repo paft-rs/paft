@@ -67,7 +67,7 @@
 //!   metadata lookups, and settlement-ready rounding.
 //!
 //! ```rust
-//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::IsoCurrency;
 //! # use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
 //! # use paft_money::{Currency, Money, MoneyAmount, MoneyError};
 //! # fn run() -> Result<(), MoneyError> {
@@ -99,7 +99,7 @@
 //! stable representations, and convert via explicit exchange rates.
 //!
 //! ```rust
-//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::IsoCurrency;
 //! # use paft_money::{Currency, Money};
 //! # fn run() -> Result<(), paft_money::MoneyError> {
 //! let price = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD))?;
@@ -118,7 +118,7 @@
 //! Use an [`ExchangeRate`] to convert with explicit rounding.
 //!
 //! ```rust
-//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::IsoCurrency;
 //! # use paft_decimal::{Decimal, RoundingStrategy};
 //! # use paft_money::{Currency, Money, ExchangeRate};
 //! # fn run() -> Result<(), paft_money::MoneyError> {
@@ -139,7 +139,7 @@
 //! as their codes. Example:
 //!
 //! ```rust
-//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::IsoCurrency;
 //! # use paft_money::{Currency, Money};
 //! let usd = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD)).unwrap();
 //! let json = serde_json::to_string(&usd).unwrap();
@@ -178,7 +178,7 @@
 //! When `money-formatting` is enabled you opt into localized rendering explicitly:
 //! ```rust
 //! # #[cfg(feature = "money-formatting")] {
-//! # use iso_currency::Currency as IsoCurrency;
+//! # use paft_money::IsoCurrency;
 //! # use paft_money::{Currency, Locale, Money};
 //! let eur = Money::from_canonical_str("1234.56", Currency::Iso(IsoCurrency::EUR)).unwrap();
 //! assert_eq!(format!("{eur}"), "1234.56 EUR"); // canonical display stays locale-neutral

@@ -37,7 +37,7 @@ paft-core = { version = "0.8.0", default-features = false }
 Features
 --------
 
-This crate does not expose optional features as of 0.5.2. DataFrame traits now live in `paft-utils` and are forwarded by consumer crates (or the `paft` facade) via their own `dataframe` features.
+This crate does not currently expose optional features. DataFrame traits now live in `paft-utils` and are forwarded by consumer crates (or the `paft` facade) via their own `dataframe` features.
 
 Quickstart
 ----------

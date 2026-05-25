@@ -32,7 +32,6 @@
 //! 5. `GenericCandleUpdate<M>` propagates `M` into the embedded `GenericCandle<M>`.
 
 use chrono::{DateTime, Utc};
-use iso_currency::Currency as IsoCurrency;
 use paft::market::options::{GenericOptionChain, GenericOptionContract, OptionGreeks};
 use paft::market::orderbook::{GenericBookLevel, GenericOrderBook};
 use paft::market::quote::GenericQuote;
@@ -40,6 +39,7 @@ use paft::market::responses::download::{GenericDownloadEntry, GenericDownloadRes
 use paft::market::responses::history::{
     GenericCandle, GenericCandleUpdate, GenericHistoryResponse,
 };
+use paft::money::IsoCurrency;
 use paft::prelude::{
     Action, AssetKind, Currency, Exchange, HistoryMeta, Instrument, Interval, MarketState, Money,
 };

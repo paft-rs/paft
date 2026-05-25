@@ -6,7 +6,7 @@ Domain modeling primitives for the paft ecosystem: instruments, exchanges, perio
 [![Crates.io](https://img.shields.io/crates/v/paft-domain)](https://crates.io/crates/paft-domain)
 [![Docs.rs](https://docs.rs/paft-domain/badge.svg)](https://docs.rs/paft-domain)
 
-- Strongly-typed identifiers for securities and prediction markets (`Symbol`, `Figi`, `Isin`, `EventID`, `OutcomeID`) with enforced validation
+- Strongly-typed identifiers for securities (`Symbol`, `Figi`, `Isin`) with enforced validation
 - `Instrument` with hierarchical identifiers for securities (FIGI → ISIN → Symbol@Exchange → Symbol)
 - Canonical, serde-stable enums (`Exchange`, `AssetKind`, `MarketState`)
 - `Period` parsing for quarters, years, and dates with a canonical wire format
@@ -77,7 +77,7 @@ assert_eq!(q4.to_string(), "2023Q4");
 Prediction markets
 ------------------
 
-Prediction-market identity lives in the separate `paft-prediction` crate:
+Prediction-market identity is intentionally outside `paft-domain`; use the separate `paft-prediction` crate:
 
 ```rust
 use paft_prediction::PredictionInstrument;

@@ -234,7 +234,7 @@ impl<'de> Deserialize<'de> for ExchangeRate {
 /// zero-scale digits compare equal and hash to the same bucket.
 ///
 /// ```
-/// # use iso_currency::Currency as IsoCurrency;
+/// # use paft_money::IsoCurrency;
 /// # use paft_money::{Currency, Money};
 /// let usd = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD)).unwrap();
 /// let json = serde_json::to_string(&usd).unwrap();

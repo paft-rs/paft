@@ -87,7 +87,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 ### Advanced Features
 
 - **DataFrame Support**: Optional Polars integration with `ToDataFrame` trait (via `df-derive-macros`; enable with the `dataframe` feature)
-- **Validated Identifiers**: `Figi`/`Isin` enforce checksum validation; prediction IDs (`EventID`, `OutcomeID`) validate format and length. Invalid identifiers fail at construction and during serde.
+- **Validated Identifiers**: `Figi`/`Isin` enforce checksum validation; prediction-market IDs in `paft-prediction` (`EventID`, `OutcomeID`) validate format and length. Invalid identifiers fail at construction and during serde.
 - **Flexible Enums**: Type-safe enums with fallback variants for unknown values
 - **Comprehensive Validation**: Built-in request validation and error handling
 - **Serialization**: Full serde support for JSON, CSV, and other formats
@@ -230,6 +230,9 @@ Data provider crates are the bridge between proprietary APIs and standardized pa
 ### Provider Architecture Example
 
 ```rust
+use paft::money::IsoCurrency;
+use paft::prelude::{AssetKind, Canonical, Currency, Exchange, Instrument, Money, Quote};
+
 // Internal wire types (efficient for serialization)
 #[derive(Deserialize)]
 struct GenericQuoteWire {
@@ -240,7 +243,7 @@ struct GenericQuoteWire {
 
 // Public API returns paft types
 impl GenericProvider {
-    pub async fn get_quote(&self, symbol: &str) -> Result<paft::Quote, Error> {
+    pub async fn get_quote(&self, symbol: &str) -> Result<Quote, Error> {
         let wire = self.fetch_quote_wire(symbol).await?;
         Ok(wire.into_paft_quote(symbol))
     }
@@ -248,27 +251,27 @@ impl GenericProvider {
 
 // Conversion handles provider-specific mappings
 impl GenericQuoteWire {
-    fn into_paft_quote(self, symbol: &str) -> paft::Quote {
-        let instrument = paft::Instrument::from_symbol(symbol, paft::AssetKind::Equity)
+    fn into_paft_quote(self, symbol: &str) -> Quote {
+        let instrument = Instrument::from_symbol(symbol, AssetKind::Equity)
             .expect("validated upstream");
         let exchange = self.exchange.as_ref().map(|ex| match ex.as_ref() {
-            "NASDAQ" => paft::Exchange::NASDAQ,
-            "NYSE" => paft::Exchange::NYSE,
+            "NASDAQ" => Exchange::NASDAQ,
+            "NYSE" => Exchange::NYSE,
             // Graceful handling: paft canonicalizes the token for us.
-            other => paft::Exchange::Other(
-                paft_utils::Canonical::try_new(other).expect("non-empty exchange code"),
+            other => Exchange::Other(
+                Canonical::try_new(other).expect("non-empty exchange code"),
             ),
         });
-        paft::Quote {
+        Quote {
             instrument,
             name: None,
             price: self.regularMarketPrice.and_then(|amount|
-                paft::Money::new(amount, paft::Currency::Iso(paft::IsoCurrency::USD)).ok()
+                Money::new(amount, Currency::Iso(IsoCurrency::USD)).ok()
             ),
             bid: None,
             ask: None,
             previous_close: self.regularMarketPreviousClose.and_then(|amount|
-                paft::Money::new(amount, paft::Currency::Iso(paft::IsoCurrency::USD)).ok()
+                Money::new(amount, Currency::Iso(IsoCurrency::USD)).ok()
             ),
             day_volume: None,
             exchange,

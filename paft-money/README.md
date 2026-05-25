@@ -61,9 +61,8 @@ Choose the level of structure you need:
 - `Money` attaches a currency, enforces metadata-driven rounding, and remains settlement-safe
 
 ```rust
-use iso_currency::Currency as IsoCurrency;
 use paft_decimal::{self as decimal, RoundingStrategy};
-use paft_money::{Currency, Money, MoneyAmount, MoneyError};
+use paft_money::{Currency, IsoCurrency, Money, MoneyAmount, MoneyError};
 
 fn run() -> Result<(), MoneyError> {
     let raw = decimal::from_minor_units(123_456, 4); // 12.3456
@@ -87,8 +86,7 @@ Quickstart
 ----------
 
 ```rust
-use iso_currency::Currency as IsoCurrency;
-use paft_money::{Currency, Money};
+use paft_money::{Currency, IsoCurrency, Money};
 
 let price = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD))?;
 let tax   = Money::from_canonical_str("1.23",  Currency::Iso(IsoCurrency::USD))?;
@@ -105,8 +103,7 @@ When you enable the optional `money-formatting` feature, localized output lives 
 ```rust
 # #[cfg(feature = "money-formatting")]
 # {
-use iso_currency::Currency as IsoCurrency;
-use paft_money::{Currency, Locale, Money};
+use paft_money::{Currency, IsoCurrency, Locale, Money};
 
 let eur = Money::from_canonical_str("1234.56", Currency::Iso(IsoCurrency::EUR)).unwrap();
 assert_eq!(format!("{eur}"), "1234.56 EUR");
