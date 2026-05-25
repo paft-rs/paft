@@ -56,6 +56,8 @@ fn book_level_to_dataframe_without_size() {
 #[test]
 fn order_book_to_dataframe_smoke() {
     let book = OrderBook {
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        as_of: Some(sample_ts(1_700_000_000)),
         asks: vec![BookLevel::new(usd(101), Some(Decimal::from(200)))],
         bids: vec![BookLevel::new(usd(99), None)],
         provider: (),

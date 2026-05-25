@@ -1,9 +1,14 @@
 use paft_decimal::Decimal;
+use paft_domain::{AssetKind, Instrument};
 use paft_market::market::orderbook::{BookLevel, OrderBook};
 use paft_money::{Currency, IsoCurrency, Price};
 
 fn usd(amount: i64) -> Price {
     Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
+}
+
+fn aapl() -> Instrument {
+    Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap()
 }
 
 #[test]
@@ -48,6 +53,8 @@ fn book_level_serde_roundtrip_no_size() {
 #[test]
 fn order_book_with_mixed_size_availability() {
     let book = OrderBook {
+        instrument: aapl(),
+        as_of: chrono::DateTime::from_timestamp(1_700_000_000, 0),
         asks: vec![
             BookLevel::new(usd(101), Some(Decimal::from(200))),
             BookLevel::new(usd(102), None),
@@ -60,6 +67,8 @@ fn order_book_with_mixed_size_availability() {
     };
 
     let json = serde_json::to_string(&book).unwrap();
+    assert!(json.contains(r#""as_of":1700000000"#));
+
     let decoded: OrderBook = serde_json::from_str(&json).unwrap();
     assert_eq!(book, decoded);
     assert_eq!(decoded.asks.len(), 2);
@@ -67,4 +76,30 @@ fn order_book_with_mixed_size_availability() {
     assert_eq!(decoded.asks[0].size, Some(Decimal::from(200)));
     assert!(decoded.asks[1].size.is_none());
     assert!(decoded.bids[1].size.is_none());
+    assert_eq!(decoded.instrument.unique_key().as_ref(), "AAPL");
+    assert_eq!(decoded.as_of.unwrap().timestamp(), 1_700_000_000);
+}
+
+#[test]
+fn order_book_constructor_sets_required_context() {
+    let book = OrderBook::new(aapl());
+
+    assert_eq!(book.instrument.unique_key().as_ref(), "AAPL");
+    assert!(book.as_of.is_none());
+    assert!(book.asks.is_empty());
+    assert!(book.bids.is_empty());
+}
+
+#[test]
+fn order_book_deserializes_missing_as_of_as_none() {
+    let json = r#"{
+        "instrument": { "symbol": "AAPL", "kind": "equity" },
+        "asks": [],
+        "bids": []
+    }"#;
+
+    let book: OrderBook = serde_json::from_str(json).unwrap();
+
+    assert_eq!(book.instrument.unique_key().as_ref(), "AAPL");
+    assert!(book.as_of.is_none());
 }

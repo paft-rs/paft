@@ -5,7 +5,9 @@
 // `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
 #![allow(clippy::derive_partial_eq_without_eq)]
 
+use chrono::{DateTime, Utc};
 use paft_decimal::Decimal; // Decimal for size
+use paft_domain::Instrument;
 use paft_money::Price;
 use serde::{Deserialize, Serialize};
 
@@ -70,9 +72,17 @@ pub type BookLevel = GenericBookLevel<()>;
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOrderBook<M = ()> {
+    /// Instrument identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub instrument: Instrument,
+
+    /// Timestamp (UTC) when this book snapshot was observed.
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub as_of: Option<DateTime<Utc>>,
+
     /// A vector of ask (sell) levels, typically sorted by price ascending.
     pub asks: Vec<GenericBookLevel<M>>,
 
@@ -82,6 +92,21 @@ pub struct GenericOrderBook<M = ()> {
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
+}
+
+impl<M: Default> GenericOrderBook<M> {
+    /// Build an empty order book for the given instrument with no snapshot
+    /// timestamp; `provider` is initialised via `M::default()`.
+    #[must_use]
+    pub fn new(instrument: Instrument) -> Self {
+        Self {
+            instrument,
+            as_of: None,
+            asks: Vec::new(),
+            bids: Vec::new(),
+            provider: M::default(),
+        }
+    }
 }
 
 /// Standard `OrderBook` with no extra provider metadata.

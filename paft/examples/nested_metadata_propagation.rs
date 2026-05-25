@@ -91,6 +91,8 @@ fn main() -> Result<()> {
 /// one (e.g. for the snapshot timestamp).
 fn order_book_propagation() -> Result<()> {
     let book: GenericOrderBook<FeedMeta> = GenericOrderBook {
+        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
+        as_of: Some(ts(1_700_000_000)),
         asks: vec![
             entry(150_50, 100, feed_meta(1, "L2_AAPL")),
             entry(150_55, 250, feed_meta(2, "L2_AAPL")),
