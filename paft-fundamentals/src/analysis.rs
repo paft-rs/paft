@@ -455,16 +455,15 @@ impl RevisionPoint {
 
     /// Returns the total number of revisions (up + down) in this period.
     #[must_use]
-    pub const fn total_revisions(&self) -> u32 {
-        self.up_count + self.down_count
+    pub fn total_revisions(&self) -> u64 {
+        u64::from(self.up_count) + u64::from(self.down_count)
     }
 
     /// Returns the net revision count (up - down) in this period.
     /// Positive values indicate more upward revisions, negative values indicate more downward revisions.
     #[must_use]
-    #[allow(clippy::cast_possible_wrap)]
-    pub const fn net_revisions(&self) -> i32 {
-        self.up_count as i32 - self.down_count as i32
+    pub fn net_revisions(&self) -> i64 {
+        i64::from(self.up_count) - i64::from(self.down_count)
     }
 }
 
@@ -517,21 +516,29 @@ impl EpsRevisions {
 
     /// Returns the total number of upward revisions across all periods.
     #[must_use]
-    pub fn total_up_revisions(&self) -> u32 {
-        self.historical.iter().map(|point| point.up_count).sum()
+    pub fn total_up_revisions(&self) -> u64 {
+        self.historical
+            .iter()
+            .map(|point| u64::from(point.up_count))
+            .sum()
     }
 
     /// Returns the total number of downward revisions across all periods.
     #[must_use]
-    pub fn total_down_revisions(&self) -> u32 {
-        self.historical.iter().map(|point| point.down_count).sum()
+    pub fn total_down_revisions(&self) -> u64 {
+        self.historical
+            .iter()
+            .map(|point| u64::from(point.down_count))
+            .sum()
     }
 
     /// Returns the net revision count across all periods (total up - total down).
     #[must_use]
-    #[allow(clippy::cast_possible_wrap)]
-    pub fn net_revisions(&self) -> i32 {
-        self.total_up_revisions() as i32 - self.total_down_revisions() as i32
+    pub fn net_revisions(&self) -> i64 {
+        self.historical
+            .iter()
+            .map(RevisionPoint::net_revisions)
+            .sum()
     }
 }
 
