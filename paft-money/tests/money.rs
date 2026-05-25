@@ -581,6 +581,21 @@ fn exchange_rate_serde_accepts_valid_payload() {
 
 #[cfg(not(feature = "bigdecimal"))]
 #[test]
+fn money_try_div_returns_error_on_decimal_overflow() {
+    let currency = Currency::Iso(IsoCurrency::USD);
+    let money = Money::new_exact(Decimal::MAX, currency.clone()).unwrap();
+    let divisor = Decimal::from_str("0.1").unwrap();
+
+    let err = money.try_div(divisor).unwrap_err();
+    assert!(matches!(err, paft_money::MoneyError::ConversionError));
+
+    let divisor_money = Money::new_exact(Decimal::from_str("0.1").unwrap(), currency).unwrap();
+    let err = money.try_div_money(&divisor_money).unwrap_err();
+    assert!(matches!(err, paft_money::MoneyError::ConversionError));
+}
+
+#[cfg(not(feature = "bigdecimal"))]
+#[test]
 fn money_as_minor_units_returns_error_on_overflow() {
     use std::str::FromStr;
 

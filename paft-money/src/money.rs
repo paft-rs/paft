@@ -68,6 +68,19 @@ fn checked_mul_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
     }
 }
 
+/// Backend-agnostic checked division of two decimals.
+#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
+fn checked_div_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    #[cfg(not(feature = "bigdecimal"))]
+    {
+        lhs.checked_div(*rhs)
+    }
+    #[cfg(feature = "bigdecimal")]
+    {
+        Some(lhs / rhs)
+    }
+}
+
 /// Backend-agnostic checked addition of two decimals.
 #[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
 fn checked_add_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
@@ -562,7 +575,9 @@ impl Money {
     /// Division that returns an error for division by zero.
     ///
     /// # Errors
-    /// Returns `MoneyError::DivisionByZero` when `rhs` is zero.
+    /// - Returns `MoneyError::DivisionByZero` when `rhs` is zero.
+    /// - Returns `MoneyError::ConversionError` when the quotient overflows
+    ///   the active decimal backend (only possible under `rust_decimal`).
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
@@ -571,7 +586,9 @@ impl Money {
         if rhs == decimal::zero() {
             return Err(MoneyError::DivisionByZero);
         }
-        Self::new(copy_decimal(&self.amount) / rhs, self.currency.clone())
+        let quotient =
+            checked_div_decimal(&self.amount, &rhs).ok_or(MoneyError::ConversionError)?;
+        Self::new(quotient, self.currency.clone())
     }
 
     /// Divides two `Money` values of the same currency, returning the unitless ratio.
@@ -583,6 +600,8 @@ impl Money {
     /// # Errors
     /// - [`MoneyError::CurrencyMismatch`] when the operands use different currencies.
     /// - [`MoneyError::DivisionByZero`] when `rhs` has a zero amount.
+    /// - [`MoneyError::ConversionError`] when the quotient overflows the
+    ///   active decimal backend (only possible under `rust_decimal`).
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
@@ -597,7 +616,7 @@ impl Money {
         if rhs.amount == decimal::zero() {
             return Err(MoneyError::DivisionByZero);
         }
-        Ok(copy_decimal(&self.amount) / copy_decimal(&rhs.amount))
+        checked_div_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)
     }
 
     /// Converts this money to another currency using the provided exchange rate and rounding strategy.
