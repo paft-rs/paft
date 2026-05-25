@@ -45,8 +45,8 @@ bigdecimal = [
 domain = ["dep:paft-domain"]
 market = ["dep:paft-market", "domain"]
 fundamentals = ["dep:paft-fundamentals", "domain"]
-aggregates = ["dep:paft-aggregates", "domain", "market", "fundamentals"]
-prediction = ["dep:paft-prediction", "domain", "market"]
+aggregates = ["dep:paft-aggregates", "domain"]
+prediction = ["dep:paft-prediction"]
 
 
 tracing = [
