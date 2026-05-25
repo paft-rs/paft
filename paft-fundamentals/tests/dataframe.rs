@@ -1,6 +1,5 @@
 #![cfg(feature = "dataframe")]
 use chrono::{TimeZone, Utc};
-use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_domain::{Isin, Period};
 use paft_fundamentals::{
@@ -12,7 +11,7 @@ use paft_fundamentals::{
     RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
     ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
 };
-use paft_money::{Money, Price};
+use paft_money::{IsoCurrency, Money, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 use std::str::FromStr;
 

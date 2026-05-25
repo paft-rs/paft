@@ -1,7 +1,6 @@
-use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_market::market::orderbook::{BookLevel, OrderBook};
-use paft_money::{Currency, Price};
+use paft_money::{Currency, IsoCurrency, Price};
 
 fn usd(amount: i64) -> Price {
     Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))

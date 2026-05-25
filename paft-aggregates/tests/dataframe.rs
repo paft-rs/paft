@@ -1,10 +1,9 @@
 #![cfg(feature = "dataframe")]
 use chrono::{TimeZone, Utc};
-use iso_currency::Currency as IsoCurrency;
 use paft_aggregates::Snapshot;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
-use paft_money::{Currency, Price};
+use paft_money::{Currency, IsoCurrency, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
 fn usd(amount: i64) -> Price {

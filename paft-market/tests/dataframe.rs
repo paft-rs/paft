@@ -1,7 +1,6 @@
 #![cfg(feature = "dataframe")]
 use chrono::{NaiveDate, TimeZone, Utc};
 use chrono_tz::UTC as TzUtc;
-use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument};
 use paft_market::{
@@ -17,7 +16,7 @@ use paft_market::{
         search::SearchResult,
     },
 };
-use paft_money::{Currency, Price};
+use paft_money::{Currency, IsoCurrency, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 use std::str::FromStr;
 

@@ -1,11 +1,10 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
-use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::action::Action;
 use paft_market::{Candle, CandleUpdate, HistoryMeta, HistoryResponse, Interval};
-use paft_money::{Currency, Price};
+use paft_money::{Currency, IsoCurrency, Price};
 use std::str::FromStr;
 
 #[test]
@@ -225,19 +224,19 @@ fn candle_update_serialization() {
         ts: chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap(),
         open: Price::new(
             Decimal::from_str("150.0").unwrap(),
-            Currency::Iso(iso_currency::Currency::USD),
+            Currency::Iso(IsoCurrency::USD),
         ),
         high: Price::new(
             Decimal::from_str("155.0").unwrap(),
-            Currency::Iso(iso_currency::Currency::USD),
+            Currency::Iso(IsoCurrency::USD),
         ),
         low: Price::new(
             Decimal::from_str("148.0").unwrap(),
-            Currency::Iso(iso_currency::Currency::USD),
+            Currency::Iso(IsoCurrency::USD),
         ),
         close: Price::new(
             Decimal::from_str("152.0").unwrap(),
-            Currency::Iso(iso_currency::Currency::USD),
+            Currency::Iso(IsoCurrency::USD),
         ),
         close_unadj: None,
         volume: Some(2_500_000),

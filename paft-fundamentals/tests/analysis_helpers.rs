@@ -1,7 +1,6 @@
-use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_fundamentals::{EpsRevisions, EpsTrend, RecommendationSummary, RevisionPoint, TrendPoint};
-use paft_money::{Currency, Price};
+use paft_money::{Currency, IsoCurrency, Price};
 use std::str::FromStr;
 
 #[test]

@@ -18,8 +18,6 @@ workspace = true
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 chrono = { workspace = true }
-paft-core = { workspace = true }
-paft-domain = { workspace = true }
 paft-money = { workspace = true }
 paft-utils = { workspace = true }
 df-derive-macros = { workspace = true, optional = true }
@@ -36,7 +34,6 @@ dataframe = [
   "polars/fmt",
   "df-derive-macros",
   "paft-utils/dataframe",
-  "paft-domain/dataframe",
   "paft-money/dataframe",
 ]
 

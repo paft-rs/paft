@@ -1,8 +1,7 @@
-use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_domain::Isin;
 use paft_fundamentals::profile::{Address, CompanyProfile, FundKind, FundProfile, Profile};
-use paft_money::{Currency, Money};
+use paft_money::{Currency, IsoCurrency, Money};
 use serde_json::{from_str, to_string};
 use std::str::FromStr;
 

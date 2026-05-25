@@ -19,9 +19,6 @@ serde = { workspace = true, features = ["derive"] }
 chrono = { workspace = true, features = ["serde"] }
 paft-domain = { workspace = true }
 paft-money  = { workspace = true }
-paft-market = { workspace = true }
-paft-fundamentals = { workspace = true }
-paft-decimal = { workspace = true, default-features = false }
 paft-utils = { workspace = true, optional = true }
 polars = { workspace = true, optional = true }
 df-derive-macros = { workspace = true, optional = true }
@@ -32,8 +29,6 @@ default = []
 # No feature flag is needed for the default rust_decimal backend.
 bigdecimal = [
   "paft-money/bigdecimal",
-  "paft-market/bigdecimal",
-  "paft-decimal/bigdecimal",
   "paft-utils?/bigdecimal",
 ]
 
@@ -46,8 +41,6 @@ dataframe = [
   "polars/fmt",
   "df-derive-macros",
   "paft-domain/dataframe",
-  "paft-market/dataframe",
-  "paft-fundamentals/dataframe",
   "paft-money/dataframe",
   "paft-utils/dataframe",
   "paft-utils",
@@ -56,5 +49,4 @@ dataframe = [
 [dev-dependencies]
 paft-decimal = { workspace = true, default-features = false }
 serde_json = { workspace = true }
-iso_currency = { workspace = true }
 pretty_assertions = "1.4"
