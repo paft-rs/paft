@@ -74,11 +74,11 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 - **Money & Currency**: `Money`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
 - **Fundamentals – Profile**: `CompanyProfile`, `FundProfile`, `FundKind`, `Profile`, `Address`, `ShareCount`
 - **Fundamentals – Statements**: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`, `Calendar`
-- **Fundamentals – Analysis**: `AnalysisSummary`, `Earnings`, `EarningsYear`, `EarningsQuarter`, `EarningsQuarterEps`, `EarningsTrendRow`, `PriceTarget`, `RecommendationAction`, `RecommendationGrade`, `RecommendationRow`, `RecommendationSummary`, `UpgradeDowngradeRow`
+- **Fundamentals – Analysis**: `AnalysisSummary`, `Earnings`, `EarningsYear`, `EarningsQuarter`, `EarningsQuarterEps`, `EarningsEstimate`, `RevenueEstimate`, `EarningsTrendRow`, `TrendPoint`, `EpsTrend`, `RevisionPoint`, `EpsRevisions`, `PriceTarget`, `RecommendationAction`, `RecommendationGrade`, `RecommendationRow`, `RecommendationSummary`, `UpgradeDowngradeRow`
 - **Fundamentals – ESG**: `EsgScores`, `EsgInvolvement`, `EsgSummary`
 - **Fundamentals – Holders**: `InstitutionalHolder`, `InsiderTransaction`, `InsiderPosition`, `InsiderRosterHolder`, `MajorHolder`, `NetSharePurchaseActivity`, `TransactionType`
-- **Options**: `OptionContract`, `OptionChain`, `OptionChainRequest`, `OptionExpirationsRequest`
-- **News & Search**: `NewsArticle`, `SearchRequest`, `SearchResponse`, `SearchResult`
+- **Options**: `OptionContract`, `OptionGreeks`, `OptionChain`, `OptionUpdate`, `OptionChainRequest`, `OptionExpirationsRequest`, `OptionExpirationsResponse`
+- **News & Search**: `NewsArticle`, `NewsRequest`, `NewsTab`, `SearchRequest`, `SearchResponse`, `SearchResult`
 - **Downloads**: `DownloadResponse`
 - **Prediction Markets** (feature `prediction`): `Market`, `Token`
 - **Aggregates** (with `paft/aggregates`): `Snapshot` instrument snapshots

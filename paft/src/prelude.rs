@@ -25,9 +25,10 @@ pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
 // Re-export fundamentals types (flattened via namespace)
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::analysis::{
-    AnalysisSummary, Earnings, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
-    PriceTarget, RecommendationAction, RecommendationGrade, RecommendationRow,
-    RecommendationSummary, UpgradeDowngradeRow,
+    AnalysisSummary, Earnings, EarningsEstimate, EarningsQuarter, EarningsQuarterEps,
+    EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, PriceTarget, RecommendationAction,
+    RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
+    TrendPoint, UpgradeDowngradeRow,
 };
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::esg::{EsgInvolvement, EsgScores, EsgSummary};
@@ -49,29 +50,13 @@ pub use crate::fundamentals::statistics::KeyStatistics;
 
 // Re-export market types (flattened via namespace)
 #[cfg(feature = "market")]
-pub use crate::market::action::Action;
-#[cfg(feature = "market")]
-pub use crate::market::news::NewsArticle;
-#[cfg(feature = "market")]
-pub use crate::market::options::{OptionChain, OptionContract};
-#[cfg(feature = "market")]
-pub use crate::market::orderbook::{BookLevel, OrderBook};
-#[cfg(feature = "market")]
-pub use crate::market::quote::{Quote, QuoteUpdate};
-#[cfg(feature = "market")]
-pub use crate::market::requests::history::{
-    HistoryRequest, HistoryRequestBuilder, Interval, Range,
+pub use crate::market::{
+    Action, BookLevel, Candle, CandleUpdate, DownloadResponse, HistoryMeta, HistoryRequest,
+    HistoryRequestBuilder, HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab,
+    OptionChain, OptionChainRequest, OptionContract, OptionExpirationsRequest,
+    OptionExpirationsResponse, OptionGreeks, OptionUpdate, OrderBook, Quote, QuoteUpdate, Range,
+    SearchRequest, SearchResponse, SearchResult,
 };
-#[cfg(feature = "market")]
-pub use crate::market::requests::options::{OptionChainRequest, OptionExpirationsRequest};
-#[cfg(feature = "market")]
-pub use crate::market::requests::search::SearchRequest;
-#[cfg(feature = "market")]
-pub use crate::market::responses::download::DownloadResponse;
-#[cfg(feature = "market")]
-pub use crate::market::responses::history::{Candle, CandleUpdate, HistoryMeta, HistoryResponse};
-#[cfg(feature = "market")]
-pub use crate::market::responses::search::{SearchResponse, SearchResult};
 
 // Re-export aggregates snapshot types
 #[cfg(feature = "aggregates")]

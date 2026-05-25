@@ -57,6 +57,13 @@ pub mod market {
     pub use paft_market::market::{action, news, options, orderbook, quote};
     pub use paft_market::requests;
     pub use paft_market::responses;
+    pub use paft_market::{
+        Action, BookLevel, Candle, CandleUpdate, DownloadResponse, HistoryMeta, HistoryRequest,
+        HistoryRequestBuilder, HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab,
+        OptionChain, OptionChainRequest, OptionContract, OptionExpirationsRequest,
+        OptionExpirationsResponse, OptionGreeks, OptionUpdate, OrderBook, Quote, QuoteUpdate,
+        Range, SearchRequest, SearchResponse, SearchResult,
+    };
 }
 
 /// Namespaced access to `paft-money` types.
@@ -82,6 +89,16 @@ pub use paft_utils::dataframe;
 /// Namespaced access to `paft-fundamentals` (feature-gated).
 #[cfg(feature = "fundamentals")]
 pub mod fundamentals {
+    pub use paft_fundamentals::{
+        Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
+        EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
+        EpsRevisions, EpsTrend, EsgInvolvement, EsgScores, EsgSummary, FundKind, FundProfile,
+        IncomeStatementRow, InsiderPosition, InsiderRosterHolder, InsiderTransaction,
+        InstitutionalHolder, KeyStatistics, MajorHolder, NetSharePurchaseActivity, PriceTarget,
+        Profile, RecommendationAction, RecommendationGrade, RecommendationRow,
+        RecommendationSummary, RevenueEstimate, RevisionPoint, ShareCount, TransactionType,
+        TrendPoint, UpgradeDowngradeRow,
+    };
     pub use paft_fundamentals::{analysis, esg, holders, profile, statements, statistics};
 }
 

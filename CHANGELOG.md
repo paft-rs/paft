@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Dataframe: switched derive dependencies to the `df-derive` 0.3 split (`df-derive-macros` for derives, `df-derive-core` for shared trait identity). `paft-utils` now re-exports the core `ToDataFrame`, `Columnar`, and `ToDataFrameVec` traits while retaining its paft-owned `Decimal128Encode` trait for foreign decimal backends.
+- Facade: flattened the release-facing market and fundamentals surface through `paft::market`, `paft::fundamentals`, and `paft::prelude`, including option updates/greeks/expiration responses, news requests, and analysis helper rows.
 
 ## [0.8.0] - 2025-11-XX
 
@@ -16,7 +17,7 @@ All notable changes to this project will be documented in this file.
 - Money (panicking-money-ops): `Div<Money> for Money` and `Div<&Money> for &Money` now produce a `Decimal` ratio, complementing the existing `Div<Decimal>` impls that scale a single `Money` value.
 - Market: expanded `requests::history::Interval` coverage and provided second/minute conversion helpers for the new variants.
 - Money: implement `Hash` for `paft_money::Money` using currency and canonicalized amount.
-- Money: add `MoneyAmount` for high-precision decimal values with optional currency hints, now backed by the shared `paft-decimal` facade for construction and serde parity.
+- Money: add `MoneyAmount` for high-precision decimal values with optional currency hints, now backed by the shared `paft-decimal` facade for construction and hint-preserving serde.
 - Market: derive `Hash` for `paft_market::market::action::Action`.
   - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
 - Domain: `Instrument` is a flat struct with security identifier fields (`symbol`, optional `exchange`, `figi`, `isin`) plus `kind: AssetKind`.

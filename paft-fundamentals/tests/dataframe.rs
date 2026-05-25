@@ -4,20 +4,13 @@ use iso_currency::Currency as IsoCurrency;
 use paft_decimal::Decimal;
 use paft_domain::{Isin, Period};
 use paft_fundamentals::{
-    analysis::{
-        AnalysisSummary, Earnings, EarningsEstimate, EarningsQuarter, EarningsQuarterEps,
-        EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, PriceTarget, RecommendationAction,
-        RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate,
-        RevisionPoint, TrendPoint, UpgradeDowngradeRow,
-    },
-    esg::{EsgInvolvement, EsgScores},
-    holders::{
-        InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, MajorHolder,
-        NetSharePurchaseActivity, TransactionType,
-    },
-    profile::{Address, CompanyProfile, FundKind, FundProfile, Profile, ShareCount},
-    statements::{BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow},
-    statistics::KeyStatistics,
+    Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
+    EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
+    EpsRevisions, EpsTrend, EsgInvolvement, EsgScores, FundKind, FundProfile, IncomeStatementRow,
+    InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, KeyStatistics,
+    MajorHolder, NetSharePurchaseActivity, PriceTarget, Profile, RecommendationAction,
+    RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
+    ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
 };
 use paft_money::Money;
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};

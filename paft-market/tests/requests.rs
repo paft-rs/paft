@@ -1,6 +1,5 @@
 use paft_domain::AssetKind;
-use paft_market::requests::history::{HistoryRequest, Interval, Range};
-use paft_market::requests::search::SearchRequest;
+use paft_market::{HistoryRequest, Interval, NewsRequest, NewsTab, Range, SearchRequest};
 
 #[test]
 fn search_request_serialization() {
@@ -22,6 +21,19 @@ fn search_request_minimal() {
     let json = serde_json::to_string(&request).unwrap();
     let deserialized: SearchRequest = serde_json::from_str(&json).unwrap();
     assert_eq!(request, deserialized);
+}
+
+#[test]
+fn news_request_serialization() {
+    let request = NewsRequest {
+        count: 25,
+        tab: NewsTab::PressReleases,
+    };
+
+    let json = serde_json::to_string(&request).unwrap();
+    let deserialized: NewsRequest = serde_json::from_str(&json).unwrap();
+    assert_eq!(request, deserialized);
+    assert_eq!(NewsRequest::default().tab, NewsTab::News);
 }
 
 #[test]

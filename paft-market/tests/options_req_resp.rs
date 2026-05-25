@@ -1,8 +1,8 @@
 use chrono::{DateTime, NaiveDate};
 use paft_domain::{AssetKind, Instrument};
-use paft_market::market::options::OptionUpdate;
-use paft_market::requests::options::{OptionChainRequest, OptionExpirationsRequest};
-use paft_market::responses::options::OptionExpirationsResponse;
+use paft_market::{
+    OptionChainRequest, OptionExpirationsRequest, OptionExpirationsResponse, OptionUpdate,
+};
 
 #[test]
 fn option_expirations_request_roundtrip() {

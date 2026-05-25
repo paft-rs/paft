@@ -51,9 +51,10 @@ pub mod statements;
 pub mod statistics;
 
 pub use analysis::{
-    AnalysisSummary, Earnings, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
-    PriceTarget, RecommendationAction, RecommendationGrade, RecommendationRow,
-    RecommendationSummary, UpgradeDowngradeRow,
+    AnalysisSummary, Earnings, EarningsEstimate, EarningsQuarter, EarningsQuarterEps,
+    EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, PriceTarget, RecommendationAction,
+    RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
+    TrendPoint, UpgradeDowngradeRow,
 };
 pub use esg::{EsgInvolvement, EsgScores, EsgSummary};
 pub use holders::{

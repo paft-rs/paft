@@ -66,9 +66,9 @@ All features are optional—disable the defaults (`default-features = false`) an
 
 - **Instruments**: `Instrument` (flat struct: `symbol`, `exchange`, `figi`, `isin`, `kind`), `AssetKind`
 - **Market Data**: `Quote`, `Candle`, `HistoryResponse`, `MarketState`
-- **Fundamentals**: Financial statements, earnings, analyst ratings
-- **Options**: `OptionContract`, `OptionChain`
-- **News & Search**: `NewsArticle`, `SearchResult`
+- **Fundamentals**: Financial statements, earnings, analyst ratings, and trend/revision helper rows
+- **Options**: `OptionContract`, `OptionGreeks`, `OptionChain`, `OptionUpdate`, `OptionExpirationsResponse`
+- **News & Search**: `NewsArticle`, `NewsRequest`, `NewsTab`, `SearchRequest`, `SearchResult`
 - **ESG & Holders**: ESG scores, institutional holdings
 - **Aggregates** (feature `aggregates`): `Snapshot` instrument snapshots
 - **Prediction Markets** (feature `prediction`): `Market`, `Token`

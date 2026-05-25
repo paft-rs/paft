@@ -8,7 +8,7 @@ Fundamentals data models for the paft ecosystem: financial statements, analysis,
 
 - Profiles: `CompanyProfile`, `FundProfile`
 - Statements: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`
-- Analysis: earnings, recommendations, price targets
+- Analysis: earnings, recommendations, price targets, trend/revision helper rows
 - Holders: institutional, insiders
 - ESG: scores, involvement, summary
 
@@ -53,7 +53,7 @@ Quickstart
 ----------
 
 ```rust
-use paft_fundamentals::{Earnings, EarningsYear, Profile, CompanyProfile};
+use paft_fundamentals::{CompanyProfile, Earnings, EarningsYear, Profile};
 
 let earnings = Earnings { yearly: vec![EarningsYear { year: 2023, ..Default::default() }], ..Default::default() };
 assert_eq!(earnings.yearly[0].year, 2023);
