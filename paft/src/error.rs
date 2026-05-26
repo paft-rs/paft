@@ -30,6 +30,10 @@ pub enum Error {
     #[error(transparent)]
     Money(#[from] paft_money::MoneyError),
 
+    /// Error from configuring currency minor-unit metadata.
+    #[error(transparent)]
+    MinorUnit(#[from] paft_money::MinorUnitError),
+
     /// Error originating from parsing money/currency values.
     #[error(transparent)]
     MoneyParse(#[from] paft_money::error::MoneyParseError),

@@ -47,3 +47,18 @@ fn facade_reexports_currency_parse_error() {
         }
     ));
 }
+
+#[test]
+fn facade_error_converts_minor_unit_errors() {
+    fn configure_invalid_metadata() -> paft::Result<()> {
+        set_currency_metadata("", "Invalid Token", 4, "IT", true, Locale::EnUs)?;
+        Ok(())
+    }
+
+    let err = configure_invalid_metadata().expect_err("invalid metadata should fail");
+
+    assert!(matches!(
+        err,
+        paft::Error::MinorUnit(paft::money::MinorUnitError::InvalidCurrencyCode { .. })
+    ));
+}
