@@ -63,7 +63,7 @@ assert_eq!(a, b);
 let outcome: OutcomeID = "12345".parse().unwrap();
 
 let instrument = PredictionInstrument::from_ids(a, outcome);
-println!("{instrument}"); // displays the outcome id
+println!("{instrument}"); // displays event_id/outcome_id
 ```
 
 For direct `paft-prediction` users, import the same types from

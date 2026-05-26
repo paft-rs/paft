@@ -42,15 +42,27 @@ impl PredictionInstrument {
         }
     }
 
-    /// Returns the unique key for this prediction outcome (the outcome id).
+    /// Returns the unique key for this prediction outcome (`event_id/outcome_id`).
+    ///
+    /// The key includes the event id because outcome ids are only assumed to be
+    /// unique within an event.
     #[must_use]
     pub fn unique_key(&self) -> Cow<'_, str> {
-        Cow::Borrowed(self.outcome_id.as_ref())
+        let event_id = self.event_id.as_ref();
+        let outcome_id = self.outcome_id.as_ref();
+        let mut key = String::with_capacity(event_id.len() + 1 + outcome_id.len());
+        key.push_str(event_id);
+        key.push('/');
+        key.push_str(outcome_id);
+
+        Cow::Owned(key)
     }
 }
 
 impl std::fmt::Display for PredictionInstrument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.unique_key())
+        f.write_str(self.event_id.as_ref())?;
+        f.write_str("/")?;
+        f.write_str(self.outcome_id.as_ref())
     }
 }
