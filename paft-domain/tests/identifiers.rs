@@ -58,6 +58,12 @@ fn figi_serde_roundtrip() {
 }
 
 #[test]
+fn figi_accepts_openfigi_reference_checksum() {
+    let figi = Figi::new("BBG000BLNQ16").expect("OpenFIGI reference FIGI should pass");
+    assert_eq!(figi.as_ref(), "BBG000BLNQ16");
+}
+
+#[test]
 fn figi_rejects_invalid_length() {
     let err = Figi::new("BBG000B9XRY").expect_err("length must be 12");
     assert!(matches!(err, DomainError::InvalidFigi { .. }));
@@ -66,6 +72,18 @@ fn figi_rejects_invalid_length() {
 #[test]
 fn figi_rejects_non_alphanumeric() {
     let err = Figi::new("BBG000B9XRY!").expect_err("non-alphanumeric fails");
+    assert!(matches!(err, DomainError::InvalidFigi { .. }));
+}
+
+#[test]
+fn figi_rejects_non_global_marker() {
+    let err = Figi::new("BBH000B9XRY3").expect_err("third character must be G");
+    assert!(matches!(err, DomainError::InvalidFigi { .. }));
+}
+
+#[test]
+fn figi_rejects_vowels_in_random_assignment() {
+    let err = Figi::new("BBG000B9XRA0").expect_err("characters 4-11 must exclude vowels");
     assert!(matches!(err, DomainError::InvalidFigi { .. }));
 }
 
@@ -163,5 +181,11 @@ fn symbol_short_tickers_avoid_heap_allocation() {
 #[test]
 fn figi_rejects_bad_checksum() {
     let err = Figi::new("BBG000B9XRY5").expect_err("checksum should fail");
+    assert!(matches!(err, DomainError::InvalidFigi { .. }));
+}
+
+#[test]
+fn figi_rejects_flattened_digit_checksum() {
+    let err = Figi::new("BBG000BLNQ15").expect_err("flattened-digit checksum should fail");
     assert!(matches!(err, DomainError::InvalidFigi { .. }));
 }

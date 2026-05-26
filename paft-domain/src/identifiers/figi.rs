@@ -22,7 +22,7 @@ fn normalize_figi(input: &str) -> Result<String, DomainError> {
         return Err(invalid_figi(input));
     }
 
-    if !normalized.chars().all(|c| c.is_ascii_alphanumeric()) {
+    if !figi_structure_is_valid(&normalized) {
         return Err(invalid_figi(input));
     }
 
@@ -33,46 +33,49 @@ fn normalize_figi(input: &str) -> Result<String, DomainError> {
     Ok(normalized)
 }
 
+fn figi_structure_is_valid(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    bytes.len() == 12
+        && bytes[..2].iter().all(u8::is_ascii_alphanumeric)
+        && bytes[2] == b'G'
+        && bytes[3..11]
+            .iter()
+            .all(|b| b.is_ascii_alphanumeric() && !matches!(b, b'A' | b'E' | b'I' | b'O' | b'U'))
+        && bytes[11].is_ascii_digit()
+}
+
 fn figi_checksum_is_valid(value: &str) -> bool {
     if value.len() != 12 {
         return false;
     }
 
-    let body = &value[..11];
-    let checksum_char = value.as_bytes()[11];
-    if !(checksum_char as char).is_ascii_digit() {
+    let bytes = value.as_bytes();
+    let checksum = bytes[11];
+    if !checksum.is_ascii_digit() {
         return false;
     }
 
-    let mut digits = Vec::with_capacity(22);
-    for ch in body.chars() {
-        if ch.is_ascii_digit() {
-            digits.push(u32::from(ch as u8 - b'0'));
-        } else if ch.is_ascii_uppercase() {
-            let value = (ch as u32 - 'A' as u32) + 10;
-            digits.push(value / 10);
-            digits.push(value % 10);
-        } else {
-            return false;
-        }
-    }
-
     let mut sum = 0u32;
-    let mut double = false;
-    for digit in digits.iter().rev() {
-        let mut val = *digit;
-        if double {
-            val *= 2;
-            if val > 9 {
-                val = (val / 10) + (val % 10);
-            }
+    for (offset, byte) in bytes[..11].iter().rev().enumerate() {
+        let Some(mut value) = figi_char_value(*byte) else {
+            return false;
+        };
+        if offset % 2 == 1 {
+            value *= 2;
         }
-        sum += val;
-        double = !double;
+        sum += value / 10 + value % 10;
     }
 
     let expected = (10 - (sum % 10)) % 10;
-    expected == u32::from(checksum_char - b'0')
+    expected == u32::from(checksum - b'0')
+}
+
+fn figi_char_value(byte: u8) -> Option<u32> {
+    match byte {
+        b'0'..=b'9' => Some(u32::from(byte - b'0')),
+        b'A'..=b'Z' => Some(u32::from(byte - b'A') + 10),
+        _ => None,
+    }
 }
 
 /// Opaque wrapper for validated FIGI values.
