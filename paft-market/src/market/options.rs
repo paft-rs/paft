@@ -13,6 +13,7 @@ use df_derive_macros::ToDataFrame;
 use paft_decimal::Decimal;
 use paft_domain::Instrument;
 use paft_money::Price;
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
@@ -30,6 +31,74 @@ pub struct OptionGreeks {
     pub rho: Option<Decimal>,
 }
 
+/// Whether an option contract gives the right to buy or sell the underlying.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum OptionSide {
+    /// Call option: right to buy the underlying at the strike price.
+    Call,
+    /// Put option: right to sell the underlying at the strike price.
+    Put,
+}
+
+impl OptionSide {
+    /// Returns the canonical uppercase string representation.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Call => "CALL",
+            Self::Put => "PUT",
+        }
+    }
+}
+
+impl AsRef<str> for OptionSide {
+    fn as_ref(&self) -> &str {
+        (*self).as_str()
+    }
+}
+
+impl fmt::Display for OptionSide {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str((*self).as_str())
+    }
+}
+
+/// Economic identity of an option contract.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
+pub struct OptionContractKey {
+    /// Underlying instrument the option is written on.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub underlying: Instrument,
+    /// Call or put side of the option contract.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub side: OptionSide,
+    /// Strike price of the contract.
+    pub strike: Price,
+    /// Canonical expiration calendar date.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub expiration_date: NaiveDate,
+}
+
+impl OptionContractKey {
+    /// Build an option contract identity from its required economic fields.
+    #[must_use]
+    pub const fn new(
+        underlying: Instrument,
+        side: OptionSide,
+        strike: Price,
+        expiration_date: NaiveDate,
+    ) -> Self {
+        Self {
+            underlying,
+            side,
+            strike,
+            expiration_date,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single option contract (call or put) at a given strike and expiration.
@@ -42,11 +111,13 @@ pub struct OptionGreeks {
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericOptionContract<M = ()> {
-    /// Instrument identifier.
+    /// Contract identity fields.
+    #[serde(flatten)]
+    #[cfg_attr(feature = "dataframe", df_derive(flatten))]
+    pub key: OptionContractKey,
+    /// Provider or venue instrument identifier for the option contract, when known.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub instrument: Instrument,
-    /// Strike price of the contract.
-    pub strike: Price,
+    pub contract_instrument: Option<Instrument>,
     /// Last traded price.
     pub price: Option<Price>,
     /// Best bid.
@@ -61,9 +132,6 @@ pub struct GenericOptionContract<M = ()> {
     pub implied_volatility: Option<Decimal>,
     /// Whether the option is currently in the money.
     pub in_the_money: bool,
-    /// Canonical expiration calendar date.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub expiration_date: NaiveDate,
     /// Exact UTC expiration instant, if known.
     #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub expiration_at: Option<DateTime<Utc>>,
@@ -84,10 +152,10 @@ impl<M: Default> GenericOptionContract<M> {
     /// default to `None`. `in_the_money` defaults to `false`. `provider` is
     /// initialised via `M::default()`.
     #[must_use]
-    pub fn new(instrument: Instrument, strike: Price, expiration_date: NaiveDate) -> Self {
+    pub fn new(key: OptionContractKey) -> Self {
         Self {
-            instrument,
-            strike,
+            key,
+            contract_instrument: None,
             price: None,
             bid: None,
             ask: None,
@@ -95,7 +163,6 @@ impl<M: Default> GenericOptionContract<M> {
             open_interest: None,
             implied_volatility: None,
             in_the_money: false,
-            expiration_date,
             expiration_at: None,
             last_trade_at: None,
             greeks: None,
@@ -109,7 +176,7 @@ pub type OptionContract = GenericOptionContract<()>;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-/// A full option chain split into calls and puts.
+/// A full option chain for one or more expirations.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation and propagated into each contract. Use the
@@ -119,13 +186,33 @@ pub type OptionContract = GenericOptionContract<()>;
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericOptionChain<M = ()> {
-    /// Call contracts.
-    pub calls: Vec<GenericOptionContract<M>>,
-    /// Put contracts.
-    pub puts: Vec<GenericOptionContract<M>>,
+    /// Option contracts in the chain.
+    pub contracts: Vec<GenericOptionContract<M>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
+}
+
+impl<M> GenericOptionChain<M> {
+    /// Iterate over contracts for the requested option side.
+    pub fn by_side(
+        &self,
+        side: OptionSide,
+    ) -> impl Iterator<Item = &GenericOptionContract<M>> + '_ {
+        self.contracts
+            .iter()
+            .filter(move |contract| contract.key.side == side)
+    }
+
+    /// Iterate over call contracts.
+    pub fn calls(&self) -> impl Iterator<Item = &GenericOptionContract<M>> + '_ {
+        self.by_side(OptionSide::Call)
+    }
+
+    /// Iterate over put contracts.
+    pub fn puts(&self) -> impl Iterator<Item = &GenericOptionContract<M>> + '_ {
+        self.by_side(OptionSide::Put)
+    }
 }
 
 /// Standard `OptionChain` with no extra provider metadata.
@@ -134,8 +221,8 @@ pub type OptionChain = GenericOptionChain<()>;
 /// A point-in-time update for an option contract.
 ///
 /// This represents incremental changes to market data commonly used for options,
-/// such as bid/ask, last price, and implied volatility, keyed by the underlying
-/// symbol for routing and session filtering.
+/// such as bid/ask, last price, and implied volatility, keyed by the option
+/// contract identity.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`OptionUpdate`] alias for the
@@ -147,9 +234,13 @@ pub type OptionChain = GenericOptionChain<()>;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOptionUpdate<M = ()> {
-    /// Underlying instrument used for routing and monotonic filtering.
+    /// Contract identity fields.
+    #[serde(flatten)]
+    #[cfg_attr(feature = "dataframe", df_derive(flatten))]
+    pub key: OptionContractKey,
+    /// Provider or venue instrument identifier for the option contract, when known.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub instrument: Instrument,
+    pub contract_instrument: Option<Instrument>,
     /// Timestamp of the update (Unix seconds).
     #[serde(with = "chrono::serde::ts_seconds")]
     pub ts: DateTime<Utc>,
@@ -167,13 +258,14 @@ pub struct GenericOptionUpdate<M = ()> {
 }
 
 impl<M: Default> GenericOptionUpdate<M> {
-    /// Build an option update from its instrument and timestamp; all
+    /// Build an option update from its contract identity and timestamp; all
     /// quoting fields default to `None` and `provider` is initialised via
     /// `M::default()`.
     #[must_use]
-    pub fn new(instrument: Instrument, ts: DateTime<Utc>) -> Self {
+    pub fn new(key: OptionContractKey, ts: DateTime<Utc>) -> Self {
         Self {
-            instrument,
+            key,
+            contract_instrument: None,
             ts,
             bid: None,
             ask: None,

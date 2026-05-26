@@ -25,14 +25,16 @@
 //! What this example demonstrates:
 //! 1. `GenericOrderBook<M>` propagates `M` down into each `GenericBookLevel<M>`.
 //! 2. `GenericHistoryResponse<M>` propagates `M` down into each `GenericCandle<M>`.
-//! 3. `GenericOptionChain<M>` propagates `M` into both `calls` and `puts`.
+//! 3. `GenericOptionChain<M>` propagates `M` into every contract.
 //! 4. `GenericDownloadResponse<M>` propagates `M` two levels deep
 //!    (`DownloadEntry` → `HistoryResponse` → `Candle`), and the
 //!    `iter_by_symbol` helper still works without modification.
 //! 5. `GenericCandleUpdate<M>` propagates `M` into the embedded `GenericCandle<M>`.
 
 use chrono::{DateTime, Utc};
-use paft::market::options::{GenericOptionChain, GenericOptionContract, OptionGreeks};
+use paft::market::options::{
+    GenericOptionChain, GenericOptionContract, OptionContractKey, OptionGreeks, OptionSide,
+};
 use paft::market::orderbook::{GenericBookLevel, GenericOrderBook};
 use paft::market::quote::GenericQuote;
 use paft::market::responses::download::{GenericDownloadEntry, GenericDownloadResponse};
@@ -74,7 +76,7 @@ fn main() -> Result<()> {
     println!("\n== 2. HistoryResponse (Vec<Candle<M>>) ==");
     history_propagation()?;
 
-    println!("\n== 3. OptionChain (calls + puts both carry M) ==");
+    println!("\n== 3. OptionChain (contracts carry M) ==");
     option_chain_propagation()?;
 
     println!("\n== 4. DownloadResponse (two levels deep) ==");
@@ -196,31 +198,37 @@ fn history_propagation() -> Result<()> {
     Ok(())
 }
 
-/// Both `calls` and `puts` propagate the same `M`.
+/// Each contract in the chain propagates the same `M`.
 fn option_chain_propagation() -> Result<()> {
     let chain: GenericOptionChain<FeedMeta> = GenericOptionChain {
-        calls: vec![option_contract(
-            "AAPL241220C00150000",
-            150,
-            true,
-            feed_meta(201, "OPT_AAPL"),
-        )],
-        puts: vec![option_contract(
-            "AAPL241220P00150000",
-            150,
-            false,
-            feed_meta(202, "OPT_AAPL"),
-        )],
+        contracts: vec![
+            option_contract(
+                "AAPL241220C00150000",
+                OptionSide::Call,
+                150,
+                true,
+                feed_meta(201, "OPT_AAPL"),
+            ),
+            option_contract(
+                "AAPL241220P00150000",
+                OptionSide::Put,
+                150,
+                false,
+                feed_meta(202, "OPT_AAPL"),
+            ),
+        ],
         provider: feed_meta(200, "OPT_AAPL_CHAIN"),
     };
     println!("Chain meta seq: {}", chain.provider.seq);
+    let first_call = chain.calls().next().expect("example chain has a call");
+    let first_put = chain.puts().next().expect("example chain has a put");
     println!(
         "First call ITM={} per-leg seq={}",
-        chain.calls[0].in_the_money, chain.calls[0].provider.seq,
+        first_call.in_the_money, first_call.provider.seq,
     );
     println!(
         "First put  ITM={} per-leg seq={}",
-        chain.puts[0].in_the_money, chain.puts[0].provider.seq,
+        first_put.in_the_money, first_put.provider.seq,
     );
     Ok(())
 }
@@ -334,13 +342,19 @@ fn candle(
 
 fn option_contract(
     symbol: &str,
+    side: OptionSide,
     strike: i64,
     in_the_money: bool,
     provider: FeedMeta,
 ) -> GenericOptionContract<FeedMeta> {
     GenericOptionContract {
-        instrument: Instrument::from_symbol(symbol, AssetKind::Option).unwrap(),
-        strike: price(strike),
+        key: OptionContractKey::new(
+            Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+            side,
+            price(strike),
+            chrono::NaiveDate::from_ymd_opt(2024, 12, 20).unwrap(),
+        ),
+        contract_instrument: Some(Instrument::from_symbol(symbol, AssetKind::Option).unwrap()),
         price: Some(price(5)),
         bid: Some(price(4)),
         ask: Some(price(6)),
@@ -348,7 +362,6 @@ fn option_contract(
         open_interest: Some(500),
         implied_volatility: Some(Decimal::from(25) / Decimal::from(100)),
         in_the_money,
-        expiration_date: chrono::NaiveDate::from_ymd_opt(2024, 12, 20).unwrap(),
         expiration_at: None,
         last_trade_at: None,
         greeks: Some(OptionGreeks::default()),

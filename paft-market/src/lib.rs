@@ -42,7 +42,9 @@ pub use error::MarketError;
 pub use market::{
     action::Action,
     news::NewsArticle,
-    options::{OptionChain, OptionContract, OptionGreeks, OptionUpdate},
+    options::{
+        OptionChain, OptionContract, OptionContractKey, OptionGreeks, OptionSide, OptionUpdate,
+    },
     orderbook::{BookLevel, OrderBook},
     quote::{Quote, QuoteUpdate},
 };

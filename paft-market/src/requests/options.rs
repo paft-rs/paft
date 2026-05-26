@@ -8,14 +8,14 @@ use serde::{Deserialize, Serialize};
 /// Request to retrieve option expiration dates for the given underlying instrument.
 pub struct OptionExpirationsRequest {
     /// Underlying instrument identifier.
-    pub instrument: Instrument,
+    pub underlying: Instrument,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// Request to retrieve an option chain for an underlying instrument and expiration date.
 pub struct OptionChainRequest {
     /// Underlying instrument identifier.
-    pub instrument: Instrument,
+    pub underlying: Instrument,
     /// Option expiration date (naive date in the exchange's calendar).
     pub expiration: NaiveDate,
 }

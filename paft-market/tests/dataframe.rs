@@ -7,7 +7,7 @@ use paft_market::{
     market::{
         action::Action,
         news::NewsArticle,
-        options::{OptionChain, OptionContract, OptionGreeks},
+        options::{OptionChain, OptionContract, OptionContractKey, OptionGreeks, OptionSide},
         orderbook::{BookLevel, OrderBook},
         quote::Quote,
     },
@@ -183,8 +183,15 @@ fn option_greeks_to_dataframe() {
 
 fn sample_contract() -> OptionContract {
     OptionContract {
-        instrument: Instrument::from_symbol("AAPL240621C00150000", AssetKind::Option).unwrap(),
-        strike: usd(150),
+        key: OptionContractKey::new(
+            Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+            OptionSide::Call,
+            usd(150),
+            NaiveDate::from_ymd_opt(2024, 6, 21).unwrap(),
+        ),
+        contract_instrument: Some(
+            Instrument::from_symbol("AAPL240621C00150000", AssetKind::Option).unwrap(),
+        ),
         price: Some(usd(5)),
         bid: Some(usd(4)),
         ask: Some(usd(6)),
@@ -192,7 +199,6 @@ fn sample_contract() -> OptionContract {
         open_interest: Some(5_000),
         implied_volatility: Some(dec("0.25")),
         in_the_money: true,
-        expiration_date: NaiveDate::from_ymd_opt(2024, 6, 21).unwrap(),
         expiration_at: Some(sample_ts(1_719_196_800)),
         last_trade_at: Some(sample_ts(1_700_000_000)),
         greeks: Some(OptionGreeks {
@@ -211,6 +217,12 @@ fn option_contract_to_dataframe() {
     let contract = sample_contract();
 
     let df = contract.to_dataframe().unwrap();
+    let cols = df.get_column_names();
+    assert!(cols.iter().any(|c| c.as_str() == "underlying"));
+    assert!(cols.iter().any(|c| c.as_str() == "side"));
+    assert!(cols.iter().any(|c| c.as_str() == "strike.amount"));
+    assert!(cols.iter().any(|c| c.as_str() == "expiration_date"));
+    assert!(!cols.iter().any(|c| c.as_str().starts_with("key.")));
     assert_eq!(df.height(), 1);
 }
 
@@ -218,16 +230,34 @@ fn option_contract_to_dataframe() {
 fn option_chain_to_dataframe() {
     let contract = sample_contract();
     let chain = OptionChain {
-        calls: vec![contract.clone()],
-        puts: vec![OptionContract {
-            in_the_money: false,
-            ..contract
-        }],
-
+        contracts: vec![
+            contract.clone(),
+            OptionContract {
+                key: OptionContractKey {
+                    side: OptionSide::Put,
+                    ..contract.key.clone()
+                },
+                contract_instrument: Some(
+                    Instrument::from_symbol("AAPL240621P00150000", AssetKind::Option).unwrap(),
+                ),
+                in_the_money: false,
+                ..contract
+            },
+        ],
         provider: (),
     };
 
+    assert_eq!(chain.calls().count(), 1);
+    assert_eq!(chain.puts().count(), 1);
+
     let df = chain.to_dataframe().unwrap();
+    let cols = df.get_column_names();
+    assert!(cols.iter().any(|c| c.as_str() == "contracts.side"));
+    assert!(
+        !cols
+            .iter()
+            .any(|c| c.as_str().starts_with("contracts.key."))
+    );
     assert_eq!(df.height(), 1);
 }
 

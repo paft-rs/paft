@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Facade: flattened the release-facing market and fundamentals surface through `paft::market`, `paft::fundamentals`, and `paft::prelude`, including option updates/greeks/expiration responses, news requests, and analysis helper rows.
 - Facade: re-export `MoneyParseError` from `paft::money` so currency parsing errors exposed by `Currency::try_from_str` are available through the facade.
 - Market: `OrderBook` now carries required `instrument` context and optional `as_of` snapshot time, matching the public documentation that it represents a book for a specific instrument.
+- Market options: added `OptionSide` and `OptionContractKey`, made `OptionContract`/`OptionUpdate` carry the full flattened option identity, collapsed `OptionChain` to `contracts: Vec<_>` with `calls()`/`puts()` iterators, and renamed option request `instrument` fields to `underlying`.
 
 ## [0.8.0] - 2025-11-XX
 
@@ -44,7 +45,7 @@ All notable changes to this project will be documented in this file.
   - `paft-utils` now ships blanket `ToDataFrame` / `Columnar` impls for `()`, so the default no-metadata case contributes zero columns to dataframe exports.
   - The provider field is named `provider` (not `meta`) to avoid clashing with `HistoryResponse::meta: Option<HistoryMeta>` and to give DataFrame columns a more descriptive prefix (`provider.<field>` rather than `meta.<field>`).
   - `Eq` and `Hash` are intentionally NOT derived on the generic payload types so that provider metadata can carry non-`Eq` fields like `f64` hardware timestamps. The standard aliases (`Quote = GenericQuote<()>`, etc.) still satisfy `PartialEq` because `()` does.
-  - Ergonomic `::new(...)` constructors (bounded by `M: Default`) are provided on the generic shapes whose Rust struct literals would otherwise be verbose: `GenericQuote::new(instrument)`, `GenericQuoteUpdate::new(instrument, ts)`, `GenericBookLevel::new(price, size)`, `GenericOrderBook::new(instrument)`, `GenericCandle::new(ts, open, high, low, close)`, `GenericCandleUpdate::new(instrument, interval, candle, is_final)`, `GenericOptionContract::new(instrument, strike, expiration_date)`, `GenericOptionUpdate::new(instrument, ts)`, and `GenericSnapshot::new(instrument)`. Container types that still derive `Default` (`GenericOptionChain`, `GenericHistoryResponse`, `GenericSearchResponse`, `GenericDownloadResponse`) get the same ergonomics for free.
+  - Ergonomic `::new(...)` constructors (bounded by `M: Default`) are provided on the generic shapes whose Rust struct literals would otherwise be verbose: `GenericQuote::new(instrument)`, `GenericQuoteUpdate::new(instrument, ts)`, `GenericBookLevel::new(price, size)`, `GenericOrderBook::new(instrument)`, `GenericCandle::new(ts, open, high, low, close)`, `GenericCandleUpdate::new(instrument, interval, candle, is_final)`, `OptionContractKey::new(underlying, side, strike, expiration_date)`, `GenericOptionContract::new(key)`, `GenericOptionUpdate::new(key, ts)`, and `GenericSnapshot::new(instrument)`. Container types that still derive `Default` (`GenericOptionChain`, `GenericHistoryResponse`, `GenericSearchResponse`, `GenericDownloadResponse`) get the same ergonomics for free.
 
 ### Bug fixes
 

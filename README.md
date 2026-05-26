@@ -77,7 +77,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 - **Fundamentals – Analysis**: `AnalysisSummary`, `Earnings`, `EarningsYear`, `EarningsQuarter`, `EarningsQuarterEps`, `EarningsEstimate`, `RevenueEstimate`, `EarningsTrendRow`, `TrendPoint`, `EpsTrend`, `RevisionPoint`, `EpsRevisions`, `PriceTarget`, `RecommendationAction`, `RecommendationGrade`, `RecommendationRow`, `RecommendationSummary`, `UpgradeDowngradeRow`
 - **Fundamentals – ESG**: `EsgScores`, `EsgInvolvement`, `EsgSummary`
 - **Fundamentals – Holders**: `InstitutionalHolder`, `InsiderTransaction`, `InsiderPosition`, `InsiderRosterHolder`, `MajorHolder`, `NetSharePurchaseActivity`, `TransactionType`
-- **Options**: `OptionContract`, `OptionGreeks`, `OptionChain`, `OptionUpdate`, `OptionChainRequest`, `OptionExpirationsRequest`, `OptionExpirationsResponse`
+- **Options**: `OptionContractKey`, `OptionSide`, `OptionContract`, `OptionGreeks`, `OptionChain`, `OptionUpdate`, `OptionChainRequest`, `OptionExpirationsRequest`, `OptionExpirationsResponse`
 - **News & Search**: `NewsArticle`, `NewsRequest`, `NewsTab`, `SearchRequest`, `SearchResponse`, `SearchResult`
 - **Downloads**: `DownloadResponse`
 - **Prediction Markets** (feature `prediction`): `Market`, `Token`

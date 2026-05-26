@@ -2,17 +2,21 @@
 #[test]
 fn market_exports_are_available_from_facade_and_prelude() {
     use chrono::DateTime;
+    use paft::Decimal;
     use paft::market::{
         NewsRequest as FacadeNewsRequest, NewsTab as FacadeNewsTab,
+        OptionContractKey as FacadeOptionContractKey,
         OptionExpirationsResponse as FacadeOptionExpirationsResponse,
-        OptionGreeks as FacadeOptionGreeks, OptionUpdate as FacadeOptionUpdate,
-        TimeSpec as FacadeTimeSpec,
+        OptionGreeks as FacadeOptionGreeks, OptionSide as FacadeOptionSide,
+        OptionUpdate as FacadeOptionUpdate, TimeSpec as FacadeTimeSpec,
     };
+    use paft::money::IsoCurrency;
     use paft::prelude::{
-        AssetKind, Instrument, NewsRequest as PreludeNewsRequest, NewsTab as PreludeNewsTab,
+        AssetKind, Currency, Instrument, NewsRequest as PreludeNewsRequest,
+        NewsTab as PreludeNewsTab, OptionContractKey as PreludeOptionContractKey,
         OptionExpirationsResponse as PreludeOptionExpirationsResponse,
-        OptionGreeks as PreludeOptionGreeks, OptionUpdate as PreludeOptionUpdate, Range,
-        TimeSpec as PreludeTimeSpec,
+        OptionGreeks as PreludeOptionGreeks, OptionSide as PreludeOptionSide,
+        OptionUpdate as PreludeOptionUpdate, Price, Range, TimeSpec as PreludeTimeSpec,
     };
 
     let greeks: FacadeOptionGreeks = PreludeOptionGreeks::default();
@@ -28,10 +32,18 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let time_spec: FacadeTimeSpec = PreludeTimeSpec::Range(Range::M1);
     let _: PreludeTimeSpec = time_spec;
 
-    let update: FacadeOptionUpdate = PreludeOptionUpdate::new(
+    let key: FacadeOptionContractKey = PreludeOptionContractKey::new(
         Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        DateTime::from_timestamp(0, 0).unwrap(),
+        PreludeOptionSide::Call,
+        Price::new(Decimal::from(150), Currency::Iso(IsoCurrency::USD)),
+        chrono::NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
     );
+    let key: PreludeOptionContractKey = key;
+    let side: FacadeOptionSide = PreludeOptionSide::Put;
+    let _: PreludeOptionSide = side;
+
+    let update: FacadeOptionUpdate =
+        PreludeOptionUpdate::new(key, DateTime::from_timestamp(0, 0).unwrap());
     let _: PreludeOptionUpdate = update;
 }
 

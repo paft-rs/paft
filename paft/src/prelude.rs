@@ -53,9 +53,9 @@ pub use crate::fundamentals::statistics::KeyStatistics;
 pub use crate::market::{
     Action, BookLevel, Candle, CandleUpdate, DownloadResponse, HistoryMeta, HistoryRequest,
     HistoryRequestBuilder, HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab,
-    OptionChain, OptionChainRequest, OptionContract, OptionExpirationsRequest,
-    OptionExpirationsResponse, OptionGreeks, OptionUpdate, OrderBook, Quote, QuoteUpdate, Range,
-    SearchRequest, SearchResponse, SearchResult, TimeSpec,
+    OptionChain, OptionChainRequest, OptionContract, OptionContractKey, OptionExpirationsRequest,
+    OptionExpirationsResponse, OptionGreeks, OptionSide, OptionUpdate, OrderBook, Quote,
+    QuoteUpdate, Range, SearchRequest, SearchResponse, SearchResult, TimeSpec,
 };
 
 // Re-export aggregates snapshot types
