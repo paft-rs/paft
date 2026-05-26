@@ -587,7 +587,8 @@ checksum = "7eed2c4702fa172d1ce21078faa7c5203e69f5394d48cc436d25928394a867a2"
 [[package]]
 name = "df-derive-core"
 version = "0.3.1"
-source = "git+https://github.com/gramistella/df-derive?branch=main#046109ff1b5d006e43a6688acab4ff795f9f1d98"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a4329e4f80a622c91ddcb8f4382b5e754ccc4679f45ca661283d6bc771a1acd"
 dependencies = [
  "polars",
  "polars-arrow",
@@ -596,7 +597,8 @@ dependencies = [
 [[package]]
 name = "df-derive-macros"
 version = "0.3.1"
-source = "git+https://github.com/gramistella/df-derive?branch=main#046109ff1b5d006e43a6688acab4ff795f9f1d98"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fefcd086991612607f8f9a641148d48b8129e1adcd113e54a01c158ab432a404"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
