@@ -133,10 +133,10 @@ pub struct GenericOptionContract<M = ()> {
     /// Whether the option is currently in the money.
     pub in_the_money: bool,
     /// Exact UTC expiration instant, if known.
-    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub expiration_at: Option<DateTime<Utc>>,
     /// Exact UTC last trade instant, if known.
-    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub last_trade_at: Option<DateTime<Utc>>,
     /// Optional first-order greeks for the contract.
     pub greeks: Option<OptionGreeks>,
@@ -241,8 +241,8 @@ pub struct GenericOptionUpdate<M = ()> {
     /// Provider or venue instrument identifier for the option contract, when known.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub contract_instrument: Option<Instrument>,
-    /// Timestamp of the update (Unix seconds).
-    #[serde(with = "chrono::serde::ts_seconds")]
+    /// Timestamp of the update as Unix milliseconds.
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Best bid for the contract, if available.
     pub bid: Option<Price>,

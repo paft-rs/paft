@@ -433,12 +433,15 @@ fn quote_update_serialization() {
             Currency::Iso(IsoCurrency::USD),
         )),
         volume: None,
-        ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        ts: DateTime::from_timestamp(1_640_995_200, 654_000_000).unwrap(),
 
         provider: (),
     };
 
     let json = serde_json::to_string(&update).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(value["ts"], serde_json::json!(1_640_995_200_654_i64));
+
     let deserialized: QuoteUpdate = serde_json::from_str(&json).unwrap();
     assert_eq!(update, deserialized);
 }

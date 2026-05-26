@@ -179,8 +179,8 @@ pub struct InstitutionalHolder {
     pub holder: String,
     /// The number of shares held.
     pub shares: Option<u64>,
-    /// The date of the last reported position as a Unix timestamp.
-    #[serde(with = "chrono::serde::ts_seconds")]
+    /// The date of the last reported position as a Unix timestamp in milliseconds.
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub date_reported: DateTime<Utc>,
     /// The percentage of the company's outstanding shares held by this entity.
     pub pct_held: Option<Decimal>,
@@ -204,8 +204,8 @@ pub struct InsiderTransaction {
     pub shares: Option<u64>,
     /// The total value of the transaction.
     pub value: Option<Money>,
-    /// The transaction date as a Unix timestamp.
-    #[serde(with = "chrono::serde::ts_seconds")]
+    /// The transaction date as a Unix timestamp in milliseconds.
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub transaction_date: DateTime<Utc>,
     /// A URL to the source filing for the transaction, if available.
     pub url: String,
@@ -223,13 +223,13 @@ pub struct InsiderRosterHolder {
     /// A description of the most recent transaction made by this insider.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub most_recent_transaction: TransactionType,
-    /// The date of the latest transaction as a Unix timestamp.
-    #[serde(with = "chrono::serde::ts_seconds")]
+    /// The date of the latest transaction as a Unix timestamp in milliseconds.
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub latest_transaction_date: DateTime<Utc>,
     /// The number of shares owned directly by the insider.
     pub shares_owned_directly: Option<u64>,
-    /// The date of the direct ownership filing as a Unix timestamp.
-    #[serde(with = "chrono::serde::ts_seconds")]
+    /// The date of the direct ownership filing as a Unix timestamp in milliseconds.
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub position_direct_date: DateTime<Utc>,
 }
 

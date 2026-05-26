@@ -31,8 +31,8 @@ pub struct GenericNewsArticle<M = ()> {
     pub publisher: Option<String>,
     /// A direct link to the article.
     pub link: Option<String>,
-    /// The Unix timestamp (in seconds) of when the article was published.
-    #[serde(with = "chrono::serde::ts_seconds")]
+    /// The Unix timestamp in milliseconds of when the article was published.
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub published_at: DateTime<Utc>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]

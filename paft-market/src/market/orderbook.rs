@@ -80,7 +80,7 @@ pub struct GenericOrderBook<M = ()> {
     pub instrument: Instrument,
 
     /// Timestamp (UTC) when this book snapshot was observed.
-    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
 
     /// A vector of ask (sell) levels, typically sorted by price ascending.

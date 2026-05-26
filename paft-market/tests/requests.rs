@@ -127,8 +127,8 @@ fn history_request_with_period() {
         value["time_spec"],
         serde_json::json!({
             "kind": "period",
-            "start": 1000,
-            "end": 2000
+            "start": 1_000_000,
+            "end": 2_000_000
         })
     );
 
@@ -137,12 +137,12 @@ fn history_request_with_period() {
 }
 
 #[test]
-fn time_spec_period_uses_epoch_second_wire_shape() {
+fn time_spec_period_uses_epoch_millisecond_wire_shape() {
     use chrono::DateTime;
 
     let time_spec = TimeSpec::Period {
-        start: DateTime::from_timestamp(1_716_595_200, 0).unwrap(),
-        end: DateTime::from_timestamp(1_719_187_200, 0).unwrap(),
+        start: DateTime::from_timestamp(1_716_595_200, 123_000_000).unwrap(),
+        end: DateTime::from_timestamp(1_719_187_200, 456_000_000).unwrap(),
     };
 
     let value = serde_json::to_value(&time_spec).unwrap();
@@ -151,8 +151,8 @@ fn time_spec_period_uses_epoch_second_wire_shape() {
         value,
         serde_json::json!({
             "kind": "period",
-            "start": 1_716_595_200,
-            "end": 1_719_187_200
+            "start": 1_716_595_200_123_i64,
+            "end": 1_719_187_200_456_i64
         })
     );
 

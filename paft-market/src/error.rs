@@ -17,9 +17,9 @@ pub enum MarketError {
     /// `HistoryRequest`: 'period' start must be before end.
     #[error("HistoryRequest: 'period' start ({start}) must be before end ({end})")]
     InvalidPeriod {
-        /// Start timestamp (seconds since epoch).
+        /// Start timestamp (milliseconds since epoch).
         start: i64,
-        /// End timestamp (seconds since epoch).
+        /// End timestamp (milliseconds since epoch).
         end: i64,
     },
 }

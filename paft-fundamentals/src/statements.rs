@@ -92,12 +92,12 @@ pub struct CashflowRow {
 /// Corporate calendar entries (earnings/dividends).
 pub struct Calendar {
     /// Upcoming or historical earnings dates.
-    #[serde(with = "paft_core::serde_helpers::ts_seconds_vec")]
+    #[serde(with = "paft_core::serde_helpers::ts_milliseconds_vec")]
     pub earnings_dates: Vec<DateTime<Utc>>,
     /// Ex-dividend date.
-    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub ex_dividend_date: Option<DateTime<Utc>>,
     /// Dividend payment date.
-    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub dividend_payment_date: Option<DateTime<Utc>>,
 }

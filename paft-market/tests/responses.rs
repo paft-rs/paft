@@ -10,7 +10,7 @@ use std::str::FromStr;
 #[test]
 fn candle_serialization() {
     let candle = Candle {
-        ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        ts: DateTime::from_timestamp(1_640_995_200, 321_000_000).unwrap(),
         open: Price::new(
             Decimal::from_str("100.0").unwrap(),
             Currency::Iso(IsoCurrency::USD),
@@ -34,6 +34,9 @@ fn candle_serialization() {
     };
 
     let json = serde_json::to_string(&candle).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(value["ts"], serde_json::json!(1_640_995_200_321_i64));
+
     let deserialized: Candle = serde_json::from_str(&json).unwrap();
     assert_eq!(candle, deserialized);
 }

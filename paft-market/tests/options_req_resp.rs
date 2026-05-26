@@ -56,14 +56,17 @@ fn option_expirations_response_roundtrip() {
 }
 
 #[test]
-fn option_update_ts_serde_uses_unix_seconds() {
+fn option_update_ts_serde_uses_unix_milliseconds() {
     let update: MarketOptionUpdate = OptionUpdate::new(
         option_key(),
-        DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        DateTime::from_timestamp(1_640_995_200, 789_000_000).unwrap(),
     );
 
     let value = serde_json::to_value(&update).unwrap();
-    assert_eq!(value.get("ts"), Some(&serde_json::json!(1_640_995_200)));
+    assert_eq!(
+        value.get("ts"),
+        Some(&serde_json::json!(1_640_995_200_789_i64))
+    );
     assert_eq!(value.get("side"), Some(&serde_json::json!("CALL")));
     assert!(value.get("underlying").is_some());
 

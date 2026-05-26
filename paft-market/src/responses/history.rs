@@ -17,7 +17,7 @@ use paft_domain::Instrument;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-/// A single OHLCV bar at timestamp `ts` (Unix seconds).
+/// A single OHLCV bar at timestamp `ts` (Unix milliseconds).
 ///
 /// Volume may be `None` when unavailable.
 ///
@@ -29,8 +29,8 @@ use paft_domain::Instrument;
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericCandle<M = ()> {
-    /// Timestamp for the bar (Unix seconds).
-    #[serde(with = "chrono::serde::ts_seconds")]
+    /// Timestamp for the bar as Unix milliseconds.
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Open price.
     pub open: Price,

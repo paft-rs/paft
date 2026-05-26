@@ -54,7 +54,7 @@ fn book_level_serde_roundtrip_no_size() {
 fn order_book_with_mixed_size_availability() {
     let book = OrderBook {
         instrument: aapl(),
-        as_of: chrono::DateTime::from_timestamp(1_700_000_000, 0),
+        as_of: chrono::DateTime::from_timestamp(1_700_000_000, 456_000_000),
         asks: vec![
             BookLevel::new(usd(101), Some(Decimal::from(200))),
             BookLevel::new(usd(102), None),
@@ -67,7 +67,7 @@ fn order_book_with_mixed_size_availability() {
     };
 
     let json = serde_json::to_string(&book).unwrap();
-    assert!(json.contains(r#""as_of":1700000000"#));
+    assert!(json.contains(r#""as_of":1700000000456"#));
 
     let decoded: OrderBook = serde_json::from_str(&json).unwrap();
     assert_eq!(book, decoded);
@@ -77,7 +77,7 @@ fn order_book_with_mixed_size_availability() {
     assert!(decoded.asks[1].size.is_none());
     assert!(decoded.bids[1].size.is_none());
     assert_eq!(decoded.instrument.unique_key().as_ref(), "AAPL");
-    assert_eq!(decoded.as_of.unwrap().timestamp(), 1_700_000_000);
+    assert_eq!(decoded.as_of.unwrap().timestamp_millis(), 1_700_000_000_456);
 }
 
 #[test]

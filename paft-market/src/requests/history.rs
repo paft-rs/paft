@@ -459,8 +459,8 @@ bitflags! {
 ///
 /// Serializes as explicitly tagged JSON:
 /// `{ "kind": "range", "range": "6mo" }` or
-/// `{ "kind": "period", "start": 1716595200, "end": 1719187200 }`.
-/// Period timestamps use Unix seconds.
+/// `{ "kind": "period", "start": 1716595200000, "end": 1719187200000 }`.
+/// Period timestamps use Unix milliseconds.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TimeSpec {
@@ -482,9 +482,9 @@ enum TimeSpecWire {
         range: Range,
     },
     Period {
-        #[serde(with = "chrono::serde::ts_seconds")]
+        #[serde(with = "chrono::serde::ts_milliseconds")]
         start: DateTime<Utc>,
-        #[serde(with = "chrono::serde::ts_seconds")]
+        #[serde(with = "chrono::serde::ts_milliseconds")]
         end: DateTime<Utc>,
     },
 }
@@ -664,8 +664,8 @@ impl HistoryRequestBuilder {
             && start >= end
         {
             return Err(MarketError::InvalidPeriod {
-                start: start.timestamp(),
-                end: end.timestamp(),
+                start: start.timestamp_millis(),
+                end: end.timestamp_millis(),
             });
         }
 

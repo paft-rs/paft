@@ -237,7 +237,7 @@ impl Columnar for Profile {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct ShareCount {
     /// The timestamp for the data point.
-    #[serde(with = "chrono::serde::ts_seconds")]
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub date: DateTime<Utc>,
     /// The number of shares outstanding.
     pub shares: u64,

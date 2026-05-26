@@ -107,8 +107,8 @@ fn history_request_validation_period_start_ge_end_rejected() {
     assert!(result.is_err());
 
     if let Err(MarketError::InvalidPeriod { start, end }) = result {
-        assert_eq!(start, 2000);
-        assert_eq!(end, 1000);
+        assert_eq!(start, 2_000_000);
+        assert_eq!(end, 1_000_000);
     } else {
         panic!("Expected InvalidPeriod error for invalid period");
     }
@@ -125,8 +125,8 @@ fn history_request_validation_period_start_eq_end_rejected() {
     assert!(result.is_err());
 
     if let Err(MarketError::InvalidPeriod { start, end }) = result {
-        assert_eq!(start, 1000);
-        assert_eq!(end, 1000);
+        assert_eq!(start, 1_000_000);
+        assert_eq!(end, 1_000_000);
     } else {
         panic!("Expected InvalidPeriod error for equal start and end");
     }
@@ -137,8 +137,8 @@ fn history_request_deserialization_period_start_ge_end_rejected() {
     let invalid = serde_json::json!({
         "time_spec": {
             "kind": "period",
-            "start": 2000,
-            "end": 1000
+            "start": 2_000_000,
+            "end": 1_000_000
         },
         "interval": Interval::D1,
         "flags": 6

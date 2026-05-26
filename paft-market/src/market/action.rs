@@ -16,7 +16,7 @@ pub enum Action {
     /// Cash dividend.
     Dividend {
         /// Timestamp.
-        #[serde(with = "chrono::serde::ts_seconds")]
+        #[serde(with = "chrono::serde::ts_milliseconds")]
         ts: DateTime<Utc>,
         /// Amount paid per share.
         amount: Price,
@@ -24,7 +24,7 @@ pub enum Action {
     /// Stock split.
     Split {
         /// Timestamp.
-        #[serde(with = "chrono::serde::ts_seconds")]
+        #[serde(with = "chrono::serde::ts_milliseconds")]
         ts: DateTime<Utc>,
         /// Split numerator.
         numerator: u32,
@@ -34,7 +34,7 @@ pub enum Action {
     /// Capital gain distribution.
     CapitalGain {
         /// Timestamp.
-        #[serde(with = "chrono::serde::ts_seconds")]
+        #[serde(with = "chrono::serde::ts_milliseconds")]
         ts: DateTime<Utc>,
         /// Distribution amount.
         gain: Price,

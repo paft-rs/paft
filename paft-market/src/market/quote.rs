@@ -93,8 +93,8 @@ pub struct GenericQuoteUpdate<M = ()> {
     pub previous_close: Option<Price>,
     /// Volume traded since the previous update.
     pub volume: Option<u64>,
-    /// Event timestamp (Unix seconds).
-    #[serde(with = "chrono::serde::ts_seconds")]
+    /// Event timestamp as Unix milliseconds.
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]

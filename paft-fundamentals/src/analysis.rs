@@ -255,7 +255,7 @@ pub struct RecommendationSummary {
 /// Broker action history for an instrument.
 pub struct UpgradeDowngradeRow {
     /// Event timestamp.
-    #[serde(with = "chrono::serde::ts_seconds")]
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Research firm name.
     pub firm: Option<String>,
