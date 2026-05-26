@@ -23,20 +23,29 @@ Advanced (direct dependency, minimal features):
 paft-aggregates = { version = "0.8.0", default-features = false }
 ```
 
+With DataFrame integration:
+
+```toml
+[dependencies]
+paft-aggregates = { version = "0.8.0", default-features = false, features = ["dataframe"] }
+paft-utils = { version = "0.8.0", default-features = false, features = ["dataframe"] } # trait imports for direct users
+```
+
 What’s inside
 --------------
 
-- `Snapshot` — strictly instant-in-time snapshot for an instrument: identity, the current session's prices/ranges, and the snapshot timestamp. Generic over a provider-metadata payload (defaults to `()`); fundamentals/analyst/ESG fields belong in `paft-fundamentals`.
+- `Snapshot` — strictly instant-in-time snapshot for an instrument: identity, the current session's prices/ranges, and the snapshot timestamp. This is the standard no-metadata alias for `GenericSnapshot<()>`; use `GenericSnapshot<M = ()>` when you need a provider-metadata payload. Fundamentals/analyst/ESG fields belong in `paft-fundamentals`.
 
 Features
 --------
 
-- `bigdecimal`: change money backend from `rust_decimal` to `bigdecimal` via `paft-money`
+- `bigdecimal`: switch the shared decimal backend used by `paft-money` prices and `paft-utils` dataframe encoding from `rust_decimal` to `bigdecimal`
 - `panicking-money-ops`: forwards to `paft-money` to enable panicking arithmetic operators
+- `dataframe`: derives Polars dataframe support for `Snapshot`; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 
 Links
 -----
 
 - API docs: [docs.rs/paft-aggregates](https://docs.rs/paft-aggregates)
 - Workspace overview: [GitHub: workspace README](https://github.com/paft-rs/paft/blob/main/README.md)
-- License: [GitHub: LICENSE](https://github.com/paft-rs/paft/blob/main/LICENSE)
+- License: [LICENSE](../LICENSE)

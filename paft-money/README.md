@@ -11,7 +11,7 @@ Currency and money primitives for the paft ecosystem.
 - `Money` for settled/payable amounts with currency minor-unit enforcement
 - `Price` for full-precision per-unit quotes
 - `MonetaryAmount` for exact currency totals before settlement rounding
-- Runtime currency metadata overlays for non-ISO minor units (e.g., `XAU`, `XDR`)
+- Runtime currency metadata overlays for ISO codes without minor-unit exponents (e.g., `XAU`, `XDR`) and custom/non-ISO currencies
 
 Install
 -------
@@ -28,6 +28,7 @@ Advanced (direct dependency, default backend):
 ```toml
 [dependencies]
 paft-money = "0.8.0"
+paft-decimal = "0.8.0" # only needed if you use paft_decimal helpers directly
 ```
 
 Alternate decimal backend:
@@ -37,20 +38,29 @@ Alternate decimal backend:
 paft-money = { version = "0.8.0", features = ["bigdecimal"] }
 ```
 
-With DataFrame integration or panicking ops:
+With DataFrame integration:
 
 ```toml
 [dependencies]
-paft-money = { version = "0.8.0", features = ["dataframe", "panicking-money-ops"] }
+paft-money = { version = "0.8.0", features = ["dataframe"] }
+paft-utils = { version = "0.8.0", default-features = false, features = ["dataframe"] } # trait imports for direct users
+```
+
+With panicking ops:
+
+```toml
+[dependencies]
+paft-money = { version = "0.8.0", features = ["panicking-money-ops"] }
 ```
 
 Features
 --------
 
 - `bigdecimal`: switch to arbitrary precision decimals
-- `dataframe`: Polars integration (`ToDataFrame`/`ToDataFrameVec`)
+- `dataframe`: Polars integration for paft-money types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 - `panicking-money-ops`: opt-in operator overloading that panics on invalid operations
 - `money-formatting`: locale-aware formatting and strict parsing for `Money`
+- `tracing`: enable lightweight instrumentation on constructors, parsers, currency metadata helpers, and money operations
 
 Currency value types
 --------------------
@@ -122,4 +132,4 @@ Links
 
 - API docs: https://docs.rs/paft-money
 - Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
-- License: https://github.com/paft-rs/paft/blob/main/LICENSE
+- License: [LICENSE](../LICENSE)

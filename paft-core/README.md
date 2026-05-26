@@ -9,7 +9,6 @@ Core infrastructure utilities for the paft ecosystem.
 - Workspace-wide error type (`PaftError`)
 - Enum macros for canonical string codes (`string_enum_*`, `impl_display_via_code`)
 - Reusable serde helpers for timestamp encodings
-- Optional re-exports for lightweight DataFrame traits
 
 Install
 -------
@@ -28,11 +27,7 @@ Advanced (direct dependency, minimal):
 paft-core = { version = "0.8.0", default-features = false }
 ```
 
-With serde helpers only (no optional features available in this crate):
-```toml
-[dependencies]
-paft-core = { version = "0.8.0", default-features = false }
-```
+Serde helpers are included in the minimal crate; there are no optional serde feature flags.
 
 Features
 --------
@@ -64,4 +59,4 @@ Links
 
 - API docs: https://docs.rs/paft-core
 - Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
-- License: https://github.com/paft-rs/paft/blob/main/LICENSE
+- License: [LICENSE](../LICENSE)

@@ -1,7 +1,7 @@
 paft-fundamentals
 =================
 
-Fundamentals data models for the paft ecosystem: financial statements, analysis, holders, and ESG.
+Fundamentals data models for the paft ecosystem: financial statements, analysis, holders, ESG, and key statistics.
 
 [![Crates.io](https://img.shields.io/crates/v/paft-fundamentals)](https://crates.io/crates/paft-fundamentals)
 [![Docs.rs](https://docs.rs/paft-fundamentals/badge.svg)](https://docs.rs/paft-fundamentals)
@@ -9,6 +9,7 @@ Fundamentals data models for the paft ecosystem: financial statements, analysis,
 - Profiles: `CompanyProfile`, `FundProfile`
 - Statements: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`
 - Analysis: earnings, recommendations, price targets, trend/revision helper rows
+- Statistics: `KeyStatistics`
 - Holders: institutional, insiders
 - ESG: scores, involvement, summary
 
@@ -41,13 +42,15 @@ With DataFrame integration:
 ```toml
 [dependencies]
 paft-fundamentals = { version = "0.8.0", default-features = false, features = ["dataframe"] }
+paft-utils = { version = "0.8.0", default-features = false, features = ["dataframe"] } # trait imports for direct users
 ```
 
 Features
 --------
 
-- `bigdecimal`: change money backend from `rust_decimal` to `bigdecimal` via `paft-money`
-- `dataframe`: Polars integration (`ToDataFrame`/`ToDataFrameVec`)
+- `bigdecimal`: switch `Money`/`Price` and decimal-backed fields to `bigdecimal` by forwarding `paft-money`, `paft-decimal`, and `paft-utils`
+- `dataframe`: Polars integration for dataframe-enabled row/leaf fundamentals types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
+- `tracing`: enable lightweight instrumentation on parsing and helper constructors
 
 Quickstart
 ----------
@@ -75,4 +78,4 @@ Links
 
 - API docs: https://docs.rs/paft-fundamentals
 - Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
-- License: https://github.com/paft-rs/paft/blob/main/LICENSE
+- License: [LICENSE](../LICENSE)

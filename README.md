@@ -4,7 +4,7 @@
 [![Docs.rs](https://docs.rs/paft/badge.svg)](https://docs.rs/paft)
 [![CI](https://github.com/paft-rs/paft/actions/workflows/ci.yml/badge.svg)](https://github.com/paft-rs/paft/actions/workflows/ci.yml)
 [![Downloads](https://img.shields.io/crates/d/paft)](https://crates.io/crates/paft)
-[![License](https://img.shields.io/crates/l/paft)](https://crates.io/crates/paft)
+[![License](https://img.shields.io/crates/l/paft)](LICENSE)
 
 **Building the unified ecosystem for financial data in Rust.**
 
@@ -94,12 +94,12 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 - **Unified Error**: Single `paft::Error` enum and `paft::Result<T>` unify errors across crates
 - **Feature Flags**:
   - `paft/dataframe`: Enables DataFrame helpers and derives through the facade
-  - `paft/panicking-money-ops` (opt-in): Enables ergonomic arithmetic operators on `Money` that panic on currency mismatch or division by zero. By default, operator overloads are disabled and you should use the safe `try_add`, `try_sub`, and `try_div` methods instead.
+  - `paft/panicking-money-ops` (opt-in): Enables ergonomic arithmetic operators on `Money` that panic on currency mismatch, division by zero, or conversion/metadata failures. By default, operator overloads are disabled and you should use the safe `try_add`, `try_sub`, `try_mul`, and `try_div` methods instead.
   - `paft/money-formatting` (opt-in): Locale‑aware money formatting and strict parsing APIs (re‑exports `Locale`/`LocalizedMoney`).
   - `paft/prediction` (opt-in): Prediction market data models (`Market`, `Token`).
   - `paft/aggregates` (opt-in): Aggregated snapshot type (`Snapshot`).
   - `paft/bigdecimal` (opt-in): Switches the money backend to `BigDecimal`; `rust_decimal` is the implicit default.
-  - `paft/tracing` (opt-in): Enables instrumentation via `tracing` across the workspace; zero-cost when disabled; no subscriber bundled; propagates to member crates.
+  - `paft/tracing` (opt-in): Enables instrumentation spans in selected constructors and validators for `paft-domain`, `paft-money`, `paft-market`, and `paft-fundamentals`; zero-cost when disabled; no subscriber bundled.
   - `paft/full`: Convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, `prediction`, and `dataframe`.
 
   To enable panicking operators via the `paft` facade:
@@ -109,8 +109,9 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   paft = { version = "0.8.0", features = ["panicking-money-ops"] }
   ```
 
-  Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic
-  on currency mismatch or division by zero. Prefer `try_*` methods in most apps.
+  Note: This feature is opt-in and enables the `+`, `-`, `*`, and `/` operators to
+  panic on currency mismatch, division by zero, or conversion/metadata failures.
+  Prefer `try_*` methods in most apps.
 
   For ergonomics in math-heavy code, enable this only when you control the
   data end to end (e.g., internal pipelines with strict invariants) and are
@@ -119,11 +120,11 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 
 ## Observability (tracing)
 
-paft ships with optional, feature-gated instrumentation using the `tracing` crate. This adds spans and error events around fallible constructors and validators across the workspace. The feature is off by default and no subscriber is bundled.
+paft ships with optional, feature-gated instrumentation using the `tracing` crate. This adds spans around selected fallible constructors and validators in `paft-domain`, `paft-money`, `paft-market`, and `paft-fundamentals`. The feature is off by default and no subscriber is bundled.
 
 - Zero-cost when disabled (no code generated)
 - Light overhead when enabled; spans are annotated at `debug` level and include `err` on failures
-- The `paft/tracing` feature propagates to member crates to enable instrumentation everywhere at once
+- The `paft/tracing` feature propagates to instrumented member crates so a facade user can enable it in one place
 
 ### What’s instrumented
 
@@ -307,7 +308,7 @@ Get started:
 
 ## License
 
-MIT License. See [LICENSE](https://github.com/paft-rs/paft/blob/main/LICENSE) for details.
+MIT License. See [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 

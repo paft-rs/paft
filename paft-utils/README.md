@@ -6,8 +6,8 @@ Shared utilities for the paft workspace: canonical string helpers and optional D
 [![Crates.io](https://img.shields.io/crates/v/paft-utils)](https://crates.io/crates/paft-utils)
 [![Docs.rs](https://docs.rs/paft-utils/badge.svg)](https://docs.rs/paft-utils)
 
-- Canonical string utilities: `Canonical`, `canonicalize`, `StringCode`
-- Optional Polars helpers: `ToDataFrame`, `ToDataFrameVec`
+- Canonical string utilities: `Canonical`, `CanonicalError`, `canonicalize`, `StringCode`
+- Optional Polars helpers: `Columnar`, `Decimal128Encode`, `ToDataFrame`, `ToDataFrameVec`
 
 Install
 -------
@@ -37,6 +37,7 @@ Features
 --------
 
 - `dataframe`: enable `polars` integration for fast columnar conversions
+- `bigdecimal`: enable `Decimal128Encode` for `bigdecimal::BigDecimal` when combined with `dataframe`
 
 Quickstart
 ----------
@@ -55,4 +56,4 @@ Links
 
 - API docs: https://docs.rs/paft-utils
 - Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
-- License: https://github.com/paft-rs/paft/blob/main/LICENSE
+- License: [LICENSE](../LICENSE)

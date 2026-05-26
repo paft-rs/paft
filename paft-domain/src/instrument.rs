@@ -6,7 +6,7 @@ use crate::{
     identifiers::{Figi, Isin, Symbol},
 };
 use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, str::FromStr};
+use std::borrow::Cow;
 
 /// Kinds of financial instruments.
 ///

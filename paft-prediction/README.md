@@ -23,6 +23,14 @@ Advanced (direct dependency, minimal features):
 paft-prediction = { version = "0.8.0", default-features = false }
 ```
 
+With DataFrame integration:
+
+```toml
+[dependencies]
+paft-prediction = { version = "0.8.0", default-features = false, features = ["dataframe"] }
+paft-utils = { version = "0.8.0", default-features = false, features = ["dataframe"] } # trait imports for direct users
+```
+
 What's inside
 -------------
 
@@ -41,12 +49,14 @@ What's inside
 Quickstart
 ----------
 
+This example uses the facade dependency shown first.
+
 ```rust
-use paft_prediction::{EventID, OutcomeID, PredictionInstrument};
+use paft::prediction::{EventID, OutcomeID, PredictionInstrument};
 
 // Identifiers normalize on construction: lowercase hex, trimmed.
-let a = EventID::new("  0xABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCD  ").unwrap();
-let b = EventID::new("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd").unwrap();
+let a = EventID::new("  0xABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890  ").unwrap();
+let b = EventID::new("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890").unwrap();
 assert_eq!(a, b);
 
 // FromStr is wired via ::new, so .parse() works too.
@@ -56,16 +66,19 @@ let instrument = PredictionInstrument::from_ids(a, outcome);
 println!("{instrument}"); // displays the outcome id
 ```
 
+For direct `paft-prediction` users, import the same types from
+`paft_prediction::{EventID, OutcomeID, PredictionInstrument}`.
+
 Features
 --------
 
-- `dataframe`: derive Polars `ToDataFrame` impls for the prediction types
-- `bigdecimal`: forwards to `paft-money` to switch the money backend from
-  `rust_decimal` to `bigdecimal`
+- `dataframe`: derive Polars dataframe support for prediction types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
+- `bigdecimal`: forwards to `paft-money` and `paft-utils` to switch the money
+  backend from `rust_decimal` to `bigdecimal`
 
 Links
 -----
 
 - API docs: [docs.rs/paft-prediction](https://docs.rs/paft-prediction)
 - Workspace overview: [GitHub: workspace README](https://github.com/paft-rs/paft/blob/main/README.md)
-- License: [GitHub: LICENSE](https://github.com/paft-rs/paft/blob/main/LICENSE)
+- License: [LICENSE](../LICENSE)

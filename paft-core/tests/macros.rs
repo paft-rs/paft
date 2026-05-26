@@ -6,14 +6,14 @@
 //! independently of any consumer crate.
 //!
 //! Several tests double as macro-hygiene checks: the macros must expand to
-//! `$crate::__utils::...` paths so that consumer crates do not need
-//! `paft_utils` in scope under any particular name.
+//! `$crate::__utils::...` and `$crate::__serde::...` paths so that consumer
+//! crates do not need implementation dependencies in scope under any particular
+//! name.
 
 #![allow(clippy::items_after_statements)]
 
 use paft_core::__utils::{Canonical, StringCode};
 use paft_core::PaftError;
-use std::str::FromStr;
 
 // ---------- Closed enum ----------
 
@@ -256,8 +256,6 @@ fn open_string_code_trait_reports_canonical_correctly() {
 // resolve all helpers via `$crate::__utils::...` as intended.
 mod hygiene_no_paft_utils_in_scope {
     use paft_core::PaftError;
-    use std::str::FromStr;
-
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub enum Color {
         Red,

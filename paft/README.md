@@ -6,7 +6,7 @@
 [![Docs.rs](https://docs.rs/paft/badge.svg)](https://docs.rs/paft)
 [![CI](https://github.com/paft-rs/paft/actions/workflows/ci.yml/badge.svg)](https://github.com/paft-rs/paft/actions/workflows/ci.yml)
 [![Downloads](https://img.shields.io/crates/d/paft)](https://crates.io/crates/paft)
-[![License](https://img.shields.io/crates/l/paft)](LICENSE)
+[![License](https://img.shields.io/crates/l/paft)](../LICENSE)
 
 Standardized Rust types for financial data that work with any provider—Yahoo Finance, Bloomberg, Alpha Vantage, and more.
 
@@ -49,7 +49,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `full`: convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, `prediction`, and `dataframe`.
 - `panicking-money-ops`: re-enables `Money` arithmetic operators that panic on mismatched currencies (see below).
 - `money-formatting`: forwards to `paft-money/money-formatting` for locale-aware formatting and parsing APIs.
-- `tracing`: enables lightweight instrumentation via the `tracing` crate; zero‑cost when disabled; adds spans/events in constructors and validators across the workspace.
+- `tracing`: enables lightweight instrumentation spans in selected constructors and validators for `paft-domain`, `paft-money`, `paft-market`, and `paft-fundamentals`; zero-cost when disabled.
 
 ## Migration Notes
 
@@ -154,7 +154,12 @@ use paft::prelude::*;
 
 let quotes = vec![quote1, quote2, quote3];
 let df = quotes.to_dataframe()?;
-println!("Average price: {:.2}", df.column("price")?.mean()?);
+if let Some(avg) = df.column("price.amount")?.as_materialized_series().mean() {
+    println!("Average price: {avg:.2}");
+}
+
+// Money-like fields are flattened into paired amount/currency columns such as
+// `price.amount` and `price.currency`.
 ```
 
 ### Locale-aware money formatting and parsing
@@ -198,8 +203,9 @@ If you explicitly want the ergonomic panicking operators, enable the
 paft = { version = "0.8.0", features = ["panicking-money-ops"] }
 ```
 
-Note: This feature is opt-in and enables the `+`, `-`, and `/` operators to panic
-on currency mismatch or division by zero. Prefer `try_*` methods in most apps.
+Note: This feature is opt-in and enables the `+`, `-`, `*`, and `/` operators to
+panic on currency mismatch, division by zero, or conversion/metadata failures.
+Prefer `try_*` methods in most apps.
 
 For ergonomics in math-heavy code, you may enable this only when you control
 the data end to end (e.g., internal pipelines with strict invariants) and are
@@ -211,14 +217,16 @@ untrusted data, keep this feature disabled and use the `try_*` APIs.
 paft uses extensible enums with `Other(Canonical)` variants to gracefully handle unknown provider values:
 
 ```rust
+use paft::money::IsoCurrency;
 use paft::prelude::*;
 
 // Handle unknown currencies from providers
 match currency {
     Currency::Iso(IsoCurrency::USD) => "US Dollar",
     Currency::Iso(IsoCurrency::EUR) => "Euro",
+    Currency::BTC => "Bitcoin",
     Currency::Other(code) => match code.as_ref() {
-        "BTC" => "Bitcoin",
+        "XBT" => "Bitcoin alias",
         _ => "Unknown currency",
     },
     _ => "Known currency",
@@ -248,4 +256,4 @@ Keep the rule of thumb: *wire = code = Display; human prose = explicit helper*.
 
 ## License
 
-MIT License. See [LICENSE](https://github.com/paft-rs/paft/blob/main/LICENSE) for details.
+MIT License. See [LICENSE](../LICENSE) for details.

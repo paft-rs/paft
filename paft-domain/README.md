@@ -28,13 +28,6 @@ Advanced (direct dependency, minimal):
 paft-domain = { version = "0.8.0", default-features = false }
 ```
 
-Alternate decimal backend: enable on dependent crates (e.g., via the facade):
-
-```toml
-[dependencies]
-paft = { version = "0.8.0", features = ["bigdecimal"] }
-```
-
 Enable DataFrame helpers as needed:
 
 ```toml
@@ -50,6 +43,10 @@ Features
 
 Quickstart
 ----------
+
+The quickstart below uses the direct `paft-domain` dependency shown above. If
+you depend on the facade crate instead, import these types from `paft::domain`
+or `paft::prelude`.
 
 ```rust
 use paft_domain::{AssetKind, Exchange, Figi, Instrument, Isin, Period, Symbol};
@@ -79,6 +76,12 @@ Prediction markets
 
 Prediction-market identity is intentionally outside `paft-domain`; use the separate `paft-prediction` crate:
 
+```toml
+[dependencies]
+paft-domain = "0.8.0"
+paft-prediction = "0.8.0"
+```
+
 ```rust
 use paft_prediction::PredictionInstrument;
 
@@ -100,4 +103,4 @@ Links
 
 - API docs: https://docs.rs/paft-domain
 - Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
-- License: https://github.com/paft-rs/paft/blob/main/LICENSE
+- License: [LICENSE](../LICENSE)

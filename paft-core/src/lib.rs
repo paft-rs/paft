@@ -4,12 +4,10 @@
 //! - Workspace-wide error type [`PaftError`]
 //! - Macros for canonical string enums (open/closed) and `Display` via `code()`
 //! - Reusable serde helpers for common timestamp encodings
-//! - Optional re-exports for lightweight dataframe traits
 //!
 //! # Quickstart
 //! ```rust
 //! use paft_core::{PaftError, string_enum_closed_with_code, impl_display_via_code};
-//! # use std::str::FromStr;
 //!
 //! // Define a closed string enum with canonical codes and parsing
 //! #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -41,6 +39,12 @@ pub mod serde_helpers;
 #[doc(hidden)]
 pub use paft_utils as __utils;
 
+/// Internal re-export of `serde` so the `string_enum_*` macros can resolve
+/// serialization traits through `$crate` without forcing downstream crates to
+/// depend on `serde` directly.
+#[doc(hidden)]
+pub use serde as __serde;
+
 /// Internal macro exports for string-backed enums used across the paft workspace.
 /// These remain public for crate interoperability but are not covered by semver guarantees.
 #[doc(hidden)]
@@ -55,22 +59,23 @@ macro_rules! __string_enum_base {
             fn code(&self) -> &str { $Type::code(self) }
         }
 
-        impl ::serde::Serialize for $Type {
+        impl $crate::__serde::Serialize for $Type {
             fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
             where
-                S: ::serde::Serializer,
+                S: $crate::__serde::Serializer,
             {
                 serializer.serialize_str(self.code())
             }
         }
 
-        impl<'de> ::serde::Deserialize<'de> for $Type {
+        impl<'de> $crate::__serde::Deserialize<'de> for $Type {
             fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
             where
-                D: ::serde::Deserializer<'de>,
+                D: $crate::__serde::Deserializer<'de>,
             {
-                let raw = <String as ::serde::Deserialize>::deserialize(deserializer)?;
-                Self::from_str(&raw).map_err(::serde::de::Error::custom)
+                let raw = <String as $crate::__serde::Deserialize>::deserialize(deserializer)?;
+                <Self as ::std::str::FromStr>::from_str(&raw)
+                    .map_err($crate::__serde::de::Error::custom)
             }
         }
 
@@ -103,7 +108,7 @@ macro_rules! __string_enum_base {
             type Error = $crate::error::PaftError;
 
             fn try_from(value: String) -> ::std::result::Result<Self, Self::Error> {
-                Self::from_str(&value)
+                <Self as ::std::str::FromStr>::from_str(&value)
             }
         }
 
@@ -135,22 +140,23 @@ macro_rules! __string_enum_base {
             pub const fn is_canonical(&self) -> bool { !matches!(self, $OtherVariant(_)) }
         }
 
-        impl ::serde::Serialize for $Type {
+        impl $crate::__serde::Serialize for $Type {
             fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
             where
-                S: ::serde::Serializer,
+                S: $crate::__serde::Serializer,
             {
                 serializer.serialize_str(self.code())
             }
         }
 
-        impl<'de> ::serde::Deserialize<'de> for $Type {
+        impl<'de> $crate::__serde::Deserialize<'de> for $Type {
             fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
             where
-                D: ::serde::Deserializer<'de>,
+                D: $crate::__serde::Deserializer<'de>,
             {
-                let raw = <String as ::serde::Deserialize>::deserialize(deserializer)?;
-                Self::from_str(&raw).map_err(::serde::de::Error::custom)
+                let raw = <String as $crate::__serde::Deserialize>::deserialize(deserializer)?;
+                <Self as ::std::str::FromStr>::from_str(&raw)
+                    .map_err($crate::__serde::de::Error::custom)
             }
         }
 
@@ -185,7 +191,7 @@ macro_rules! __string_enum_base {
             type Error = $crate::error::PaftError;
 
             fn try_from(value: String) -> ::std::result::Result<Self, Self::Error> {
-                Self::from_str(&value)
+                <Self as ::std::str::FromStr>::from_str(&value)
             }
         }
 
