@@ -3,8 +3,8 @@ use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::OptionUpdate as MarketOptionUpdate;
 use paft_market::{
-    OptionChainRequest, OptionContractKey, OptionExpirationsRequest, OptionExpirationsResponse,
-    OptionSide, OptionUpdate,
+    OptionChainRequest, OptionContract, OptionContractKey, OptionExpirationsRequest,
+    OptionExpirationsResponse, OptionSide, OptionUpdate,
 };
 use paft_money::{Currency, IsoCurrency, Price};
 
@@ -53,6 +53,30 @@ fn option_expirations_response_roundtrip() {
     let json = serde_json::to_string(&resp).unwrap();
     let de: OptionExpirationsResponse = serde_json::from_str(&json).unwrap();
     assert_eq!(resp, de);
+}
+
+#[test]
+fn option_contract_in_the_money_distinguishes_unknown_from_false() {
+    let unknown: OptionContract = OptionContract::new(option_key());
+    assert_eq!(unknown.in_the_money, None);
+
+    let mut value = serde_json::to_value(&unknown).unwrap();
+    value
+        .as_object_mut()
+        .expect("option contract serializes as an object")
+        .remove("in_the_money");
+
+    let decoded_unknown: OptionContract = serde_json::from_value(value).unwrap();
+    assert_eq!(decoded_unknown.in_the_money, None);
+
+    let mut explicit_false = OptionContract::new(option_key());
+    explicit_false.in_the_money = Some(false);
+
+    let value = serde_json::to_value(&explicit_false).unwrap();
+    assert_eq!(value.get("in_the_money"), Some(&serde_json::json!(false)));
+
+    let decoded_false: OptionContract = serde_json::from_value(value).unwrap();
+    assert_eq!(decoded_false.in_the_money, Some(false));
 }
 
 #[test]

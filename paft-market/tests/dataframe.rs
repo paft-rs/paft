@@ -200,7 +200,7 @@ fn sample_contract() -> OptionContract {
         volume: Some(1_000),
         open_interest: Some(5_000),
         implied_volatility: Some(dec("0.25")),
-        in_the_money: true,
+        in_the_money: Some(true),
         expiration_at: Some(sample_ts(1_719_196_800)),
         last_trade_at: Some(sample_ts(1_700_000_000)),
         greeks: Some(OptionGreeks {
@@ -242,7 +242,7 @@ fn option_chain_to_dataframe() {
                 contract_instrument: Some(
                     Instrument::from_symbol("AAPL240621P00150000", AssetKind::Option).unwrap(),
                 ),
-                in_the_money: false,
+                in_the_money: Some(false),
                 ..contract
             },
         ],

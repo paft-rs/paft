@@ -130,8 +130,10 @@ pub struct GenericOptionContract<M = ()> {
     pub open_interest: Option<u64>,
     /// Implied volatility as a fraction (e.g., 0.25 for 25%).
     pub implied_volatility: Option<Decimal>,
-    /// Whether the option is currently in the money.
-    pub in_the_money: bool,
+    /// Whether the provider reports the option as currently in the money.
+    ///
+    /// `None` means the provider did not report this value.
+    pub in_the_money: Option<bool>,
     /// Exact UTC expiration instant, if known.
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub expiration_at: Option<DateTime<Utc>>,
@@ -149,7 +151,7 @@ impl<M: Default> GenericOptionContract<M> {
     /// Build an option contract from its required parts. All quoting fields
     /// (`price`, `bid`, `ask`, …), `volume`, `open_interest`,
     /// `implied_volatility`, `expiration_at`, `last_trade_at`, and `greeks`
-    /// default to `None`. `in_the_money` defaults to `false`. `provider` is
+    /// default to `None`, including `in_the_money`. `provider` is
     /// initialised via `M::default()`.
     #[must_use]
     pub fn new(key: OptionContractKey) -> Self {
@@ -162,7 +164,7 @@ impl<M: Default> GenericOptionContract<M> {
             volume: None,
             open_interest: None,
             implied_volatility: None,
-            in_the_money: false,
+            in_the_money: None,
             expiration_at: None,
             last_trade_at: None,
             greeks: None,

@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Facade: re-export `MoneyParseError` from `paft::money` so currency parsing errors exposed by `Currency::try_from_str` are available through the facade.
 - Market: `Quote` now carries optional `as_of` snapshot time, matching `Snapshot` and `OrderBook` for staleness checks and timestamped quote snapshots.
 - Market: `OrderBook` now carries required `instrument` context and optional `as_of` snapshot time, matching the public documentation that it represents a book for a specific instrument.
+- Market options: `OptionContract::in_the_money` is now `Option<bool>` so omitted provider values deserialize as unknown instead of `false`.
 - Market options: added `OptionSide` and `OptionContractKey`, made `OptionContract`/`OptionUpdate` carry the full flattened option identity, collapsed `OptionChain` to `contracts: Vec<_>` with `calls()`/`puts()` iterators, and renamed option request `instrument` fields to `underlying`.
 
 ## [0.8.0] - 2025-11-XX

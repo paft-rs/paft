@@ -223,11 +223,11 @@ fn option_chain_propagation() -> Result<()> {
     let first_call = chain.calls().next().expect("example chain has a call");
     let first_put = chain.puts().next().expect("example chain has a put");
     println!(
-        "First call ITM={} per-leg seq={}",
+        "First call ITM={:?} per-leg seq={}",
         first_call.in_the_money, first_call.provider.seq,
     );
     println!(
-        "First put  ITM={} per-leg seq={}",
+        "First put  ITM={:?} per-leg seq={}",
         first_put.in_the_money, first_put.provider.seq,
     );
     Ok(())
@@ -362,7 +362,7 @@ fn option_contract(
         volume: Some(100),
         open_interest: Some(500),
         implied_volatility: Some(Decimal::from(25) / Decimal::from(100)),
-        in_the_money,
+        in_the_money: Some(in_the_money),
         expiration_at: None,
         last_trade_at: None,
         greeks: Some(OptionGreeks::default()),
