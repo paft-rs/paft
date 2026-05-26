@@ -88,6 +88,20 @@ fn figi_rejects_non_alphanumeric() {
 }
 
 #[test]
+fn figi_rejects_vowels_in_provider_code() {
+    let err = Figi::new("AAG000000000").expect_err("provider code must use consonants");
+    assert!(matches!(err, DomainError::InvalidFigi { .. }));
+}
+
+#[test]
+fn figi_rejects_digits_in_provider_code() {
+    for figi in ["1AG000000000", "1BG000000008"] {
+        let err = Figi::new(figi).expect_err("provider code must use letters");
+        assert!(matches!(err, DomainError::InvalidFigi { .. }));
+    }
+}
+
+#[test]
 fn figi_rejects_non_global_marker() {
     let err = Figi::new("BBH000B9XRY3").expect_err("third character must be G");
     assert!(matches!(err, DomainError::InvalidFigi { .. }));

@@ -36,12 +36,16 @@ fn normalize_figi(input: &str) -> Result<String, DomainError> {
 fn figi_structure_is_valid(value: &str) -> bool {
     let bytes = value.as_bytes();
     bytes.len() == 12
-        && bytes[..2].iter().all(u8::is_ascii_alphanumeric)
+        && bytes[..2].iter().all(|b| is_figi_consonant(*b))
         && bytes[2] == b'G'
         && bytes[3..11]
             .iter()
-            .all(|b| b.is_ascii_alphanumeric() && !matches!(b, b'A' | b'E' | b'I' | b'O' | b'U'))
+            .all(|b| b.is_ascii_digit() || is_figi_consonant(*b))
         && bytes[11].is_ascii_digit()
+}
+
+const fn is_figi_consonant(byte: u8) -> bool {
+    byte.is_ascii_uppercase() && !matches!(byte, b'A' | b'E' | b'I' | b'O' | b'U')
 }
 
 fn figi_checksum_is_valid(value: &str) -> bool {
