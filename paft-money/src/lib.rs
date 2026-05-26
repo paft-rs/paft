@@ -51,8 +51,8 @@
 //! always uses 64-bit integers (`10_i64.pow(scale)`) and is therefore capped
 //! at 18 decimal places — see [`MAX_MINOR_UNIT_DECIMALS`]. Beyond that, the
 //! cap-line shift would push `10^scale` outside `i64`. The minor-unit
-//! integer itself is widened to `i128` before/after scaling, so values can
-//! still occupy the full `i128` range as long as `scale <= 18`.
+//! integer itself is widened to `i128` before/after scaling, while each
+//! backend still enforces its own decimal representation limits.
 //!
 //! # Currency value types
 //!

@@ -273,6 +273,13 @@ fn test_from_minor_units_large_precision() {
     );
 }
 
+#[cfg(not(feature = "bigdecimal"))]
+#[test]
+fn money_from_minor_units_returns_error_on_decimal_overflow() {
+    let err = Money::from_minor_units(i128::MAX, Currency::Iso(IsoCurrency::USD)).unwrap_err();
+    assert!(matches!(err, paft_money::MoneyError::ConversionError));
+}
+
 #[test]
 fn test_money_minor_units_boundary_precisions() {
     // 0 decimals (JPY)

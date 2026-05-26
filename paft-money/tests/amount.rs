@@ -68,6 +68,16 @@ fn monetary_amount_from_scaled_units_invalid_scale() {
     assert_eq!(err, MoneyError::ConversionError);
 }
 
+#[cfg(not(feature = "bigdecimal"))]
+#[test]
+fn scaled_unit_constructors_return_error_on_decimal_overflow() {
+    let amount_err = MonetaryAmount::from_scaled_units(i128::MAX, 0, usd()).unwrap_err();
+    assert_eq!(amount_err, MoneyError::ConversionError);
+
+    let price_err = Price::from_scaled_units(i128::MAX, 0, usd()).unwrap_err();
+    assert_eq!(price_err, MoneyError::ConversionError);
+}
+
 #[test]
 fn monetary_amount_from_money_preserves_currency() {
     let usd = usd();

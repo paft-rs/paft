@@ -57,6 +57,10 @@ mod backend {
         Decimal::from_i128_with_scale(value, scale)
     }
 
+    pub fn try_from_scaled_units(value: i128, scale: u32) -> Option<Decimal> {
+        Decimal::try_from_i128_with_scale(value, scale).ok()
+    }
+
     pub fn round_dp_with_strategy(
         value: &Decimal,
         scale: u32,
@@ -105,6 +109,11 @@ mod backend {
 
     pub fn from_minor_units(value: i128, scale: u32) -> Decimal {
         Decimal::new(BigInt::from(value), i64::from(scale))
+    }
+
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn try_from_scaled_units(value: i128, scale: u32) -> Option<Decimal> {
+        Some(Decimal::new(BigInt::from(value), i64::from(scale)))
     }
 
     pub fn round_dp_with_strategy(
@@ -161,9 +170,26 @@ pub fn one() -> Decimal {
 }
 
 /// Builds a decimal from an integer count of minor units and the provided scale.
+///
+/// # Panics
+///
+/// With the default backend, panics when the scale or integer coefficient cannot
+/// be represented by `rust_decimal`. Use [`try_from_scaled_units`] when the input
+/// is not already known to fit the active backend.
 #[must_use]
 pub fn from_minor_units(value: i128, scale: u32) -> Decimal {
     backend::from_minor_units(value, scale)
+}
+
+/// Builds a decimal from an integer coefficient and scale if the active backend can represent it.
+///
+/// Returns `None` when the default backend rejects either the scale or the
+/// 96-bit mantissa. The `bigdecimal` backend accepts every `i128` coefficient
+/// and `u32` scale.
+#[must_use]
+#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
+pub fn try_from_scaled_units(value: i128, scale: u32) -> Option<Decimal> {
+    backend::try_from_scaled_units(value, scale)
 }
 
 /// Rounds a decimal to the requested scale using a rounding strategy.
@@ -219,5 +245,18 @@ mod tests {
         assert_eq!(to_canonical_string(&value), "123.45");
         let integer = parse_decimal("1000").unwrap();
         assert_eq!(to_canonical_string(&integer), "1000");
+    }
+
+    #[test]
+    fn try_from_scaled_units_accepts_representable_values() {
+        let value = try_from_scaled_units(123_456, 3).unwrap();
+        assert_eq!(to_canonical_string(&value), "123.456");
+    }
+
+    #[cfg(not(feature = "bigdecimal"))]
+    #[test]
+    fn try_from_scaled_units_rejects_rust_decimal_limits() {
+        assert!(try_from_scaled_units(i128::MAX, 0).is_none());
+        assert!(try_from_scaled_units(1, 29).is_none());
     }
 }

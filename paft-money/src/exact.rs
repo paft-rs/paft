@@ -1,6 +1,4 @@
 use crate::currency::Currency;
-#[cfg(not(feature = "bigdecimal"))]
-use crate::currency_utils::MAX_DECIMAL_PRECISION;
 use crate::decimal::{self, Decimal, RoundingStrategy};
 use crate::error::MoneyError;
 use crate::money::Money;
@@ -65,14 +63,8 @@ pub fn checked_div_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
     }
 }
 
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
 pub fn decimal_from_scaled_units(units: i128, scale: u32) -> Result<Decimal, MoneyError> {
-    #[cfg(not(feature = "bigdecimal"))]
-    if scale > u32::from(MAX_DECIMAL_PRECISION) {
-        return Err(MoneyError::ConversionError);
-    }
-
-    Ok(decimal::from_minor_units(units, scale))
+    decimal::try_from_scaled_units(units, scale).ok_or(MoneyError::ConversionError)
 }
 
 pub fn round_to_money(

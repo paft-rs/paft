@@ -419,12 +419,14 @@ impl Money {
     ///
     /// # Errors
     /// Returns `MoneyError::ConversionError` when the currency precision exceeds supported limits
-    /// (currently 18 decimal places to keep `10^scale` within `i128`).
+    /// (currently 18 decimal places to keep `10^scale` within `i128`) or the scaled value cannot
+    /// be represented by the active decimal backend.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_minor_units(minor_units: i128, currency: Currency) -> Result<Self, MoneyError> {
         let decimals = Self::decimals_for_currency(&currency)?;
         let scale = Self::ensure_scale_within_limits(decimals)?;
-        let amount = decimal::from_minor_units(minor_units, scale);
+        let amount = decimal::try_from_scaled_units(minor_units, scale)
+            .ok_or(MoneyError::ConversionError)?;
         Self::new(amount, currency)
     }
 
