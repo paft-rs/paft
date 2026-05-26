@@ -243,14 +243,10 @@ impl FromStr for Currency {
 
 impl StringCode for Currency {
     fn code(&self) -> &str {
-        match self {
-            Self::Iso(c) => c.code(),
-            Self::BTC => "BTC",
-            Self::ETH => "ETH",
-            Self::XMR => "XMR",
-            Self::USDC => "USDC",
-            Self::USDT => "USDT",
-            Self::Other(canon) => canon.as_ref(),
-        }
+        Self::code(self)
+    }
+
+    fn is_canonical(&self) -> bool {
+        Self::is_canonical(self)
     }
 }

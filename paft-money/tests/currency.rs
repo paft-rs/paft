@@ -2,6 +2,7 @@
 
 use iso_currency::Currency as IsoCurrency;
 use paft_money::Currency;
+use paft_utils::StringCode;
 use std::str::FromStr;
 
 struct Case {
@@ -28,6 +29,16 @@ fn currency_other_values_uppercase_and_round_trip() {
     assert_eq!(json, "\"USD_LITE\"");
     let back: Currency = serde_json::from_str(&json).unwrap();
     assert_eq!(back, parsed);
+}
+
+#[test]
+fn currency_string_code_reports_other_as_non_canonical() {
+    let other = Currency::try_from_str("usd-lite").unwrap();
+
+    assert!(!other.is_canonical());
+    assert!(!StringCode::is_canonical(&other));
+    assert!(StringCode::is_canonical(&Currency::BTC));
+    assert!(StringCode::is_canonical(&Currency::Iso(IsoCurrency::USD)));
 }
 
 #[test]
