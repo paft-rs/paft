@@ -454,7 +454,12 @@ bitflags! {
 ///
 /// This enum ensures that only one time specification method is used at a time,
 /// making invalid states unrepresentable at compile time.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// Serializes as explicitly tagged JSON:
+/// `{ "kind": "range", "range": "6mo" }` or
+/// `{ "kind": "period", "start": 1716595200, "end": 1719187200 }`.
+/// Period timestamps use Unix seconds.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TimeSpec {
     /// Use a logical range preset (e.g., "1 month", "1 year").
     Range(Range),
@@ -465,6 +470,49 @@ pub enum TimeSpec {
         /// End timestamp for the period.
         end: DateTime<Utc>,
     },
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+enum TimeSpecWire {
+    Range {
+        range: Range,
+    },
+    Period {
+        #[serde(with = "chrono::serde::ts_seconds")]
+        start: DateTime<Utc>,
+        #[serde(with = "chrono::serde::ts_seconds")]
+        end: DateTime<Utc>,
+    },
+}
+
+impl Serialize for TimeSpec {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let wire = match self {
+            Self::Range(range) => TimeSpecWire::Range { range: *range },
+            Self::Period { start, end } => TimeSpecWire::Period {
+                start: *start,
+                end: *end,
+            },
+        };
+
+        wire.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for TimeSpec {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(match TimeSpecWire::deserialize(deserializer)? {
+            TimeSpecWire::Range { range } => Self::Range(range),
+            TimeSpecWire::Period { start, end } => Self::Period { start, end },
+        })
+    }
 }
 
 impl Default for TimeSpec {

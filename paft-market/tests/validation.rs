@@ -136,10 +136,9 @@ fn history_request_validation_period_start_eq_end_rejected() {
 fn history_request_deserialization_period_start_ge_end_rejected() {
     let invalid = serde_json::json!({
         "time_spec": {
-            "Period": {
-                "start": "1970-01-01T00:33:20Z",
-                "end": "1970-01-01T00:16:40Z"
-            }
+            "kind": "period",
+            "start": 2000,
+            "end": 1000
         },
         "interval": Interval::D1,
         "flags": 6

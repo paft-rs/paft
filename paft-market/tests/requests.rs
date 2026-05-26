@@ -1,4 +1,5 @@
 use paft_domain::AssetKind;
+use paft_market::requests::history::TimeSpec;
 use paft_market::{HistoryRequest, Interval, NewsRequest, NewsTab, Range, SearchRequest};
 
 #[test]
@@ -48,11 +49,35 @@ fn history_request_serialization() {
         .unwrap();
 
     let value = serde_json::to_value(&request).unwrap();
-    assert_eq!(value["time_spec"], serde_json::json!({ "Range": "1d" }));
+    assert_eq!(
+        value["time_spec"],
+        serde_json::json!({
+            "kind": "range",
+            "range": "1d"
+        })
+    );
     assert_eq!(value["interval"], serde_json::json!("1d"));
 
     let deserialized: HistoryRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
+}
+
+#[test]
+fn time_spec_range_uses_explicit_kind_wire_shape() {
+    let time_spec = TimeSpec::Range(Range::M6);
+
+    let value = serde_json::to_value(&time_spec).unwrap();
+
+    assert_eq!(
+        value,
+        serde_json::json!({
+            "kind": "range",
+            "range": "6mo"
+        })
+    );
+
+    let deserialized: TimeSpec = serde_json::from_value(value).unwrap();
+    assert_eq!(time_spec, deserialized);
 }
 
 #[test]
@@ -72,9 +97,42 @@ fn history_request_with_period() {
         .build()
         .unwrap();
 
-    let json = serde_json::to_string(&request).unwrap();
-    let deserialized: HistoryRequest = serde_json::from_str(&json).unwrap();
+    let value = serde_json::to_value(&request).unwrap();
+    assert_eq!(
+        value["time_spec"],
+        serde_json::json!({
+            "kind": "period",
+            "start": 1000,
+            "end": 2000
+        })
+    );
+
+    let deserialized: HistoryRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
+}
+
+#[test]
+fn time_spec_period_uses_epoch_second_wire_shape() {
+    use chrono::DateTime;
+
+    let time_spec = TimeSpec::Period {
+        start: DateTime::from_timestamp(1_716_595_200, 0).unwrap(),
+        end: DateTime::from_timestamp(1_719_187_200, 0).unwrap(),
+    };
+
+    let value = serde_json::to_value(&time_spec).unwrap();
+
+    assert_eq!(
+        value,
+        serde_json::json!({
+            "kind": "period",
+            "start": 1_716_595_200,
+            "end": 1_719_187_200
+        })
+    );
+
+    let deserialized: TimeSpec = serde_json::from_value(value).unwrap();
+    assert_eq!(time_spec, deserialized);
 }
 
 #[test]
