@@ -8,6 +8,7 @@ use crate::error::MarketError;
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 /// Logical lookback range presets.
 pub enum Range {
     /// 1 minute
@@ -150,6 +151,7 @@ impl<'de> Deserialize<'de> for Range {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 /// Supported resolution intervals.
 pub enum Interval {
     /// 1 second
@@ -460,6 +462,7 @@ bitflags! {
 /// `{ "kind": "period", "start": 1716595200, "end": 1719187200 }`.
 /// Period timestamps use Unix seconds.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TimeSpec {
     /// Use a logical range preset (e.g., "1 month", "1 year").
     Range(Range),

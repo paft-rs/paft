@@ -23,7 +23,7 @@ fn process_currency(currency: Currency) -> &'static str {
     match currency {
         Currency::Iso(IsoCurrency::USD) => "US Dollar",
         Currency::Iso(IsoCurrency::EUR) => "Euro",
-        // Missing Other variant - compiler error!
+        // Missing Other and future variant fallback - compiler error!
     }
 }
 ```
@@ -37,6 +37,7 @@ fn process_currency(currency: Currency) -> String {
         Currency::Iso(IsoCurrency::USD) => "US Dollar".to_string(),
         Currency::Iso(IsoCurrency::EUR) => "Euro".to_string(),
         Currency::Other(code) => format!("Unknown currency: {}", code),
+        other => other.code().to_string(),
     }
 }
 ```
@@ -92,6 +93,7 @@ fn get_currency_info(currency: Currency) -> CurrencyInfo {
             // Return a generic currency info
             CurrencyInfo::generic(code)
         }
+        other => CurrencyInfo::generic(other.code()),
     }
 }
 ```
@@ -313,6 +315,7 @@ fn process_currency(currency: Currency) -> String {
         Currency::Iso(IsoCurrency::USD) => "US Dollar".to_string(),
         Currency::Iso(IsoCurrency::EUR) => "Euro".to_string(),
         Currency::Other(code) => format!("Unknown: {}", code),
+        other => other.code().to_string(),
     }
 }
 

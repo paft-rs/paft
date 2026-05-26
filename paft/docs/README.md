@@ -48,6 +48,7 @@ let label: String = match currency {
         "BTC" => "Bitcoin".to_string(),
         _ => format!("Unknown: {}", code),
     },
+    other => other.code().to_string(),
 };
 ```
 

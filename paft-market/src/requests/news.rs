@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 /// Tabs/categories for news requests.
 pub enum NewsTab {
     /// The latest news articles. (Default)

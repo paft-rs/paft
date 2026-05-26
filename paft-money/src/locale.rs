@@ -5,6 +5,7 @@
 //! `1,23,45,678`.
 /// Supported locales for money formatting/parsing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Locale {
     /// English (United States): grouping 3-3-3, `,` thousands, `.` decimal.
     EnUs,

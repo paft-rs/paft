@@ -140,6 +140,7 @@ pub struct FundProfile {
 
 /// Union of supported profile kinds.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum Profile {
     /// Company profile.
     Company(CompanyProfile),

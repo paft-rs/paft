@@ -154,5 +154,6 @@ fn classify(currency: &Currency) -> String {
         }
         // Everything else: provider-supplied token paft preserved verbatim.
         Currency::Other(canonical) => format!("Other(Canonical({canonical})) - not in known set"),
+        _ => format!("{} (canonical, non-ISO)", currency.code()),
     }
 }

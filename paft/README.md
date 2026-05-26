@@ -222,6 +222,7 @@ match currency {
         "BTC" => "Bitcoin",
         _ => "Unknown currency",
     },
+    _ => "Known currency",
 }
 
 // Same pattern for exchanges, asset types, etc.

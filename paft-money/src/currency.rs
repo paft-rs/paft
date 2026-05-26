@@ -13,6 +13,7 @@ use crate::locale::Locale;
 
 /// Currency enumeration with major currencies and extensible fallback.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Currency {
     /// ISO 4217 currency code (backed by `iso_currency` crate)
     Iso(IsoCurrency),
