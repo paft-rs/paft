@@ -30,6 +30,7 @@ fn quote_construction() {
         )),
         day_volume: None,
         market_state: Some(MarketState::Regular),
+        as_of: Some(DateTime::from_timestamp(1_640_995_200, 123_000_000).unwrap()),
         bid: None,
         ask: None,
         provider: (),
@@ -53,6 +54,7 @@ fn quote_construction() {
     );
     assert_eq!(quote.instrument.exchange, Some(Exchange::NASDAQ));
     assert_eq!(quote.market_state, Some(MarketState::Regular));
+    assert_eq!(quote.as_of.unwrap().timestamp_millis(), 1_640_995_200_123);
 }
 
 #[test]
@@ -64,6 +66,7 @@ fn quote_minimal_construction() {
         previous_close: None,
         day_volume: None,
         market_state: None,
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -74,6 +77,7 @@ fn quote_minimal_construction() {
     assert!(quote.previous_close.is_none());
     assert!(quote.instrument.exchange.is_none());
     assert!(quote.market_state.is_none());
+    assert!(quote.as_of.is_none());
 }
 
 #[test]
@@ -96,6 +100,7 @@ fn quote_clone() {
         )),
         day_volume: None,
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -125,6 +130,7 @@ fn quote_debug_formatting() {
         )),
         day_volume: None,
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -156,6 +162,7 @@ fn quote_currency_consistency() {
         )),
         day_volume: None,
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -187,6 +194,7 @@ fn quote_currency_none() {
         previous_close: None,
         day_volume: None,
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -213,6 +221,7 @@ fn quote_price_fields() {
         )),
         day_volume: None,
         market_state: None,
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -239,6 +248,7 @@ fn quote_price_fields() {
         previous_close: None,
         day_volume: None,
         market_state: None,
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -380,12 +390,26 @@ fn quote_serialization() {
         )),
         day_volume: None,
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
     };
 
     let json = serde_json::to_string(&quote).unwrap();
+    let deserialized: Quote = serde_json::from_str(&json).unwrap();
+    assert_eq!(quote, deserialized);
+}
+
+#[test]
+fn quote_as_of_serializes_as_unix_milliseconds() {
+    let mut quote = Quote::new(Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap());
+    quote.as_of = Some(DateTime::from_timestamp(1_640_995_200, 654_000_000).unwrap());
+
+    let json = serde_json::to_string(&quote).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(value["as_of"], serde_json::json!(1_640_995_200_654_i64));
+
     let deserialized: Quote = serde_json::from_str(&json).unwrap();
     assert_eq!(quote, deserialized);
 }
@@ -405,6 +429,7 @@ fn quote_with_none_fields() {
         )),
         day_volume: None,
         market_state: None,
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -478,6 +503,7 @@ fn serialization_roundtrip_preserves_precision() {
         )),
         day_volume: None,
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -516,6 +542,7 @@ fn quote_with_bid_and_ask_roundtrips() {
         previous_close: None,
         day_volume: None,
         market_state: None,
+        as_of: None,
         provider: (),
     };
     let json = serde_json::to_string(&quote).unwrap();
@@ -532,26 +559,20 @@ fn quote_new_initialises_bid_and_ask_to_none() {
     let quote = Quote::new(Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap());
     assert!(quote.bid.is_none());
     assert!(quote.ask.is_none());
+    assert!(quote.as_of.is_none());
 }
 
 #[test]
 fn deserialization_handles_missing_optional_fields() {
-    // Test that missing optional fields are handled gracefully via roundtrip
-    let quote = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        name: None,
-        price: Some(Price::new(
-            Decimal::from(150),
-            Currency::Iso(IsoCurrency::USD),
-        )),
-        previous_close: None,
-        day_volume: None,
-        market_state: None,
-        bid: None,
-        ask: None,
-        provider: (),
-    };
-    let json = serde_json::to_string(&quote).unwrap();
-    let deserialized: Quote = serde_json::from_str(&json).unwrap();
-    assert_eq!(deserialized, quote);
+    let json = r#"{
+        "instrument": { "symbol": "AAPL", "kind": "equity" }
+    }"#;
+
+    let deserialized: Quote = serde_json::from_str(json).unwrap();
+
+    assert_eq!(deserialized.instrument.unique_key().as_ref(), "AAPL");
+    assert!(deserialized.as_of.is_none());
+    assert!(deserialized.price.is_none());
+    assert!(deserialized.bid.is_none());
+    assert!(deserialized.ask.is_none());
 }

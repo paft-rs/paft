@@ -298,6 +298,7 @@ fn candle_update_propagation() -> Result<()> {
         previous_close: None,
         day_volume: None,
         market_state: Some(MarketState::Regular),
+        as_of: None,
         provider: (),
     };
     println!(

@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Dataframe: switched derive dependencies to the `df-derive` 0.3 split (`df-derive-macros` for derives, `df-derive-core` for shared trait identity). `paft-utils` now re-exports the core `ToDataFrame`, `Columnar`, and `ToDataFrameVec` traits while retaining its paft-owned `Decimal128Encode` trait for foreign decimal backends.
 - Facade: flattened the release-facing market and fundamentals surface through `paft::market`, `paft::fundamentals`, and `paft::prelude`, including option updates/greeks/expiration responses, news requests, and analysis helper rows.
 - Facade: re-export `MoneyParseError` from `paft::money` so currency parsing errors exposed by `Currency::try_from_str` are available through the facade.
+- Market: `Quote` now carries optional `as_of` snapshot time, matching `Snapshot` and `OrderBook` for staleness checks and timestamped quote snapshots.
 - Market: `OrderBook` now carries required `instrument` context and optional `as_of` snapshot time, matching the public documentation that it represents a book for a specific instrument.
 - Market options: added `OptionSide` and `OptionContractKey`, made `OptionContract`/`OptionUpdate` carry the full flattened option identity, collapsed `OptionChain` to `contracts: Vec<_>` with `calls()`/`puts()` iterators, and renamed option request `instrument` fields to `underlying`.
 

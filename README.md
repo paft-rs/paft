@@ -279,6 +279,7 @@ impl GenericQuoteWire {
             ),
             day_volume: None,
             market_state: None,
+            as_of: None,
             provider: (),
         }
     }

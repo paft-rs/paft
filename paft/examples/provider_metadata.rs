@@ -95,6 +95,7 @@ fn standard_quote_no_metadata() -> Result<()> {
         previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -138,6 +139,7 @@ fn hft_quote_round_trip() -> Result<()> {
         previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: HftMeta {
@@ -222,6 +224,7 @@ fn different_meta_per_stream() -> Result<()> {
         previous_close: Some(price(418)),
         day_volume: None,
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: HftMeta {

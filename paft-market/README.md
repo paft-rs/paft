@@ -7,6 +7,7 @@ Market data models and request builders for the paft ecosystem.
 [![Docs.rs](https://docs.rs/paft-market/badge.svg)](https://docs.rs/paft-market)
 
 - Unified market models: `Quote`, `Candle`, `HistoryResponse`, `OptionContract`, `OptionChain`, `OptionUpdate`, `NewsArticle`
+- Snapshot-shaped market data (`Quote`, `OrderBook`) carries optional `as_of` timestamps for staleness checks
 - Validated builders: `HistoryRequest`, `SearchRequest`; request parameter types: `NewsRequest`, `OptionExpirationsRequest`, `OptionChainRequest`
 - Canonical, serde-stable string forms; optional DataFrame export
 - Integrates with `paft-domain` and `paft-money`

@@ -86,6 +86,7 @@ fn standard_quote_schema() -> Result<()> {
         previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
         market_state: Some(MarketState::Regular),
+        as_of: None,
         bid: None,
         ask: None,
         provider: (),
@@ -113,6 +114,7 @@ fn enriched_quote_dataframe() -> Result<()> {
             previous_close: Some(price(147)),
             day_volume: Some(78_900_000),
             market_state: Some(MarketState::Regular),
+            as_of: None,
             bid: None,
             ask: None,
             provider: HftMeta {
@@ -132,6 +134,7 @@ fn enriched_quote_dataframe() -> Result<()> {
             previous_close: Some(price(418)),
             day_volume: Some(20_000_000),
             market_state: Some(MarketState::Regular),
+            as_of: None,
             bid: None,
             ask: None,
             provider: HftMeta {

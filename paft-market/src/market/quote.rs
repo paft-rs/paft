@@ -45,6 +45,9 @@ pub struct GenericQuote<M = ()> {
     /// Market state.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
+    /// Timestamp (UTC) when this quote snapshot was observed.
+    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    pub as_of: Option<DateTime<Utc>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
@@ -64,6 +67,7 @@ impl<M: Default> GenericQuote<M> {
             previous_close: None,
             day_volume: None,
             market_state: None,
+            as_of: None,
             provider: M::default(),
         }
     }

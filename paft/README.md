@@ -99,7 +99,8 @@ let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto)
     .expect("valid crypto symbol");
 
 // Create market data. `Quote` carries the full `Instrument`, plus today's
-// volume and a provider-metadata escape hatch (use `()` for "no metadata").
+// volume, optional snapshot time, and a provider-metadata escape hatch
+// (use `()` for "no metadata").
 let quote = Quote {
     instrument: apple.clone(),
     name: Some("Apple Inc.".to_string()),
@@ -109,6 +110,7 @@ let quote = Quote {
     previous_close: Some(Price::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
     day_volume: Some(78_900_000),
     market_state: Some(MarketState::Regular),
+    as_of: None,
     provider: (),
 };
 ```
