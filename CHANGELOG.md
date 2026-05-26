@@ -6,108 +6,161 @@ All notable changes to this project will be documented in this file.
 
 ## [0.8.0] - 2026-05-27
 
+This release is audited against the `v0.7.1` tag. It is a breaking API and
+wire-format update across the workspace.
+
 ### Added
 
-- Money: `Money::try_div_money(&Money) -> Result<Decimal, MoneyError>` divides two same-currency `Money` values and returns the unitless ratio, enabling finance computations like "shares per budget" or P/E quotients without losing precision. Currency mismatch yields `MoneyError::CurrencyMismatch`; a zero divisor yields `MoneyError::DivisionByZero`.
-- Money (panicking-money-ops): `Div<Money> for Money` and `Div<&Money> for &Money` now produce a `Decimal` ratio, complementing the existing `Div<Decimal>` impls that scale a single `Money` value.
-- Market: expanded `requests::history::Interval` coverage and provided second/minute conversion helpers for the new variants.
-- Market: added `OrderBook` and `BookLevel` types. `OrderBook` carries the required `instrument` context plus optional `as_of` snapshot time, and `Quote` can now expose top-of-book `bid`/`ask` levels with optional sizes.
-- Money: implement `Hash` for `paft_money::Money` using currency and canonicalized amount.
-- Money: add `Price` for full-precision per-unit quoted values and `MonetaryAmount` for full-precision currency totals/intermediates. `Money` remains the settlement-oriented type that enforces currency minor units.
-- Market: derive `Hash` for `paft_market::market::action::Action`.
-  - Enables simpler set-based deduplication of actions (e.g., with `HashSet<Action>`).
-- Domain: `Instrument` is a flat struct with security identifier fields (`symbol`, optional `exchange`, `figi`, `isin`) plus `kind: AssetKind`.
-- Domain: constructors on `Instrument`: `new(Symbol, AssetKind)`, `from_symbol`, `from_symbol_and_exchange`, `from_figi`.
-- Domain: `AssetKind` is now extensible via `AssetKind::Other(Canonical)`. Unknown provider asset/security type labels deserialize and parse to canonical `Other` values instead of failing.
-- Market options: added `OptionSide` and `OptionContractKey` so options carry a typed economic identity (`underlying`, side, strike, expiration) instead of provider-only contract symbols.
-- Prediction: new `paft_prediction::PredictionInstrument` parallels `Instrument` for prediction-market outcomes. Its `unique_key()` includes both `event_id` and `outcome_id` to avoid assuming provider outcome ids are globally unique.
-- Prediction: `EventID` and `OutcomeID` now live in `paft-prediction` (re-exported from the facade's `prediction` module).
-- Aggregates: new `Snapshot` type — an all-optional snapshot focused strictly on instant-in-time market data.
-- New crate `paft-prediction` (replaces `paft-polymarket`) exposing `Market`, `Token`, and `PredictionInstrument`; gated behind the `prediction` feature on the facade.
-- New crate `paft-decimal` exposing backend-agnostic decimal helpers (parsing, rounding, canonical rendering) without depending on higher-level money types.
-- **Provider-metadata escape hatch**: every market data payload type is now generic over a metadata payload `M`, with a public `pub provider: M` field that uses `#[serde(flatten)]` so provider-specific JSON keys map directly into the typed struct. Standard users keep using the public aliases (`Quote`, `Candle`, ...), while power users can plug in custom `M` types (e.g. HFT timestamps) without forking the crate.
-  - Generic shapes added (each with a type alias resolving `M = ()` to preserve the existing public API):
-    - `paft_market::market::quote::{GenericQuote<M>, GenericQuoteUpdate<M>}` (`Quote`, `QuoteUpdate`)
-    - `paft_market::market::orderbook::{GenericBookLevel<M>, GenericOrderBook<M>}` (`BookLevel`, `OrderBook`)
-    - `paft_market::responses::history::{GenericCandle<M>, GenericCandleUpdate<M>, GenericHistoryResponse<M>}` (`Candle`, `CandleUpdate`, `HistoryResponse`)
-    - `paft_market::market::options::{GenericOptionContract<M>, GenericOptionUpdate<M>, GenericOptionChain<M>}` (`OptionContract`, `OptionUpdate`, `OptionChain`)
-    - `paft_market::market::news::GenericNewsArticle<M>` (`NewsArticle`)
-    - `paft_market::responses::search::{GenericSearchResult<M>, GenericSearchResponse<M>}` (`SearchResult`, `SearchResponse`)
-    - `paft_market::responses::download::{GenericDownloadEntry<M>, GenericDownloadResponse<M>}` (`DownloadEntry`, `DownloadResponse`)
-    - `paft_aggregates::snapshot::GenericSnapshot<M>` (`Snapshot`)
-  - When a parent type holds nested refactored types (e.g. `GenericOrderBook<M>::asks: Vec<GenericBookLevel<M>>`), `M` is propagated to the inner element so the same metadata type flows through the whole tree.
-  - `paft-utils` now ships blanket `ToDataFrame` / `Columnar` impls for `()`, so the default no-metadata case contributes zero columns to dataframe exports.
-  - The provider field is named `provider` (not `meta`) to avoid clashing with `HistoryResponse::meta: Option<HistoryMeta>` and to give DataFrame columns a more descriptive prefix (`provider.<field>` rather than `meta.<field>`).
-  - `Eq` and `Hash` are intentionally NOT derived on the generic payload types so that provider metadata can carry non-`Eq` fields like `f64` hardware timestamps. The standard aliases (`Quote = GenericQuote<()>`, etc.) still satisfy `PartialEq` because `()` does.
-  - Ergonomic `::new(...)` constructors (bounded by `M: Default`) are provided on the generic shapes whose Rust struct literals would otherwise be verbose: `GenericQuote::new(instrument)`, `GenericQuoteUpdate::new(instrument, ts)`, `GenericBookLevel::new(price, size)`, `GenericOrderBook::new(instrument)`, `GenericCandle::new(ts, open, high, low, close)`, `GenericCandleUpdate::new(instrument, interval, candle, is_final)`, `OptionContractKey::new(underlying, side, strike, expiration_date)`, `GenericOptionContract::new(key)`, `GenericOptionUpdate::new(key, ts)`, and `GenericSnapshot::new(instrument)`. Container types that still derive `Default` (`GenericOptionChain`, `GenericHistoryResponse`, `GenericSearchResponse`, `GenericDownloadResponse`) get the same ergonomics for free.
-
-### Bug fixes
-
-- Doctests: `paft-core` now declares `paft-utils` as a dev-dependency so that the `string_enum_closed_with_code!` doctest can resolve macro-internal paths to `paft_utils::*` types. `paft-money`'s lib doctest expectation was corrected from `"13.60 USD"` to `"13.6 USD"` to match `paft_decimal::to_canonical_string`'s trailing-zero stripping.
-
-### Breaking Change
-
-- Domain: removed `IdentifierScheme`, `SecurityId`, `PredictionID`. `Instrument` is now a flat struct `{ symbol, exchange, figi, isin, kind }`. JSON shape is no longer wrapped in `{ "id": ... }`.
-- Domain: removed legacy setters like `try_set_isin/try_set_figi` and the `try_new` constructor; use `from_symbol[_and_exchange]`, `from_figi`, or `Instrument::new`.
-- Domain: removed `AssetKind::PredictionMarket`. Prediction markets are not an asset kind.
-- Domain: removed `Instrument::from_prediction_market` and `from_prediction_market_ids`. Use `paft_prediction::PredictionInstrument::new` instead.
-- Domain: `EventID` and `OutcomeID` moved from `paft-domain` to `paft-prediction`. Import via `paft_prediction::{EventID, OutcomeID}` or via the facade's `paft::prediction` module.
-- Domain/Market: `AssetKind` no longer implements `Copy` because `AssetKind::Other(Canonical)` owns the provider token. `AssetKind::code()` and `paft_market::SearchRequestBuilder::kind()` are no longer `const`, `paft_market::SearchRequest::kind()` now returns `Option<&AssetKind>`, and `AssetKind::full_name()` now returns `Cow<'static, str>` so unknown asset kinds can surface their canonical code.
-- Aggregates: removed `Info` and `FastInfo`. Replaced by `Snapshot`, a strictly instant-in-time market-data view. Fundamentals/analyst/ESG fields that lived on `Info` belong in `paft-fundamentals` types.
-- Money: `Decimal` and `RoundingStrategy` have moved to the standalone `paft-decimal` crate; import them from `paft_decimal` (or via the facade root) instead of `paft_money::decimal` or `paft::money::Decimal`.
-- Money: removed `impl Default for Currency` (previously returned `IsoCurrency::USD`). There is no globally-correct default currency, so callers must now select one explicitly. Use `Option<Currency>` for fields that may be unset, or pass an explicit `Currency` value.
-- Money: removed `MoneyAmount`. Use `MonetaryAmount` for exact currency-denominated totals/intermediates; it requires a real `Currency` and has no hint-less or legacy serde form.
-- Market/Aggregates/Fundamentals/Prediction: per-unit quoted values now use `Price` instead of `Money` so provider precision such as `1.3578 USD` survives deserialization. This includes quote prices, OHLC candles, book levels, option strikes/bid/ask/last prices, EPS values, price targets, dividend-per-share values, 52-week prices, and tick sizes.
-- Market/Aggregates/Fundamentals: analytics fields that previously exposed `f64` (option greeks, implied volatility, P/E, dividend yield, recommendation scores, growth rates, ESG metrics, holder percentages) now use `paft_decimal::Decimal` for consistent precision.
-- Market/Aggregates/Fundamentals: numeric `DateTime<Utc>` JSON timestamps now use Unix milliseconds instead of Unix seconds. This covers streaming and history fields such as `GenericQuoteUpdate::ts`, `GenericCandle::ts`, `GenericOptionUpdate::ts`, `GenericOrderBook::as_of`, `GenericSnapshot::as_of`, market actions/news timestamps, and fundamentals/statistics date fields. `paft_core::serde_helpers::ts_seconds_vec` was replaced by `ts_milliseconds_vec` for `Calendar::earnings_dates`.
-- Market/Aggregates: removed duplicate identity/currency fields from public payloads. `Quote` no longer has top-level `symbol` or `exchange`, `Quote::shortname` is now `Quote::name`, `SearchResult` no longer has top-level `exchange` or `kind`, and `Snapshot` no longer has top-level `exchange` or `currency`. Listing exchange and asset kind live on `Instrument`; quoted currency lives on each `Price`.
-- Market quotes: `Quote` now carries optional `bid`, `ask`, and `as_of` fields, and `QuoteUpdate::ts` serializes as Unix milliseconds. Struct literals and JSON mappings must account for the new fields and timestamp unit.
-- Market: every market data payload struct now carries a `pub provider: M` field. Code that constructs these structs with literal syntax or destructures them in patterns must account for `provider: ()` (or use the new `::new(...)` constructors / `Default` impl). For the standard `M = ()` aliases, the provider field itself flattens to no extra serialized keys.
-- Market: `OrderBook`/`GenericOrderBook` no longer implements `Default`; callers must provide an `Instrument` via struct literal syntax or `OrderBook::new(instrument)`. Struct literals must also account for `as_of: Option<DateTime<Utc>>`.
-- Market options: `OptionContract::in_the_money` is now `Option<bool>`, preserving a provider-omitted value as `None` instead of defaulting it to `false`.
-- Market options: `OptionContract` and `OptionUpdate` now carry a flattened `OptionContractKey`; `OptionChain` collapsed from `calls`/`puts` vectors to `contracts: Vec<_>` plus `calls()`/`puts()` iterators; option request fields were renamed from `symbol` to `underlying`.
-- Market: dropped `Eq` and `Hash` derives from every refactored generic payload. The standard aliases still satisfy `PartialEq`. Downstream code that relied on `Quote: Eq` / `Quote: Hash` (e.g. for `HashSet<Quote>`) needs to either wrap the value or compare on a derived key.
-- Workspace: bumped `polars` from `0.51` to `0.53`. Direct callers of `polars::prelude::DataFrame::new` must update from `DataFrame::new(columns)` to `DataFrame::new(height, columns)`, and pattern matches on `polars::prelude::AnyValue::Decimal(value, scale)` must become `AnyValue::Decimal(value, _, scale)` (the variant gained a precision argument).
-- `df-derive`: switched from the monolithic `df-derive 0.1.1` crate to the published `df-derive-core`/`df-derive-macros 0.3.1` split. The new release depends on `polars 0.53` and adds support for generic structs and `()`-typed metadata fields, which is what makes the provider-metadata escape hatch possible.
-- Domain: `Exchange::full_name()` now returns `Cow<'static, str>` (previously `&str`) so its signature matches `Currency::full_name()`. Canonical variants stay zero-cost (`Cow::Borrowed`); only the `Other(_)` arm allocates. Callers that compared the result to a `&str` literal must use `.as_ref()` (or `&*`).
+- New crate `paft-decimal` exposing `Decimal`, `RoundingStrategy`, parsing,
+  rounding, scaled-unit construction, and canonical rendering helpers shared by
+  money, market, fundamentals, and dataframe code.
+- New crate `paft-prediction` exposing validated `EventID` and `OutcomeID`
+  newtypes, `PredictionInstrument`, `Market`, `Token`, and `PredictionError`.
+  The facade exposes these behind the new `prediction` feature.
+- Money: added full-precision `Price` and `MonetaryAmount` value types. `Money`
+  remains the settlement-oriented type that enforces currency minor units.
+- Money: added `Money::new_exact`, `Money::try_div_money`, `Hash for Money`,
+  `Currency::USDC`, `Currency::USDT`, `CurrencyMetadata` exports, and
+  `Div<Money> -> Decimal` under `panicking-money-ops`.
+- Market: added provider-metadata generic payloads with flattened
+  `provider: M` fields for quotes, book levels/order books, candles/history,
+  option contracts/updates/chains, news articles, search/download responses, and
+  aggregate snapshots. Public aliases such as `Quote`, `Candle`, and `Snapshot`
+  remain `M = ()`.
+- Market: added `BookLevel`, `OrderBook`, `CandleUpdate`, `OptionSide`,
+  `OptionContractKey`, and `OptionUpdate`.
+- Market history: added intraday `Range` variants, second/minute/hour
+  `Interval` variants, `Range::code`, `Interval::code`,
+  `Interval::seconds`, and expanded `Interval::minutes`.
+- Fundamentals: added `KeyStatistics` for valuation, trailing EPS, dividend,
+  52-week range, volume, and beta metrics.
+- Dataframe: added `Decimal128Encode` support for decimal backends and
+  dataframe support for provider metadata and prediction types.
 
 ### Changed
 
-- Dataframe: switched derive dependencies to the published `df-derive` 0.3 split (`df-derive-macros` for derives, `df-derive-core` for shared trait identity). `paft-utils` now re-exports the core `ToDataFrame`, `Columnar`, and `ToDataFrameVec` traits while retaining its paft-owned `Decimal128Encode` trait for foreign decimal backends. Migration in paft:
-  - The hand-rolled `Columnar` impls on `Instrument` (paft-domain) and `PredictionInstrument` (paft-prediction) are deleted; both types now use `#[derive(ToDataFrame)]` with `#[df_derive(as_str)]` per field. Schema column names and per-column cell values are unchanged; column ordering now follows struct declaration order, which moves `Instrument`'s `kind` from first to last. Code that accesses columns by name (the recommended pattern) is unaffected; positional access (e.g., CSV writers using column index) will see the reorder.
-  - Every `#[df_derive(as_string)]` whose field type implements `AsRef<str>` (currencies, exchanges, fund kinds, recommendation grades/actions, transaction types, insider positions, market states, asset kinds, ISINs, FIGIs, symbols, event/outcome ids) is migrated to `#[df_derive(as_str)]`. The string column is borrowed via `&str` instead of allocating a fresh `String` per row through `Display`. Schema is unchanged because both paths produce `DataType::String` with the same canonical token. `Instrument`, `Period`, `Interval`, `NaiveDate`, and `chrono::Tz` fields stay on `as_string` — their canonical forms either return `Cow<'_, str>` or come from external types we don't own.
-  - `paft-utils` now ships the `Decimal128Encode` trait (gated behind the `dataframe` feature) plus impls for `rust_decimal::Decimal` and `bigdecimal::BigDecimal` (gated behind the new `paft-utils/bigdecimal` feature, wired through every downstream crate's `bigdecimal` feature). The trait abstracts the rescale-to-target-scale + i128-mantissa path used by the new Decimal fast path, so `bigdecimal::BigDecimal`-backed `Money` / `ExchangeRate` exports as `Decimal(38, 10)` columns under the same loud-failure semantics polars's own `str_to_dec128` provided historically (PolarsError::ComputeError on >10^38, banker's rounding on scale-down).
-  - `polars-arrow 0.53` is now pinned in the workspace alongside `polars 0.53` for derive-generated bulk-list construction paths.
-  - Enum macros (`string_enum_with_code!`, `string_enum_closed_with_code!`) now emit `impl AsRef<str>` alongside the existing `code()` method so generated enums satisfy the `as_str` attribute's bound. `Currency` gets a hand-rolled `AsRef<str>` for the same reason.
-- Domain: `Period::from_str` no longer uses `regex` — quarterly, year, and date parsing now run on a byte-level scanner that recognizes the same input shapes (`2023Q4`, `2023-Q4`, `2023 Q4`, `FY2023`, `Fiscal 2023`, `2023-12-31`, `12/31/2023`, `31-12-2023`) and the same invalid-shape errors (`2023Q5`, `2023-13-01`, etc.). The `regex` crate is dropped from `paft-domain`'s dependency list. This is a hot-path optimization for ingestion pipelines that parse millions of `Period` strings; visible behavior is unchanged for ASCII inputs (separator whitespace inside tokens is now ASCII-only, matching every realistic financial feed).
-- Utils: `paft_utils::Canonical` now wraps `smol_str::SmolStr` instead of `String`. Tokens up to 23 bytes (the common case for currency/exchange/period codes) are stored inline with no heap allocation, and longer tokens use an `Arc<str>` so cloning a `Canonical` is an O(1) refcount bump rather than a fresh allocation. The public API (`try_new`, `as_str`, `into_inner`, `Display`, `AsRef<str>`, `Borrow<str>`, `FromStr`) is unchanged; this is a transparent allocation-reduction change for hot paths that repeatedly parse the same `Other(_)` payloads (e.g., streaming JSON deserialization of `Currency`, `Exchange`, `Period`, `FundType`, etc.).
-- Facade: flattened the release-facing market and fundamentals surface through `paft::market`, `paft::fundamentals`, and `paft::prelude`, including option updates/greeks/expiration responses, news requests, and analysis helper rows.
-- Facade: re-export `MoneyParseError` from `paft::money` so currency parsing errors exposed by `Currency::try_from_str` are available through the facade.
-- Facade: `full` feature now includes `prediction`.
-- Facade: re-exports `paft_decimal::{Decimal, RoundingStrategy}` from the root module; downstream crates (`paft-market`, `paft-fundamentals`, etc.) now depend on `paft-decimal` directly for numeric helpers.
-- Market: `DownloadResponse::iter_by_symbol()` returns `(&Symbol, &HistoryResponse)` directly, no filtering required.
-- Workspace: refreshed dependency requirements and the lockfile around `polars 0.53`, `df-derive-core 0.3.1`, and `df-derive-macros 0.3.1`. The lockfile now resolves `serde 1.0.228`, `serde_json 1.0.149`, `thiserror 2.0.18`, `rust_decimal 1.42.0`, `bigdecimal 0.4.10`, `bitflags 2.11.1`, `iso_currency 0.5.3`, `isin 0.1.19`, `smol_str 0.3.6`, `tracing 0.1.44`, `num-traits 0.2.19`, and `pretty_assertions 1.4.1`. `regex` is no longer a direct `paft-domain` dependency, and `quote` is no longer a workspace pin.
+- Workspace: version bumped to `0.8.0`, MSRV set to Rust `1.90`, workspace
+  clippy lints were enabled, `polars` was bumped to `0.53`, `rust_decimal` to
+  `1.42`, `bitflags` to `2.11`, and the old monolithic `df-derive` dependency
+  was replaced by `df-derive-core`/`df-derive-macros` `0.3.1`.
+- Facade: `paft::market`, `paft::fundamentals`, and `paft::prelude` now export
+  the broader release surface directly, including decimal, price, provider
+  metadata, option update, order book, key statistics, and prediction types.
+- Domain/utils: `Symbol` and `Canonical` now use `SmolStr`; typical short
+  tokens avoid heap allocation and longer clones share storage.
+- Domain: `AssetKind` is extensible via `AssetKind::Other(Canonical)`, and
+  `Exchange::full_name()`/`AssetKind::full_name()` now return
+  `Cow<'static, str>`.
+- Domain: `Figi` now validates the Bloomberg FIGI structure in addition to the
+  checksum, `Isin` uses strict `isin::parse`, and `Symbol` rejects non-ASCII
+  input.
+- Domain: `Period` parsing no longer depends on `regex`; documented quarter,
+  fiscal year, ISO date, US date, and day-first date shapes are retained.
+- Market, aggregates, and fundamentals: per-unit quoted values now use `Price`
+  instead of `Money`, and analytic ratios/percentages that were `f64` now use
+  `Decimal`.
+- Market, aggregates, and fundamentals: numeric `DateTime<Utc>` serde formats
+  now use Unix milliseconds in affected payloads, including candles, quote
+  updates, order books, actions, options, news, snapshots, holders, calendar
+  fields, share counts, and analyst upgrade/downgrade rows.
+- Market: `Range`, `Interval`, `TimeSpec`, and `NewsTab` now use explicit compact
+  wire codes. `TimeSpec` serializes as a tagged shape with millisecond period
+  timestamps.
+- Market and aggregate payloads now favor instrument-level identity over
+  duplicated top-level `symbol`, `exchange`, `kind`, and `currency` fields.
+- Dataframe: paft re-exports the shared `df-derive-core` `ToDataFrame`,
+  `Columnar`, and `ToDataFrameVec` traits. The schema signature now returns
+  owned column names, and `Columnar` works from references.
+
+### Breaking Changes
+
+- Domain: `Instrument` already stored `symbol`, optional `exchange`, optional
+  `figi`, optional `isin`, and `kind` in `v0.7.1`. The break in `0.8.0` is API
+  access: those fields are now public, `Instrument::new(Symbol, AssetKind)` and
+  `Instrument::from_figi(...)` were added, and the old accessor/mutator methods
+  (`symbol()`, `exchange()`, `figi()`, `isin()`, `kind()`, `has_*`,
+  `try_set_*`, `try_with_*`) plus `try_new(...)` were removed.
+- Domain: `AssetKind` no longer implements `Copy`; `AssetKind::code()` and
+  `SearchRequestBuilder::kind()` are no longer `const`, and
+  `SearchRequest::kind()` returns `Option<&AssetKind>`.
+- Domain: `Exchange::full_name()` and `AssetKind::full_name()` now return
+  `Cow<'static, str>` instead of `&str`.
+- Aggregates: `FastInfo` and `Info` were removed. Use `Snapshot` for
+  instant-in-time market data and the `paft-fundamentals` types for analyst,
+  ESG, profile, key statistics, and statement data.
+- Money: `Decimal` and `RoundingStrategy` are no longer public through
+  `paft_money`; import them from `paft_decimal` or from the facade root.
+- Money: `Currency` no longer implements `Default`. `Money::from_canonical_str`
+  now rejects over-precise amounts instead of rounding them, and serde
+  deserialization rejects over-precise amounts instead of accepting values that
+  bypassed constructor validation. Use `Money::new` when explicit rounding is
+  intended.
+- Money, market, and fundamentals model split: quote, candle, book-level,
+  option strike, option bid/ask/last, EPS, price target, dividend-per-share,
+  and 52-week per-unit fields now use `Price`; settled totals remain `Money`.
+- Market quotes/search/downloads/snapshots: public payloads now carry
+  `Instrument` identity and optional `provider: M` metadata. Struct literals
+  must account for fields such as `instrument`, `provider: ()`, `bid`, `ask`,
+  `as_of`, and renamed `Quote::name`.
+- Market history wire formats changed: `Range`/`Interval` serialize as compact
+  codes such as `"1d"` and `"1mo"` instead of Rust variant names, and
+  `TimeSpec` uses the tagged shape `{ "kind": "range", ... }` or
+  `{ "kind": "period", ... }`.
+- Market options: `OptionContract` now flattens an `OptionContractKey`,
+  `contract_symbol` became optional `contract_instrument`, `in_the_money` is
+  `Option<bool>`, `OptionChain` uses `contracts` plus `calls()`/`puts()`, and
+  option requests use `underlying: Instrument` instead of `symbol: Symbol`.
+- Market, aggregates, and fundamentals timestamps that were serialized as Unix
+  seconds now serialize as Unix milliseconds in the affected structs.
+- Market payload aliases no longer implement `Eq`, and refactored generic
+  payloads do not derive `Hash`; compare or hash explicit keys instead.
+- Fundamentals: analyst, ESG, holder, profile, and statement structs changed
+  several field types (`Money` to `Price`, `f64` to `Decimal`, seconds to
+  milliseconds) and added new optional statement fields. Revision helper totals
+  now return `u64`/`i64`.
+- Facade features: `aggregates` no longer enables `market` and `fundamentals`;
+  `full` now includes `prediction`.
+- Dataframe: `df-derive` trait identity moved to `df-derive-core`; handwritten
+  impls must update `schema()` to `Vec<(String, DataType)>` and implement the
+  reference-based `Columnar` API. `Instrument` dataframe column order now
+  follows the public struct order: `symbol`, `exchange`, `figi`, `isin`, `kind`.
+
+### Fixed
+
+- `paft-core` doctests now declare the dev dependency needed by macro-internal
+  paths, and the `paft-money` doctest expectation now matches canonical decimal
+  rendering without trailing zero padding.
 
 ### Migration notes
 
-- **Instrument access**: `match instrument.id() { IdentifierScheme::Security(s) => &s.symbol, _ => unreachable!() }` becomes `&instrument.symbol`. Likewise `s.exchange`, `s.figi`, `s.isin` become `instrument.exchange`, `instrument.figi`, `instrument.isin` (no enum match required).
-- **Prediction markets**: `Instrument::from_prediction_market(event, outcome)` becomes `PredictionInstrument::new(event, outcome)` (from `paft_prediction`). The containing data structure's `Instrument` field must change to `PredictionInstrument` or the prediction path must be removed.
-- **`AssetKind::PredictionMarket`**: removed entirely. Prediction markets are not an asset class — use `PredictionInstrument` to model them.
-- **Snapshot**: `Info` fundamentals live in `paft_fundamentals::analysis` (`PriceTarget`, `RecommendationSummary`), `paft_fundamentals::esg` (`EsgScores`), and `paft_fundamentals::profile` for shares/cap. 52-week ranges are intentionally cut from the snapshot — derive them from `HistoryResponse`.
-- **`EventID`/`OutcomeID` imports**: `use paft_domain::{EventID, OutcomeID}` becomes `use paft_prediction::{EventID, OutcomeID}` (or via the facade's `paft::prediction` module).
-- **Provider metadata (`provider: M`)**: every constructed market payload struct now needs a `provider` field. The cheapest no-metadata migration is to use the new `::new(...)` constructors (`Quote::new(instrument)`, `Candle::new(ts, open, high, low, close)`, …) which default `provider` to `()`. If you keep struct-literal construction, add `provider: ()`. To carry HFT timestamps, broker-specific flags, or other provider-only fields, define a small struct that derives `Serialize + Deserialize + Clone + Default + Debug + PartialEq` and instantiate the generic shape, e.g. `GenericQuote::<MyMeta> { …, provider: MyMeta { … } }`. See `paft/examples/provider_metadata.rs`, `paft/examples/nested_metadata_propagation.rs`, and `paft/examples/metadata_dataframe.rs` for full walkthroughs covering JSON round-trips, propagation through nested `Vec<Generic*<M>>`, and `provider.*` columns in Polars exports.
-- **Quote/order book payloads**: replace `quote.symbol` with `quote.instrument.symbol`, `quote.exchange` with `quote.instrument.exchange`, and `quote.shortname` with `quote.name`. Use `Quote::new(instrument)` and `OrderBook::new(instrument)` where possible to avoid brittle struct literals, then fill `bid`, `ask`, `as_of`, `asks`, and `bids` as needed.
-- **Option chains**: replace `OptionChain { calls, puts }` field access with `chain.calls()` / `chain.puts()` iterators over `contracts`, and build contracts from `OptionContractKey::new(underlying, side, strike, expiration_date)`. Requests now use `underlying: Instrument` instead of `symbol: Symbol`, and `in_the_money` must be handled as `Option<bool>`.
-- **No `Eq` / `Hash` on payload types**: if you previously used `HashSet<Quote>` or compared `Quote` via `Eq`, fall back to a key-based comparison (e.g. `Hash`/`Eq` on `(instrument, ts)` pairs). The relaxation is deliberate — it lets `M` carry non-`Eq` fields like `f64` hardware timestamps.
-- **Timestamp wire units**: multiply existing numeric timestamp JSON by 1000 when migrating stored payloads or connector mappings from 0.7.x seconds to 0.8.0 milliseconds. Subsecond values are now preserved instead of truncated; for example, `2022-01-01T00:00:00.123Z` serializes as `1640995200123`.
-- **Money / Price split**: use `Money` for settled or payable aggregate amounts, `Price` for quoted per-unit values, and `MonetaryAmount` for exact currency totals before settlement. `Price` and `MonetaryAmount` serialize as `{ "amount": "...", "currency": "USD" }` like `Money`, but they do not reject fractional precision beyond the currency exponent.
-- **`Exchange::full_name()`**: returns `Cow<'static, str>` instead of `&str`. Replace `assert_eq!(ex.full_name(), "Nasdaq")` with `assert_eq!(ex.full_name().as_ref(), "Nasdaq")`, and use `&*ex.full_name()` (or bind to a `let`) where a `&str` is needed.
-- For yfinance-rs, see `../yfinance-rs/MIGRATION-paft-0.8.md`. For borsa, see `../borsa-workspace/MIGRATION-paft-0.8.md`.
+- Use direct `Instrument` fields (`instrument.symbol`, `instrument.exchange`,
+  `instrument.figi`, `instrument.isin`, `instrument.kind`) in place of the
+  removed accessors. The v0.7.1 identity model was already security fields plus
+  `AssetKind`; there is no identifier enum migration for v0.8.0.
+- Import decimal helpers from `paft_decimal` or from the facade root:
+  `use paft::{Decimal, RoundingStrategy};`.
+- Use `Money` for settled/payable amounts, `Price` for quoted per-unit values,
+  and `MonetaryAmount` for full-precision currency totals before settlement.
+- Prefer constructors such as `Quote::new(instrument)`,
+  `OrderBook::new(instrument)`, `Candle::new(...)`,
+  `OptionContractKey::new(...)`, and `Snapshot::new(instrument)`; if using
+  struct literals, add `provider: ()` for the standard no-metadata case.
+- Replace quote/search/snapshot top-level identity reads with `instrument` field
+  access, for example `quote.instrument.symbol` and `quote.name`.
+- Replace `OptionChain { calls, puts }` field access with `chain.calls()` and
+  `chain.puts()` over `contracts`.
+- Multiply stored numeric timestamps by `1000` when migrating 0.7.x JSON that
+  used Unix seconds into v0.8.0 millisecond wire formats.
+- Update history and news JSON to the new compact codes (`"1d"`, `"1mo"`,
+  `"NEWS"`, etc.) and the tagged `TimeSpec` shape.
+- For yfinance-rs, see `../yfinance-rs/MIGRATION-paft-0.8.md`. For borsa,
+  see `../borsa-workspace/MIGRATION-paft-0.8.md`.
 
 ### Documentation
 
-- Updated `paft` and `paft-domain` READMEs and examples to use the flat `Instrument` and the new constructors.
-- Documented the `Money` / `Price` / `MonetaryAmount` model, including README and crate-level examples of decimal facade helpers.
+- Updated README files and examples for public `Instrument` fields, provider
+  metadata, prediction models, facade exports, and the `Money` / `Price` /
+  `MonetaryAmount` split.
 
 ## [0.7.1] - 2025-10-31
 
