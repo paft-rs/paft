@@ -1,9 +1,11 @@
 use paft::money::{
-    Currency, CurrencyMetadata, Locale, MoneyParseError, clear_currency_metadata,
-    currency_metadata, set_currency_metadata,
+    Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
+    MoneyParseError, clear_currency_metadata, currency_metadata, set_currency_metadata,
 };
 use paft::prelude::{
     CurrencyMetadata as PreludeCurrencyMetadata, Locale as PreludeLocale,
+    MAX_DECIMAL_PRECISION as PRELUDE_MAX_DECIMAL_PRECISION,
+    MAX_MINOR_UNIT_DECIMALS as PRELUDE_MAX_MINOR_UNIT_DECIMALS,
     set_currency_metadata as prelude_set_currency_metadata,
 };
 
@@ -32,6 +34,12 @@ fn facade_reexports_metadata_types_without_formatting() {
     );
 
     clear_currency_metadata(code);
+}
+
+#[test]
+fn facade_reexports_money_precision_limits() {
+    assert_eq!(MAX_DECIMAL_PRECISION, PRELUDE_MAX_DECIMAL_PRECISION);
+    assert_eq!(MAX_MINOR_UNIT_DECIMALS, PRELUDE_MAX_MINOR_UNIT_DECIMALS);
 }
 
 #[test]

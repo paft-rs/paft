@@ -12,8 +12,9 @@ pub use crate::domain::{
 #[cfg(feature = "money-formatting")]
 pub use crate::money::LocalizedMoney;
 pub use crate::money::{
-    Currency, CurrencyMetadata, Locale, MonetaryAmount, Price, clear_currency_metadata,
-    currency_metadata, set_currency_metadata, try_normalize_currency_code,
+    Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
+    MonetaryAmount, Price, clear_currency_metadata, currency_metadata, set_currency_metadata,
+    try_normalize_currency_code,
 };
 pub use crate::money::{ExchangeRate, Money};
 pub use crate::{Decimal, Error, Result, RoundingStrategy};
@@ -51,16 +52,20 @@ pub use crate::fundamentals::statistics::KeyStatistics;
 // Re-export market types (flattened via namespace)
 #[cfg(feature = "market")]
 pub use crate::market::{
-    Action, BookLevel, Candle, CandleUpdate, DownloadResponse, HistoryMeta, HistoryRequest,
-    HistoryRequestBuilder, HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab,
-    OptionChain, OptionChainRequest, OptionContract, OptionContractKey, OptionExpirationsRequest,
-    OptionExpirationsResponse, OptionGreeks, OptionSide, OptionUpdate, OrderBook, Quote,
-    QuoteUpdate, Range, SearchRequest, SearchResponse, SearchResult, TimeSpec,
+    Action, BookLevel, Candle, CandleUpdate, DownloadEntry, DownloadResponse, GenericBookLevel,
+    GenericCandle, GenericCandleUpdate, GenericDownloadEntry, GenericDownloadResponse,
+    GenericHistoryResponse, GenericNewsArticle, GenericOptionChain, GenericOptionContract,
+    GenericOptionUpdate, GenericOrderBook, GenericQuote, GenericQuoteUpdate, GenericSearchResponse,
+    GenericSearchResult, HistoryFlags, HistoryMeta, HistoryRequest, HistoryRequestBuilder,
+    HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab, OptionChain, OptionChainRequest,
+    OptionContract, OptionContractKey, OptionExpirationsRequest, OptionExpirationsResponse,
+    OptionGreeks, OptionSide, OptionUpdate, OrderBook, Quote, QuoteUpdate, Range, SearchRequest,
+    SearchRequestBuilder, SearchResponse, SearchResult, TimeSpec,
 };
 
 // Re-export aggregates snapshot types
 #[cfg(feature = "aggregates")]
-pub use crate::aggregates::Snapshot;
+pub use crate::aggregates::{GenericSnapshot, Snapshot};
 
 #[cfg(feature = "prediction")]
 pub use crate::prediction::{EventID, Market, OutcomeID, PredictionInstrument, Token};

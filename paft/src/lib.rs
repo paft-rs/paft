@@ -58,12 +58,16 @@ pub mod market {
     pub use paft_market::requests;
     pub use paft_market::responses;
     pub use paft_market::{
-        Action, BookLevel, Candle, CandleUpdate, DownloadResponse, HistoryMeta, HistoryRequest,
+        Action, BookLevel, Candle, CandleUpdate, DownloadEntry, DownloadResponse, GenericBookLevel,
+        GenericCandle, GenericCandleUpdate, GenericDownloadEntry, GenericDownloadResponse,
+        GenericHistoryResponse, GenericNewsArticle, GenericOptionChain, GenericOptionContract,
+        GenericOptionUpdate, GenericOrderBook, GenericQuote, GenericQuoteUpdate,
+        GenericSearchResponse, GenericSearchResult, HistoryFlags, HistoryMeta, HistoryRequest,
         HistoryRequestBuilder, HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab,
         OptionChain, OptionChainRequest, OptionContract, OptionContractKey,
         OptionExpirationsRequest, OptionExpirationsResponse, OptionGreeks, OptionSide,
-        OptionUpdate, OrderBook, Quote, QuoteUpdate, Range, SearchRequest, SearchResponse,
-        SearchResult, TimeSpec,
+        OptionUpdate, OrderBook, Quote, QuoteUpdate, Range, SearchRequest, SearchRequestBuilder,
+        SearchResponse, SearchResult, TimeSpec,
     };
 }
 
@@ -72,9 +76,10 @@ pub mod money {
     #[cfg(feature = "money-formatting")]
     pub use paft_money::LocalizedMoney;
     pub use paft_money::{
-        Currency, CurrencyMetadata, ExchangeRate, IsoCurrency, Locale, MinorUnitError,
-        MonetaryAmount, Money, MoneyError, MoneyParseError, Price, clear_currency_metadata,
-        currency_metadata, set_currency_metadata, try_normalize_currency_code,
+        Currency, CurrencyMetadata, ExchangeRate, IsoCurrency, Locale, MAX_DECIMAL_PRECISION,
+        MAX_MINOR_UNIT_DECIMALS, MinorUnitError, MonetaryAmount, Money, MoneyError,
+        MoneyParseError, Price, clear_currency_metadata, currency_metadata, set_currency_metadata,
+        try_normalize_currency_code,
     };
 }
 
@@ -106,7 +111,7 @@ pub mod fundamentals {
 /// Namespaced access to `paft-aggregates` (feature-gated).
 #[cfg(feature = "aggregates")]
 pub mod aggregates {
-    pub use paft_aggregates::Snapshot;
+    pub use paft_aggregates::{GenericSnapshot, Snapshot};
 }
 
 /// Namespaced access to `paft-prediction` (feature-gated).

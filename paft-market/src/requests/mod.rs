@@ -5,7 +5,7 @@ pub mod news;
 pub mod options;
 pub mod search;
 
-pub use history::{HistoryRequest, HistoryRequestBuilder, Interval, Range, TimeSpec};
+pub use history::{HistoryFlags, HistoryRequest, HistoryRequestBuilder, Interval, Range, TimeSpec};
 pub use news::{NewsRequest, NewsTab};
 pub use options::{OptionChainRequest, OptionExpirationsRequest};
-pub use search::SearchRequest;
+pub use search::{SearchRequest, SearchRequestBuilder};

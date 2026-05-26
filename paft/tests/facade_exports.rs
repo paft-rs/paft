@@ -8,7 +8,8 @@ fn market_exports_are_available_from_facade_and_prelude() {
         OptionContractKey as FacadeOptionContractKey,
         OptionExpirationsResponse as FacadeOptionExpirationsResponse,
         OptionGreeks as FacadeOptionGreeks, OptionSide as FacadeOptionSide,
-        OptionUpdate as FacadeOptionUpdate, TimeSpec as FacadeTimeSpec,
+        OptionUpdate as FacadeOptionUpdate, SearchRequestBuilder as FacadeSearchRequestBuilder,
+        TimeSpec as FacadeTimeSpec,
     };
     use paft::money::IsoCurrency;
     use paft::prelude::{
@@ -16,7 +17,8 @@ fn market_exports_are_available_from_facade_and_prelude() {
         NewsTab as PreludeNewsTab, OptionContractKey as PreludeOptionContractKey,
         OptionExpirationsResponse as PreludeOptionExpirationsResponse,
         OptionGreeks as PreludeOptionGreeks, OptionSide as PreludeOptionSide,
-        OptionUpdate as PreludeOptionUpdate, Price, Range, TimeSpec as PreludeTimeSpec,
+        OptionUpdate as PreludeOptionUpdate, Price, Range,
+        SearchRequestBuilder as PreludeSearchRequestBuilder, TimeSpec as PreludeTimeSpec,
     };
 
     let greeks: FacadeOptionGreeks = PreludeOptionGreeks::default();
@@ -32,6 +34,9 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let time_spec: FacadeTimeSpec = PreludeTimeSpec::Range(Range::M1);
     let _: PreludeTimeSpec = time_spec;
 
+    let search: FacadeSearchRequestBuilder = PreludeSearchRequestBuilder::new("AAPL");
+    let _: PreludeSearchRequestBuilder = search;
+
     let key: FacadeOptionContractKey = PreludeOptionContractKey::new(
         Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         PreludeOptionSide::Call,
@@ -45,6 +50,59 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let update: FacadeOptionUpdate =
         PreludeOptionUpdate::new(key, DateTime::from_timestamp(0, 0).unwrap());
     let _: PreludeOptionUpdate = update;
+}
+
+#[cfg(feature = "market")]
+#[test]
+fn generic_market_exports_are_available_from_facade_and_prelude() {
+    fn assert_export<T>() {}
+
+    assert_export::<paft::market::GenericBookLevel>();
+    assert_export::<paft::market::GenericCandle>();
+    assert_export::<paft::market::GenericCandleUpdate>();
+    assert_export::<paft::market::GenericDownloadEntry>();
+    assert_export::<paft::market::GenericDownloadResponse>();
+    assert_export::<paft::market::GenericHistoryResponse>();
+    assert_export::<paft::market::GenericNewsArticle>();
+    assert_export::<paft::market::GenericOptionChain>();
+    assert_export::<paft::market::GenericOptionContract>();
+    assert_export::<paft::market::GenericOptionUpdate>();
+    assert_export::<paft::market::GenericOrderBook>();
+    assert_export::<paft::market::GenericQuote>();
+    assert_export::<paft::market::GenericQuoteUpdate>();
+    assert_export::<paft::market::GenericSearchResponse>();
+    assert_export::<paft::market::GenericSearchResult>();
+    assert_export::<paft::market::HistoryFlags>();
+    assert_export::<paft::market::SearchRequestBuilder>();
+    assert_export::<paft::market::DownloadEntry>();
+
+    assert_export::<paft::prelude::GenericBookLevel>();
+    assert_export::<paft::prelude::GenericCandle>();
+    assert_export::<paft::prelude::GenericCandleUpdate>();
+    assert_export::<paft::prelude::GenericDownloadEntry>();
+    assert_export::<paft::prelude::GenericDownloadResponse>();
+    assert_export::<paft::prelude::GenericHistoryResponse>();
+    assert_export::<paft::prelude::GenericNewsArticle>();
+    assert_export::<paft::prelude::GenericOptionChain>();
+    assert_export::<paft::prelude::GenericOptionContract>();
+    assert_export::<paft::prelude::GenericOptionUpdate>();
+    assert_export::<paft::prelude::GenericOrderBook>();
+    assert_export::<paft::prelude::GenericQuote>();
+    assert_export::<paft::prelude::GenericQuoteUpdate>();
+    assert_export::<paft::prelude::GenericSearchResponse>();
+    assert_export::<paft::prelude::GenericSearchResult>();
+    assert_export::<paft::prelude::HistoryFlags>();
+    assert_export::<paft::prelude::SearchRequestBuilder>();
+    assert_export::<paft::prelude::DownloadEntry>();
+}
+
+#[cfg(feature = "aggregates")]
+#[test]
+fn generic_aggregate_exports_are_available_from_facade_and_prelude() {
+    fn assert_export<T>() {}
+
+    assert_export::<paft::aggregates::GenericSnapshot>();
+    assert_export::<paft::prelude::GenericSnapshot>();
 }
 
 #[cfg(feature = "fundamentals")]

@@ -41,18 +41,28 @@ pub use error::MarketError;
 
 pub use market::{
     action::Action,
-    news::NewsArticle,
+    news::{GenericNewsArticle, NewsArticle},
     options::{
-        OptionChain, OptionContract, OptionContractKey, OptionGreeks, OptionSide, OptionUpdate,
+        GenericOptionChain, GenericOptionContract, GenericOptionUpdate, OptionChain,
+        OptionContract, OptionContractKey, OptionGreeks, OptionSide, OptionUpdate,
     },
-    orderbook::{BookLevel, OrderBook},
-    quote::{Quote, QuoteUpdate},
+    orderbook::{BookLevel, GenericBookLevel, GenericOrderBook, OrderBook},
+    quote::{GenericQuote, GenericQuoteUpdate, Quote, QuoteUpdate},
 };
-pub use requests::history::{HistoryRequest, HistoryRequestBuilder, Interval, Range, TimeSpec};
+pub use requests::history::{
+    HistoryFlags, HistoryRequest, HistoryRequestBuilder, Interval, Range, TimeSpec,
+};
 pub use requests::news::{NewsRequest, NewsTab};
 pub use requests::options::{OptionChainRequest, OptionExpirationsRequest};
-pub use requests::search::SearchRequest;
-pub use responses::download::DownloadResponse;
-pub use responses::history::{Candle, CandleUpdate, HistoryMeta, HistoryResponse};
+pub use requests::search::{SearchRequest, SearchRequestBuilder};
+pub use responses::download::{
+    DownloadEntry, DownloadResponse, GenericDownloadEntry, GenericDownloadResponse,
+};
+pub use responses::history::{
+    Candle, CandleUpdate, GenericCandle, GenericCandleUpdate, GenericHistoryResponse, HistoryMeta,
+    HistoryResponse,
+};
 pub use responses::options::OptionExpirationsResponse;
-pub use responses::search::{SearchResponse, SearchResult};
+pub use responses::search::{
+    GenericSearchResponse, GenericSearchResult, SearchResponse, SearchResult,
+};

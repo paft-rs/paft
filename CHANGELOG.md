@@ -26,7 +26,8 @@ wire-format update across the workspace.
   `provider: M` fields for quotes, book levels/order books, candles/history,
   option contracts/updates/chains, news articles, search/download responses, and
   aggregate snapshots. Public aliases such as `Quote`, `Candle`, and `Snapshot`
-  remain `M = ()`.
+  remain `M = ()`; their `Generic*` forms are exported from crate roots and the
+  `paft` facade/prelude.
 - Market: added `BookLevel`, `OrderBook`, `CandleUpdate`, `OptionSide`,
   `OptionContractKey`, and `OptionUpdate`.
 - Market history: added intraday `Range` variants, second/minute/hour
@@ -45,7 +46,8 @@ wire-format update across the workspace.
   was replaced by `df-derive-core`/`df-derive-macros` `0.3.1`.
 - Facade: `paft::market`, `paft::fundamentals`, and `paft::prelude` now export
   the broader release surface directly, including decimal, price, provider
-  metadata, option update, order book, key statistics, and prediction types.
+  metadata, option update, order book, key statistics, request builders/flags,
+  money precision limits, and prediction types.
 - Domain/utils: `Symbol` and `Canonical` now use `SmolStr`; typical short
   tokens avoid heap allocation and longer clones share storage.
 - Domain: `AssetKind` is extensible via `AssetKind::Other(Canonical)`, and
