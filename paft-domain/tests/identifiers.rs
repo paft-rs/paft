@@ -24,9 +24,21 @@ fn isin_rejects_bad_checksum() {
 }
 
 #[test]
-fn isin_accepts_loose_input_with_scrubbing() {
-    let isin = Isin::new(" us-037833-1005 \t").expect("valid loose input");
+fn isin_trims_and_uppercases() {
+    let isin = Isin::new(" us0378331005 \t").expect("valid normalized input");
     assert_eq!(isin.as_ref(), "US0378331005");
+}
+
+#[test]
+fn isin_rejects_embedded_separators() {
+    let err = Isin::new("US-037833-1005").expect_err("ISIN must be 12 alphanumeric characters");
+    assert!(matches!(err, DomainError::InvalidIsin { .. }));
+}
+
+#[test]
+fn isin_rejects_trailing_junk() {
+    let err = Isin::new("US0378331005!").expect_err("invalid characters must not be scrubbed");
+    assert!(matches!(err, DomainError::InvalidIsin { .. }));
 }
 
 #[test]
@@ -36,8 +48,8 @@ fn isin_rejects_non_isin_content() {
 }
 
 #[test]
-fn isin_rejects_empty_after_scrub() {
-    let err = Isin::new(" --- ").expect_err("scrubbed empty should fail");
+fn isin_rejects_empty_after_trim() {
+    let err = Isin::new("   ").expect_err("empty after trim should fail");
     assert!(matches!(err, DomainError::InvalidIsin { .. }));
 }
 

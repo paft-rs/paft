@@ -11,17 +11,10 @@ fn invalid_isin(value: &str) -> DomainError {
     }
 }
 
-fn scrub_isin(input: &str) -> String {
-    input
-        .chars()
-        .filter(char::is_ascii_alphanumeric)
-        .collect::<String>()
-}
-
 fn normalize_isin(input: &str) -> Result<String, DomainError> {
-    let cleaned = scrub_isin(input);
-    match ::isin::parse_loose(&cleaned) {
-        Ok(_) => Ok(cleaned.to_ascii_uppercase()),
+    let normalized = input.trim().to_ascii_uppercase();
+    match ::isin::parse(&normalized) {
+        Ok(_) => Ok(normalized),
         Err(_) => Err(invalid_isin(input)),
     }
 }
