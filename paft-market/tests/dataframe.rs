@@ -18,6 +18,7 @@ use paft_market::{
 };
 use paft_money::{Currency, IsoCurrency, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
+use std::num::NonZeroU32;
 use std::str::FromStr;
 
 fn usd(amount: i64) -> Price {
@@ -301,8 +302,8 @@ fn actions_to_dataframe() {
         },
         Action::Split {
             ts: sample_ts(1_600_000_000),
-            numerator: 2,
-            denominator: 1,
+            numerator: NonZeroU32::new(2).unwrap(),
+            denominator: NonZeroU32::new(1).unwrap(),
         },
         Action::CapitalGain {
             ts: sample_ts(1_650_000_000),

@@ -1,5 +1,7 @@
 //! Corporate action types under the `paft_market::market::action` namespace.
 
+use std::num::NonZeroU32;
+
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
@@ -26,10 +28,10 @@ pub enum Action {
         /// Timestamp.
         #[serde(with = "chrono::serde::ts_milliseconds")]
         ts: DateTime<Utc>,
-        /// Split numerator.
-        numerator: u32,
-        /// Split denominator.
-        denominator: u32,
+        /// Non-zero split numerator.
+        numerator: NonZeroU32,
+        /// Non-zero split denominator.
+        denominator: NonZeroU32,
     },
     /// Capital gain distribution.
     CapitalGain {
@@ -73,8 +75,8 @@ impl From<&Action> for ActionRow {
                 action_type: "Split".to_string(),
                 ts: *ts,
                 amount: None,
-                numerator: Some(*numerator),
-                denominator: Some(*denominator),
+                numerator: Some(numerator.get()),
+                denominator: Some(denominator.get()),
                 gain: None,
             },
             Action::CapitalGain { ts, gain } => Self {

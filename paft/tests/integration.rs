@@ -10,6 +10,7 @@ use paft::prelude::{
     Instrument, Interval, MarketState, Price, Quote, QuoteUpdate, Range, SearchRequest,
 };
 use paft_decimal::Decimal;
+use std::num::NonZeroU32;
 use std::str::FromStr;
 
 #[cfg(all(feature = "domain", feature = "market"))]
@@ -349,8 +350,8 @@ fn action_types_workflow() {
         },
         Action::Split {
             ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-            numerator: 2,
-            denominator: 1,
+            numerator: NonZeroU32::new(2).unwrap(),
+            denominator: NonZeroU32::new(1).unwrap(),
         },
         Action::CapitalGain {
             ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),

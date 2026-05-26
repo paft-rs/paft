@@ -110,6 +110,9 @@ wire-format update across the workspace.
   `contract_symbol` became optional `contract_instrument`, `in_the_money` is
   `Option<bool>`, `OptionChain` uses `contracts` plus `calls()`/`puts()`, and
   option requests use `underlying: Instrument` instead of `symbol: Symbol`.
+- Market actions: `Action::Split` numerator and denominator fields are now
+  `NonZeroU32` instead of `u32`; serde deserialization rejects zero split ratio
+  components.
 - Market, aggregates, and fundamentals timestamps that were serialized as Unix
   seconds now serialize as Unix milliseconds in the affected structs.
 - Market payload aliases no longer implement `Eq`, and refactored generic
@@ -147,6 +150,8 @@ wire-format update across the workspace.
   struct literals, add `provider: ()` for the standard no-metadata case.
 - Replace quote/search/snapshot top-level identity reads with `instrument` field
   access, for example `quote.instrument.symbol` and `quote.name`.
+- Construct split actions with `std::num::NonZeroU32`, for example
+  `NonZeroU32::new(2).unwrap()`.
 - Replace `OptionChain { calls, puts }` field access with `chain.calls()` and
   `chain.puts()` over `contracts`.
 - Multiply stored numeric timestamps by `1000` when migrating 0.7.x JSON that

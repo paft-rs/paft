@@ -5,6 +5,7 @@ use paft_domain::{AssetKind, Instrument};
 use paft_market::market::action::Action;
 use paft_market::{Candle, CandleUpdate, HistoryMeta, HistoryResponse, Interval};
 use paft_money::{Currency, IsoCurrency, Price};
+use std::num::NonZeroU32;
 use std::str::FromStr;
 
 #[test]
@@ -91,13 +92,29 @@ fn action_dividend_serialization() {
 fn action_split_serialization() {
     let action = Action::Split {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        numerator: 2,
-        denominator: 1,
+        numerator: NonZeroU32::new(2).unwrap(),
+        denominator: NonZeroU32::new(1).unwrap(),
     };
 
     let json = serde_json::to_string(&action).unwrap();
     let deserialized: Action = serde_json::from_str(&json).unwrap();
     assert_eq!(action, deserialized);
+}
+
+#[test]
+fn action_split_rejects_zero_ratios() {
+    for (numerator, denominator) in [(0, 1), (2, 0)] {
+        let value = serde_json::json!({
+            "Split": {
+                "ts": 1_640_995_200_000_i64,
+                "numerator": numerator,
+                "denominator": denominator,
+            }
+        });
+
+        let err = serde_json::from_value::<Action>(value).unwrap_err();
+        assert!(err.to_string().contains("nonzero"));
+    }
 }
 
 #[test]
