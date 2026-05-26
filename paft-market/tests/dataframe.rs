@@ -69,10 +69,13 @@ fn order_book_to_dataframe_smoke() {
 #[test]
 fn search_result_to_dataframe() {
     let result = SearchResult {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
-        exchange: Some(Exchange::NASDAQ),
-        kind: AssetKind::Equity,
 
         provider: (),
     };
@@ -84,12 +87,16 @@ fn search_result_to_dataframe() {
 #[test]
 fn vec_quote_to_dataframe_smoke() {
     let quotes = [Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: None,
         bid: None,
         ask: None,
@@ -104,12 +111,16 @@ fn vec_quote_to_dataframe_smoke() {
 #[test]
 fn quote_to_dataframe_smoke() {
     let quote = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
         price: Some(usd(150)),
         previous_close: Some(usd(147)),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: None,
         bid: None,
         ask: None,

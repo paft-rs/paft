@@ -10,8 +10,6 @@ fn snapshot_roundtrip_minimal() {
     let snapshot = Snapshot {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         name: None,
-        exchange: None,
-        currency: None,
         market_state: None,
         as_of: None,
         last: None,
@@ -33,10 +31,13 @@ fn snapshot_roundtrip_minimal() {
 fn snapshot_roundtrip_full() {
     let usd = Currency::Iso(IsoCurrency::USD);
     let snapshot = Snapshot {
-        instrument: Instrument::from_symbol("MSFT", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "MSFT",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Microsoft Corporation".to_string()),
-        exchange: Some(Exchange::NASDAQ),
-        currency: Some(usd.clone()),
         market_state: Some(MarketState::Pre),
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
         last: Some(Price::from_canonical_str("430.01", usd.clone()).unwrap()),

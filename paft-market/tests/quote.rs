@@ -13,7 +13,12 @@ use std::str::FromStr;
 #[test]
 fn quote_construction() {
     let quote = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
         price: Some(Price::new(
             Decimal::from(150),
@@ -24,14 +29,13 @@ fn quote_construction() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
         provider: (),
     };
 
-    assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL");
+    assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL@NASDAQ");
     assert_eq!(quote.name, Some("Apple Inc.".to_string()));
     assert_eq!(
         quote.price,
@@ -47,7 +51,7 @@ fn quote_construction() {
             Currency::Iso(IsoCurrency::USD),
         ))
     );
-    assert_eq!(quote.exchange, Some(Exchange::NASDAQ));
+    assert_eq!(quote.instrument.exchange, Some(Exchange::NASDAQ));
     assert_eq!(quote.market_state, Some(MarketState::Regular));
 }
 
@@ -59,7 +63,6 @@ fn quote_minimal_construction() {
         price: None,
         previous_close: None,
         day_volume: None,
-        exchange: None,
         market_state: None,
         bid: None,
         ask: None,
@@ -69,14 +72,19 @@ fn quote_minimal_construction() {
     assert!(quote.name.is_none());
     assert!(quote.price.is_none());
     assert!(quote.previous_close.is_none());
-    assert!(quote.exchange.is_none());
+    assert!(quote.instrument.exchange.is_none());
     assert!(quote.market_state.is_none());
 }
 
 #[test]
 fn quote_clone() {
     let original = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
         price: Some(Price::new(
             Decimal::from(150),
@@ -87,7 +95,6 @@ fn quote_clone() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -101,7 +108,12 @@ fn quote_clone() {
 #[test]
 fn quote_debug_formatting() {
     let quote = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
         price: Some(Price::new(
             Decimal::from(150),
@@ -112,7 +124,6 @@ fn quote_debug_formatting() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -128,7 +139,12 @@ fn quote_debug_formatting() {
 fn quote_currency_consistency() {
     // Test that currency is embedded in Price fields
     let quote = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
         price: Some(Price::new(
             Decimal::from(150),
@@ -139,7 +155,6 @@ fn quote_currency_consistency() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -161,12 +176,16 @@ fn quote_currency_consistency() {
 fn quote_currency_none() {
     // Test that when no Price fields are present, currency access returns None
     let quote = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
         price: None, // No price fields
         previous_close: None,
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -193,7 +212,6 @@ fn quote_price_fields() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: None,
         market_state: None,
         bid: None,
         ask: None,
@@ -220,7 +238,6 @@ fn quote_price_fields() {
         price: None,
         previous_close: None,
         day_volume: None,
-        exchange: None,
         market_state: None,
         bid: None,
         ask: None,
@@ -362,7 +379,6 @@ fn quote_serialization() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -388,7 +404,6 @@ fn quote_with_none_fields() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: None,
         market_state: None,
         bid: None,
         ask: None,
@@ -403,7 +418,12 @@ fn quote_with_none_fields() {
 #[test]
 fn quote_update_serialization() {
     let update = QuoteUpdate {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         price: Some(Price::new(
             Decimal::from(150),
             Currency::Iso(IsoCurrency::USD),
@@ -454,7 +474,6 @@ fn serialization_roundtrip_preserves_precision() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -493,7 +512,6 @@ fn quote_with_bid_and_ask_roundtrips() {
         ask: Some(ask),
         previous_close: None,
         day_volume: None,
-        exchange: None,
         market_state: None,
         provider: (),
     };
@@ -525,7 +543,6 @@ fn deserialization_handles_missing_optional_fields() {
         )),
         previous_close: None,
         day_volume: None,
-        exchange: None,
         market_state: None,
         bid: None,
         ask: None,

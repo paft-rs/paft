@@ -58,7 +58,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `CompanyProfile::isin` and `FundProfile::isin` now store `Option<Isin>`; update struct literals to pass `Isin::new(..)?` and adjust deserialization expectations accordingly.
 - `Isin::new` and `Figi::new` now always enforce checksum validation. If you previously relied on lenient mode, strip placeholders or keep them in `Symbol` fields instead.
 - The new identifier newtypes are `#[serde(transparent)]`, so existing JSON payloads continue to operate with plain strings while now enforcing checksum validation at the boundary.
-- `paft-aggregates` no longer ships `FastInfo`/`Info`. Use `Snapshot` (12 strictly-snapshot fields) — fundamentals/analyst/ESG fields that lived on `Info` belong in the `paft-fundamentals` types.
+- `paft-aggregates` no longer ships `FastInfo`/`Info`. Use `Snapshot` for strictly instant-in-time market data — fundamentals/analyst/ESG fields that lived on `Info` belong in the `paft-fundamentals` types.
 
 ## What's Included
 
@@ -108,7 +108,6 @@ let quote = Quote {
     ask: None,
     previous_close: Some(Price::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
     day_volume: Some(78_900_000),
-    exchange: Some(Exchange::NASDAQ),
     market_state: Some(MarketState::Regular),
     provider: (),
 };

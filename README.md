@@ -252,8 +252,6 @@ impl GenericProvider {
 // Conversion handles provider-specific mappings
 impl GenericQuoteWire {
     fn into_paft_quote(self, symbol: &str) -> Quote {
-        let instrument = Instrument::from_symbol(symbol, AssetKind::Equity)
-            .expect("validated upstream");
         let exchange = self.exchange.as_ref().map(|ex| match ex.as_ref() {
             "NASDAQ" => Exchange::NASDAQ,
             "NYSE" => Exchange::NYSE,
@@ -262,6 +260,11 @@ impl GenericQuoteWire {
                 Canonical::try_new(other).expect("non-empty exchange code"),
             ),
         });
+        let instrument = match exchange {
+            Some(exchange) => Instrument::from_symbol_and_exchange(symbol, exchange, AssetKind::Equity),
+            None => Instrument::from_symbol(symbol, AssetKind::Equity),
+        }
+        .expect("validated upstream");
         Quote {
             instrument,
             name: None,
@@ -274,7 +277,6 @@ impl GenericQuoteWire {
                 Price::new(amount, Currency::Iso(IsoCurrency::USD))
             ),
             day_volume: None,
-            exchange,
             market_state: None,
             provider: (),
         }

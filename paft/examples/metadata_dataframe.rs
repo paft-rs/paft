@@ -72,16 +72,19 @@ fn main() -> Result<()> {
 }
 
 /// With `M = ()`, the `provider` field contributes zero columns. The schema
-/// is identical to what you'd get from paft 0.7.x — no surprises for existing
-/// downstream pipelines.
+/// is the canonical no-metadata quote schema — no provider columns are added
+/// for downstream pipelines.
 fn standard_quote_schema() -> Result<()> {
     let q = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )?,
         name: Some("Apple Inc.".to_string()),
         price: Some(price(150)),
         previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -100,12 +103,15 @@ fn standard_quote_schema() -> Result<()> {
 fn enriched_quote_dataframe() -> Result<()> {
     let quotes: Vec<GenericQuote<HftMeta>> = vec![
         GenericQuote {
-            instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
+            instrument: Instrument::from_symbol_and_exchange(
+                "AAPL",
+                Exchange::NASDAQ,
+                AssetKind::Equity,
+            )?,
             name: Some("Apple Inc.".to_string()),
             price: Some(price(150)),
             previous_close: Some(price(147)),
             day_volume: Some(78_900_000),
-            exchange: Some(Exchange::NASDAQ),
             market_state: Some(MarketState::Regular),
             bid: None,
             ask: None,
@@ -116,12 +122,15 @@ fn enriched_quote_dataframe() -> Result<()> {
             },
         },
         GenericQuote {
-            instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
+            instrument: Instrument::from_symbol_and_exchange(
+                "MSFT",
+                Exchange::NASDAQ,
+                AssetKind::Equity,
+            )?,
             name: Some("Microsoft".to_string()),
             price: Some(price(420)),
             previous_close: Some(price(418)),
             day_volume: Some(20_000_000),
-            exchange: Some(Exchange::NASDAQ),
             market_state: Some(MarketState::Regular),
             bid: None,
             ask: None,

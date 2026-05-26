@@ -89,7 +89,7 @@ fn end_to_end_workflow() {
 
     // 5. Create a quote
     let quote = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: instrument.clone(),
         name: Some("Apple Inc.".to_string()),
         price: Some(Price::new(
             Decimal::from(105),
@@ -100,7 +100,6 @@ fn end_to_end_workflow() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -109,7 +108,7 @@ fn end_to_end_workflow() {
 
     // 6. Create a quote update
     let quote_update = QuoteUpdate {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: instrument.clone(),
         price: Some(Price::new(
             Decimal::from(106),
             Currency::Iso(IsoCurrency::USD),
@@ -126,8 +125,8 @@ fn end_to_end_workflow() {
 
     // Verify all data is consistent
     let inst_symbol = instrument.symbol.as_str();
-    assert_eq!(quote.instrument.unique_key().as_ref(), inst_symbol);
-    assert_eq!(quote_update.instrument.unique_key().as_ref(), inst_symbol);
+    assert_eq!(quote.instrument.symbol.as_str(), inst_symbol);
+    assert_eq!(quote_update.instrument.symbol.as_str(), inst_symbol);
     assert_eq!(history_response.candles[0].close, quote.price.unwrap());
 }
 
@@ -220,7 +219,6 @@ fn serialization_workflow() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,

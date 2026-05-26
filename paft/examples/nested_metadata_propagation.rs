@@ -91,7 +91,11 @@ fn main() -> Result<()> {
 /// one (e.g. for the snapshot timestamp).
 fn order_book_propagation() -> Result<()> {
     let book: GenericOrderBook<FeedMeta> = GenericOrderBook {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )?,
         as_of: Some(ts(1_700_000_000)),
         asks: vec![
             entry(150_50, 100, feed_meta(1, "L2_AAPL")),
@@ -285,7 +289,6 @@ fn candle_update_propagation() -> Result<()> {
         ask: None,
         previous_close: None,
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         provider: (),
     };

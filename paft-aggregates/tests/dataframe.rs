@@ -13,10 +13,13 @@ fn usd(amount: i64) -> Price {
 #[test]
 fn snapshot_to_dataframe() {
     let snapshot = Snapshot {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
-        exchange: Some(Exchange::NASDAQ),
-        currency: Some(Currency::Iso(IsoCurrency::USD)),
         market_state: Some(MarketState::Regular),
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
         last: Some(usd(150)),
@@ -36,10 +39,13 @@ fn snapshot_to_dataframe() {
 #[test]
 fn snapshot_vec_to_dataframe() {
     let base = Snapshot {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
-        exchange: Some(Exchange::NASDAQ),
-        currency: Some(Currency::Iso(IsoCurrency::USD)),
         market_state: Some(MarketState::Regular),
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
         last: Some(usd(150)),

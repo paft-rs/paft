@@ -27,7 +27,7 @@
 //! 3. `#[serde(flatten)]` means the extra fields land at the **top level** of
 //!    the JSON, side-by-side with the canonical fields.
 //!    Choose metadata field names that do not collide with paft fields
-//!    (`price`, `exchange`, `provider`, `volume`, `currency`, etc.); use
+//!    (`instrument`, `price`, `provider`, `day_volume`, `market_state`, etc.); use
 //!    provider-specific prefixes when in doubt.
 //! 4. Inbound provider JSON with extra keys deserializes losslessly into
 //!    `GenericQuote<HftMeta>` — no manual extraction step.
@@ -70,24 +70,30 @@ fn main() -> Result<()> {
 ///    explicitly and is the only option for non-`Default` `M` types.
 fn standard_quote_no_metadata() -> Result<()> {
     // (1) the ergonomic constructor:
-    let mut quote = Quote::new(Instrument::from_symbol("AAPL", AssetKind::Equity)?);
+    let mut quote = Quote::new(Instrument::from_symbol_and_exchange(
+        "AAPL",
+        Exchange::NASDAQ,
+        AssetKind::Equity,
+    )?);
     quote.name = Some("Apple Inc.".to_string());
     quote.price = Some(price(150));
     quote.previous_close = Some(price(147));
     quote.day_volume = Some(78_900_000);
-    quote.exchange = Some(Exchange::NASDAQ);
     quote.market_state = Some(MarketState::Regular);
 
     // (2) equivalent full literal — note the `provider: ()` is required because
     //     struct literals must list every field. Real production code rarely
     //     needs this form for the no-metadata case.
     let _equivalent = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )?,
         name: Some("Apple Inc.".to_string()),
         price: Some(price(150)),
         previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -131,7 +137,6 @@ fn hft_quote_round_trip() -> Result<()> {
         price: Some(price(150)),
         previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -174,7 +179,6 @@ fn parse_provider_json() -> Result<()> {
         "price": { "amount": "150", "currency": "USD" },
         "previous_close": { "amount": "147", "currency": "USD" },
         "day_volume": 78900000,
-        "exchange": "NASDAQ",
         "market_state": "REGULAR",
         // Provider-specific fields — flattened next to the canonical ones:
         "received_ns": 1_700_000_000_123_456_789u64,
@@ -208,12 +212,15 @@ struct BrokerMeta {
 fn different_meta_per_stream() -> Result<()> {
     // Quote stream: HFT-flavoured metadata.
     let market_data: GenericQuote<HftMeta> = GenericQuote {
-        instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
+        instrument: Instrument::from_symbol_and_exchange(
+            "MSFT",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )?,
         name: Some("Microsoft".to_string()),
         price: Some(price(420)),
         previous_close: Some(price(418)),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,

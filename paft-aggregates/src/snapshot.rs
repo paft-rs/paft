@@ -13,8 +13,8 @@
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_domain::{Exchange, Instrument, MarketState};
-use paft_money::{Currency, Price};
+use paft_domain::{Instrument, MarketState};
+use paft_money::Price;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -37,12 +37,6 @@ pub struct GenericSnapshot<M = ()> {
     pub instrument: Instrument,
     /// Human-friendly instrument name.
     pub name: Option<String>,
-    /// Primary listing exchange, if known.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub exchange: Option<Exchange>,
-    /// Quote currency used for monetary values in this snapshot.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub currency: Option<Currency>,
     /// Current market session state (for example: Pre, Regular, Post).
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
@@ -74,8 +68,6 @@ impl<M: Default> GenericSnapshot<M> {
         Self {
             instrument,
             name: None,
-            exchange: None,
-            currency: None,
             market_state: None,
             as_of: None,
             last: None,

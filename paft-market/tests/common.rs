@@ -10,7 +10,12 @@ use paft_money::{Currency, IsoCurrency, Price};
 /// Panics if currency metadata is missing; tests ensure default metadata is available.
 pub fn build_quote() -> paft_market::market::quote::Quote {
     paft_market::market::quote::Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
         price: Some(Price::new(
             Decimal::from(150),
@@ -21,7 +26,6 @@ pub fn build_quote() -> paft_market::market::quote::Quote {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
@@ -32,7 +36,12 @@ pub fn build_quote() -> paft_market::market::quote::Quote {
 #[test]
 fn quote_construction_smoke() {
     let quote = Quote {
-        instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
         name: Some("Apple Inc.".to_string()),
         price: Some(Price::new(
             Decimal::from(150),
@@ -43,11 +52,10 @@ fn quote_construction_smoke() {
             Currency::Iso(IsoCurrency::USD),
         )),
         day_volume: None,
-        exchange: Some(Exchange::NASDAQ),
         market_state: Some(MarketState::Regular),
         bid: None,
         ask: None,
         provider: (),
     };
-    assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL");
+    assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL@NASDAQ");
 }

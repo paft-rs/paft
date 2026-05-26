@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 
-use paft_domain::{AssetKind, Exchange, Instrument};
+use paft_domain::Instrument;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
@@ -29,12 +29,6 @@ pub struct GenericSearchResult<M = ()> {
     pub instrument: Instrument,
     /// Display name.
     pub name: Option<String>,
-    /// Exchange identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub exchange: Option<Exchange>,
-    /// Classified asset kind.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub kind: AssetKind,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_domain::{Exchange, Instrument, MarketState};
+use paft_domain::{Instrument, MarketState};
 use paft_money::Price;
 
 use crate::market::orderbook::GenericBookLevel;
@@ -42,9 +42,6 @@ pub struct GenericQuote<M = ()> {
     pub previous_close: Option<Price>,
     /// Day volume.
     pub day_volume: Option<u64>,
-    /// Exchange identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub exchange: Option<Exchange>,
     /// Market state.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
@@ -66,7 +63,6 @@ impl<M: Default> GenericQuote<M> {
             ask: None,
             previous_close: None,
             day_volume: None,
-            exchange: None,
             market_state: None,
             provider: M::default(),
         }
