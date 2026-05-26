@@ -135,6 +135,10 @@ fn symbol_rejects_invalid_inputs() {
         "AAPL\nUS",
         "\u{7f}AAPL",
         "AAPL\u{1f}",
+        "AAPL\u{a0}US",
+        "AAPLé",
+        "ＡＡＰＬ",
+        "💹",
     ];
 
     for input in reject_cases {

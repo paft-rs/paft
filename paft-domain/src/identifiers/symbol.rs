@@ -13,7 +13,7 @@ fn invalid_symbol(value: &str) -> DomainError {
 }
 
 fn normalize_symbol(input: &str) -> Result<SmolStr, DomainError> {
-    let trimmed = input.trim();
+    let trimmed = input.trim_ascii();
     if trimmed.is_empty() {
         return Err(invalid_symbol(input));
     }
@@ -22,11 +22,12 @@ fn normalize_symbol(input: &str) -> Result<SmolStr, DomainError> {
         return Err(invalid_symbol(input));
     }
 
-    if trimmed
-        .chars()
-        .any(|c| c.is_ascii_whitespace() || c.is_ascii_control())
-    {
-        return Err(invalid_symbol(input));
+    let mut has_lowercase = false;
+    for byte in trimmed.bytes() {
+        if !byte.is_ascii() || byte.is_ascii_whitespace() || byte.is_ascii_control() {
+            return Err(invalid_symbol(input));
+        }
+        has_lowercase |= byte.is_ascii_lowercase();
     }
 
     // ASCII-uppercase normalization preserves byte length, so the 64-byte cap
@@ -34,23 +35,22 @@ fn normalize_symbol(input: &str) -> Result<SmolStr, DomainError> {
     // We avoid the extra allocation a `String::to_ascii_uppercase()` would
     // require when the input is already canonical (a common case for tickers
     // that arrive pre-uppercased from providers).
-    if trimmed.bytes().all(|b| !b.is_ascii_lowercase()) {
+    if has_lowercase {
+        let mut buf = trimmed.to_owned();
+        buf.make_ascii_uppercase();
+        Ok(SmolStr::new(buf))
+    } else {
         // Already canonical: SmolStr::new copies the bytes inline when ≤ 23.
         Ok(SmolStr::new(trimmed))
-    } else {
-        let mut buf = String::with_capacity(trimmed.len());
-        for ch in trimmed.chars() {
-            buf.push(ch.to_ascii_uppercase());
-        }
-        Ok(SmolStr::new(buf))
     }
 }
 
 /// Opaque wrapper for validated symbol strings used by markets and data providers.
 ///
-/// Symbols are canonicalized to uppercase ASCII, must not contain whitespace
-/// or ASCII control characters, and are limited to 64 bytes. Punctuation and
-/// numerics are preserved verbatim so that provider-specific conventions
+/// Symbols are canonicalized to uppercase ASCII, must contain ASCII bytes only,
+/// must not contain whitespace or control characters, and are limited to 64
+/// bytes. ASCII punctuation and numerics are preserved verbatim so that
+/// provider-specific conventions
 /// (class suffixes, exchange codes, contract metadata, etc.) round-trip without
 /// transformation.
 ///
@@ -63,10 +63,11 @@ pub struct Symbol(SmolStr);
 impl Symbol {
     /// Construct a new validated symbol.
     ///
-    /// Trims leading/trailing whitespace, uppercases ASCII letters, and enforces
-    /// the following invariants:
+    /// Trims leading/trailing ASCII whitespace, uppercases ASCII letters, and
+    /// enforces the following invariants:
     ///
     /// - Must be non-empty after trimming.
+    /// - Must contain ASCII characters only.
     /// - Must not contain ASCII whitespace (space, tab, newline, carriage return, form feed, vertical tab).
     /// - Must not contain ASCII control characters (0x00–0x1F or 0x7F).
     /// - Must be at most 64 bytes long.
