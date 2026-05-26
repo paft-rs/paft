@@ -62,7 +62,7 @@ pub mod market {
         HistoryRequestBuilder, HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab,
         OptionChain, OptionChainRequest, OptionContract, OptionExpirationsRequest,
         OptionExpirationsResponse, OptionGreeks, OptionUpdate, OrderBook, Quote, QuoteUpdate,
-        Range, SearchRequest, SearchResponse, SearchResult,
+        Range, SearchRequest, SearchResponse, SearchResult, TimeSpec,
     };
 }
 

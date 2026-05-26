@@ -6,11 +6,13 @@ fn market_exports_are_available_from_facade_and_prelude() {
         NewsRequest as FacadeNewsRequest, NewsTab as FacadeNewsTab,
         OptionExpirationsResponse as FacadeOptionExpirationsResponse,
         OptionGreeks as FacadeOptionGreeks, OptionUpdate as FacadeOptionUpdate,
+        TimeSpec as FacadeTimeSpec,
     };
     use paft::prelude::{
         AssetKind, Instrument, NewsRequest as PreludeNewsRequest, NewsTab as PreludeNewsTab,
         OptionExpirationsResponse as PreludeOptionExpirationsResponse,
-        OptionGreeks as PreludeOptionGreeks, OptionUpdate as PreludeOptionUpdate,
+        OptionGreeks as PreludeOptionGreeks, OptionUpdate as PreludeOptionUpdate, Range,
+        TimeSpec as PreludeTimeSpec,
     };
 
     let greeks: FacadeOptionGreeks = PreludeOptionGreeks::default();
@@ -22,6 +24,9 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let tab: FacadeNewsTab = PreludeNewsTab::default();
     let news: FacadeNewsRequest = PreludeNewsRequest { count: 10, tab };
     let _: PreludeNewsRequest = news;
+
+    let time_spec: FacadeTimeSpec = PreludeTimeSpec::Range(Range::M1);
+    let _: PreludeTimeSpec = time_spec;
 
     let update: FacadeOptionUpdate = PreludeOptionUpdate::new(
         Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),

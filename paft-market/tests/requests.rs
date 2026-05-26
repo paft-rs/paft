@@ -1,6 +1,5 @@
 use paft_domain::AssetKind;
-use paft_market::requests::history::TimeSpec;
-use paft_market::{HistoryRequest, Interval, NewsRequest, NewsTab, Range, SearchRequest};
+use paft_market::{HistoryRequest, Interval, NewsRequest, NewsTab, Range, SearchRequest, TimeSpec};
 
 #[test]
 fn search_request_serialization() {

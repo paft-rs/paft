@@ -46,7 +46,7 @@ pub use market::{
     orderbook::{BookLevel, OrderBook},
     quote::{Quote, QuoteUpdate},
 };
-pub use requests::history::{HistoryRequest, HistoryRequestBuilder, Interval, Range};
+pub use requests::history::{HistoryRequest, HistoryRequestBuilder, Interval, Range, TimeSpec};
 pub use requests::news::{NewsRequest, NewsTab};
 pub use requests::options::{OptionChainRequest, OptionExpirationsRequest};
 pub use requests::search::SearchRequest;
