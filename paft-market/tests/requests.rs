@@ -30,10 +30,36 @@ fn news_request_serialization() {
         tab: NewsTab::PressReleases,
     };
 
-    let json = serde_json::to_string(&request).unwrap();
-    let deserialized: NewsRequest = serde_json::from_str(&json).unwrap();
+    let value = serde_json::to_value(request).unwrap();
+    assert_eq!(
+        value,
+        serde_json::json!({
+            "count": 25,
+            "tab": "PRESS_RELEASES"
+        })
+    );
+
+    let deserialized: NewsRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
     assert_eq!(NewsRequest::default().tab, NewsTab::News);
+}
+
+#[test]
+fn news_tab_serialization() {
+    let tabs = [
+        (NewsTab::News, "NEWS"),
+        (NewsTab::All, "ALL"),
+        (NewsTab::PressReleases, "PRESS_RELEASES"),
+    ];
+
+    for (tab, code) in tabs {
+        assert_eq!(tab.code(), code);
+        assert_eq!(tab.to_string(), code);
+        assert_eq!(serde_json::to_value(tab).unwrap(), serde_json::json!(code));
+
+        let deserialized: NewsTab = serde_json::from_value(serde_json::json!(code)).unwrap();
+        assert_eq!(tab, deserialized);
+    }
 }
 
 #[test]
