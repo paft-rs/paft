@@ -9,10 +9,15 @@ fn market_state_helper_methods() {
     assert!(MarketState::Post.is_trading());
     assert!(!MarketState::Closed.is_trading());
     assert!(!MarketState::Halted.is_trading());
+    assert!(!"delayed".parse::<MarketState>().unwrap().is_trading());
 
     assert_eq!(MarketState::Pre.full_name(), "Pre-market");
     assert_eq!(MarketState::Regular.full_name(), "Regular session");
     assert_eq!(MarketState::Post.full_name(), "Post-market");
+    assert_eq!(
+        "delayed".parse::<MarketState>().unwrap().full_name(),
+        "DELAYED"
+    );
 }
 
 struct PeriodCase {

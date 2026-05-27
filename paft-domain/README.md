@@ -8,7 +8,7 @@ Domain modeling primitives for the paft ecosystem: instruments, exchanges, perio
 
 - Strongly-typed identifiers for securities (`Symbol`, `Figi`, `Isin`) with enforced validation
 - `Instrument` with hierarchical identifiers for securities (FIGI → ISIN → Symbol@Exchange → Symbol)
-- Canonical, serde-stable enums (`Exchange`, `AssetKind`, `MarketState`)
+- Canonical, serde-stable extensible enums (`Exchange`, `AssetKind`, `MarketState`)
 - `Period` parsing for quarters, years, and dates with a canonical wire format
 
 Install
@@ -49,7 +49,7 @@ you depend on the facade crate instead, import these types from `paft::domain`
 or `paft::prelude`.
 
 ```rust
-use paft_domain::{AssetKind, Exchange, Figi, Instrument, Isin, Period, Symbol};
+use paft_domain::{AssetKind, Exchange, Figi, Instrument, Isin, MarketState, Period, Symbol};
 
 // Minimal: instrument from symbol + exchange
 let aapl = Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
@@ -69,6 +69,10 @@ assert_eq!(aapl_pro.unique_key(), "BBG000B9XRY4");
 // Period parsing with canonical output (wire = Display)
 let q4 = "2023-Q4".parse::<Period>().unwrap();
 assert_eq!(q4.to_string(), "2023Q4");
+
+// Unknown provider states round-trip through Other(Canonical).
+let delayed = "DELAYED".parse::<MarketState>().unwrap();
+assert_eq!(delayed.to_string(), "DELAYED");
 ```
 
 Prediction markets

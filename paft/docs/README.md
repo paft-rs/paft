@@ -31,7 +31,7 @@ Detailed best practices guide with practical implementation strategies:
 
 ### Key Concepts
 
-1. **Extensible Enums**: Provider-facing paft enums use `Other(Canonical)` for unknown values
+1. **Extensible Enums**: Provider-facing paft enums such as `Currency`, `Exchange`, `AssetKind`, `MarketState`, and `Period` use `Other(Canonical)` for unknown values
 2. **Graceful Degradation**: Never fails on unknown provider values
 3. **Ecosystem Convergence**: Map provider-specific strings to canonical variants
 4. **Type Safety**: Compile-time checks for known variants, runtime handling for unknown

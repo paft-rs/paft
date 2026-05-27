@@ -51,9 +51,9 @@ wire-format update across the workspace.
   money precision limits, and prediction types.
 - Domain/utils: `Symbol` and `Canonical` now use `SmolStr`; typical short
   tokens avoid heap allocation and longer clones share storage.
-- Domain: `AssetKind` is extensible via `AssetKind::Other(Canonical)`, and
-  `Exchange::full_name()`/`AssetKind::full_name()` now return
-  `Cow<'static, str>`.
+- Domain: `AssetKind` and `MarketState` are extensible via
+  `Other(Canonical)`, and `Exchange::full_name()`/`AssetKind::full_name()` now
+  return `Cow<'static, str>`.
 - Domain: `Figi` now validates the Bloomberg FIGI structure in addition to the
   checksum, `Isin` uses strict `isin::parse`, and `Symbol` rejects non-ASCII
   input.
@@ -86,6 +86,9 @@ wire-format update across the workspace.
 - Domain: `AssetKind` no longer implements `Copy`; `AssetKind::code()` and
   `SearchRequestBuilder::kind()` are no longer `const`, and
   `SearchRequest::kind()` returns `Option<&AssetKind>`.
+- Domain: `MarketState` now includes `MarketState::Other(Canonical)` for
+  provider-specific states, no longer implements `Copy`, and
+  `MarketState::code()`/`MarketState::full_name()` are no longer `const`.
 - Domain: `Exchange::full_name()` and `AssetKind::full_name()` now return
   `Cow<'static, str>` instead of `&str`.
 - Aggregates: `FastInfo` and `Info` were removed. Use `Snapshot` for

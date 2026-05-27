@@ -234,8 +234,12 @@ match currency {
     _ => "Known currency",
 }
 
-// Same pattern for exchanges, asset types, etc.
+// Same pattern for exchanges, asset types, market states, etc.
 let exchange: Exchange = "DARK_POOL_X".parse().unwrap(); // Unknown exchange handled via Other
+
+let market_state: MarketState = "DELAYED".parse().unwrap();
+assert_eq!(market_state.to_string(), "DELAYED");
+assert!(!market_state.is_trading());
 ```
 
 This pattern ensures your code never breaks when providers return new or unexpected values.

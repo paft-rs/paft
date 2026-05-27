@@ -38,6 +38,11 @@ fn other_roundtrip_is_stable_for_core_enums() {
     assert_display_parse_display_idempotent::<Period, _>("FY2023"); // normalizes to 2023
     let other_period = Period::from_str("custom range").unwrap();
     assert_eq!(other_period.to_string(), "CUSTOM_RANGE");
+
+    // MarketState
+    assert_display_parse_display_idempotent::<MarketState, _>("REGULAR");
+    let other_state = MarketState::from_str("delayed").unwrap();
+    assert_eq!(other_state.to_string(), "DELAYED");
 }
 
 #[test]
@@ -69,6 +74,14 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
             }
             other => panic!("unexpected error variant: {other:?}"),
         }
+
+        // MarketState
+        let err = MarketState::from_str(input).unwrap_err();
+        assert!(matches!(
+            err,
+            paft_core::PaftError::InvalidEnumValue { enum_name, value }
+                if enum_name == "MarketState" && value.as_str() == *input
+        ));
     }
 }
 
@@ -85,11 +98,6 @@ fn display_matches_wire_codes_for_core_enums() {
 
     let state = MarketState::Regular;
     assert_eq!(state.to_string(), state.code());
-}
-
-#[test]
-fn closed_enums_reject_unknown_tokens() {
-    assert!(MarketState::from_str("UNKNOWN_STATE").is_err());
 }
 
 #[test]
@@ -115,6 +123,24 @@ fn extensible_enums_preserve_other_canonical_tokens() {
     let asset: AssetKind = serde_json::from_str("\"structured note\"").unwrap();
     match asset {
         AssetKind::Other(ref canon) => assert_eq!(canon.as_ref(), "STRUCTURED_NOTE"),
+        other => panic!("expected Other variant, got {other:?}"),
+    }
+
+    let state = MarketState::from_str("delayed").unwrap();
+    match state {
+        MarketState::Other(ref canon) => assert_eq!(canon.as_ref(), "DELAYED"),
+        other => panic!("expected Other variant, got {other:?}"),
+    }
+
+    let state: MarketState = serde_json::from_str("\"regular_market\"").unwrap();
+    assert_eq!(state, MarketState::Regular);
+
+    let state: MarketState = serde_json::from_str("\"preopen\"").unwrap();
+    assert_eq!(state, MarketState::Pre);
+
+    let state: MarketState = serde_json::from_str("\"venue auction delay\"").unwrap();
+    match state {
+        MarketState::Other(ref canon) => assert_eq!(canon.as_ref(), "VENUE_AUCTION_DELAY"),
         other => panic!("expected Other variant, got {other:?}"),
     }
 }

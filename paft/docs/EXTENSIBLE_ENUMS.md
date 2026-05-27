@@ -3,7 +3,7 @@
 Overview
 --------
 
-paft uses a consistent `Other(Canonical)` extensible enum pattern across provider-facing enums (`Currency`, `Exchange`, `AssetKind`, `Period`, `RecommendationGrade`, etc.). This embraces the reality that providers invent new tokens and aliases over time. Instead of failing on unknown values, these enums parse known canonical tokens and fall back to `Other(Canonical)` for the rest.
+paft uses a consistent `Other(Canonical)` extensible enum pattern across provider-facing enums (`Currency`, `Exchange`, `AssetKind`, `MarketState`, `Period`, `RecommendationGrade`, etc.). This embraces the reality that providers invent new tokens and aliases over time. Instead of failing on unknown values, these enums parse known canonical tokens and fall back to `Other(Canonical)` for the rest.
 
 Rules at a glance
 -----------------
@@ -67,6 +67,24 @@ fn label(currency: Currency) -> String {
         _ => currency.to_string(),
     }
 }
+```
+
+Handling provider-specific market session states:
+
+```rust
+use paft::prelude::MarketState;
+
+fn is_live_session(state: &MarketState) -> bool {
+    match state {
+        MarketState::Pre | MarketState::Regular | MarketState::Post => true,
+        MarketState::Other(code) if code.as_ref() == "CONTINUOUS_TRADING" => true,
+        _ => false,
+    }
+}
+
+let delayed: MarketState = "DELAYED".parse().unwrap();
+assert_eq!(delayed.to_string(), "DELAYED");
+assert!(!delayed.is_trading());
 ```
 
 Normalizing provider strings to canonical variants:
