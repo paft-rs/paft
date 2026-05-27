@@ -28,6 +28,13 @@ fn search_request_validation_whitespace_only_query_rejected() {
 }
 
 #[test]
+fn search_request_validation_trims_query_before_storing() {
+    let request = SearchRequest::new(" AAPL ").unwrap();
+
+    assert_eq!(request.query(), "AAPL");
+}
+
+#[test]
 fn search_request_validation_zero_limit_rejected() {
     let result = SearchRequest::builder("AAPL").limit(0).build();
     assert!(result.is_err());

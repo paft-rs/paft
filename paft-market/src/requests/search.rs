@@ -122,8 +122,10 @@ impl SearchRequestBuilder {
     /// or `MarketError::InvalidSearchLimit(0)` if a zero limit is provided.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn build(self) -> Result<SearchRequest, MarketError> {
+        let query = self.query.trim();
+
         // Validate request invariants
-        if self.query.trim().is_empty() {
+        if query.is_empty() {
             return Err(MarketError::EmptySearchQuery);
         }
         if let Some(lim) = self.limit
@@ -133,7 +135,7 @@ impl SearchRequestBuilder {
         }
 
         Ok(SearchRequest {
-            query: self.query,
+            query: query.to_owned(),
             kind: self.kind,
             limit: self.limit,
             lang: self.lang,

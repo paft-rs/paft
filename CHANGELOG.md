@@ -132,6 +132,9 @@ wire-format update across the workspace.
 
 ### Fixed
 
+- Market: `SearchRequest` now stores the trimmed query it validates, so inputs
+  such as `" AAPL "` are normalized to `"AAPL"` instead of preserving outer
+  whitespace.
 - `paft-core` doctests now declare the dev dependency needed by macro-internal
   paths, and the `paft-money` doctest expectation now matches canonical decimal
   rendering without trailing zero padding.
