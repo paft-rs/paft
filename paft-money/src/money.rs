@@ -196,13 +196,38 @@ impl ExchangeRate {
     }
 
     /// Creates the inverse exchange rate (swaps from/to and inverts the rate).
+    ///
+    /// Use [`ExchangeRate::try_inverse`] when the input rate is not already
+    /// known to be representable after inversion.
+    ///
+    /// # Panics
+    /// Panics when the inverted rate overflows the active decimal backend.
+    /// This is only possible under the fixed-width `rust_decimal` backend.
     #[must_use]
     pub fn inverse(&self) -> Self {
-        Self {
+        self.try_inverse()
+            .expect("inverse exchange rate overflows decimal backend")
+    }
+
+    /// Tries to create the inverse exchange rate.
+    ///
+    /// This swaps `from` and `to`, then computes `1 / rate` using checked
+    /// division so very small fixed-width decimal rates return an error instead
+    /// of panicking.
+    ///
+    /// # Errors
+    /// Returns [`MoneyError::ConversionError`] when the inverted rate cannot be
+    /// represented by the active decimal backend. This is only possible under
+    /// the fixed-width `rust_decimal` backend.
+    pub fn try_inverse(&self) -> Result<Self, MoneyError> {
+        let one = decimal::one();
+        let rate = checked_div_decimal(&one, &self.rate).ok_or(MoneyError::ConversionError)?;
+
+        Ok(Self {
             from: self.to.clone(),
             to: self.from.clone(),
-            rate: decimal::one() / copy_decimal(&self.rate),
-        }
+            rate,
+        })
     }
 
     /// Checks if this exchange rate can be used to convert the given money.

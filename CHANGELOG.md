@@ -20,8 +20,9 @@ wire-format update across the workspace.
 - Money: added full-precision `Price` and `MonetaryAmount` value types. `Money`
   remains the settlement-oriented type that enforces currency minor units.
 - Money: added `Money::new_exact`, `Money::try_div_money`, `Hash for Money`,
-  `Currency::USDC`, `Currency::USDT`, `CurrencyMetadata` exports, and
-  `Div<Money> -> Decimal` under `panicking-money-ops`.
+  `ExchangeRate::try_inverse`, `Currency::USDC`, `Currency::USDT`,
+  `CurrencyMetadata` exports, and `Div<Money> -> Decimal` under
+  `panicking-money-ops`.
 - Market: added provider-metadata generic payloads with flattened
   `provider: M` fields for quotes, book levels/order books, candles/history,
   option contracts/updates/chains, news articles, search/download responses, and
@@ -135,6 +136,9 @@ wire-format update across the workspace.
 - Market: `SearchRequest` now stores the trimmed query it validates, so inputs
   such as `" AAPL "` are normalized to `"AAPL"` instead of preserving outer
   whitespace.
+- Money: `ExchangeRate::inverse` now uses checked decimal division so callers
+  can choose `ExchangeRate::try_inverse` to receive `MoneyError::ConversionError`
+  instead of risking backend overflow in a panicking path.
 - `paft-core` doctests now declare the dev dependency needed by macro-internal
   paths, and the `paft-money` doctest expectation now matches canonical decimal
   rendering without trailing zero padding.

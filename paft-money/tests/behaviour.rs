@@ -114,6 +114,11 @@ fn exchange_rate_validation_and_inverse() {
 
     let rate = ExchangeRate::new(usd(), jpy(), dec("110.0")).unwrap();
     let inverse = rate.inverse();
+    let try_inverse = rate.try_inverse().unwrap();
+    assert_eq!(try_inverse, inverse);
+    assert_eq!(inverse.from(), &jpy());
+    assert_eq!(inverse.to(), &usd());
+
     let product = rate.rate() * inverse.rate();
     let one = decimal::one();
     // Allow for rounding differences in the backend by rounding to 6 decimals.
