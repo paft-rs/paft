@@ -6,12 +6,12 @@ clippy_flags := '-W clippy::all -W clippy::cargo -W clippy::pedantic -W clippy::
 # Fast checks - runs in ~1-4 compilations, catches most issues early
 test crate='':
   @echo "Running fast test suite..."
-  cargo nextest run {{ if crate != "" { "-p " + crate } else { "--workspace" } }} --all-features --all-targets
+  cargo nextest run --locked {{ if crate != "" { "-p " + crate } else { "--workspace" } }} --all-features --all-targets
 
 # Fast lint - mirrors the fast test strategy
 lint:
   @echo "Running fast lint..."
-  cargo clippy --workspace --all-features --all-targets \
+  cargo clippy --locked --workspace --all-features --all-targets \
     -- {{ clippy_flags }}
 
 # Checks that downstream crates do not infer the active `paft-decimal`

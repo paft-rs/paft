@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -23,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Rust 1.90.0
         uses: dtolnay/rust-toolchain@1.90.0
@@ -32,14 +36,14 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Check workspace on MSRV
-        run: cargo check --workspace --all-features --all-targets
+        run: cargo check --locked --workspace --all-features --all-targets
 
   fmt:
     name: Formatting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -54,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -75,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -97,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -106,7 +110,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: List package contents
-        run: cargo package --workspace --list
+        run: cargo package --locked --workspace --list
 
       - name: Dry-run crates.io publish
-        run: cargo publish --workspace --dry-run
+        run: cargo publish --locked --workspace --dry-run
