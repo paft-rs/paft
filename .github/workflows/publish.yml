@@ -29,7 +29,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
 
       - name: Cache Cargo
         uses: Swatinem/rust-cache@v2
@@ -39,6 +39,9 @@ jobs:
 
       - name: Install just
         uses: taiki-e/install-action@just
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
 
       - name: Run tests
         run: just test
