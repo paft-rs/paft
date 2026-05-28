@@ -1,45 +1,87 @@
-# .github/workflows/ci.yml
 name: CI
 
 on:
   push:
-    branches: [main]
-    paths-ignore: ['**/*.md']
+    branches: [main, develop]
+    paths-ignore:
+      - '**/*.md'
   pull_request:
-    branches: [main]
-    paths-ignore: ['**/*.md']
+    branches: [main, develop]
+    paths-ignore:
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  test:
+  msrv:
+    name: MSRV
     runs-on: ubuntu-latest
     steps:
-      
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Clean up runner image
-        run: |
-          df -h
-          rm -rf /opt/hostedtoolcache
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          df -h
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
+      - name: Set up Rust 1.90.0
+        uses: dtolnay/rust-toolchain@1.90.0
 
       - name: Cache Cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Install cargo-hack
-        uses: taiki-e/install-action@cargo-hack
+      - name: Check workspace on MSRV
+        run: cargo check --workspace --all-features --all-targets
+
+  fmt:
+    name: Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  lint:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      - name: Run lints
+        run: just lint
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
@@ -47,11 +89,24 @@ jobs:
       - name: Install just
         uses: taiki-e/install-action@just
 
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      - name: Run lints
-        run: just lint
-      
       - name: Run tests
         run: just test
+
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: List package contents
+        run: cargo package --workspace --list
+
+      - name: Dry-run crates.io publish
+        run: cargo publish --workspace --dry-run
