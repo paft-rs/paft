@@ -93,6 +93,25 @@ fn closed_enums_reject_unknown_tokens() {
 }
 
 #[test]
+fn market_state_aliases_parse_to_expected_sessions() {
+    assert_eq!(MarketState::from_str("PRE").unwrap(), MarketState::Pre);
+    assert_eq!(
+        MarketState::from_str("PRE_MARKET").unwrap(),
+        MarketState::Pre
+    );
+
+    assert_eq!(MarketState::from_str("POST").unwrap(), MarketState::Post);
+    assert_eq!(
+        MarketState::from_str("POSTMARKET").unwrap(),
+        MarketState::Post
+    );
+    assert_eq!(
+        MarketState::from_str("POST_MARKET").unwrap(),
+        MarketState::Post
+    );
+}
+
+#[test]
 fn extensible_enums_preserve_other_canonical_tokens() {
     let token = Currency::from_str("My Token").unwrap();
     match token {
