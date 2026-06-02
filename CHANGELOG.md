@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-02
+
+### Changed
+
+- Workspace: version bumped to `0.9.0`.
+- Fundamentals: `InsiderTransaction::url` is now `Option<String>` so missing
+  filing URLs can be represented without sentinel strings.
+
+### Breaking Changes
+
+- Fundamentals/facade: `InsiderTransaction` struct literals and consumers must
+  handle `url: Option<String>` instead of `url: String`.
+
 ## [0.8.0] - 2026-05-27
 
 This release is audited against the `v0.7.1` tag. It is a breaking API and
@@ -575,7 +588,8 @@ This release tightens identifier validation across the entire workspace and intr
 
 - Initial public release.
 
-[Unreleased]: https://github.com/paft-rs/paft/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/paft-rs/paft/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/paft-rs/paft/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/paft-rs/paft/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/paft-rs/paft/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/paft-rs/paft/compare/v0.6.0...v0.7.0

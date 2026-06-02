@@ -57,10 +57,27 @@ fn insider_transaction_serde_with_enums_and_timestamps() {
             .unwrap(),
         ),
         transaction_date: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        url: "https://example.com".into(),
+        url: Some("https://example.com".into()),
     };
 
     let json = serde_json::to_string(&tx).unwrap();
     let back: paft_fundamentals::holders::InsiderTransaction = serde_json::from_str(&json).unwrap();
     assert_eq!(tx, back);
+}
+
+#[test]
+fn insider_transaction_url_can_be_missing() {
+    let json = r#"{
+        "insider": "John Doe",
+        "position": "Officer",
+        "transaction_type": "Buy",
+        "shares": 1000,
+        "value": null,
+        "transaction_date": 1640995200000
+    }"#;
+
+    let transaction: paft_fundamentals::holders::InsiderTransaction =
+        serde_json::from_str(json).unwrap();
+
+    assert_eq!(transaction.url, None);
 }

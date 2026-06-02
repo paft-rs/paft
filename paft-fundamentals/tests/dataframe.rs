@@ -448,7 +448,7 @@ fn insider_transaction_to_dataframe() {
         shares: Some(1_500),
         value: Some(usd(200)),
         transaction_date: sample_ts(1_650_000_000),
-        url: "https://example.com/filing".to_string(),
+        url: Some("https://example.com/filing".to_string()),
     };
 
     let df = transaction.to_dataframe().unwrap();

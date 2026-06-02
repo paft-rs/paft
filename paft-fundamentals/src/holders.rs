@@ -208,7 +208,7 @@ pub struct InsiderTransaction {
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub transaction_date: DateTime<Utc>,
     /// A URL to the source filing for the transaction, if available.
-    pub url: String,
+    pub url: Option<String>,
 }
 
 /// Represents a single insider on the company's roster.
