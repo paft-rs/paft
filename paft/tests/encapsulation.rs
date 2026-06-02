@@ -17,7 +17,7 @@ fn test_encapsulation_prevents_invalid_construction() {
         interval: Interval::D1,
         include_prepost: false,
         include_actions: true,
-        auto_adjust: true,
+        prefer_adjusted_prices: true,
         keepna: false,
     };
 

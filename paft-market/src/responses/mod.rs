@@ -8,8 +8,9 @@ pub use download::{
     DownloadEntry, DownloadResponse, GenericDownloadEntry, GenericDownloadResponse,
 };
 pub use history::{
-    Candle, CandleUpdate, GenericCandle, GenericCandleUpdate, GenericHistoryResponse, HistoryMeta,
-    HistoryResponse,
+    AdjustmentAnchor, AdjustmentMethod, Candle, CandleUpdate, CorporateActionAdjustmentCause,
+    CorporateActionAdjustmentCauses, GenericCandle, GenericCandleUpdate, GenericHistoryResponse,
+    HistoryMeta, HistoryResponse, OhlcPriceBasis, PriceBasis,
 };
 pub use options::OptionExpirationsResponse;
 pub use search::{GenericSearchResponse, GenericSearchResult, SearchResponse, SearchResult};

@@ -72,7 +72,13 @@ fn generic_market_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::market::GenericQuoteUpdate>();
     assert_export::<paft::market::GenericSearchResponse>();
     assert_export::<paft::market::GenericSearchResult>();
+    assert_export::<paft::market::AdjustmentAnchor>();
+    assert_export::<paft::market::AdjustmentMethod>();
+    assert_export::<paft::market::CorporateActionAdjustmentCause>();
+    assert_export::<paft::market::CorporateActionAdjustmentCauses>();
     assert_export::<paft::market::HistoryFlags>();
+    assert_export::<paft::market::OhlcPriceBasis>();
+    assert_export::<paft::market::PriceBasis>();
     assert_export::<paft::market::SearchRequestBuilder>();
     assert_export::<paft::market::DownloadEntry>();
 
@@ -91,7 +97,13 @@ fn generic_market_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prelude::GenericQuoteUpdate>();
     assert_export::<paft::prelude::GenericSearchResponse>();
     assert_export::<paft::prelude::GenericSearchResult>();
+    assert_export::<paft::prelude::AdjustmentAnchor>();
+    assert_export::<paft::prelude::AdjustmentMethod>();
+    assert_export::<paft::prelude::CorporateActionAdjustmentCause>();
+    assert_export::<paft::prelude::CorporateActionAdjustmentCauses>();
     assert_export::<paft::prelude::HistoryFlags>();
+    assert_export::<paft::prelude::OhlcPriceBasis>();
+    assert_export::<paft::prelude::PriceBasis>();
     assert_export::<paft::prelude::SearchRequestBuilder>();
     assert_export::<paft::prelude::DownloadEntry>();
 }

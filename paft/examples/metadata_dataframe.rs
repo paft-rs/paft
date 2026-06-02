@@ -33,7 +33,9 @@
 
 use chrono::{DateTime, Utc};
 use paft::market::quote::{GenericQuote, Quote};
-use paft::market::responses::history::{GenericCandle, GenericHistoryResponse};
+use paft::market::responses::history::{
+    GenericCandle, GenericHistoryResponse, OhlcPriceBasis, PriceBasis,
+};
 use paft::money::IsoCurrency;
 use paft::prelude::{
     AssetKind, Currency, Exchange, Instrument, MarketState, Price, ToDataFrame, ToDataFrameVec,
@@ -162,7 +164,7 @@ fn history_dataframe() -> Result<()> {
             mk_candle(1_700_000_120, 152, 154, 151, 153, 3),
         ],
         actions: vec![],
-        adjusted: true,
+        price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
         meta: None,
         provider: HftMeta {
             rx_ns: 1_700_000_000_000_000_000,

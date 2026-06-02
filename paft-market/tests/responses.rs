@@ -3,7 +3,11 @@ use chrono_tz::Tz;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::action::Action;
-use paft_market::{Candle, CandleUpdate, HistoryMeta, HistoryResponse, Interval};
+use paft_market::{
+    AdjustmentAnchor, AdjustmentMethod, Candle, CandleUpdate, CorporateActionAdjustmentCause,
+    CorporateActionAdjustmentCauses, HistoryMeta, HistoryResponse, Interval, OhlcPriceBasis,
+    PriceBasis,
+};
 use paft_money::{Currency, IsoCurrency, Price};
 use std::num::NonZeroU32;
 use std::str::FromStr;
@@ -157,6 +161,86 @@ fn history_meta_with_none_fields() {
 }
 
 #[test]
+fn ohlc_price_basis_helpers_and_serialization() {
+    let raw = OhlcPriceBasis::raw();
+    assert_eq!(
+        raw.fields(),
+        (
+            &PriceBasis::Raw,
+            &PriceBasis::Raw,
+            &PriceBasis::Raw,
+            &PriceBasis::Raw
+        )
+    );
+    assert_eq!(
+        serde_json::to_string(&raw).unwrap(),
+        r#"{"kind":"uniform","basis":{"kind":"raw"}}"#
+    );
+
+    let provider_adjusted = PriceBasis::provider_latest_adjusted();
+    assert_eq!(
+        provider_adjusted,
+        PriceBasis::ProviderAdjusted {
+            anchor: AdjustmentAnchor::ProviderLatestBasis,
+        }
+    );
+    assert_eq!(
+        PriceBasis::provider_adjusted(AdjustmentAnchor::LastReturnedObservation),
+        PriceBasis::ProviderAdjusted {
+            anchor: AdjustmentAnchor::LastReturnedObservation,
+        }
+    );
+
+    let split_adjusted = PriceBasis::split_adjusted_latest();
+    assert_eq!(
+        split_adjusted,
+        PriceBasis::CorporateActionAdjusted {
+            anchor: AdjustmentAnchor::ProviderLatestBasis,
+            causes: CorporateActionAdjustmentCauses::splits(),
+        }
+    );
+    assert_eq!(
+        serde_json::to_string(&split_adjusted).unwrap(),
+        r#"{"kind":"corporate_action_adjusted","anchor":{"kind":"provider_latest_basis"},"causes":["split"]}"#
+    );
+
+    let split_and_dividend_causes = CorporateActionAdjustmentCauses::splits()
+        .union(CorporateActionAdjustmentCauses::dividends());
+    assert!(split_and_dividend_causes.contains(CorporateActionAdjustmentCause::Split));
+    assert!(split_and_dividend_causes.contains(CorporateActionAdjustmentCause::Dividend));
+    assert!(!split_and_dividend_causes.contains(CorporateActionAdjustmentCause::CapitalGain));
+    assert_eq!(
+        serde_json::to_string(&split_and_dividend_causes).unwrap(),
+        r#"["split","dividend"]"#
+    );
+    assert!(
+        serde_json::from_str::<CorporateActionAdjustmentCauses>("[]").is_err(),
+        "empty corporate-action cause sets should be rejected",
+    );
+    assert!(
+        serde_json::from_str::<CorporateActionAdjustmentCauses>(r#"["split","split"]"#).is_err(),
+        "duplicate corporate-action causes should be rejected",
+    );
+
+    let per_field = OhlcPriceBasis::per_field(
+        PriceBasis::raw(),
+        split_adjusted,
+        PriceBasis::corporate_action_adjusted(
+            AdjustmentAnchor::FirstReturnedObservation,
+            split_and_dividend_causes,
+        ),
+        PriceBasis::ContractRollAdjusted {
+            anchor: AdjustmentAnchor::Date(chrono::NaiveDate::from_ymd_opt(2024, 1, 2).unwrap()),
+            method: AdjustmentMethod::Multiplicative,
+        },
+    );
+
+    let json = serde_json::to_string(&per_field).unwrap();
+    let roundtrip: OhlcPriceBasis = serde_json::from_str(&json).unwrap();
+    assert_eq!(per_field, roundtrip);
+}
+
+#[test]
 fn responses_smoke() {
     let candles = vec![Candle {
         ts: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
@@ -190,7 +274,7 @@ fn responses_smoke() {
     let response = HistoryResponse {
         candles,
         actions: vec![],
-        adjusted: false,
+        price_basis: OhlcPriceBasis::raw(),
         meta: Some(meta),
         provider: (),
     };
@@ -228,7 +312,7 @@ fn complex_nested_serialization() {
             provider: (),
         }],
         actions: vec![],
-        adjusted: false,
+        price_basis: OhlcPriceBasis::raw(),
         provider: (),
     };
 

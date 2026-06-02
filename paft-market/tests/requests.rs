@@ -69,7 +69,7 @@ fn history_request_serialization() {
         .interval(Interval::D1)
         .include_prepost(true)
         .include_actions(true)
-        .auto_adjust(false)
+        .prefer_adjusted_prices(false)
         .build()
         .unwrap();
 
@@ -117,7 +117,7 @@ fn history_request_with_period() {
         .interval(Interval::D1)
         .include_prepost(false)
         .include_actions(false)
-        .auto_adjust(true)
+        .prefer_adjusted_prices(true)
         .keepna(true)
         .build()
         .unwrap();

@@ -7,7 +7,8 @@ use iso_currency::Currency as IsoCurrency;
 use paft::market::MarketError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
-    Instrument, Interval, MarketState, Price, Quote, QuoteUpdate, Range, SearchRequest,
+    Instrument, Interval, MarketState, OhlcPriceBasis, Price, PriceBasis, Quote, QuoteUpdate,
+    Range, SearchRequest,
 };
 use paft_decimal::Decimal;
 use std::num::NonZeroU32;
@@ -38,7 +39,7 @@ fn end_to_end_workflow() {
         .range(Range::D1)
         .interval(Interval::D1)
         .include_actions(true)
-        .auto_adjust(true)
+        .prefer_adjusted_prices(true)
         .build()
         .unwrap();
 
@@ -83,7 +84,7 @@ fn end_to_end_workflow() {
     let history_response = HistoryResponse {
         candles: vec![candle],
         actions: vec![action],
-        adjusted: true,
+        price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
         meta: Some(meta),
         provider: (),
     };
@@ -200,7 +201,7 @@ fn serialization_workflow() {
         .range(Range::D1)
         .interval(Interval::D1)
         .include_actions(true)
-        .auto_adjust(true)
+        .prefer_adjusted_prices(true)
         .build()
         .unwrap();
 
@@ -372,7 +373,7 @@ fn action_types_workflow() {
         let history_response = HistoryResponse {
             candles: vec![],
             actions: vec![action],
-            adjusted: false,
+            price_basis: OhlcPriceBasis::raw(),
             meta: None,
             provider: (),
         };

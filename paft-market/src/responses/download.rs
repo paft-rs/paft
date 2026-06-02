@@ -24,7 +24,7 @@ use paft_domain::{Instrument, Symbol};
 pub struct GenericDownloadEntry<M = ()> {
     /// Full instrument identity (symbol, kind, optional identifiers/venue).
     pub instrument: Instrument,
-    /// Full `HistoryResponse` (candles, actions, adjusted, meta).
+    /// Full `HistoryResponse` (candles, actions, price basis, meta).
     pub history: GenericHistoryResponse<M>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]

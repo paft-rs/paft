@@ -14,6 +14,9 @@ All notable changes to this project will be documented in this file.
 - Money: scalar arithmetic helpers now borrow decimal operands:
   `Money::{try_mul, try_div}`, `MonetaryAmount::{try_mul, try_div}`, and
   `Price::{try_mul, try_div, try_total}`.
+- Market history: `HistoryResponse` now exposes `price_basis:
+  OhlcPriceBasis`, describing the returned OHLC price basis as either uniform
+  `PriceBasis` metadata or per-field open/high/low/close bases.
 
 ### Breaking Changes
 
@@ -21,6 +24,18 @@ All notable changes to this project will be documented in this file.
   handle `url: Option<String>` instead of `url: String`.
 - Money/facade: callers of non-panicking scalar arithmetic helpers must pass
   `&Decimal` instead of `Decimal`.
+- Market/facade: `HistoryResponse::adjusted: bool` was replaced by
+  `HistoryResponse::price_basis: OhlcPriceBasis`; update struct literals and
+  JSON payloads to describe returned OHLC values with `PriceBasis` variants
+  such as `Raw`, `ProviderAdjusted`, `CorporateActionAdjusted`, or
+  `ContractRollAdjusted`; known corporate-action adjustments carry a non-empty
+  `CorporateActionAdjustmentCauses` set aligned with the modeled `Action`
+  classes.
+- Market/facade: history request adjustment preference APIs were renamed from
+  `HistoryFlags::AUTO_ADJUST`, `HistoryRequestBuilder::auto_adjust`, and
+  `HistoryRequest::auto_adjust` to `HistoryFlags::PREFER_ADJUSTED_PRICES`,
+  `HistoryRequestBuilder::prefer_adjusted_prices`, and
+  `HistoryRequest::prefer_adjusted_prices`.
 
 ## [0.8.0] - 2026-05-27
 

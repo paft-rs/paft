@@ -39,7 +39,7 @@ use paft::market::orderbook::{GenericBookLevel, GenericOrderBook};
 use paft::market::quote::GenericQuote;
 use paft::market::responses::download::{GenericDownloadEntry, GenericDownloadResponse};
 use paft::market::responses::history::{
-    GenericCandle, GenericCandleUpdate, GenericHistoryResponse,
+    GenericCandle, GenericCandleUpdate, GenericHistoryResponse, OhlcPriceBasis, PriceBasis,
 };
 use paft::money::IsoCurrency;
 use paft::prelude::{
@@ -166,7 +166,7 @@ fn history_propagation() -> Result<()> {
             ts: ts(1_699_900_000),
             amount: price(0),
         }],
-        adjusted: true,
+        price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
         meta: Some(HistoryMeta {
             timezone: Some("America/New_York".parse().unwrap()),
             utc_offset_seconds: Some(-18_000),
@@ -380,7 +380,7 @@ fn download_entry(
         history: GenericHistoryResponse {
             candles: vec![candle(1_700_000_000, 100, 102, 99, 101, provider.clone())],
             actions: vec![],
-            adjusted: true,
+            price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
             meta: None,
             provider: provider.clone(),
         },

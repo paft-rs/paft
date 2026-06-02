@@ -445,8 +445,8 @@ bitflags! {
         const INCLUDE_PREPOST = 0b0001;
         /// Include corporate actions (dividends/splits) in the response if supported.
         const INCLUDE_ACTIONS = 0b0010;
-        /// Prefer adjusted close for equities when provider supports it.
-        const AUTO_ADJUST = 0b0100;
+        /// Prefer provider-adjusted prices when the provider supports them.
+        const PREFER_ADJUSTED_PRICES = 0b0100;
         /// Keep missing candle slots as placeholders depending on consumer.
         const KEEPNA = 0b1000;
     }
@@ -581,7 +581,7 @@ impl HistoryRequestBuilder {
         Self {
             time_spec: TimeSpec::Range(Range::M6),
             interval: Interval::D1,
-            flags: HistoryFlags::INCLUDE_ACTIONS | HistoryFlags::AUTO_ADJUST,
+            flags: HistoryFlags::INCLUDE_ACTIONS | HistoryFlags::PREFER_ADJUSTED_PRICES,
         }
     }
 
@@ -628,13 +628,13 @@ impl HistoryRequestBuilder {
         self
     }
 
-    /// Set whether to prefer adjusted close prices.
+    /// Set whether to prefer provider-adjusted prices when supported.
     #[must_use]
-    pub fn auto_adjust(mut self, adjust: bool) -> Self {
-        if adjust {
-            self.flags.insert(HistoryFlags::AUTO_ADJUST);
+    pub fn prefer_adjusted_prices(mut self, prefer: bool) -> Self {
+        if prefer {
+            self.flags.insert(HistoryFlags::PREFER_ADJUSTED_PRICES);
         } else {
-            self.flags.remove(HistoryFlags::AUTO_ADJUST);
+            self.flags.remove(HistoryFlags::PREFER_ADJUSTED_PRICES);
         }
         self
     }
@@ -759,10 +759,10 @@ impl HistoryRequest {
         self.flags.contains(HistoryFlags::INCLUDE_ACTIONS)
     }
 
-    /// Get whether auto-adjust is enabled.
+    /// Get whether provider-adjusted prices are preferred when supported.
     #[must_use]
-    pub const fn auto_adjust(&self) -> bool {
-        self.flags.contains(HistoryFlags::AUTO_ADJUST)
+    pub const fn prefer_adjusted_prices(&self) -> bool {
+        self.flags.contains(HistoryFlags::PREFER_ADJUSTED_PRICES)
     }
 
     /// Get whether missing values are kept.

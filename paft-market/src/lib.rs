@@ -59,8 +59,9 @@ pub use responses::download::{
     DownloadEntry, DownloadResponse, GenericDownloadEntry, GenericDownloadResponse,
 };
 pub use responses::history::{
-    Candle, CandleUpdate, GenericCandle, GenericCandleUpdate, GenericHistoryResponse, HistoryMeta,
-    HistoryResponse,
+    AdjustmentAnchor, AdjustmentMethod, Candle, CandleUpdate, CorporateActionAdjustmentCause,
+    CorporateActionAdjustmentCauses, GenericCandle, GenericCandleUpdate, GenericHistoryResponse,
+    HistoryMeta, HistoryResponse, OhlcPriceBasis, PriceBasis,
 };
 pub use responses::options::OptionExpirationsResponse;
 pub use responses::search::{
