@@ -127,10 +127,9 @@ impl Price {
     /// # Errors
     ///
     /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn try_mul(&self, factor: Decimal) -> Result<Self, MoneyError> {
+    pub fn try_mul(&self, factor: &Decimal) -> Result<Self, MoneyError> {
         let amount =
-            checked_mul_decimal(&self.amount, &factor).ok_or(MoneyError::ConversionError)?;
+            checked_mul_decimal(&self.amount, factor).ok_or(MoneyError::ConversionError)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -140,13 +139,12 @@ impl Price {
     ///
     /// Returns [`MoneyError::DivisionByZero`] when `divisor` is zero and
     /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn try_div(&self, divisor: Decimal) -> Result<Self, MoneyError> {
-        if divisor == decimal::zero() {
+    pub fn try_div(&self, divisor: &Decimal) -> Result<Self, MoneyError> {
+        if divisor == &decimal::zero() {
             return Err(MoneyError::DivisionByZero);
         }
         let amount =
-            checked_div_decimal(&self.amount, &divisor).ok_or(MoneyError::ConversionError)?;
+            checked_div_decimal(&self.amount, divisor).ok_or(MoneyError::ConversionError)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -155,10 +153,9 @@ impl Price {
     /// # Errors
     ///
     /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn try_total(&self, quantity: Decimal) -> Result<MonetaryAmount, MoneyError> {
+    pub fn try_total(&self, quantity: &Decimal) -> Result<MonetaryAmount, MoneyError> {
         let amount =
-            checked_mul_decimal(&self.amount, &quantity).ok_or(MoneyError::ConversionError)?;
+            checked_mul_decimal(&self.amount, quantity).ok_or(MoneyError::ConversionError)?;
         Ok(MonetaryAmount::new(amount, self.currency.clone()))
     }
 

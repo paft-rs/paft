@@ -73,8 +73,8 @@ fn money_arithmetic_same_currency() {
 
     assert_eq!(a.try_add(&b).unwrap().amount(), dec("12.5"));
     assert_eq!(a.try_sub(&b).unwrap().amount(), dec("7.5"));
-    assert_eq!(a.try_mul(dec("1.1")).unwrap().amount(), dec("11.0"));
-    assert_eq!(a.try_div(dec("2")).unwrap().amount(), dec("5"));
+    assert_eq!(a.try_mul(&dec("1.1")).unwrap().amount(), dec("11.0"));
+    assert_eq!(a.try_div(&dec("2")).unwrap().amount(), dec("5"));
 }
 
 #[test]

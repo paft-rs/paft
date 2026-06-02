@@ -76,7 +76,7 @@
 //!
 //! // Quotes preserve provider precision beyond settlement minor units.
 //! let quote = Price::from_canonical_str("1.3578", usd.clone())?;
-//! let exact_total = quote.try_total(decimal::from_minor_units(250, 2))?;
+//! let exact_total = quote.try_total(&decimal::from_minor_units(250, 2))?;
 //!
 //! // Intermediate totals stay exact until settlement.
 //! let adjustment = MonetaryAmount::from_canonical_str("0.0049", usd)?;

@@ -11,11 +11,16 @@ All notable changes to this project will be documented in this file.
 - Workspace: version bumped to `0.9.0`.
 - Fundamentals: `InsiderTransaction::url` is now `Option<String>` so missing
   filing URLs can be represented without sentinel strings.
+- Money: scalar arithmetic helpers now borrow decimal operands:
+  `Money::{try_mul, try_div}`, `MonetaryAmount::{try_mul, try_div}`, and
+  `Price::{try_mul, try_div, try_total}`.
 
 ### Breaking Changes
 
 - Fundamentals/facade: `InsiderTransaction` struct literals and consumers must
   handle `url: Option<String>` instead of `url: String`.
+- Money/facade: callers of non-panicking scalar arithmetic helpers must pass
+  `&Decimal` instead of `Decimal`.
 
 ## [0.8.0] - 2026-05-27
 

@@ -124,10 +124,9 @@ impl MonetaryAmount {
     /// # Errors
     ///
     /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn try_mul(&self, factor: Decimal) -> Result<Self, MoneyError> {
+    pub fn try_mul(&self, factor: &Decimal) -> Result<Self, MoneyError> {
         let amount =
-            checked_mul_decimal(&self.amount, &factor).ok_or(MoneyError::ConversionError)?;
+            checked_mul_decimal(&self.amount, factor).ok_or(MoneyError::ConversionError)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -137,13 +136,12 @@ impl MonetaryAmount {
     ///
     /// Returns [`MoneyError::DivisionByZero`] when `divisor` is zero and
     /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn try_div(&self, divisor: Decimal) -> Result<Self, MoneyError> {
-        if divisor == decimal::zero() {
+    pub fn try_div(&self, divisor: &Decimal) -> Result<Self, MoneyError> {
+        if divisor == &decimal::zero() {
             return Err(MoneyError::DivisionByZero);
         }
         let amount =
-            checked_div_decimal(&self.amount, &divisor).ok_or(MoneyError::ConversionError)?;
+            checked_div_decimal(&self.amount, divisor).ok_or(MoneyError::ConversionError)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 

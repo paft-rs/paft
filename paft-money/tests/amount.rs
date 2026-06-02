@@ -132,16 +132,16 @@ fn monetary_amount_arithmetic_checks_currency() {
         }
     );
 
-    let scaled = usd_amount.try_mul(parse_decimal("2")).unwrap();
+    let scaled = usd_amount.try_mul(&parse_decimal("2")).unwrap();
     assert_eq!(scaled.amount(), parse_decimal("20.0"));
     assert_eq!(scaled.currency(), &usd());
 
-    let halved = scaled.try_div(parse_decimal("4")).unwrap();
+    let halved = scaled.try_div(&parse_decimal("4")).unwrap();
     assert_eq!(halved.amount(), parse_decimal("5"));
     assert_eq!(halved.currency(), &usd());
 
     assert_eq!(
-        usd_amount.try_div(decimal::zero()).unwrap_err(),
+        usd_amount.try_div(&decimal::zero()).unwrap_err(),
         MoneyError::DivisionByZero
     );
 }
@@ -238,11 +238,11 @@ fn price_arithmetic_checks_currency() {
         }
     );
     assert_eq!(
-        lhs.try_mul(parse_decimal("2")).unwrap().amount(),
+        lhs.try_mul(&parse_decimal("2")).unwrap().amount(),
         parse_decimal("20.250")
     );
     assert_eq!(
-        lhs.try_div(parse_decimal("2")).unwrap().amount(),
+        lhs.try_div(&parse_decimal("2")).unwrap().amount(),
         parse_decimal("5.0625")
     );
 }
@@ -250,7 +250,7 @@ fn price_arithmetic_checks_currency() {
 #[test]
 fn price_total_returns_monetary_amount() {
     let price = Price::from_canonical_str("182.345678", usd()).unwrap();
-    let total = price.try_total(parse_decimal("4.91")).unwrap();
+    let total = price.try_total(&parse_decimal("4.91")).unwrap();
 
     assert_eq!(total.currency(), &usd());
     assert_eq!(total.amount(), parse_decimal("895.31727898"));

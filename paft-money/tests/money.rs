@@ -45,11 +45,11 @@ mod panicking_ops_tests {
         let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
 
         // Multiplication
-        let doubled = usd_100.try_mul(Decimal::from(2)).unwrap();
+        let doubled = usd_100.try_mul(&Decimal::from(2)).unwrap();
         assert_eq!(doubled.amount(), Decimal::from(200));
         assert_eq!(doubled.currency(), &Currency::Iso(IsoCurrency::USD));
 
-        let try_tripled = usd_100.try_mul(Decimal::from(3)).unwrap();
+        let try_tripled = usd_100.try_mul(&Decimal::from(3)).unwrap();
         assert_eq!(try_tripled.amount(), Decimal::from(300));
         assert_eq!(try_tripled.currency(), &Currency::Iso(IsoCurrency::USD));
 
@@ -138,8 +138,8 @@ mod non_panicking_default_tests {
     #[test]
     fn test_non_panicking_division_uses_try_div() {
         let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
-        assert!(usd_100.try_div(Decimal::from(0)).is_err());
-        let ok = usd_100.try_div(Decimal::from(2)).unwrap();
+        assert!(usd_100.try_div(&Decimal::from(0)).is_err());
+        let ok = usd_100.try_div(&Decimal::from(2)).unwrap();
         assert_eq!(ok.amount(), Decimal::from(50));
         assert_eq!(ok.currency(), &Currency::Iso(IsoCurrency::USD));
     }
@@ -593,7 +593,7 @@ fn money_try_div_returns_error_on_decimal_overflow() {
     let money = Money::new_exact(Decimal::MAX, currency.clone()).unwrap();
     let divisor = Decimal::from_str("0.1").unwrap();
 
-    let err = money.try_div(divisor).unwrap_err();
+    let err = money.try_div(&divisor).unwrap_err();
     assert!(matches!(err, paft_money::MoneyError::ConversionError));
 
     let divisor_money = Money::new_exact(Decimal::from_str("0.1").unwrap(), currency).unwrap();

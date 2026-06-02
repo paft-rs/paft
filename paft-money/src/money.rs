@@ -588,14 +588,8 @@ impl Money {
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
-    // The public signature takes `Decimal` by value to keep the existing
-    // API stable. Under `bigdecimal`, `Decimal` is not `Copy`, so the
-    // borrow checker would otherwise complain about a needless pass-by-
-    // value; allowing this lint here preserves the API contract while
-    // still avoiding an extra clone in the helper call below.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn try_mul(&self, rhs: Decimal) -> Result<Self, MoneyError> {
-        let product = checked_mul_decimal(&self.amount, &rhs).ok_or(MoneyError::ConversionError)?;
+    pub fn try_mul(&self, rhs: &Decimal) -> Result<Self, MoneyError> {
+        let product = checked_mul_decimal(&self.amount, rhs).ok_or(MoneyError::ConversionError)?;
         Self::new(product, self.currency.clone())
     }
 
@@ -609,12 +603,11 @@ impl Money {
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
-    pub fn try_div(&self, rhs: Decimal) -> Result<Self, MoneyError> {
-        if rhs == decimal::zero() {
+    pub fn try_div(&self, rhs: &Decimal) -> Result<Self, MoneyError> {
+        if rhs == &decimal::zero() {
             return Err(MoneyError::DivisionByZero);
         }
-        let quotient =
-            checked_div_decimal(&self.amount, &rhs).ok_or(MoneyError::ConversionError)?;
+        let quotient = checked_div_decimal(&self.amount, rhs).ok_or(MoneyError::ConversionError)?;
         Self::new(quotient, self.currency.clone())
     }
 
