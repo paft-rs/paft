@@ -79,7 +79,7 @@ use paft_money::{Currency, IsoCurrency, MonetaryAmount, MoneyError, Price};
 fn run() -> Result<(), MoneyError> {
     let usd = Currency::Iso(IsoCurrency::USD);
     let quote = Price::from_canonical_str("1.3578", usd.clone())?;
-    let exact_total = quote.try_total(decimal::from_minor_units(250, 2))?;
+    let exact_total = quote.try_total(&decimal::from_minor_units(250, 2))?;
     let adjustment = MonetaryAmount::from_canonical_str("0.0049", usd)?;
     let subtotal = exact_total.try_add(&adjustment)?;
     let money = subtotal.to_money_with(

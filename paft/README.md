@@ -194,7 +194,7 @@ panic on invalid input are disabled. Use the safe methods instead:
 ```rust
 let sum = a.try_add(&b)?;
 let diff = a.try_sub(&b)?;
-let half = a.try_div(Decimal::from(2))?;
+let half = a.try_div(&Decimal::from(2))?;
 ```
 
 If you explicitly want the ergonomic panicking operators, enable the
