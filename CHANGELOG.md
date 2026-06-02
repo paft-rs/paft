@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 - Money: scalar arithmetic helpers now borrow decimal operands:
   `Money::{try_mul, try_div}`, `MonetaryAmount::{try_mul, try_div}`, and
   `Price::{try_mul, try_div, try_total}`.
+- Money: checked decimal operations and canonical amount parsing/formatting are
+  now shared across `Money`, `MonetaryAmount`, `Price`, and `ExchangeRate`.
 - Market history: `HistoryResponse` now exposes `price_basis:
   OhlcPriceBasis`, describing the returned OHLC price basis as either uniform
   `PriceBasis` metadata or per-field open/high/low/close bases.

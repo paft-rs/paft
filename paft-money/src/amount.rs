@@ -2,8 +2,9 @@ use crate::currency::Currency;
 use crate::decimal::{self, Decimal, RoundingStrategy};
 use crate::error::MoneyError;
 use crate::exact::{
-    canonical_format, checked_add_decimal, checked_div_decimal, checked_mul_decimal,
-    checked_sub_decimal, copy_decimal, decimal_from_scaled_units, round_to_money,
+    CurrencyAmount, canonical_amount_format, checked_add_amounts, checked_div_decimal,
+    checked_mul_decimal, checked_sub_amounts, copy_decimal, decimal_from_scaled_units,
+    parse_canonical_decimal, round_to_money,
 };
 use crate::money::Money;
 use serde::{Deserialize, Serialize};
@@ -41,7 +42,7 @@ impl MonetaryAmount {
     ///
     /// Returns [`MoneyError::InvalidDecimal`] when the string cannot be parsed losslessly.
     pub fn from_canonical_str(amount: &str, currency: Currency) -> Result<Self, MoneyError> {
-        let decimal = decimal::parse_decimal(amount).ok_or(MoneyError::InvalidDecimal)?;
+        let decimal = parse_canonical_decimal(amount)?;
         Ok(Self::new(decimal, currency))
     }
 
@@ -90,7 +91,7 @@ impl MonetaryAmount {
     /// Returns a canonical string with currency code (`"<amount> <CODE>"`).
     #[must_use]
     pub fn format(&self) -> String {
-        canonical_format(&self.amount, &self.currency)
+        canonical_amount_format(self)
     }
 
     /// Adds another amount with the same currency.
@@ -100,9 +101,7 @@ impl MonetaryAmount {
     /// Returns [`MoneyError::CurrencyMismatch`] when currencies differ and
     /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
     pub fn try_add(&self, rhs: &Self) -> Result<Self, MoneyError> {
-        self.ensure_same_currency(rhs)?;
-        let amount =
-            checked_add_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)?;
+        let amount = checked_add_amounts(self, rhs)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -113,9 +112,7 @@ impl MonetaryAmount {
     /// Returns [`MoneyError::CurrencyMismatch`] when currencies differ and
     /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
     pub fn try_sub(&self, rhs: &Self) -> Result<Self, MoneyError> {
-        self.ensure_same_currency(rhs)?;
-        let amount =
-            checked_sub_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)?;
+        let amount = checked_sub_amounts(self, rhs)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -125,8 +122,7 @@ impl MonetaryAmount {
     ///
     /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
     pub fn try_mul(&self, factor: &Decimal) -> Result<Self, MoneyError> {
-        let amount =
-            checked_mul_decimal(&self.amount, factor).ok_or(MoneyError::ConversionError)?;
+        let amount = checked_mul_decimal(&self.amount, factor)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -137,11 +133,7 @@ impl MonetaryAmount {
     /// Returns [`MoneyError::DivisionByZero`] when `divisor` is zero and
     /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
     pub fn try_div(&self, divisor: &Decimal) -> Result<Self, MoneyError> {
-        if divisor == &decimal::zero() {
-            return Err(MoneyError::DivisionByZero);
-        }
-        let amount =
-            checked_div_decimal(&self.amount, divisor).ok_or(MoneyError::ConversionError)?;
+        let amount = checked_div_decimal(&self.amount, divisor)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -174,15 +166,15 @@ impl MonetaryAmount {
             target_fraction_digits,
         )
     }
+}
 
-    fn ensure_same_currency(&self, rhs: &Self) -> Result<(), MoneyError> {
-        if self.currency != rhs.currency {
-            return Err(MoneyError::CurrencyMismatch {
-                expected: self.currency.clone(),
-                found: rhs.currency.clone(),
-            });
-        }
-        Ok(())
+impl CurrencyAmount for MonetaryAmount {
+    fn raw_amount(&self) -> &Decimal {
+        &self.amount
+    }
+
+    fn raw_currency(&self) -> &Currency {
+        &self.currency
     }
 }
 

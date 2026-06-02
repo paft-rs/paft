@@ -20,110 +20,17 @@ use crate::currency::Currency;
 #[cfg(not(feature = "bigdecimal"))]
 use crate::currency_utils::MAX_DECIMAL_PRECISION;
 use crate::currency_utils::MAX_MINOR_UNIT_DECIMALS;
+use crate::exact::{
+    CurrencyAmount, canonical_amount_format, checked_add_amounts, checked_div_amounts,
+    checked_div_decimal, checked_mul_decimal, checked_sub_amounts, copy_decimal,
+    decimal_from_scaled_units, decimal_scale, parse_canonical_decimal,
+};
 #[cfg(feature = "money-formatting")]
 use crate::format::{FormatItem, Formatter, Params};
 #[cfg(feature = "money-formatting")]
 use crate::locale::Locale;
 #[cfg(feature = "money-formatting")]
 use crate::parser;
-
-// `Decimal` is `Copy` under `rust_decimal` but not under `bigdecimal`. The two
-// definitions below let the rest of the module say `copy_decimal(&value)`
-// without sprinkling `cfg` on every call site, while still keeping the no-op
-// path `const`-eligible under the default backend.
-#[cfg(not(feature = "bigdecimal"))]
-#[inline]
-const fn copy_decimal(value: &Decimal) -> Decimal {
-    *value
-}
-
-#[cfg(feature = "bigdecimal")]
-#[inline]
-fn copy_decimal(value: &Decimal) -> Decimal {
-    value.clone()
-}
-
-// Backend-agnostic checked arithmetic. Under `rust_decimal` these can
-// genuinely overflow because the type is fixed-width (96-bit mantissa);
-// under `bigdecimal` the type is arbitrary precision so the helpers always
-// return `Some(_)`. The `unnecessary_wraps` lint fires on the bigdecimal
-// build because of that — silence it explicitly so the wrapper stays
-// uniform across backends and call sites do not have to branch.
-
-/// Backend-agnostic checked multiplication of two decimals.
-///
-/// Returns `None` on overflow. `rust_decimal` is fixed-width and can overflow
-/// when the product exceeds 96 mantissa bits; `bigdecimal` is arbitrary
-/// precision and never overflows, so the operation is unconditionally
-/// successful there.
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
-fn checked_mul_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_mul(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs * rhs)
-    }
-}
-
-/// Backend-agnostic checked division of two decimals.
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
-fn checked_div_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_div(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs / rhs)
-    }
-}
-
-/// Backend-agnostic checked addition of two decimals.
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
-fn checked_add_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_add(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs + rhs)
-    }
-}
-
-/// Backend-agnostic checked subtraction of two decimals.
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
-fn checked_sub_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_sub(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs - rhs)
-    }
-}
-
-/// Number of fractional digits the underlying `Decimal` is currently
-/// representing.
-///
-/// Both backends store an explicit scale, but expose it via different
-/// methods. The returned value is widened to `i64` to match
-/// `bigdecimal`'s native type — `rust_decimal` uses `u32`, which always
-/// fits.
-fn decimal_scale(value: &Decimal) -> i64 {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        i64::from(value.scale())
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        value.fractional_digit_count()
-    }
-}
 
 /// Represents an exchange rate between two currencies.
 ///
@@ -221,7 +128,7 @@ impl ExchangeRate {
     /// the fixed-width `rust_decimal` backend.
     pub fn try_inverse(&self) -> Result<Self, MoneyError> {
         let one = decimal::one();
-        let rate = checked_div_decimal(&one, &self.rate).ok_or(MoneyError::ConversionError)?;
+        let rate = checked_div_decimal(&one, &self.rate)?;
 
         Ok(Self {
             from: self.to.clone(),
@@ -413,8 +320,7 @@ impl Money {
         // The cap on `scale` is enforced by `ensure_scale_within_limits`
         // (currently 18 dp) so `10^scale` always fits inside `i64`.
         let multiplier = Decimal::from(10_i64.pow(scale));
-        let scaled =
-            checked_mul_decimal(&self.amount, &multiplier).ok_or(MoneyError::ConversionError)?;
+        let scaled = checked_mul_decimal(&self.amount, &multiplier)?;
         scaled.to_i128().ok_or(MoneyError::ConversionError)
     }
 
@@ -436,7 +342,7 @@ impl Money {
     /// consistent across decimal backends.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_canonical_str(amount: &str, currency: Currency) -> Result<Self, MoneyError> {
-        let amount = decimal::parse_decimal(amount).ok_or(MoneyError::InvalidDecimal)?;
+        let amount = parse_canonical_decimal(amount)?;
         Self::new_exact(amount, currency)
     }
 
@@ -450,15 +356,14 @@ impl Money {
     pub fn from_minor_units(minor_units: i128, currency: Currency) -> Result<Self, MoneyError> {
         let decimals = Self::decimals_for_currency(&currency)?;
         let scale = Self::ensure_scale_within_limits(decimals)?;
-        let amount = decimal::try_from_scaled_units(minor_units, scale)
-            .ok_or(MoneyError::ConversionError)?;
+        let amount = decimal_from_scaled_units(minor_units, scale)?;
         Self::new(amount, currency)
     }
 
     /// Returns the amount as a canonical string with currency code (`"<amount> <CODE>"`).
     #[must_use]
     pub fn format(&self) -> String {
-        self.canonical_format()
+        canonical_amount_format(self)
     }
 
     /// Parses a human-formatted string using an explicit locale (strict grouping/decimal rules).
@@ -544,14 +449,7 @@ impl Money {
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_add(&self, rhs: &Self) -> Result<Self, MoneyError> {
-        if self.currency != rhs.currency {
-            return Err(MoneyError::CurrencyMismatch {
-                expected: self.currency.clone(),
-                found: rhs.currency.clone(),
-            });
-        }
-        let sum =
-            checked_add_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)?;
+        let sum = checked_add_amounts(self, rhs)?;
         Self::new(sum, self.currency.clone())
     }
 
@@ -567,14 +465,7 @@ impl Money {
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_sub(&self, rhs: &Self) -> Result<Self, MoneyError> {
-        if self.currency != rhs.currency {
-            return Err(MoneyError::CurrencyMismatch {
-                expected: self.currency.clone(),
-                found: rhs.currency.clone(),
-            });
-        }
-        let diff =
-            checked_sub_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)?;
+        let diff = checked_sub_amounts(self, rhs)?;
         Self::new(diff, self.currency.clone())
     }
 
@@ -589,7 +480,7 @@ impl Money {
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_mul(&self, rhs: &Decimal) -> Result<Self, MoneyError> {
-        let product = checked_mul_decimal(&self.amount, rhs).ok_or(MoneyError::ConversionError)?;
+        let product = checked_mul_decimal(&self.amount, rhs)?;
         Self::new(product, self.currency.clone())
     }
 
@@ -604,10 +495,7 @@ impl Money {
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_div(&self, rhs: &Decimal) -> Result<Self, MoneyError> {
-        if rhs == &decimal::zero() {
-            return Err(MoneyError::DivisionByZero);
-        }
-        let quotient = checked_div_decimal(&self.amount, rhs).ok_or(MoneyError::ConversionError)?;
+        let quotient = checked_div_decimal(&self.amount, rhs)?;
         Self::new(quotient, self.currency.clone())
     }
 
@@ -627,16 +515,7 @@ impl Money {
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_div_money(&self, rhs: &Self) -> Result<Decimal, MoneyError> {
-        if self.currency != rhs.currency {
-            return Err(MoneyError::CurrencyMismatch {
-                expected: self.currency.clone(),
-                found: rhs.currency.clone(),
-            });
-        }
-        if rhs.amount == decimal::zero() {
-            return Err(MoneyError::DivisionByZero);
-        }
-        checked_div_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)
+        checked_div_amounts(self, rhs)
     }
 
     /// Converts this money to another currency using the provided exchange rate and rounding strategy.
@@ -677,8 +556,7 @@ impl Money {
 
         let decimals = rate.to.decimal_places()?;
         let scale = Self::ensure_scale_within_limits(decimals)?;
-        let product =
-            checked_mul_decimal(&self.amount, &rate.rate).ok_or(MoneyError::ConversionError)?;
+        let product = checked_mul_decimal(&self.amount, &rate.rate)?;
         let converted_amount = decimal::round_dp_with_strategy(&product, scale, rounding);
         Self::new(converted_amount, rate.to.clone())
     }
@@ -708,14 +586,6 @@ impl Money {
 
     fn decimals_for_currency(currency: &Currency) -> Result<u8, MoneyError> {
         currency.decimal_places()
-    }
-
-    fn canonical_format(&self) -> String {
-        format!(
-            "{} {}",
-            decimal::to_canonical_string(&self.amount),
-            self.currency.code()
-        )
     }
 
     #[cfg(feature = "money-formatting")]
@@ -796,6 +666,16 @@ impl Money {
         amount =
             decimal::round_dp_with_strategy(&amount, scale, RoundingStrategy::MidpointAwayFromZero);
         Ok(amount)
+    }
+}
+
+impl CurrencyAmount for Money {
+    fn raw_amount(&self) -> &Decimal {
+        &self.amount
+    }
+
+    fn raw_currency(&self) -> &Currency {
+        &self.currency
     }
 }
 
@@ -908,14 +788,14 @@ impl fmt::Display for LocalizedMoney<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.format_internal() {
             Ok(output) => f.write_str(&output),
-            Err(_) => f.write_str(&self.money.canonical_format()),
+            Err(_) => f.write_str(&canonical_amount_format(self.money)),
         }
     }
 }
 
 impl std::fmt::Display for Money {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.canonical_format())
+        f.write_str(&canonical_amount_format(self))
     }
 }
 
