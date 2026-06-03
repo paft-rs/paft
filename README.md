@@ -54,8 +54,13 @@ async fn analyze_with_alpha_vantage(symbol: &str) -> Result<()> {
 
 // Your analysis logic works with any provider's paft types
 fn analyze_data(quote: Quote, history: HistoryResponse) {
-    println!("Current price: ${:.2}", quote.price.as_ref().map(|p| p.amount()).unwrap_or_default());
-    println!("6-month high: ${:.2}", history.candles.iter().map(|c| c.high.amount()).max().unwrap_or_default());
+    if let Some(price) = quote.price.as_ref() {
+        println!("Current price: {price} {}", quote.currency);
+    }
+
+    if let Some(high) = history.candles.iter().map(|c| c.ohlc.high.as_decimal()).max() {
+        println!("6-month high: {high}");
+    }
 }
 ```
 
@@ -232,7 +237,7 @@ Data provider crates are the bridge between proprietary APIs and standardized pa
 
 ```rust
 use paft::money::IsoCurrency;
-use paft::prelude::{AssetKind, Canonical, Currency, Exchange, Instrument, Price, Quote};
+use paft::prelude::{AssetKind, Canonical, Currency, Exchange, Instrument, PriceAmount, Quote};
 
 // Internal wire types (efficient for serialization)
 #[derive(Deserialize)]
@@ -266,17 +271,16 @@ impl GenericQuoteWire {
             None => Instrument::from_symbol(symbol, AssetKind::Equity),
         }
         .expect("validated upstream");
+        let currency = Currency::Iso(IsoCurrency::USD);
+
         Quote {
             instrument,
             name: None,
-            price: self.regularMarketPrice.map(|amount|
-                Price::new(amount, Currency::Iso(IsoCurrency::USD))
-            ),
+            currency,
+            price: self.regularMarketPrice.map(PriceAmount::new),
             bid: None,
             ask: None,
-            previous_close: self.regularMarketPreviousClose.map(|amount|
-                Price::new(amount, Currency::Iso(IsoCurrency::USD))
-            ),
+            previous_close: self.regularMarketPreviousClose.map(PriceAmount::new),
             day_volume: None,
             market_state: None,
             as_of: None,

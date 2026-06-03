@@ -101,13 +101,15 @@ let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto)
 // Create market data. `Quote` carries the full `Instrument`, plus today's
 // volume, optional snapshot time, and a provider-metadata escape hatch
 // (use `()` for "no metadata").
+let usd = Currency::Iso(IsoCurrency::USD);
 let quote = Quote {
     instrument: apple.clone(),
     name: Some("Apple Inc.".to_string()),
-    price: Some(Price::from_canonical_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
+    currency: usd,
+    price: Some(PriceAmount::new(Decimal::from(19012) / Decimal::from(100))),
     bid: None,
     ask: None,
-    previous_close: Some(Price::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
+    previous_close: Some(PriceAmount::new(Decimal::from(18996) / Decimal::from(100))),
     day_volume: Some(78_900_000),
     market_state: Some(MarketState::Regular),
     as_of: None,
@@ -164,8 +166,8 @@ if let Some(avg) = df.column("price.amount")?.as_materialized_series().mean() {
     println!("Average price: {avg:.2}");
 }
 
-// Money-like fields are flattened into paired amount/currency columns such as
-// `price.amount` and `price.currency`.
+// Contextual price fields flatten into amount columns such as `price.amount`;
+// the containing record carries denomination in its `currency` column.
 ```
 
 ### Locale-aware money formatting and parsing
