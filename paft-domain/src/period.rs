@@ -5,7 +5,6 @@
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as DeError};
 use std::borrow::Cow;
-use std::cmp::Ordering;
 use std::fmt;
 
 use crate::error::DomainError;
@@ -33,6 +32,10 @@ use paft_utils::Canonical;
 /// `Display` and serde always emit the canonical forms listed above. The parser
 /// accepts common provider variants (e.g., `FY2023`, `2023-Q4`, `12/31/2023`) and
 /// normalizes to the single canonical emission for round-trip stability.
+///
+/// `Period` intentionally does not implement `Ord`: cross-granularity ordering
+/// needs caller-chosen semantics (`start_date`, `end_date`, exact date, fiscal
+/// calendar, provider-specific `Other`, etc.).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Period {
@@ -58,17 +61,6 @@ pub enum Period {
 }
 
 impl Period {
-    /// Internal: establish a stable ordering precedence across variants.
-    /// Date < Quarter < Year < Other
-    const fn type_rank(&self) -> u8 {
-        match self {
-            Self::Date(_) => 0,
-            Self::Quarter { .. } => 1,
-            Self::Year { .. } => 2,
-            Self::Other(_) => 3,
-        }
-    }
-
     /// Returns the canonical display/serde code for this period.
     #[must_use]
     pub fn code(&self) -> Cow<'_, str> {
@@ -161,6 +153,60 @@ impl Period {
             Self::Other(_) => return None,
         };
         NaiveDate::from_ymd_opt(y, 12, 31)
+    }
+
+    /// Returns the first calendar date covered by this period.
+    ///
+    /// - For `Date`, returns the date itself
+    /// - For `Quarter`, returns the first day of that quarter
+    /// - For `Year`, returns January 1 of that year
+    /// - For `Other`, returns `None`
+    ///
+    /// Manually constructed quarters outside `1..=4` return `None`.
+    #[must_use]
+    pub const fn start_date(&self) -> Option<NaiveDate> {
+        match self {
+            Self::Date(d) => Some(*d),
+            Self::Quarter { year, quarter } => {
+                let month = match *quarter {
+                    1 => 1,
+                    2 => 4,
+                    3 => 7,
+                    4 => 10,
+                    _ => return None,
+                };
+                NaiveDate::from_ymd_opt(*year, month, 1)
+            }
+            Self::Year { year } => NaiveDate::from_ymd_opt(*year, 1, 1),
+            Self::Other(_) => None,
+        }
+    }
+
+    /// Returns the last calendar date covered by this period.
+    ///
+    /// - For `Date`, returns the date itself
+    /// - For `Quarter`, returns the last day of that quarter
+    /// - For `Year`, returns December 31 of that year
+    /// - For `Other`, returns `None`
+    ///
+    /// Manually constructed quarters outside `1..=4` return `None`.
+    #[must_use]
+    pub const fn end_date(&self) -> Option<NaiveDate> {
+        match self {
+            Self::Date(d) => Some(*d),
+            Self::Quarter { year, quarter } => {
+                let (month, day) = match *quarter {
+                    1 => (3, 31),
+                    2 => (6, 30),
+                    3 => (9, 30),
+                    4 => (12, 31),
+                    _ => return None,
+                };
+                NaiveDate::from_ymd_opt(*year, month, day)
+            }
+            Self::Year { year } => NaiveDate::from_ymd_opt(*year, 12, 31),
+            Self::Other(_) => None,
+        }
     }
 
     /// Returns true if both values describe the same time bucket.
@@ -420,36 +466,6 @@ impl Period {
 impl From<Period> for String {
     fn from(val: Period) -> Self {
         val.code().into_owned()
-    }
-}
-
-impl Ord for Period {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.type_rank().cmp(&other.type_rank()) {
-            Ordering::Equal => match (self, other) {
-                (Self::Date(a), Self::Date(b)) => a.cmp(b),
-                (
-                    Self::Quarter {
-                        year: ay,
-                        quarter: aq,
-                    },
-                    Self::Quarter {
-                        year: by,
-                        quarter: bq,
-                    },
-                ) => (ay, aq).cmp(&(by, bq)),
-                (Self::Year { year: ay }, Self::Year { year: by }) => ay.cmp(by),
-                (Self::Other(a), Self::Other(b)) => a.as_ref().cmp(b.as_ref()),
-                _ => Ordering::Equal,
-            },
-            ord => ord,
-        }
-    }
-}
-
-impl PartialOrd for Period {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 

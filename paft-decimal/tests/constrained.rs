@@ -6,6 +6,16 @@ fn dec(value: &str) -> Decimal {
     Decimal::from_str(value).unwrap()
 }
 
+#[cfg(not(feature = "bigdecimal"))]
+const fn decimal_for_reuse(value: &Decimal) -> Decimal {
+    *value
+}
+
+#[cfg(feature = "bigdecimal")]
+fn decimal_for_reuse(value: &Decimal) -> Decimal {
+    value.clone()
+}
+
 #[test]
 fn non_negative_decimal_accepts_zero_and_positive_values() {
     assert_eq!(
@@ -41,7 +51,7 @@ fn ratio_accepts_only_inclusive_unit_interval() {
 #[test]
 fn constrained_decimals_serialize_as_plain_decimals() {
     let decimal = dec("0.25");
-    let ratio = Ratio::new(decimal.clone()).unwrap();
+    let ratio = Ratio::new(decimal_for_reuse(&decimal)).unwrap();
 
     assert_eq!(
         serde_json::to_value(ratio).unwrap(),

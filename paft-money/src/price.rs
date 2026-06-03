@@ -58,12 +58,28 @@ impl PriceAmount {
 
     /// Returns the wrapped decimal.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn into_inner(self) -> Decimal {
+        self.amount
+    }
+
+    /// Returns the wrapped decimal.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn into_inner(self) -> Decimal {
         self.amount
     }
 
     /// Attaches a currency and returns a standalone [`Price`].
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn with_currency(&self, currency: Currency) -> Price {
+        Price::new(copy_decimal(&self.amount), currency)
+    }
+
+    /// Attaches a currency and returns a standalone [`Price`].
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn with_currency(&self, currency: Currency) -> Price {
         Price::new(copy_decimal(&self.amount), currency)
     }

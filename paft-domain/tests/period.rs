@@ -369,30 +369,66 @@ fn period_byte_parser_too_long_inputs_fall_through() {
 }
 
 #[test]
-fn period_ordering_is_stable_and_chronological() {
-    use std::cmp::Ordering::*;
-    let d1 = Period::Date(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap());
-    let d2 = Period::Date(NaiveDate::from_ymd_opt(2023, 12, 31).unwrap());
-    let q1 = Period::Quarter {
-        year: 2023,
-        quarter: 1,
-    };
-    let q2 = Period::Quarter {
+fn period_calendar_boundaries_are_explicit() {
+    let date = Period::Date(NaiveDate::from_ymd_opt(2023, 5, 17).unwrap());
+    assert_eq!(
+        date.start_date(),
+        Some(NaiveDate::from_ymd_opt(2023, 5, 17).unwrap())
+    );
+    assert_eq!(
+        date.end_date(),
+        Some(NaiveDate::from_ymd_opt(2023, 5, 17).unwrap())
+    );
+
+    let quarter = Period::Quarter {
         year: 2023,
         quarter: 2,
     };
-    let y = Period::Year { year: 2023 };
-    let o = Period::try_from("ALPHA".to_string()).unwrap();
+    assert_eq!(
+        quarter.start_date(),
+        Some(NaiveDate::from_ymd_opt(2023, 4, 1).unwrap())
+    );
+    assert_eq!(
+        quarter.end_date(),
+        Some(NaiveDate::from_ymd_opt(2023, 6, 30).unwrap())
+    );
 
-    // Variant precedence: Date < Quarter < Year < Other
-    assert_eq!(d1.cmp(&q1), Less);
-    assert_eq!(q1.cmp(&y), Less);
-    assert_eq!(y.cmp(&o), Less);
+    let year = Period::Year { year: 2023 };
+    assert_eq!(
+        year.start_date(),
+        Some(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap())
+    );
+    assert_eq!(
+        year.end_date(),
+        Some(NaiveDate::from_ymd_opt(2023, 12, 31).unwrap())
+    );
 
-    // Intra-variant chronology
-    assert_eq!(d1.cmp(&d2), Less);
-    assert_eq!(q1.cmp(&q2), Less);
-    assert_eq!(Period::Year { year: 2022 }.cmp(&y), Less);
+    let other = Period::try_from("ALPHA".to_string()).unwrap();
+    assert_eq!(other.start_date(), None);
+    assert_eq!(other.end_date(), None);
+}
+
+#[test]
+fn period_boundaries_support_chronological_sort_keys() {
+    let late_date = Period::Date(NaiveDate::from_ymd_opt(2099, 1, 1).unwrap());
+    let early_quarter = Period::Quarter {
+        year: 1900,
+        quarter: 1,
+    };
+
+    assert!(early_quarter.start_date() < late_date.start_date());
+    assert!(early_quarter.end_date() < late_date.end_date());
+}
+
+#[test]
+fn invalid_manual_quarter_has_no_calendar_boundaries() {
+    let period = Period::Quarter {
+        year: 2023,
+        quarter: 5,
+    };
+
+    assert_eq!(period.start_date(), None);
+    assert_eq!(period.end_date(), None);
 }
 
 #[test]

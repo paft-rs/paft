@@ -15,6 +15,16 @@ pub struct DecimalConstraintError {
 }
 
 impl DecimalConstraintError {
+    #[cfg(not(feature = "bigdecimal"))]
+    const fn new(type_name: &'static str, expected: &'static str, value: &Decimal) -> Self {
+        Self {
+            type_name,
+            expected,
+            value: *value,
+        }
+    }
+
+    #[cfg(feature = "bigdecimal")]
     fn new(type_name: &'static str, expected: &'static str, value: &Decimal) -> Self {
         Self {
             type_name,
@@ -102,6 +112,14 @@ impl NonNegativeDecimal {
 
     /// Returns the wrapped decimal.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn into_inner(self) -> Decimal {
+        self.0
+    }
+
+    /// Returns the wrapped decimal.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn into_inner(self) -> Decimal {
         self.0
     }
@@ -184,6 +202,14 @@ impl PositiveDecimal {
 
     /// Returns the wrapped decimal.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn into_inner(self) -> Decimal {
+        self.0
+    }
+
+    /// Returns the wrapped decimal.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn into_inner(self) -> Decimal {
         self.0
     }
@@ -268,6 +294,14 @@ impl Ratio {
 
     /// Returns the wrapped decimal.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn into_inner(self) -> Decimal {
+        self.0
+    }
+
+    /// Returns the wrapped decimal.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn into_inner(self) -> Decimal {
         self.0
     }

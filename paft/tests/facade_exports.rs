@@ -57,6 +57,11 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let _: PreludeOptionUpdate = update;
 
     let amount = PriceAmount::new(Decimal::from(150));
+
+    #[cfg(not(feature = "bigdecimal"))]
+    let _: PreludeOhlc = PreludeOhlc::new(amount, amount, amount, amount);
+
+    #[cfg(feature = "bigdecimal")]
     let _: PreludeOhlc = PreludeOhlc::new(amount.clone(), amount.clone(), amount.clone(), amount);
 }
 

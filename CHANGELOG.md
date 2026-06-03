@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
   `DecimalConstraintError`.
 - Money/facade: added `PriceAmount`, a transparent contextual price-domain
   amount for values whose currency is supplied by an enclosing market record.
+- Domain/facade: added `Period::{start_date, end_date}` helpers for explicit
+  chronological sorting and range-boundary policies.
 
 ### Changed
 
@@ -28,6 +30,9 @@ All notable changes to this project will be documented in this file.
   `Price::{try_mul, try_div, try_total}`.
 - Money: checked decimal operations and canonical amount parsing/formatting are
   now shared across `Money`, `MonetaryAmount`, `Price`, and `ExchangeRate`.
+- Decimal/money: constrained decimal `into_inner` helpers and
+  `PriceAmount::{into_inner, with_currency}` are now `const fn` on the default
+  decimal backend.
 - Market history: `HistoryResponse` now exposes `price_basis:
   OhlcPriceBasis`, describing the returned OHLC price basis as either uniform
   `PriceBasis` metadata or per-field open/high/low/close bases.
@@ -79,6 +84,9 @@ All notable changes to this project will be documented in this file.
   `CRYPTO|SYMBOL|3:BTC`, so symbol-equivalent instruments from different asset
   classes cannot collide. Use `Instrument::display_key()` when the old compact
   display format is desired.
+- Domain/facade: `Period` no longer implements `Ord`/`PartialOrd`; callers must
+  choose explicit semantics such as `start_date()`, `end_date()`, or a
+  provider-specific structural sort key.
 
 ## [0.8.0] - 2026-05-27
 
