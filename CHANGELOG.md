@@ -181,6 +181,11 @@ All notable changes to this project will be documented in this file.
   renamed to `horizon` and now use `Horizon`; helper methods were renamed from
   `find_by_period*`/`available_periods` to
   `find_by_horizon*`/`available_horizons`.
+- Fundamentals/facade: removed
+  `EpsRevisions::{total_up_revisions, total_down_revisions, net_revisions}`;
+  revision horizons are overlapping lookbacks, not disjoint buckets. Select a
+  concrete `RevisionPoint` before using `RevisionPoint::total_revisions` or
+  `RevisionPoint::net_revisions`.
 - Domain/money/fundamentals/facade: public `Other(Canonical)` enum payloads were
   replaced by typed wrappers. Use `Type::other("TOKEN")?`,
   `OtherType::new("TOKEN")?`, or the existing `FromStr`/serde parsers instead

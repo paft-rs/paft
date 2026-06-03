@@ -62,10 +62,13 @@ fn eps_revisions_helpers() {
             .collect::<Vec<_>>(),
         vec!["7d", "30d"]
     );
-    assert_eq!(r.total_up_revisions(), 7);
-    assert_eq!(r.total_down_revisions(), 7);
-    assert_eq!(r.net_revisions(), 0);
-    assert!(r.find_by_horizon_str("7d").expect("parsed").is_some());
+    assert_eq!(
+        r.find_by_horizon_str("7d")
+            .expect("parsed")
+            .expect("present")
+            .net_revisions(),
+        2
+    );
     assert!(r.find_by_horizon_str("90d").expect("parsed").is_none());
 }
 
@@ -78,18 +81,6 @@ fn revision_point_revisions_do_not_wrap_large_counts() {
     assert_eq!(total.total_revisions(), u64::from(u32::MAX) * 2);
     assert_eq!(upward.net_revisions(), i64::from(u32::MAX));
     assert_eq!(downward.net_revisions(), -i64::from(u32::MAX));
-}
-
-#[test]
-fn eps_revisions_totals_do_not_sum_into_u32() {
-    let r = EpsRevisions::new(vec![
-        RevisionPoint::try_new_str("7d", u32::MAX, 0).unwrap(),
-        RevisionPoint::try_new_str("30d", 1, u32::MAX).unwrap(),
-    ]);
-
-    assert_eq!(r.total_up_revisions(), u64::from(u32::MAX) + 1);
-    assert_eq!(r.total_down_revisions(), u64::from(u32::MAX));
-    assert_eq!(r.net_revisions(), 1);
 }
 
 #[test]

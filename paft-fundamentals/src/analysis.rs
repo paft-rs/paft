@@ -577,33 +577,6 @@ impl EpsRevisions {
             .map(|point| point.horizon.clone())
             .collect()
     }
-
-    /// Returns the total number of upward revisions across all horizons.
-    #[must_use]
-    pub fn total_up_revisions(&self) -> u64 {
-        self.historical
-            .iter()
-            .map(|point| u64::from(point.up_count))
-            .sum()
-    }
-
-    /// Returns the total number of downward revisions across all horizons.
-    #[must_use]
-    pub fn total_down_revisions(&self) -> u64 {
-        self.historical
-            .iter()
-            .map(|point| u64::from(point.down_count))
-            .sum()
-    }
-
-    /// Returns the net revision count across all horizons (total up - total down).
-    #[must_use]
-    pub fn net_revisions(&self) -> i64 {
-        self.historical
-            .iter()
-            .map(RevisionPoint::net_revisions)
-            .sum()
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -83,7 +83,14 @@ assert!(eps_trend
     .is_some());
 
 let revisions = EpsRevisions::new(vec![RevisionPoint::try_new_str("30d", 4, 1).unwrap()]);
-assert_eq!(revisions.net_revisions(), 3);
+assert_eq!(
+    revisions
+        .find_by_horizon_str("30d")
+        .unwrap()
+        .unwrap()
+        .net_revisions(),
+    3
+);
 
 let holder = MajorHolder {
     category: "% held by insiders".into(),

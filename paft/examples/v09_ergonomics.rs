@@ -66,7 +66,13 @@ fn main() -> Result<()> {
     assert!(eps_trend.find_by_horizon_str("90d")?.is_some());
 
     let revisions = EpsRevisions::new(vec![RevisionPoint::try_new_str("30d", 4, 1)?]);
-    assert_eq!(revisions.net_revisions(), 3);
+    assert_eq!(
+        revisions
+            .find_by_horizon_str("30d")?
+            .expect("30d revision point")
+            .net_revisions(),
+        3
+    );
 
     let insiders = MajorHolder {
         category: "% held by insiders".to_string(),
