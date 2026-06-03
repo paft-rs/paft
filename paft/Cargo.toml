@@ -83,6 +83,10 @@ polars = { workspace = true, features = ["dtype-datetime", "dtype-decimal"] }
 polars-arrow = { workspace = true }
 
 [[example]]
+name = "v09_ergonomics"
+required-features = ["market", "fundamentals"]
+
+[[example]]
 name = "metadata_dataframe"
 required-features = ["full"]
 
