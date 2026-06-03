@@ -35,6 +35,18 @@ fn search_request_validation_trims_query_before_storing() {
 }
 
 #[test]
+fn search_request_validation_trims_locale_fields_before_storing() {
+    let request = SearchRequest::builder("AAPL")
+        .lang(" en ")
+        .region(" US ")
+        .build()
+        .unwrap();
+
+    assert_eq!(request.lang(), Some("en"));
+    assert_eq!(request.region(), Some("US"));
+}
+
+#[test]
 fn search_request_validation_zero_limit_rejected() {
     let result = SearchRequest::builder("AAPL").limit(0).build();
     assert!(result.is_err());
@@ -44,6 +56,26 @@ fn search_request_validation_zero_limit_rejected() {
     } else {
         panic!("Expected InvalidSearchLimit error for zero limit");
     }
+}
+
+#[test]
+fn search_request_validation_empty_lang_rejected() {
+    let result = SearchRequest::builder("AAPL").lang(" \t\n ").build();
+
+    assert_eq!(
+        result,
+        Err(MarketError::EmptySearchLocaleField { field: "lang" })
+    );
+}
+
+#[test]
+fn search_request_validation_empty_region_rejected() {
+    let result = SearchRequest::builder("AAPL").region("").build();
+
+    assert_eq!(
+        result,
+        Err(MarketError::EmptySearchLocaleField { field: "region" })
+    );
 }
 
 #[test]
@@ -59,6 +91,24 @@ fn search_request_deserialization_empty_query_rejected() {
 fn search_request_deserialization_zero_limit_rejected() {
     let result = serde_json::from_str::<SearchRequest>(
         r#"{"query":"AAPL","kind":null,"limit":0,"lang":null,"region":null}"#,
+    );
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn search_request_deserialization_empty_lang_rejected() {
+    let result = serde_json::from_str::<SearchRequest>(
+        r#"{"query":"AAPL","kind":null,"limit":10,"lang":" ","region":null}"#,
+    );
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn search_request_deserialization_empty_region_rejected() {
+    let result = serde_json::from_str::<SearchRequest>(
+        r#"{"query":"AAPL","kind":null,"limit":10,"lang":null,"region":""}"#,
     );
 
     assert!(result.is_err());

@@ -77,6 +77,9 @@ All notable changes to this project will be documented in this file.
 - Market requests: `HistoryRequest` and `SearchRequest` JSON deserialization
   now rejects unknown top-level fields instead of silently ignoring request
   typos.
+- Market requests: `SearchRequest` now trims accepted `lang`/`region` values
+  and rejects empty or whitespace-only values through both builder and serde
+  construction paths.
 - Money: localized formatting now rejects fraction digit requests above the
   active decimal backend precision instead of attempting unbounded zero padding.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing

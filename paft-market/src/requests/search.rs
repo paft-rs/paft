@@ -117,10 +117,13 @@ impl SearchRequestBuilder {
     /// Returns an error if:
     /// - Query is empty or only whitespace
     /// - Limit is set to 0
+    /// - Language or region are provided but empty/whitespace-only
     ///
     /// # Errors
     /// Returns `MarketError::EmptySearchQuery` if the query is empty/whitespace,
-    /// or `MarketError::InvalidSearchLimit(0)` if a zero limit is provided.
+    /// `MarketError::InvalidSearchLimit(0)` if a zero limit is provided, or
+    /// `MarketError::EmptySearchLocaleField` if language or region is
+    /// empty/whitespace-only.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn build(self) -> Result<SearchRequest, MarketError> {
         let query = self.query.trim();
@@ -134,15 +137,33 @@ impl SearchRequestBuilder {
         {
             return Err(MarketError::InvalidSearchLimit(lim));
         }
+        let lang = validate_optional_locale_field(self.lang, "lang")?;
+        let region = validate_optional_locale_field(self.region, "region")?;
 
         Ok(SearchRequest {
             query: query.to_owned(),
             kind: self.kind,
             limit: self.limit,
-            lang: self.lang,
-            region: self.region,
+            lang,
+            region,
         })
     }
+}
+
+fn validate_optional_locale_field(
+    value: Option<String>,
+    field: &'static str,
+) -> Result<Option<String>, MarketError> {
+    value
+        .map(|value| {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                Err(MarketError::EmptySearchLocaleField { field })
+            } else {
+                Ok(trimmed.to_owned())
+            }
+        })
+        .transpose()
 }
 
 impl SearchRequest {

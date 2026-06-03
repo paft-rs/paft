@@ -14,6 +14,13 @@ pub enum MarketError {
     #[error("Search limit must be greater than 0, but was {0}")]
     InvalidSearchLimit(usize),
 
+    /// Search locale fields must not be empty when provided.
+    #[error("Search {field} must not be empty when provided")]
+    EmptySearchLocaleField {
+        /// The locale field that was empty.
+        field: &'static str,
+    },
+
     /// `HistoryRequest`: 'period' start must be before end.
     #[error("HistoryRequest: 'period' start ({start}) must be before end ({end})")]
     InvalidPeriod {
