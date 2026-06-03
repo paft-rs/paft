@@ -36,6 +36,8 @@ All notable changes to this project will be documented in this file.
 - Market/fundamentals: universally constrained non-amount fields now use
   dedicated newtypes: option implied volatility uses `NonNegativeDecimal`,
   holder fractions use `Ratio`, and news request counts use `NonZeroU32`.
+- Market: documented `Action::Split` ratio direction as new shares per old
+  shares, so a 4-for-1 split is `numerator = 4`, `denominator = 1`.
 - Fundamentals: `InsiderTransaction::url` is now `Option<String>` so missing
   filing URLs can be represented without sentinel strings.
 - Money: scalar arithmetic helpers now borrow decimal operands:

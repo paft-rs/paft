@@ -24,14 +24,18 @@ pub enum Action {
         /// Amount paid per share.
         amount: Price,
     },
-    /// Stock split.
+    /// Stock split ratio, expressed as new shares per old shares.
+    ///
+    /// A 4-for-1 forward split is represented as `numerator = 4`,
+    /// `denominator = 1`. A 1-for-4 reverse split is represented as
+    /// `numerator = 1`, `denominator = 4`.
     Split {
         /// Timestamp.
         #[serde(with = "chrono::serde::ts_milliseconds")]
         ts: DateTime<Utc>,
-        /// Non-zero split numerator.
+        /// Non-zero new-share count in the split ratio.
         numerator: NonZeroU32,
-        /// Non-zero split denominator.
+        /// Non-zero old-share count in the split ratio.
         denominator: NonZeroU32,
     },
     /// Capital gain distribution.

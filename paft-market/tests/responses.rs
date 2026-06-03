@@ -87,7 +87,7 @@ fn action_dividend_serialization() {
 }
 
 #[test]
-fn action_split_serialization() {
+fn action_split_serialization_uses_new_shares_over_old_shares() {
     let action = Action::Split {
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         numerator: NonZeroU32::new(2).unwrap(),
