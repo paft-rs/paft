@@ -1,10 +1,5 @@
 //! Quote types under the `paft_market::market::quote` namespace.
 
-// `Eq` is intentionally NOT derived on the generic payload types: the
-// metadata payload `M` is meant to accept user types that don't satisfy
-// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
@@ -16,7 +11,7 @@ use paft_money::{Currency, PriceAmount, QuantityAmount};
 use crate::market::orderbook::GenericBookLevel;
 
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// Snapshot quote data for an instrument at a single point in time.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
@@ -80,7 +75,7 @@ impl<M: Default> GenericQuote<M> {
 /// Standard `Quote` with no extra provider metadata.
 pub type Quote = GenericQuote<()>;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Incremental update for an instrument during streaming sessions.
 ///

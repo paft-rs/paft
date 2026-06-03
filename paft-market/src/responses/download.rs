@@ -1,16 +1,11 @@
 //! Bulk download response types.
 
-// `Eq` is intentionally NOT derived on the generic payload types: the
-// metadata payload `M` is meant to accept user types that don't satisfy
-// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 use serde::{Deserialize, Serialize};
 
 use crate::responses::history::GenericHistoryResponse;
 use paft_domain::{Instrument, Symbol};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// A single instrument-scoped history entry within a bulk download.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
@@ -34,7 +29,7 @@ pub struct GenericDownloadEntry<M = ()> {
 /// Standard `DownloadEntry` with no extra provider metadata.
 pub type DownloadEntry = GenericDownloadEntry<()>;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Aggregated bulk-download response as an array of instrument-keyed entries.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the

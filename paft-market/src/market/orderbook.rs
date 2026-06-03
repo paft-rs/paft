@@ -1,10 +1,5 @@
 //! Order book and book-level types under the `paft_market::market::orderbook` namespace.
 
-// `Eq` is intentionally NOT derived on the generic payload types: the
-// metadata payload `M` is meant to accept user types that don't satisfy
-// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 use chrono::{DateTime, Utc};
 use paft_domain::Instrument;
 use paft_money::{Currency, PriceAmount, QuantityAmount};
@@ -32,7 +27,7 @@ use df_derive_macros::ToDataFrame;
 /// delayed and aggregated equity feeds often strip sizes, and some real-time
 /// venues' BBO updates routinely carry the size for only one side of the
 /// market per message.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericBookLevel<M = ()> {
     /// The price at this level.
@@ -72,7 +67,7 @@ pub type BookLevel = GenericBookLevel<()>;
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOrderBook<M = ()> {
     /// Instrument identifier.

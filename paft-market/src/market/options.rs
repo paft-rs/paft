@@ -1,10 +1,5 @@
 //! Option contracts and chains under the market namespace.
 
-// `Eq` is intentionally NOT derived on the generic payload types: the
-// metadata payload `M` is meant to accept user types that don't satisfy
-// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, NaiveDate, Utc};
@@ -104,7 +99,7 @@ impl OptionContractKey {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single option contract (call or put) at a given strike and expiration.
 ///
@@ -186,7 +181,7 @@ impl<M: Default> GenericOptionContract<M> {
 /// Standard `OptionContract` with no extra provider metadata.
 pub type OptionContract = GenericOptionContract<()>;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A full option chain for one or more expirations.
 ///
@@ -243,7 +238,7 @@ pub type OptionChain = GenericOptionChain<()>;
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOptionUpdate<M = ()> {
     /// Contract identity fields.

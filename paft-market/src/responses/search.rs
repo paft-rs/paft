@@ -1,10 +1,5 @@
 //! Search response types.
 
-// `Eq` is intentionally NOT derived on the generic payload types: the
-// metadata payload `M` is meant to accept user types that don't satisfy
-// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
@@ -12,7 +7,7 @@ use df_derive_macros::ToDataFrame;
 
 use paft_domain::Instrument;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single search result item.
 ///
@@ -37,7 +32,7 @@ pub struct GenericSearchResult<M = ()> {
 /// Standard `SearchResult` with no extra provider metadata.
 pub type SearchResult = GenericSearchResult<()>;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Response containing the merged search results.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the

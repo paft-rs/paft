@@ -5,11 +5,6 @@
 //! Fundamentals, analyst coverage, and ESG fields are intentionally excluded
 //! and live in `paft-fundamentals`.
 
-// `Eq` is intentionally NOT derived on the generic payload types: the
-// metadata payload `M` is meant to accept user types that don't satisfy
-// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
@@ -17,7 +12,7 @@ use paft_domain::{Instrument, MarketState};
 use paft_money::{Currency, PriceAmount, QuantityAmount};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Strictly instant-in-time snapshot for an instrument.
 ///

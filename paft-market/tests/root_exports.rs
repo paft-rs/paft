@@ -61,3 +61,33 @@ fn generic_metadata_types_are_responses_and_market_exports() {
     assert_export::<paft_market::requests::HistoryFlags>();
     assert_export::<paft_market::requests::SearchRequestBuilder>();
 }
+
+#[test]
+fn standard_payload_aliases_implement_eq() {
+    fn assert_eq_impl<T: Eq>() {}
+
+    assert_eq_impl::<paft_market::BookLevel>();
+    assert_eq_impl::<paft_market::Candle>();
+    assert_eq_impl::<paft_market::CandleUpdate>();
+    assert_eq_impl::<paft_market::DownloadEntry>();
+    assert_eq_impl::<paft_market::DownloadResponse>();
+    assert_eq_impl::<paft_market::HistoryResponse>();
+    assert_eq_impl::<paft_market::NewsArticle>();
+    assert_eq_impl::<paft_market::Ohlc>();
+    assert_eq_impl::<paft_market::OptionChain>();
+    assert_eq_impl::<paft_market::OptionContract>();
+    assert_eq_impl::<paft_market::OptionUpdate>();
+    assert_eq_impl::<paft_market::OrderBook>();
+    assert_eq_impl::<paft_market::Quote>();
+    assert_eq_impl::<paft_market::QuoteUpdate>();
+    assert_eq_impl::<paft_market::SearchResponse>();
+    assert_eq_impl::<paft_market::SearchResult>();
+}
+
+#[test]
+fn generic_payloads_accept_partial_eq_only_metadata() {
+    fn assert_partial_eq_impl<T: PartialEq>() {}
+
+    assert_partial_eq_impl::<paft_market::GenericQuote<f64>>();
+    assert_partial_eq_impl::<paft_market::GenericHistoryResponse<f64>>();
+}

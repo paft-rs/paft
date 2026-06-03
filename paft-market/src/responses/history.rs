@@ -1,10 +1,5 @@
 //! History response types.
 
-// `Eq` is intentionally NOT derived on the generic payload types: the
-// metadata payload `M` is meant to accept user types that don't satisfy
-// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 use std::num::NonZeroU16;
 
 use paft_money::{Currency, PriceAmount, QuantityAmount};
@@ -18,7 +13,7 @@ use chrono_tz::Tz;
 use df_derive_macros::ToDataFrame;
 use paft_domain::Instrument;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Open, high, low, and close price amounts for one denominated bar.
 pub struct Ohlc {
@@ -50,7 +45,7 @@ impl Ohlc {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single OHLCV bar at timestamp `ts` (Unix milliseconds).
 ///
@@ -107,7 +102,7 @@ impl<M: Default> GenericCandle<M> {
 /// Standard `Candle` with no extra provider metadata.
 pub type Candle = GenericCandle<()>;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Streaming candle update event.
 ///
@@ -554,7 +549,7 @@ pub struct HistoryMeta {
     pub utc_offset_seconds: Option<i64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// A complete history response including candles, actions, and metadata.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the

@@ -60,6 +60,10 @@ All notable changes to this project will be documented in this file.
   use contextual `QuantityAmount` values so fractional crypto, FX,
   commodities, and base/quote-volume feeds can be represented without rounding
   or metadata side channels.
+- Market/aggregates: generic payload containers now derive `Eq` conditionally,
+  so standard no-metadata aliases such as `Quote`, `HistoryResponse`, and
+  `Snapshot` implement `Eq` while metadata payloads that only implement
+  `PartialEq` remain usable.
 - Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
