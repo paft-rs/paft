@@ -24,6 +24,7 @@ use df_derive_macros::ToDataFrame;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct MonetaryAmount {
+    #[serde(with = "paft_decimal::serde::canonical_str")]
     amount: Decimal,
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     currency: Currency,

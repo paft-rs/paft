@@ -50,6 +50,7 @@ pub struct ExchangeRate {
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     to: Currency,
     /// The exchange rate (how many units of 'to' currency per 1 unit of 'from' currency).
+    #[serde(with = "paft_decimal::serde::canonical_str")]
     rate: Decimal,
 }
 
@@ -153,6 +154,7 @@ impl ExchangeRate {
 struct ExchangeRateShadow {
     from: Currency,
     to: Currency,
+    #[serde(with = "paft_decimal::serde::canonical_str")]
     rate: Decimal,
 }
 
@@ -189,6 +191,7 @@ impl<'de> Deserialize<'de> for ExchangeRate {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct Money {
     /// The numeric value.
+    #[serde(with = "paft_decimal::serde::canonical_str")]
     amount: Decimal,
     /// The currency.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
@@ -700,6 +703,7 @@ impl CurrencyAmount for Money {
 /// admitting over-precise values.
 #[derive(Deserialize)]
 struct MoneyShadow {
+    #[serde(with = "paft_decimal::serde::canonical_str")]
     amount: Decimal,
     currency: Currency,
 }

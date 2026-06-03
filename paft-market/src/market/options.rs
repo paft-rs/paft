@@ -20,14 +20,19 @@ use std::fmt;
 /// Primary first-order greeks for an option contract.
 pub struct OptionGreeks {
     /// Dimensionless change in option price for a 1.0 change in underlying price.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub delta: Option<Decimal>,
     /// Change in `delta` per 1.0 change in underlying price (1/price units).
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub gamma: Option<Decimal>,
     /// Change in option price per calendar day.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub theta: Option<Decimal>,
     /// Change in option price for a 1 percentage point (0.01) change in IV.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub vega: Option<Decimal>,
     /// Change in option price for a 1 percentage point (0.01) change in rate.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub rho: Option<Decimal>,
 }
 

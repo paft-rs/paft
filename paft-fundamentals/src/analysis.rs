@@ -285,6 +285,7 @@ pub struct RecommendationSummary {
     /// Count of "strong sell" recommendations.
     pub strong_sell: Option<u32>,
     /// Mean recommendation score.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub mean: Option<Decimal>,
     /// Provider-specific text for the mean score (e.g., "Buy", "Overweight").
     pub mean_rating_text: Option<String>,
@@ -323,6 +324,7 @@ pub struct AnalysisSummary {
     /// Number of analyst opinions contributing to the recommendation.
     pub number_of_analyst_opinions: Option<u32>,
     /// Numeric recommendation score (provider-defined scale).
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub recommendation_mean: Option<Decimal>,
     /// Categorical recommendation text (e.g., "Buy", "Overweight").
     pub recommendation_text: Option<String>,
@@ -343,6 +345,7 @@ pub struct EarningsEstimate {
     /// Number of analysts providing earnings estimates.
     pub num_analysts: Option<u32>,
     /// Estimated earnings growth.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub growth: Option<Decimal>,
 }
 
@@ -361,6 +364,7 @@ pub struct RevenueEstimate {
     /// Number of analysts providing revenue estimates.
     pub num_analysts: Option<u32>,
     /// Estimated revenue growth.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub growth: Option<Decimal>,
 }
 
@@ -590,6 +594,7 @@ pub struct EarningsTrendRow {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub period: Period,
     /// The growth rate.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub growth: Option<Decimal>,
     /// Earnings estimate data with analyst consensus.
     pub earnings_estimate: EarningsEstimate,

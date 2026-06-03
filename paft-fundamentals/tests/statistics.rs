@@ -2,7 +2,7 @@ use chrono::{TimeZone, Utc};
 use paft_decimal::Decimal;
 use paft_fundamentals::statistics::KeyStatistics;
 use paft_money::{Currency, IsoCurrency, Money, Price};
-use serde_json::{from_str, to_string};
+use serde_json::{from_str, json, to_string};
 use std::str::FromStr;
 
 fn usd(amount: i64) -> Money {
@@ -54,6 +54,9 @@ fn key_statistics_serde_roundtrip_populated() {
     };
 
     let encoded = to_string(&s).unwrap();
+    let value: serde_json::Value = from_str(&encoded).unwrap();
+    assert_eq!(value["dividend_yield_trailing"], json!("0.005"));
+    assert_eq!(value["dividend_yield_forward"], json!("0.0055"));
     let decoded: KeyStatistics = from_str(&encoded).unwrap();
     assert_eq!(s, decoded);
 }

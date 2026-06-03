@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 - Decimal/facade: added constrained decimal newtypes
   `NonNegativeDecimal`, `PositiveDecimal`, and `Ratio`, plus
   `DecimalConstraintError`.
+- Decimal: added `serde::canonical_str` and `serde::option_canonical_str`
+  helpers for backend-stable decimal string wire formats.
 - Money/facade: added `PriceAmount`, a transparent contextual price-domain
   amount for values whose currency is supplied by an enclosing market record.
 - Money/facade: added `QuantityAmount`, a transparent non-negative decimal
@@ -32,6 +34,9 @@ All notable changes to this project will be documented in this file.
   `Price::{try_mul, try_div, try_total}`.
 - Money: checked decimal operations and canonical amount parsing/formatting are
   now shared across `Money`, `MonetaryAmount`, `Price`, and `ExchangeRate`.
+- Decimal/money/market/fundamentals: decimal-backed serde fields now serialize
+  through canonical strings from `paft-decimal`, independent of the active
+  decimal backend.
 - Decimal/money: constrained decimal `into_inner` helpers and
   `PriceAmount::{into_inner, with_currency}` are now `const fn` on the default
   decimal backend.
@@ -93,6 +98,9 @@ All notable changes to this project will be documented in this file.
   handle `url: Option<String>` instead of `url: String`.
 - Money/facade: callers of non-panicking scalar arithmetic helpers must pass
   `&Decimal` instead of `Decimal`.
+- Decimal/money/market/fundamentals: decimal-backed JSON fields now emit
+  canonical strings without gratuitous trailing zeroes, so values such as
+  `"12.340"` serialize as `"12.34"` regardless of backend.
 - Market/facade: `HistoryResponse::adjusted: bool` was replaced by
   `HistoryResponse::price_basis: OhlcPriceBasis`; update struct literals and
   JSON payloads to describe returned OHLC values with `PriceBasis` variants

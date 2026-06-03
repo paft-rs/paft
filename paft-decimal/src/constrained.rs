@@ -2,9 +2,9 @@
 
 use std::fmt;
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+use ::serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
-use crate::{Decimal, one, zero};
+use crate::{Decimal, one, serde::canonical_str, zero};
 
 /// Error returned when a decimal does not satisfy a constrained decimal type.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -156,7 +156,7 @@ impl Serialize for NonNegativeDecimal {
     where
         S: Serializer,
     {
-        Serialize::serialize(&self.0, serializer)
+        canonical_str::serialize(&self.0, serializer)
     }
 }
 
@@ -165,7 +165,7 @@ impl<'de> Deserialize<'de> for NonNegativeDecimal {
     where
         D: Deserializer<'de>,
     {
-        let value = <Decimal as Deserialize>::deserialize(deserializer)?;
+        let value = canonical_str::deserialize(deserializer)?;
         Self::new(value).map_err(de::Error::custom)
     }
 }
@@ -252,7 +252,7 @@ impl Serialize for PositiveDecimal {
     where
         S: Serializer,
     {
-        Serialize::serialize(&self.0, serializer)
+        canonical_str::serialize(&self.0, serializer)
     }
 }
 
@@ -261,7 +261,7 @@ impl<'de> Deserialize<'de> for PositiveDecimal {
     where
         D: Deserializer<'de>,
     {
-        let value = <Decimal as Deserialize>::deserialize(deserializer)?;
+        let value = canonical_str::deserialize(deserializer)?;
         Self::new(value).map_err(de::Error::custom)
     }
 }
@@ -344,7 +344,7 @@ impl Serialize for Ratio {
     where
         S: Serializer,
     {
-        Serialize::serialize(&self.0, serializer)
+        canonical_str::serialize(&self.0, serializer)
     }
 }
 
@@ -353,7 +353,7 @@ impl<'de> Deserialize<'de> for Ratio {
     where
         D: Deserializer<'de>,
     {
-        let value = <Decimal as Deserialize>::deserialize(deserializer)?;
+        let value = canonical_str::deserialize(deserializer)?;
         Self::new(value).map_err(de::Error::custom)
     }
 }

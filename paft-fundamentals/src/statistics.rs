@@ -40,6 +40,7 @@ pub struct KeyStatistics {
     /// Earnings per share over the trailing twelve months.
     pub eps_trailing_twelve_months: Option<Price>,
     /// Price-to-earnings ratio computed against trailing-twelve-month EPS.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub pe_trailing_twelve_months: Option<Decimal>,
 
     // ---- Dividends ----
@@ -47,8 +48,10 @@ pub struct KeyStatistics {
     pub dividend_per_share_forward: Option<Price>,
     /// Trailing twelve-month dividend yield expressed as a fraction
     /// (e.g. 0.025 for 2.5%).
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub dividend_yield_trailing: Option<Decimal>,
     /// Forward dividend yield expressed as a fraction.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub dividend_yield_forward: Option<Decimal>,
     /// Next or most recent ex-dividend date.
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
@@ -69,5 +72,6 @@ pub struct KeyStatistics {
     /// standardised across providers (Yahoo uses 5y monthly; Bloomberg
     /// is configurable); consumers comparing values across sources
     /// should account for this.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub beta: Option<Decimal>,
 }

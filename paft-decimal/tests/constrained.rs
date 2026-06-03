@@ -49,13 +49,17 @@ fn ratio_accepts_only_inclusive_unit_interval() {
 }
 
 #[test]
-fn constrained_decimals_serialize_as_plain_decimals() {
-    let decimal = dec("0.25");
+fn constrained_decimals_serialize_as_canonical_strings() {
+    let decimal = dec("0.2500");
     let ratio = Ratio::new(decimal_for_reuse(&decimal)).unwrap();
 
     assert_eq!(
-        serde_json::to_value(ratio).unwrap(),
-        serde_json::to_value(decimal).unwrap()
+        serde_json::to_value(&ratio).unwrap(),
+        serde_json::json!("0.25")
+    );
+    assert_eq!(
+        serde_json::from_value::<Ratio>(serde_json::json!("0.2500")).unwrap(),
+        ratio
     );
 }
 

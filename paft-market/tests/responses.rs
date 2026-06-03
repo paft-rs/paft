@@ -44,7 +44,7 @@ fn candle_serialization() {
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(value["ts"], serde_json::json!(1_640_995_200_321_i64));
     assert_eq!(value["currency"], serde_json::json!("USD"));
-    assert_eq!(value["open"], serde_json::json!("100.0"));
+    assert_eq!(value["open"], serde_json::json!("100"));
     assert_eq!(value["volume"], serde_json::json!("1000000.125"));
 
     let deserialized: Candle = serde_json::from_str(&json).unwrap();
@@ -152,7 +152,7 @@ fn action_capital_gain_serialization() {
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(value["kind"], serde_json::json!("capital_gain"));
     assert_eq!(value["ts"], serde_json::json!(1_640_995_200_000_i64));
-    assert_eq!(value["gain"]["amount"], serde_json::json!("1.0"));
+    assert_eq!(value["gain"]["amount"], serde_json::json!("1"));
     assert_eq!(value["gain"]["currency"], serde_json::json!("USD"));
 
     let deserialized: Action = serde_json::from_str(&json).unwrap();

@@ -296,5 +296,6 @@ pub struct NetSharePurchaseActivity {
     /// The total number of shares held by all insiders.
     pub total_insider_shares: Option<u64>,
     /// The net shares purchased/sold as a percentage of total insider shares.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub net_percent_insider_shares: Option<Decimal>,
 }

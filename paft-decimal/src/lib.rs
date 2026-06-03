@@ -11,7 +11,7 @@
 #![warn(missing_docs)]
 #![allow(clippy::cargo_common_metadata)]
 
-use std::str::FromStr;
+use std::{borrow::Cow, str::FromStr};
 
 mod constrained;
 
@@ -72,6 +72,10 @@ mod backend {
     ) -> Decimal {
         let strategy: RustRoundingStrategy = strategy.into();
         value.round_dp_with_strategy(scale, strategy)
+    }
+
+    pub fn to_plain_string(value: &Decimal) -> String {
+        value.to_string()
     }
 
     impl From<RoundingStrategy> for RustRoundingStrategy {
@@ -136,6 +140,10 @@ mod backend {
         };
 
         value.with_scale_round(i64::from(scale), mode)
+    }
+
+    pub fn to_plain_string(value: &Decimal) -> String {
+        value.to_plain_string()
     }
 }
 
@@ -209,11 +217,91 @@ pub fn round_dp_with_strategy(value: &Decimal, scale: u32, strategy: RoundingStr
     backend::round_dp_with_strategy(value, scale, strategy)
 }
 
+/// Serde helpers for backend-stable decimal wire formats.
+///
+/// These modules serialize decimals as canonical strings rendered by
+/// [`to_canonical_string`] and deserialize with [`parse_decimal`], avoiding
+/// backend-native differences such as scale preservation or exponent output.
+pub mod serde {
+    use super::{Cow, Decimal};
+    use ::serde::{Deserialize, Serializer, de};
+
+    fn invalid_decimal<E>(value: &str) -> E
+    where
+        E: de::Error,
+    {
+        E::custom(format_args!("invalid decimal string `{value}`"))
+    }
+
+    /// Serde adapter for a required canonical decimal string.
+    pub mod canonical_str {
+        use super::{Cow, Decimal, Deserialize, Serializer, invalid_decimal};
+        use crate::{parse_decimal, to_canonical_string};
+
+        /// Serializes a decimal as a canonical string.
+        ///
+        /// # Errors
+        /// Returns the serializer error when writing the string fails.
+        pub fn serialize<S>(value: &Decimal, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            serializer.serialize_str(&to_canonical_string(value))
+        }
+
+        /// Deserializes a decimal from a string accepted by [`crate::parse_decimal`].
+        ///
+        /// # Errors
+        /// Returns the deserializer error when the input is not a string or
+        /// when [`crate::parse_decimal`] rejects the string.
+        pub fn deserialize<'de, D>(deserializer: D) -> Result<Decimal, D::Error>
+        where
+            D: ::serde::Deserializer<'de>,
+        {
+            let value = Cow::<str>::deserialize(deserializer)?;
+            parse_decimal(&value).ok_or_else(|| invalid_decimal(&value))
+        }
+    }
+
+    /// Serde adapter for an optional canonical decimal string.
+    pub mod option_canonical_str {
+        use super::{Cow, Decimal, Deserialize, Serializer, invalid_decimal};
+        use crate::{parse_decimal, to_canonical_string};
+        use ::serde::Serialize;
+
+        /// Serializes an optional decimal as a canonical string or `null`.
+        ///
+        /// # Errors
+        /// Returns the serializer error when writing the option fails.
+        pub fn serialize<S>(value: &Option<Decimal>, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let canonical = value.as_ref().map(to_canonical_string);
+            canonical.serialize(serializer)
+        }
+
+        /// Deserializes an optional decimal from strings accepted by [`crate::parse_decimal`].
+        ///
+        /// # Errors
+        /// Returns the deserializer error when the input is not `null` or a
+        /// string, or when [`crate::parse_decimal`] rejects the string.
+        pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Decimal>, D::Error>
+        where
+            D: ::serde::Deserializer<'de>,
+        {
+            Option::<Cow<'de, str>>::deserialize(deserializer)?
+                .map(|value| parse_decimal(&value).ok_or_else(|| invalid_decimal(&value)))
+                .transpose()
+        }
+    }
+}
+
 /// Converts a decimal into a canonical string without scientific notation and
 /// without gratuitous trailing zeros.
 #[must_use]
 pub fn to_canonical_string(value: &Decimal) -> String {
-    let mut repr = value.to_string();
+    let mut repr = backend::to_plain_string(value);
     if let Some(dot) = repr.find('.') {
         let mut end = repr.len();
         while end > dot + 1 && repr.as_bytes()[end - 1] == b'0' {
@@ -229,8 +317,9 @@ pub fn to_canonical_string(value: &Decimal) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::str::FromStr;
+
+    use super::{Decimal, parse_decimal, to_canonical_string, try_from_scaled_units};
 
     #[test]
     fn parse_rejects_scientific_notation() {
@@ -265,6 +354,32 @@ mod tests {
         assert_eq!(to_canonical_string(&value), "123.45");
         let integer = parse_decimal("1000").unwrap();
         assert_eq!(to_canonical_string(&integer), "1000");
+    }
+
+    #[test]
+    fn canonical_decimal_serde_uses_strings() {
+        #[derive(::serde::Serialize, ::serde::Deserialize, PartialEq, Debug)]
+        struct Payload {
+            #[serde(with = "crate::serde::canonical_str")]
+            value: Decimal,
+            #[serde(default, with = "crate::serde::option_canonical_str")]
+            optional: Option<Decimal>,
+        }
+
+        let payload = Payload {
+            value: parse_decimal("123.4500").unwrap(),
+            optional: Some(parse_decimal("0.5000").unwrap()),
+        };
+
+        let value = serde_json::to_value(&payload).unwrap();
+        assert_eq!(value["value"], serde_json::json!("123.45"));
+        assert_eq!(value["optional"], serde_json::json!("0.5"));
+        assert_eq!(serde_json::from_value::<Payload>(value).unwrap(), payload);
+
+        let missing_optional = serde_json::json!({ "value": "+1.2300" });
+        let parsed = serde_json::from_value::<Payload>(missing_optional).unwrap();
+        assert_eq!(to_canonical_string(&parsed.value), "1.23");
+        assert_eq!(parsed.optional, None);
     }
 
     #[test]

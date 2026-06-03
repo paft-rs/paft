@@ -4,12 +4,17 @@ use paft_domain::{AssetKind, Instrument};
 use paft_market::market::OptionUpdate as MarketOptionUpdate;
 use paft_market::{
     OptionChainRequest, OptionContract, OptionContractKey, OptionExpirationsRequest,
-    OptionExpirationsResponse, OptionSide, OptionUpdate,
+    OptionExpirationsResponse, OptionGreeks, OptionSide, OptionUpdate,
 };
 use paft_money::{Currency, IsoCurrency, Price};
+use std::str::FromStr;
 
 fn usd(amount: i64) -> Price {
     Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
+}
+
+fn dec(value: &str) -> Decimal {
+    Decimal::from_str(value).unwrap()
 }
 
 fn option_key() -> OptionContractKey {
@@ -77,6 +82,27 @@ fn option_contract_in_the_money_distinguishes_unknown_from_false() {
 
     let decoded_false: OptionContract = serde_json::from_value(value).unwrap();
     assert_eq!(decoded_false.in_the_money, Some(false));
+}
+
+#[test]
+fn option_greeks_decimal_serde_uses_canonical_strings() {
+    let greeks = OptionGreeks {
+        delta: Some(dec("0.5000")),
+        gamma: Some(dec("0.0100")),
+        ..OptionGreeks::default()
+    };
+
+    let value = serde_json::to_value(&greeks).unwrap();
+    assert_eq!(value.get("delta"), Some(&serde_json::json!("0.5")));
+    assert_eq!(value.get("gamma"), Some(&serde_json::json!("0.01")));
+
+    let decoded: OptionGreeks = serde_json::from_value(serde_json::json!({
+        "delta": "+0.5000"
+    }))
+    .unwrap();
+    assert_eq!(decoded.delta, Some(dec("0.5000")));
+
+    assert!(serde_json::from_value::<OptionGreeks>(serde_json::json!({ "delta": 0.5 })).is_err());
 }
 
 #[test]

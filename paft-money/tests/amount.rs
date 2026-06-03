@@ -155,7 +155,7 @@ fn monetary_amount_serde_roundtrip() {
     assert_eq!(
         value_amount,
         json!({
-            "amount": "12.340",
+            "amount": "12.34",
             "currency": "USD",
         })
     );
@@ -237,7 +237,7 @@ fn price_amount_is_contextual_decimal() {
 
 #[test]
 fn price_amount_serde_is_transparent() {
-    let amount = PriceAmount::new(parse_decimal("1.3578"));
+    let amount = PriceAmount::new(parse_decimal("1.35780"));
 
     assert_eq!(serde_json::to_value(amount).unwrap(), json!("1.3578"));
 
@@ -276,7 +276,7 @@ fn quantity_amount_is_non_negative_contextual_decimal() {
 
 #[test]
 fn quantity_amount_serde_is_transparent() {
-    let quantity = QuantityAmount::from_decimal(parse_decimal("123.456")).unwrap();
+    let quantity = QuantityAmount::from_decimal(parse_decimal("123.4560")).unwrap();
 
     assert_eq!(serde_json::to_value(quantity).unwrap(), json!("123.456"));
 

@@ -169,7 +169,7 @@ fn serde_roundtrips_money_and_exchange_rate() {
 
     let rate = ExchangeRate::new(usd(), jpy(), dec("110.0")).unwrap();
     let value = to_value(&rate).unwrap();
-    assert_eq!(value["rate"], json!("110.0"));
+    assert_eq!(value["rate"], json!("110"));
     let parsed: ExchangeRate = from_value(value).unwrap();
     assert_eq!(parsed, rate);
 }
