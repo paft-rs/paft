@@ -100,6 +100,8 @@ All notable changes to this project will be documented in this file.
   request behavior.
 - Money: localized formatting now rejects fraction digit requests above the
   active decimal backend precision instead of attempting unbounded zero padding.
+- Money: localized parsing now delegates to `Money::new_exact`, encoding its
+  no-implicit-rounding contract at construction.
 - Decimal/money: constrained decimal and contextual amount `Display`
   implementations now emit canonical decimal strings without gratuitous
   trailing zeroes, matching serde and hash behavior.

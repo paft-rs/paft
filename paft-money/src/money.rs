@@ -383,7 +383,7 @@ impl Money {
         locale: Locale,
     ) -> Result<Self, MoneyError> {
         let decimal = parser::parse_localized_str(amount, &currency, Some(locale), true)?;
-        Self::new(decimal, currency)
+        Self::new_exact(decimal, currency)
     }
 
     /// Parses a human-formatted string using the currency's metadata-defined default locale.
