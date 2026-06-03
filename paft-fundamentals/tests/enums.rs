@@ -1,3 +1,4 @@
+use paft_fundamentals::FundamentalsError;
 use paft_fundamentals::analysis::{RecommendationAction, RecommendationGrade};
 use paft_fundamentals::holders::{InsiderPosition, TransactionType};
 use paft_fundamentals::profile::FundKind;
@@ -296,7 +297,7 @@ where
         + PartialEq
         + Debug
         + ToString
-        + FromStr<Err = paft_core::error::PaftError>
+        + FromStr<Err = FundamentalsError>
         + Serialize
         + DeserializeOwned,
 {

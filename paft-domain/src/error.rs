@@ -50,6 +50,20 @@ pub enum DomainError {
         value: String,
     },
 
+    /// Invalid asset kind token encountered while parsing.
+    #[error("Invalid asset kind value: '{value}'")]
+    InvalidAssetKindValue {
+        /// The invalid asset kind token.
+        value: String,
+    },
+
+    /// Invalid market state token encountered while parsing.
+    #[error("Invalid market state value: '{value}'")]
+    InvalidMarketStateValue {
+        /// The invalid market state token.
+        value: String,
+    },
+
     /// Invalid ISIN encountered while parsing or validating.
     #[error("Invalid ISIN: '{value}'")]
     InvalidIsin {

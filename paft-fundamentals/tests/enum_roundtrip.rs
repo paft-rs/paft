@@ -1,3 +1,4 @@
+use paft_fundamentals::FundamentalsError;
 use paft_fundamentals::analysis::{
     OtherRecommendationAction, OtherRecommendationGrade, RecommendationAction, RecommendationGrade,
 };
@@ -9,7 +10,7 @@ use std::str::FromStr;
 
 fn assert_display_parse_display_idempotent<T>(token: &str)
 where
-    T: ToString + FromStr<Err = paft_core::error::PaftError> + PartialEq + Clone,
+    T: ToString + FromStr<Err = FundamentalsError> + PartialEq + Clone,
 {
     let parsed = T::from_str(token).unwrap();
     let display1 = parsed.to_string();
@@ -56,7 +57,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
         // RecommendationGrade
         let err = RecommendationGrade::from_str(input).unwrap_err();
         match err {
-            paft_core::error::PaftError::InvalidEnumValue { enum_name, value } => {
+            FundamentalsError::InvalidEnumValue { enum_name, value } => {
                 assert_eq!(enum_name, "RecommendationGrade");
                 assert_eq!(value, (*input).to_string());
             }
@@ -66,7 +67,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
         // RecommendationAction
         let err = RecommendationAction::from_str(input).unwrap_err();
         match err {
-            paft_core::error::PaftError::InvalidEnumValue { enum_name, value } => {
+            FundamentalsError::InvalidEnumValue { enum_name, value } => {
                 assert_eq!(enum_name, "RecommendationAction");
                 assert_eq!(value, (*input).to_string());
             }
@@ -76,7 +77,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
         // TransactionType
         let err = TransactionType::from_str(input).unwrap_err();
         match err {
-            paft_core::error::PaftError::InvalidEnumValue { enum_name, value } => {
+            FundamentalsError::InvalidEnumValue { enum_name, value } => {
                 assert_eq!(enum_name, "TransactionType");
                 assert_eq!(value, (*input).to_string());
             }
@@ -86,7 +87,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
         // InsiderPosition
         let err = InsiderPosition::from_str(input).unwrap_err();
         match err {
-            paft_core::error::PaftError::InvalidEnumValue { enum_name, value } => {
+            FundamentalsError::InvalidEnumValue { enum_name, value } => {
                 assert_eq!(enum_name, "InsiderPosition");
                 assert_eq!(value, (*input).to_string());
             }
@@ -96,7 +97,7 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
         // FundKind
         let err = FundKind::from_str(input).unwrap_err();
         match err {
-            paft_core::error::PaftError::InvalidEnumValue { enum_name, value } => {
+            FundamentalsError::InvalidEnumValue { enum_name, value } => {
                 assert_eq!(enum_name, "FundKind");
                 assert_eq!(value, (*input).to_string());
             }

@@ -25,6 +25,11 @@ pub enum Error {
     #[error(transparent)]
     Market(#[from] paft_market::MarketError),
 
+    /// Error originating from `paft-fundamentals`.
+    #[cfg(feature = "fundamentals")]
+    #[error(transparent)]
+    Fundamentals(#[from] paft_fundamentals::FundamentalsError),
+
     /// Error originating from `paft-prediction`.
     #[cfg(feature = "prediction")]
     #[error(transparent)]

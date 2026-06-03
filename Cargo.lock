@@ -1667,6 +1667,7 @@ dependencies = [
  "polars",
  "serde",
  "serde_json",
+ "thiserror",
  "tracing",
 ]
 

@@ -1,9 +1,10 @@
+use paft_fundamentals::FundamentalsError;
 use paft_fundamentals::analysis::{RecommendationAction, RecommendationGrade};
 use paft_fundamentals::holders::{InsiderPosition, TransactionType};
 use paft_fundamentals::profile::FundKind;
 use std::str::FromStr;
 
-fn roundtrip<T: ToString + FromStr<Err = paft_core::error::PaftError>>(label: &str, token: &str) {
+fn roundtrip<T: ToString + FromStr<Err = FundamentalsError>>(label: &str, token: &str) {
     eprintln!("starting {label} -> {token}");
     let parsed = T::from_str(token).unwrap();
     let display1 = parsed.to_string();

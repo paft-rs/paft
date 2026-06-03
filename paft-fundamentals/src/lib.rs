@@ -44,6 +44,7 @@
 #![warn(missing_docs)]
 
 pub mod analysis;
+pub mod error;
 pub mod esg;
 pub mod holders;
 pub mod profile;
@@ -57,6 +58,7 @@ pub use analysis::{
     RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint, TrendPoint,
     UpgradeDowngradeRow,
 };
+pub use error::FundamentalsError;
 pub use esg::{EsgInvolvement, EsgScores, EsgSummary};
 pub use holders::{
     InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, MajorHolder,

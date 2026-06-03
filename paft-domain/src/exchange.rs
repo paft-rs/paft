@@ -234,6 +234,10 @@ impl Exchange {
 // Implement code() and string impls via macro (open enum)
 crate::string_enum_with_code!(
     Exchange, Other(OtherExchange), "Exchange",
+    type Error = DomainError;
+    invalid(input) => DomainError::InvalidExchangeValue {
+        value: input.to_string(),
+    };
     {
         "NASDAQ" => Exchange::NASDAQ,
         "NYSE" => Exchange::NYSE,

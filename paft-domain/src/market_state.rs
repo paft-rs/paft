@@ -1,4 +1,6 @@
 //! Market session state enumeration with helpers and serde support.
+use crate::DomainError;
+
 /// Market state enumeration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -23,6 +25,10 @@ pub enum MarketState {
 crate::string_enum_closed_with_code!(
     MarketState,
     "MarketState",
+    type Error = DomainError;
+    invalid(input) => DomainError::InvalidMarketStateValue {
+        value: input.to_string(),
+    };
     {
         "PREMARKET" => MarketState::Pre,
         "REGULAR" => MarketState::Regular,

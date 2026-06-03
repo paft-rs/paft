@@ -55,6 +55,25 @@ macro_rules! __string_enum_base {
             $( $alias:literal => $variant:path ),+ $(,)?
         }
     ) => {
+        $crate::__string_enum_base! {
+            $Type, $enum_name,
+            error(
+                $crate::error::PaftError,
+                invalid(input) => $crate::error::PaftError::InvalidEnumValue {
+                    enum_name: $enum_name,
+                    value: input.to_string(),
+                }
+            ),
+            { $( $alias => $variant ),+ }
+        }
+    };
+
+    (
+        $Type:ident, $enum_name:literal,
+        error($Error:ty, invalid($invalid_input:ident) => $invalid:expr), {
+            $( $alias:literal => $variant:path ),+ $(,)?
+        }
+    ) => {
         impl $crate::__utils::StringCode for $Type {
             fn code(&self) -> &str { $Type::code(self) }
         }
@@ -80,23 +99,23 @@ macro_rules! __string_enum_base {
         }
 
         impl ::std::str::FromStr for $Type {
-            type Err = $crate::error::PaftError;
+            type Err = $Error;
 
             fn from_str(input: &str) -> ::std::result::Result<Self, Self::Err> {
                 let trimmed = input.trim();
                 if trimmed.is_empty() {
-                    return Err($crate::error::PaftError::InvalidEnumValue {
-                        enum_name: $enum_name,
-                        value: input.to_string(),
+                    return Err({
+                        let $invalid_input = input;
+                        $invalid
                     });
                 }
                 let token = $crate::__utils::canonicalize(trimmed);
                 let parsed = match token.as_ref() {
                     $( $alias => $variant, )*
                     _ => {
-                        return Err($crate::error::PaftError::InvalidEnumValue {
-                            enum_name: $enum_name,
-                            value: input.to_string(),
+                        return Err({
+                            let $invalid_input = input;
+                            $invalid
                         });
                     }
                 };
@@ -105,7 +124,7 @@ macro_rules! __string_enum_base {
         }
 
         impl ::std::convert::TryFrom<String> for $Type {
-            type Error = $crate::error::PaftError;
+            type Error = $Error;
 
             fn try_from(value: String) -> ::std::result::Result<Self, Self::Error> {
                 <Self as ::std::str::FromStr>::from_str(&value)
@@ -129,86 +148,25 @@ macro_rules! __string_enum_base {
             $( $alias:literal => $variant:path ),+ $(,)?
         }
     ) => {
-        impl $crate::__utils::StringCode for $Type {
-            fn code(&self) -> &str { $Type::code(self) }
-            fn is_canonical(&self) -> bool { $Type::is_canonical(self) }
-        }
-
-        impl $Type {
-            /// Returns true when this value represents a canonical variant.
-            #[must_use]
-            pub const fn is_canonical(&self) -> bool { !matches!(self, $OtherVariant(_)) }
-        }
-
-        impl $crate::__serde::Serialize for $Type {
-            fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
-            where
-                S: $crate::__serde::Serializer,
-            {
-                serializer.serialize_str(self.code())
-            }
-        }
-
-        impl<'de> $crate::__serde::Deserialize<'de> for $Type {
-            fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-            where
-                D: $crate::__serde::Deserializer<'de>,
-            {
-                let raw = <String as $crate::__serde::Deserialize>::deserialize(deserializer)?;
-                <Self as ::std::str::FromStr>::from_str(&raw)
-                    .map_err($crate::__serde::de::Error::custom)
-            }
-        }
-
-        impl ::std::str::FromStr for $Type {
-            type Err = $crate::error::PaftError;
-
-            fn from_str(input: &str) -> ::std::result::Result<Self, Self::Err> {
-                let trimmed = input.trim();
-                if trimmed.is_empty() {
-                    return Err($crate::error::PaftError::InvalidEnumValue {
+        $crate::__string_enum_base! {
+            $Type, $enum_name,
+            other(
+                $OtherVariant,
+                error(
+                    $crate::error::PaftError,
+                    invalid(input) => $crate::error::PaftError::InvalidEnumValue {
                         enum_name: $enum_name,
                         value: input.to_string(),
-                    });
-                }
-                let token = $crate::__utils::canonicalize(trimmed);
-                let parsed = match token.as_ref() {
-                    $( $alias => $variant, )*
-                    _ => {
-                        let canon = $crate::__utils::Canonical::try_new(trimmed)
-                            .map_err(|_| $crate::error::PaftError::InvalidEnumValue {
-                                enum_name: $enum_name,
-                                value: input.to_string(),
-                            })?;
-                        return Ok($OtherVariant(canon));
                     }
-                };
-                Ok(parsed)
-            }
-        }
-
-        impl ::std::convert::TryFrom<String> for $Type {
-            type Error = $crate::error::PaftError;
-
-            fn try_from(value: String) -> ::std::result::Result<Self, Self::Error> {
-                <Self as ::std::str::FromStr>::from_str(&value)
-            }
-        }
-
-        impl ::std::convert::From<$Type> for String {
-            fn from(v: $Type) -> Self { v.code().to_string() }
-        }
-
-        impl $Type {
-            #[doc(hidden)]
-            pub const __ALIASES: &'static [(&'static str, $Type)] = &[
-                $( ($alias, $variant) ),*
-            ];
+                )
+            ),
+            { $( $alias => $variant ),+ }
         }
     };
 
     (
-        $Type:ident, $enum_name:literal, other($OtherVariant:path, $OtherCode:ty), {
+        $Type:ident, $enum_name:literal,
+        other($OtherVariant:path, error($Error:ty, invalid($invalid_input:ident) => $invalid:expr)), {
             $( $alias:literal => $variant:path ),+ $(,)?
         }
     ) => {
@@ -244,14 +202,14 @@ macro_rules! __string_enum_base {
         }
 
         impl ::std::str::FromStr for $Type {
-            type Err = $crate::error::PaftError;
+            type Err = $Error;
 
             fn from_str(input: &str) -> ::std::result::Result<Self, Self::Err> {
                 let trimmed = input.trim();
                 if trimmed.is_empty() {
-                    return Err($crate::error::PaftError::InvalidEnumValue {
-                        enum_name: $enum_name,
-                        value: input.to_string(),
+                    return Err({
+                        let $invalid_input = input;
+                        $invalid
                     });
                 }
                 let token = $crate::__utils::canonicalize(trimmed);
@@ -259,9 +217,119 @@ macro_rules! __string_enum_base {
                     $( $alias => $variant, )*
                     _ => {
                         let canon = $crate::__utils::Canonical::try_new(trimmed)
-                            .map_err(|_| $crate::error::PaftError::InvalidEnumValue {
-                                enum_name: $enum_name,
-                                value: input.to_string(),
+                            .map_err(|_| {
+                                let $invalid_input = input;
+                                $invalid
+                            })?;
+                        return Ok($OtherVariant(canon));
+                    }
+                };
+                Ok(parsed)
+            }
+        }
+
+        impl ::std::convert::TryFrom<String> for $Type {
+            type Error = $Error;
+
+            fn try_from(value: String) -> ::std::result::Result<Self, Self::Error> {
+                <Self as ::std::str::FromStr>::from_str(&value)
+            }
+        }
+
+        impl ::std::convert::From<$Type> for String {
+            fn from(v: $Type) -> Self { v.code().to_string() }
+        }
+
+        impl $Type {
+            #[doc(hidden)]
+            pub const __ALIASES: &'static [(&'static str, $Type)] = &[
+                $( ($alias, $variant) ),*
+            ];
+        }
+    };
+
+    (
+        $Type:ident, $enum_name:literal, other($OtherVariant:path, $OtherCode:ty), {
+            $( $alias:literal => $variant:path ),+ $(,)?
+        }
+    ) => {
+        $crate::__string_enum_base! {
+            $Type, $enum_name,
+            other(
+                $OtherVariant,
+                $OtherCode,
+                error(
+                    $crate::error::PaftError,
+                    invalid(input) => $crate::error::PaftError::InvalidEnumValue {
+                        enum_name: $enum_name,
+                        value: input.to_string(),
+                    }
+                )
+            ),
+            { $( $alias => $variant ),+ }
+        }
+    };
+
+    (
+        $Type:ident, $enum_name:literal,
+        other(
+            $OtherVariant:path,
+            $OtherCode:ty,
+            error($Error:ty, invalid($invalid_input:ident) => $invalid:expr)
+        ), {
+            $( $alias:literal => $variant:path ),+ $(,)?
+        }
+    ) => {
+        impl $crate::__utils::StringCode for $Type {
+            fn code(&self) -> &str { $Type::code(self) }
+            fn is_canonical(&self) -> bool { $Type::is_canonical(self) }
+        }
+
+        impl $Type {
+            /// Returns true when this value represents a canonical variant.
+            #[must_use]
+            pub const fn is_canonical(&self) -> bool { !matches!(self, $OtherVariant(_)) }
+        }
+
+        impl $crate::__serde::Serialize for $Type {
+            fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
+            where
+                S: $crate::__serde::Serializer,
+            {
+                serializer.serialize_str(self.code())
+            }
+        }
+
+        impl<'de> $crate::__serde::Deserialize<'de> for $Type {
+            fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+            where
+                D: $crate::__serde::Deserializer<'de>,
+            {
+                let raw = <String as $crate::__serde::Deserialize>::deserialize(deserializer)?;
+                <Self as ::std::str::FromStr>::from_str(&raw)
+                    .map_err($crate::__serde::de::Error::custom)
+            }
+        }
+
+        impl ::std::str::FromStr for $Type {
+            type Err = $Error;
+
+            fn from_str(input: &str) -> ::std::result::Result<Self, Self::Err> {
+                let trimmed = input.trim();
+                if trimmed.is_empty() {
+                    return Err({
+                        let $invalid_input = input;
+                        $invalid
+                    });
+                }
+                let token = $crate::__utils::canonicalize(trimmed);
+                let parsed = match token.as_ref() {
+                    $( $alias => $variant, )*
+                    _ => {
+                        let canon = $crate::__utils::Canonical::try_new(trimmed)
+                            .map_err(|_| {
+                                let $invalid_input = input;
+                                $invalid
                             })?;
                         return Ok($OtherVariant(<$OtherCode>::from_canonical_unchecked(canon)));
                     }
@@ -271,7 +339,7 @@ macro_rules! __string_enum_base {
         }
 
         impl ::std::convert::TryFrom<String> for $Type {
-            type Error = $crate::error::PaftError;
+            type Error = $Error;
 
             fn try_from(value: String) -> ::std::result::Result<Self, Self::Error> {
                 <Self as ::std::str::FromStr>::from_str(&value)
@@ -381,6 +449,8 @@ macro_rules! other_string_code_type {
 macro_rules! string_enum_with_code {
     (
         $Type:ident, $Other:ident($OtherCode:ty), $enum_name:literal,
+        type Error = $Error:ty;
+        invalid($invalid_input:ident) => $invalid:expr;
         { $( $canon_token:literal => $canon_variant:path ),+ $(,)? },
         { $( $alias:literal => $variant:path ),* $(,)? }
     ) => {
@@ -400,8 +470,45 @@ macro_rules! string_enum_with_code {
         }
 
         $crate::__string_enum_base! {
-            $Type, $enum_name, other($Type::$Other, $OtherCode),
+            $Type, $enum_name,
+            other(
+                $Type::$Other,
+                $OtherCode,
+                error($Error, invalid($invalid_input) => $invalid)
+            ),
             { $( $canon_token => $canon_variant ),+ $(, $alias => $variant )* }
+        }
+    };
+
+    (
+        $Type:ident, $Other:ident($OtherCode:ty), $enum_name:literal,
+        type Error = $Error:ty;
+        invalid($invalid_input:ident) => $invalid:expr;
+        { $( $canon_token:literal => $canon_variant:path ),+ $(,)? }
+    ) => {
+        $crate::string_enum_with_code!(
+            $Type, $Other($OtherCode), $enum_name,
+            type Error = $Error;
+            invalid($invalid_input) => $invalid;
+            { $( $canon_token => $canon_variant ),+ },
+            {}
+        );
+    };
+
+    (
+        $Type:ident, $Other:ident($OtherCode:ty), $enum_name:literal,
+        { $( $canon_token:literal => $canon_variant:path ),+ $(,)? },
+        { $( $alias:literal => $variant:path ),* $(,)? }
+    ) => {
+        $crate::string_enum_with_code! {
+            $Type, $Other($OtherCode), $enum_name,
+            type Error = $crate::error::PaftError;
+            invalid(input) => $crate::error::PaftError::InvalidEnumValue {
+                enum_name: $enum_name,
+                value: input.to_string(),
+            };
+            { $( $canon_token => $canon_variant ),+ },
+            { $( $alias => $variant ),* }
         }
     };
 
@@ -418,6 +525,8 @@ macro_rules! string_enum_with_code {
 
     (
         $Type:ident, $Other:ident, $enum_name:literal,
+        type Error = $Error:ty;
+        invalid($invalid_input:ident) => $invalid:expr;
         { $( $canon_token:literal => $canon_variant:path ),+ $(,)? },
         { $( $alias:literal => $variant:path ),* $(,)? }
     ) => {
@@ -437,8 +546,41 @@ macro_rules! string_enum_with_code {
         }
 
         $crate::__string_enum_base! {
-            $Type, $enum_name, other($Type::$Other),
+            $Type, $enum_name,
+            other($Type::$Other, error($Error, invalid($invalid_input) => $invalid)),
             { $( $canon_token => $canon_variant ),+ $(, $alias => $variant )* }
+        }
+    };
+
+    (
+        $Type:ident, $Other:ident, $enum_name:literal,
+        type Error = $Error:ty;
+        invalid($invalid_input:ident) => $invalid:expr;
+        { $( $canon_token:literal => $canon_variant:path ),+ $(,)? }
+    ) => {
+        $crate::string_enum_with_code!(
+            $Type, $Other, $enum_name,
+            type Error = $Error;
+            invalid($invalid_input) => $invalid;
+            { $( $canon_token => $canon_variant ),+ },
+            {}
+        );
+    };
+
+    (
+        $Type:ident, $Other:ident, $enum_name:literal,
+        { $( $canon_token:literal => $canon_variant:path ),+ $(,)? },
+        { $( $alias:literal => $variant:path ),* $(,)? }
+    ) => {
+        $crate::string_enum_with_code! {
+            $Type, $Other, $enum_name,
+            type Error = $crate::error::PaftError;
+            invalid(input) => $crate::error::PaftError::InvalidEnumValue {
+                enum_name: $enum_name,
+                value: input.to_string(),
+            };
+            { $( $canon_token => $canon_variant ),+ },
+            { $( $alias => $variant ),* }
         }
     };
 
@@ -460,6 +602,8 @@ macro_rules! string_enum_with_code {
 macro_rules! string_enum_closed_with_code {
     (
         $Type:ident, $enum_name:literal,
+        type Error = $Error:ty;
+        invalid($invalid_input:ident) => $invalid:expr;
         { $( $canon_token:literal => $canon_variant:path ),+ $(,)? },
         { $( $alias:literal => $variant:path ),* $(,)? }
     ) => {
@@ -478,8 +622,41 @@ macro_rules! string_enum_closed_with_code {
         }
 
         $crate::__string_enum_base! {
-            $Type, $enum_name, error,
+            $Type, $enum_name,
+            error($Error, invalid($invalid_input) => $invalid),
             { $( $canon_token => $canon_variant ),+ $(, $alias => $variant )* }
+        }
+    };
+
+    (
+        $Type:ident, $enum_name:literal,
+        type Error = $Error:ty;
+        invalid($invalid_input:ident) => $invalid:expr;
+        { $( $canon_token:literal => $canon_variant:path ),+ $(,)? }
+    ) => {
+        $crate::string_enum_closed_with_code!(
+            $Type, $enum_name,
+            type Error = $Error;
+            invalid($invalid_input) => $invalid;
+            { $( $canon_token => $canon_variant ),+ },
+            {}
+        );
+    };
+
+    (
+        $Type:ident, $enum_name:literal,
+        { $( $canon_token:literal => $canon_variant:path ),+ $(,)? },
+        { $( $alias:literal => $variant:path ),* $(,)? }
+    ) => {
+        $crate::string_enum_closed_with_code! {
+            $Type, $enum_name,
+            type Error = $crate::error::PaftError;
+            invalid(input) => $crate::error::PaftError::InvalidEnumValue {
+                enum_name: $enum_name,
+                value: input.to_string(),
+            };
+            { $( $canon_token => $canon_variant ),+ },
+            { $( $alias => $variant ),* }
         }
     };
 

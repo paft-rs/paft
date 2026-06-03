@@ -24,6 +24,7 @@ paft-domain = { workspace = true }
 paft-money = { workspace = true, default-features = false }
 paft-utils = { workspace = true }
 paft-decimal = { workspace = true, default-features = false }
+thiserror = { workspace = true }
 polars = { workspace = true, optional = true, features = ["dtype-datetime"] }
 df-derive-macros = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }

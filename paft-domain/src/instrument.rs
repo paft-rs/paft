@@ -11,10 +11,9 @@ use std::borrow::Cow;
 paft_core::other_string_code_type!(
     /// Provider-specific asset kind that is not modeled by [`AssetKind`].
     pub struct OtherAssetKind for AssetKind;
-    type Error = paft_core::PaftError;
+    type Error = DomainError;
     parse(input) => input.parse::<AssetKind>();
-    invalid(input) => paft_core::PaftError::InvalidEnumValue {
-        enum_name: "AssetKind",
+    invalid(input) => DomainError::InvalidAssetKindValue {
         value: input.to_string(),
     };
 );
@@ -74,6 +73,10 @@ pub enum AssetKind {
 crate::string_enum_with_code!(
     AssetKind, Other(OtherAssetKind),
     "AssetKind",
+    type Error = DomainError;
+    invalid(input) => DomainError::InvalidAssetKindValue {
+        value: input.to_string(),
+    };
     {
         "EQUITY" => AssetKind::Equity,
         "CRYPTO" => AssetKind::Crypto,
@@ -109,7 +112,7 @@ impl AssetKind {
     ///
     /// Returns an error if `input` is empty, cannot be canonicalized, or parses
     /// to a modeled [`AssetKind`] variant.
-    pub fn other(input: &str) -> Result<Self, paft_core::PaftError> {
+    pub fn other(input: &str) -> Result<Self, DomainError> {
         OtherAssetKind::new(input).map(Self::Other)
     }
 

@@ -32,6 +32,29 @@ fn constrained_decimal_errors_convert_into_facade_result() {
     ));
 }
 
+#[cfg(feature = "fundamentals")]
+#[test]
+fn fundamentals_errors_convert_into_facade_result() {
+    use paft::prelude::{Error, FundamentalsError, RecommendationGrade, Result};
+
+    fn assert_export<T>() {}
+
+    fn recommendation_grade(input: &str) -> Result<RecommendationGrade> {
+        Ok(RecommendationGrade::try_from_str(input)?)
+    }
+
+    assert!(matches!(
+        recommendation_grade("   "),
+        Err(Error::Fundamentals(FundamentalsError::InvalidEnumValue {
+            enum_name: "RecommendationGrade",
+            ..
+        }))
+    ));
+
+    assert_export::<paft::fundamentals::FundamentalsError>();
+    assert_export::<paft::prelude::FundamentalsError>();
+}
+
 #[cfg(feature = "domain")]
 #[test]
 fn period_date_is_available_from_facade_and_prelude() {

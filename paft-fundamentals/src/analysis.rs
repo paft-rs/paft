@@ -6,17 +6,18 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_core::error::PaftError;
 use paft_decimal::Decimal;
 use paft_domain::{DomainError, Horizon, Period};
 use paft_money::{Money, Price};
 
+use crate::FundamentalsError;
+
 paft_core::other_string_code_type!(
     /// Provider-specific recommendation grade not modeled by [`RecommendationGrade`].
     pub struct OtherRecommendationGrade for RecommendationGrade;
-    type Error = PaftError;
+    type Error = FundamentalsError;
     parse(input) => RecommendationGrade::from_str(input);
-    invalid(input) => PaftError::InvalidEnumValue {
+    invalid(input) => FundamentalsError::InvalidEnumValue {
         enum_name: "RecommendationGrade",
         value: input.to_string(),
     };
@@ -58,9 +59,9 @@ impl RecommendationGrade {
     /// Attempts to parse a recommendation grade, uppercasing unknown inputs into `Other`.
     ///
     /// # Errors
-    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    /// Returns `FundamentalsError::InvalidEnumValue` when `input` is empty/whitespace.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+    pub fn try_from_str(input: &str) -> Result<Self, FundamentalsError> {
         Self::from_str(input)
     }
 
@@ -69,7 +70,7 @@ impl RecommendationGrade {
     /// # Errors
     /// Returns an error if `input` is empty, cannot be canonicalized, or parses
     /// to a modeled [`RecommendationGrade`] variant.
-    pub fn other(input: &str) -> Result<Self, PaftError> {
+    pub fn other(input: &str) -> Result<Self, FundamentalsError> {
         OtherRecommendationGrade::new(input).map(Self::Other)
     }
 }
@@ -79,6 +80,11 @@ impl RecommendationGrade {
 // Implement code() and string impls via macro
 paft_core::string_enum_with_code!(
     RecommendationGrade, Other(OtherRecommendationGrade), "RecommendationGrade",
+    type Error = FundamentalsError;
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "RecommendationGrade",
+        value: input.to_string(),
+    };
     {
         "STRONG_BUY" => RecommendationGrade::StrongBuy,
         "BUY" => RecommendationGrade::Buy,
@@ -103,9 +109,9 @@ paft_core::impl_display_via_code!(RecommendationGrade);
 paft_core::other_string_code_type!(
     /// Provider-specific recommendation action not modeled by [`RecommendationAction`].
     pub struct OtherRecommendationAction for RecommendationAction;
-    type Error = PaftError;
+    type Error = FundamentalsError;
     parse(input) => RecommendationAction::from_str(input);
-    invalid(input) => PaftError::InvalidEnumValue {
+    invalid(input) => FundamentalsError::InvalidEnumValue {
         enum_name: "RecommendationAction",
         value: input.to_string(),
     };
@@ -145,9 +151,9 @@ impl RecommendationAction {
     /// Attempts to parse a recommendation action, uppercasing unknown inputs into `Other`.
     ///
     /// # Errors
-    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    /// Returns `FundamentalsError::InvalidEnumValue` when `input` is empty/whitespace.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+    pub fn try_from_str(input: &str) -> Result<Self, FundamentalsError> {
         Self::from_str(input)
     }
 
@@ -156,7 +162,7 @@ impl RecommendationAction {
     /// # Errors
     /// Returns an error if `input` is empty, cannot be canonicalized, or parses
     /// to a modeled [`RecommendationAction`] variant.
-    pub fn other(input: &str) -> Result<Self, PaftError> {
+    pub fn other(input: &str) -> Result<Self, FundamentalsError> {
         OtherRecommendationAction::new(input).map(Self::Other)
     }
 }
@@ -164,6 +170,11 @@ impl RecommendationAction {
 // Implement code() and string impls via macro
 paft_core::string_enum_with_code!(
     RecommendationAction, Other(OtherRecommendationAction), "RecommendationAction",
+    type Error = FundamentalsError;
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "RecommendationAction",
+        value: input.to_string(),
+    };
     {
         "UPGRADE" => RecommendationAction::Upgrade,
         "DOWNGRADE" => RecommendationAction::Downgrade,

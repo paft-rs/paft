@@ -104,12 +104,12 @@ pub mod fundamentals {
         Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
         EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
         EpsRevisions, EpsTrend, EsgInvolvement, EsgScores, EsgSummary, FundKind, FundProfile,
-        IncomeStatementRow, InsiderPosition, InsiderRosterHolder, InsiderTransaction,
-        InstitutionalHolder, KeyStatistics, MajorHolder, NetSharePurchaseActivity, OtherFundKind,
-        OtherInsiderPosition, OtherRecommendationAction, OtherRecommendationGrade,
-        OtherTransactionType, PriceTarget, Profile, RecommendationAction, RecommendationGrade,
-        RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint, ShareCount,
-        TransactionType, TrendPoint, UpgradeDowngradeRow,
+        FundamentalsError, IncomeStatementRow, InsiderPosition, InsiderRosterHolder,
+        InsiderTransaction, InstitutionalHolder, KeyStatistics, MajorHolder,
+        NetSharePurchaseActivity, OtherFundKind, OtherInsiderPosition, OtherRecommendationAction,
+        OtherRecommendationGrade, OtherTransactionType, PriceTarget, Profile, RecommendationAction,
+        RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate,
+        RevisionPoint, ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
     };
     pub use paft_fundamentals::{analysis, esg, holders, profile, statements, statistics};
 }

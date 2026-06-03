@@ -6,17 +6,18 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_core::error::PaftError;
 use paft_decimal::{Decimal, Ratio};
 use paft_domain::Period;
 use paft_money::Money;
 
+use crate::FundamentalsError;
+
 paft_core::other_string_code_type!(
     /// Provider-specific transaction type not modeled by [`TransactionType`].
     pub struct OtherTransactionType for TransactionType;
-    type Error = PaftError;
+    type Error = FundamentalsError;
     parse(input) => TransactionType::from_str(input);
-    invalid(input) => PaftError::InvalidEnumValue {
+    invalid(input) => FundamentalsError::InvalidEnumValue {
         enum_name: "TransactionType",
         value: input.to_string(),
     };
@@ -56,9 +57,9 @@ impl TransactionType {
     /// Attempts to parse a transaction type, uppercasing unknown inputs into `Other`.
     ///
     /// # Errors
-    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    /// Returns `FundamentalsError::InvalidEnumValue` when `input` is empty/whitespace.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+    pub fn try_from_str(input: &str) -> Result<Self, FundamentalsError> {
         Self::from_str(input)
     }
 
@@ -67,7 +68,7 @@ impl TransactionType {
     /// # Errors
     /// Returns an error if `input` is empty, cannot be canonicalized, or parses
     /// to a modeled [`TransactionType`] variant.
-    pub fn other(input: &str) -> Result<Self, PaftError> {
+    pub fn other(input: &str) -> Result<Self, FundamentalsError> {
         OtherTransactionType::new(input).map(Self::Other)
     }
 }
@@ -75,6 +76,11 @@ impl TransactionType {
 // Centralized code() and string impls via macro
 paft_core::string_enum_with_code!(
     TransactionType, Other(OtherTransactionType), "TransactionType",
+    type Error = FundamentalsError;
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "TransactionType",
+        value: input.to_string(),
+    };
     {
         "BUY" => TransactionType::Buy,
         "SELL" => TransactionType::Sell,
@@ -101,9 +107,9 @@ paft_core::impl_display_via_code!(TransactionType);
 paft_core::other_string_code_type!(
     /// Provider-specific insider position not modeled by [`InsiderPosition`].
     pub struct OtherInsiderPosition for InsiderPosition;
-    type Error = PaftError;
+    type Error = FundamentalsError;
     parse(input) => InsiderPosition::from_str(input);
-    invalid(input) => PaftError::InvalidEnumValue {
+    invalid(input) => FundamentalsError::InvalidEnumValue {
         enum_name: "InsiderPosition",
         value: input.to_string(),
     };
@@ -153,9 +159,9 @@ impl InsiderPosition {
     /// Attempts to parse an insider position, uppercasing unknown inputs into `Other`.
     ///
     /// # Errors
-    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    /// Returns `FundamentalsError::InvalidEnumValue` when `input` is empty/whitespace.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+    pub fn try_from_str(input: &str) -> Result<Self, FundamentalsError> {
         Self::from_str(input)
     }
 
@@ -164,7 +170,7 @@ impl InsiderPosition {
     /// # Errors
     /// Returns an error if `input` is empty, cannot be canonicalized, or parses
     /// to a modeled [`InsiderPosition`] variant.
-    pub fn other(input: &str) -> Result<Self, PaftError> {
+    pub fn other(input: &str) -> Result<Self, FundamentalsError> {
         OtherInsiderPosition::new(input).map(Self::Other)
     }
 }
@@ -172,6 +178,11 @@ impl InsiderPosition {
 // Centralized code() and string impls via macro
 paft_core::string_enum_with_code!(
     InsiderPosition, Other(OtherInsiderPosition), "InsiderPosition",
+    type Error = FundamentalsError;
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "InsiderPosition",
+        value: input.to_string(),
+    };
     {
         "OFFICER" => InsiderPosition::Officer,
         "DIRECTOR" => InsiderPosition::Director,

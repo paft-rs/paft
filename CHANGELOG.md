@@ -71,6 +71,9 @@ All notable changes to this project will be documented in this file.
   `OtherAssetKind`, `OtherPeriod`, `OtherRecommendationGrade`,
   `OtherRecommendationAction`, `OtherTransactionType`, `OtherInsiderPosition`,
   and `OtherFundKind`) instead of raw `Canonical` payloads.
+- Domain/fundamentals/facade: enum parsing APIs now expose crate-level domain
+  errors instead of `paft_core::PaftError`; domain enums use `DomainError`, and
+  fundamentals enums use the new `FundamentalsError` surfaced by `paft::Error`.
 - Docs: standalone guide material was folded into the workspace and crate
   READMEs so crate-local API guidance stays next to the code it documents.
 
@@ -104,6 +107,11 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking Changes
 
+- Domain/fundamentals/facade: enum `FromStr`, `TryFrom<String>`,
+  `try_from_str`, and `other` constructors now return crate-level errors:
+  domain enum APIs return `DomainError`, fundamentals enum APIs return
+  `FundamentalsError`, and facade callers can compose fundamentals parse
+  failures through `paft::Error`.
 - Market/facade: `BookLevel::size` now uses `Option<QuantityAmount>`;
   `OptionContract::implied_volatility` and `OptionUpdate::implied_volatility`
   now use `Option<NonNegativeDecimal>`. `NewsRequest::count` now uses

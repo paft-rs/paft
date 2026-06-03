@@ -67,8 +67,8 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
         let err = AssetKind::from_str(input).unwrap_err();
         assert!(matches!(
             err,
-            paft_core::PaftError::InvalidEnumValue { enum_name, value }
-                if enum_name == "AssetKind" && value.as_str() == *input
+            DomainError::InvalidAssetKindValue { value }
+                if value.as_str() == *input
         ));
 
         // Exchange
@@ -79,6 +79,14 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
             }
             other => panic!("unexpected error variant: {other:?}"),
         }
+
+        // MarketState
+        let err = MarketState::from_str(input).unwrap_err();
+        assert!(matches!(
+            err,
+            DomainError::InvalidMarketStateValue { value }
+                if value.as_str() == *input
+        ));
     }
 }
 
@@ -99,7 +107,10 @@ fn display_matches_wire_codes_for_core_enums() {
 
 #[test]
 fn closed_enums_reject_unknown_tokens() {
-    assert!(MarketState::from_str("UNKNOWN_STATE").is_err());
+    assert!(matches!(
+        MarketState::from_str("UNKNOWN_STATE").unwrap_err(),
+        DomainError::InvalidMarketStateValue { value } if value == "UNKNOWN_STATE"
+    ));
 }
 
 #[test]

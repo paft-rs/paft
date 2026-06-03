@@ -6,17 +6,18 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_core::error::PaftError;
 use paft_domain::Isin;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 
+use crate::FundamentalsError;
+
 paft_core::other_string_code_type!(
     /// Provider-specific fund kind not modeled by [`FundKind`].
     pub struct OtherFundKind for FundKind;
-    type Error = PaftError;
+    type Error = FundamentalsError;
     parse(input) => FundKind::from_str(input);
-    invalid(input) => PaftError::InvalidEnumValue {
+    invalid(input) => FundamentalsError::InvalidEnumValue {
         enum_name: "FundKind",
         value: input.to_string(),
     };
@@ -61,9 +62,9 @@ impl FundKind {
     /// Attempts to parse a fund kind, uppercasing unknown inputs into `Other`.
     ///
     /// # Errors
-    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    /// Returns `FundamentalsError::InvalidEnumValue` when `input` is empty/whitespace.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+    pub fn try_from_str(input: &str) -> Result<Self, FundamentalsError> {
         Self::from_str(input)
     }
 
@@ -72,7 +73,7 @@ impl FundKind {
     /// # Errors
     /// Returns an error if `input` is empty, cannot be canonicalized, or parses
     /// to a modeled [`FundKind`] variant.
-    pub fn other(input: &str) -> Result<Self, PaftError> {
+    pub fn other(input: &str) -> Result<Self, FundamentalsError> {
         OtherFundKind::new(input).map(Self::Other)
     }
 }
@@ -80,6 +81,11 @@ impl FundKind {
 // Centralized string impls via macro
 paft_core::string_enum_with_code!(
     FundKind, Other(OtherFundKind), "FundKind",
+    type Error = FundamentalsError;
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "FundKind",
+        value: input.to_string(),
+    };
     {
         "ETF" => FundKind::Etf,
         "MUTUAL_FUND" => FundKind::MutualFund,

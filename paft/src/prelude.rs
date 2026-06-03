@@ -29,6 +29,8 @@ pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
 
 // Re-export fundamentals types (flattened via namespace)
 #[cfg(feature = "fundamentals")]
+pub use crate::fundamentals::FundamentalsError;
+#[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::analysis::{
     AnalysisSummary, Earnings, EarningsEstimate, EarningsQuarter, EarningsQuarterEps,
     EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, OtherRecommendationAction,
