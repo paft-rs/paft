@@ -21,6 +21,11 @@ All notable changes to this project will be documented in this file.
   chronological sorting and range-boundary policies.
 - Domain/facade: added `Horizon` and `OtherHorizon` for relative lookback
   windows such as `7d`, `1mo`, and `1y`.
+- Market/facade: added `Ohlc` plus OHLC price-basis modeling types
+  `OhlcPriceBasis`, `PriceBasis`, `AdjustmentAnchor`, `AdjustmentMethod`,
+  `CorporateActionAdjustmentCause`, and `CorporateActionAdjustmentCauses`.
+- Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
+  constrained decimal constructors to compose with `paft::prelude::Result`.
 
 ### Changed
 
@@ -34,17 +39,14 @@ All notable changes to this project will be documented in this file.
 - Money: scalar arithmetic helpers now borrow decimal operands:
   `Money::{try_mul, try_div}`, `MonetaryAmount::{try_mul, try_div}`, and
   `Price::{try_mul, try_div, try_total}`.
-- Money: checked decimal operations and canonical amount parsing/formatting are
-  now shared across `Money`, `MonetaryAmount`, `Price`, and `ExchangeRate`.
 - Decimal/money/market/fundamentals: decimal-backed serde fields now serialize
   through canonical strings from `paft-decimal`, independent of the active
-  decimal backend.
-- Decimal/money: constrained decimal `into_inner` helpers and
-  `PriceAmount::{into_inner, with_currency}` are now `const fn` on the default
   decimal backend.
 - Market history: `HistoryResponse` now exposes `price_basis:
   OhlcPriceBasis`, describing the returned OHLC price basis as either uniform
   `PriceBasis` metadata or per-field open/high/low/close bases.
+- Market/fundamentals: `Action` and `Profile` now use flat tagged serde shapes
+  with a `kind` discriminator instead of externally tagged enum objects.
 - Market/aggregates: high-cardinality price records now carry denomination once
   at the containing record and store contextual `PriceAmount` values for
   candles, order-book levels, quotes, quote updates, snapshots, and option
@@ -82,8 +84,6 @@ All notable changes to this project will be documented in this file.
   construction paths.
 - Money: localized formatting now rejects fraction digit requests above the
   active decimal backend precision instead of attempting unbounded zero padding.
-- Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
-  constrained decimal constructors to compose with `paft::prelude::Result`.
 - Domain: structured `Period` values can no longer expose invalid public
   states such as quarter 5 or date/period years outside `0..=9999`, and low
   years now emit four-digit canonical codes so display/serde round trips
@@ -94,8 +94,6 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking Changes
 
-- Decimal/facade: callers can import the new constrained decimal types from
-  `paft_decimal` or the facade root/prelude.
 - Market/facade: `BookLevel::size`, `OptionContract::implied_volatility`, and
   `OptionUpdate::implied_volatility` now use `Option<NonNegativeDecimal>`.
   `NewsRequest::count` now uses `std::num::NonZeroU32`.
@@ -120,6 +118,9 @@ All notable changes to this project will be documented in this file.
   `HistoryRequest::auto_adjust` to `HistoryFlags::PREFER_ADJUSTED_PRICES`,
   `HistoryRequestBuilder::prefer_adjusted_prices`, and
   `HistoryRequest::prefer_adjusted_prices`.
+- Market/fundamentals: `Action` and `Profile` JSON moved from externally tagged
+  enum objects to flat tagged payloads with `kind`; fund profiles now put the
+  fund type in `fund_kind` so it does not collide with the discriminator.
 - Domain/facade: `Period::Quarter { year, quarter }`,
   `Period::Year { year }`, and `Period::Date(date)` now require validated
   component newtypes instead of raw integers or `NaiveDate`. Existing literals
@@ -127,7 +128,8 @@ All notable changes to this project will be documented in this file.
   or `Period::date(date)?`.
 - Market/facade: `Candle` now has `currency: Currency` and flattened
   `ohlc: Ohlc` `PriceAmount` values instead of independent `Price` fields for
-  `open`, `high`, `low`, `close`, and `close_unadj`.
+  `open`, `high`, `low`, and `close`; `close_unadj` is now
+  `Option<PriceAmount>`.
 - Market/facade: `OrderBook`, `Quote`, `QuoteUpdate`, and aggregate `Snapshot`
   now require a record-level `currency`; their contained price fields use
   `PriceAmount`.
