@@ -9,9 +9,12 @@ fn search_request_serialization() {
         .limit(10)
         .build()
         .unwrap();
+    assert_eq!(request.limit(), NonZeroU32::new(10));
 
-    let json = serde_json::to_string(&request).unwrap();
-    let deserialized: SearchRequest = serde_json::from_str(&json).unwrap();
+    let value = serde_json::to_value(&request).unwrap();
+    assert_eq!(value["limit"], serde_json::json!(10));
+
+    let deserialized: SearchRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
 }
 

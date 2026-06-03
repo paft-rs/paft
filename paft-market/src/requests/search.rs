@@ -1,5 +1,7 @@
 //! Search request and response types.
 
+use std::num::NonZeroU32;
+
 use serde::{Deserialize, Serialize};
 
 use paft_domain::AssetKind;
@@ -16,7 +18,7 @@ pub struct SearchRequest {
     /// Optional asset-kind filter. If set, routers/connectors may restrict results.
     kind: Option<AssetKind>,
     /// Optional maximum number of results to return after routing/merge.
-    limit: Option<usize>,
+    limit: Option<NonZeroU32>,
     /// Optional ISO language code (e.g., "en", "fr").
     lang: Option<String>,
     /// Optional region code to scope results (e.g., "US", "EU").
@@ -32,7 +34,7 @@ pub struct SearchRequest {
 struct SearchRequestShadow {
     query: String,
     kind: Option<AssetKind>,
-    limit: Option<usize>,
+    limit: Option<u32>,
     lang: Option<String>,
     region: Option<String>,
 }
@@ -67,7 +69,7 @@ impl<'de> Deserialize<'de> for SearchRequest {
 pub struct SearchRequestBuilder {
     query: String,
     kind: Option<AssetKind>,
-    limit: Option<usize>,
+    limit: Option<u32>,
     lang: Option<String>,
     region: Option<String>,
 }
@@ -93,7 +95,7 @@ impl SearchRequestBuilder {
 
     /// Set the result limit.
     #[must_use]
-    pub const fn limit(mut self, limit: usize) -> Self {
+    pub const fn limit(mut self, limit: u32) -> Self {
         self.limit = Some(limit);
         self
     }
@@ -132,18 +134,17 @@ impl SearchRequestBuilder {
         if query.is_empty() {
             return Err(MarketError::EmptySearchQuery);
         }
-        if let Some(lim) = self.limit
-            && lim == 0
-        {
-            return Err(MarketError::InvalidSearchLimit(lim));
-        }
+        let limit = self
+            .limit
+            .map(|lim| NonZeroU32::new(lim).ok_or(MarketError::InvalidSearchLimit(lim)))
+            .transpose()?;
         let lang = validate_optional_locale_field(self.lang, "lang")?;
         let region = validate_optional_locale_field(self.region, "region")?;
 
         Ok(SearchRequest {
             query: query.to_owned(),
             kind: self.kind,
-            limit: self.limit,
+            limit,
             lang,
             region,
         })
@@ -200,7 +201,7 @@ impl SearchRequest {
 
     /// Get the result limit if set.
     #[must_use]
-    pub const fn limit(&self) -> Option<usize> {
+    pub const fn limit(&self) -> Option<NonZeroU32> {
         self.limit
     }
 

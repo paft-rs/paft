@@ -12,7 +12,7 @@ pub enum MarketError {
 
     /// Search limit must be greater than 0.
     #[error("Search limit must be greater than 0, but was {0}")]
-    InvalidSearchLimit(usize),
+    InvalidSearchLimit(u32),
 
     /// Search locale fields must not be empty when provided.
     #[error("Search {field} must not be empty when provided")]

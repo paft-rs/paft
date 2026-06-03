@@ -2,6 +2,7 @@ use chrono::DateTime;
 use paft_domain::AssetKind;
 use paft_market::MarketError;
 use paft_market::requests::{HistoryRequest, Interval, Range, SearchRequest};
+use std::num::NonZeroU32;
 
 #[test]
 fn search_request_validation_empty_query_rejected() {
@@ -142,6 +143,16 @@ fn search_request_validation_no_limit_passes() {
 fn search_request_validation_positive_limit_passes() {
     let result = SearchRequest::builder("AAPL").limit(1).build();
     assert!(result.is_ok());
+}
+
+#[test]
+fn search_request_validation_accepts_u32_limit_boundary() {
+    let request = SearchRequest::builder("AAPL")
+        .limit(u32::MAX)
+        .build()
+        .unwrap();
+
+    assert_eq!(request.limit(), NonZeroU32::new(u32::MAX));
 }
 
 #[test]

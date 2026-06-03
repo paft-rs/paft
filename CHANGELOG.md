@@ -92,6 +92,9 @@ All notable changes to this project will be documented in this file.
 - Market requests: `SearchRequest` now trims accepted `lang`/`region` values
   and rejects empty or whitespace-only values through both builder and serde
   construction paths.
+- Market/facade: `SearchRequest` now stores result limits as
+  `Option<std::num::NonZeroU32>` and validates builder/deserialized limits from
+  `u32`, avoiding platform-dependent `usize` in serialized request models.
 - Money: localized formatting now rejects fraction digit requests above the
   active decimal backend precision instead of attempting unbounded zero padding.
 - Decimal/money: constrained decimal and contextual amount `Display`
@@ -116,6 +119,9 @@ All notable changes to this project will be documented in this file.
   `OptionContract::implied_volatility` and `OptionUpdate::implied_volatility`
   now use `Option<NonNegativeDecimal>`. `NewsRequest::count` now uses
   `std::num::NonZeroU32`.
+- Market/facade: `SearchRequestBuilder::limit` now accepts `u32`,
+  `SearchRequest::limit()` returns `Option<std::num::NonZeroU32>`, and
+  `MarketError::InvalidSearchLimit` carries `u32` instead of `usize`.
 - Fundamentals/facade: `MajorHolder::value` now uses `Ratio`, and
   `InstitutionalHolder::pct_held` now uses `Option<Ratio>`.
 - Fundamentals/facade: `InsiderTransaction` struct literals and consumers must
