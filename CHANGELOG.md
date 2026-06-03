@@ -51,6 +51,9 @@ All notable changes to this project will be documented in this file.
 
 - Dataframe: `Decimal128Encode` now rejects target scales above Polars decimal
   precision and uses checked exponentiation when rescaling mantissas.
+- Market requests: `HistoryRequest` and `SearchRequest` JSON deserialization
+  now rejects unknown top-level fields instead of silently ignoring request
+  typos.
 - Money: localized formatting now rejects fraction digit requests above the
   active decimal backend precision instead of attempting unbounded zero padding.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing

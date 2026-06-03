@@ -542,6 +542,7 @@ pub struct HistoryRequest {
 /// Matches the serialized wire shape, then routes through
 /// [`HistoryRequestBuilder::build`] so period validation cannot be skipped.
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct HistoryRequestShadow {
     time_spec: TimeSpec,
     interval: Interval,

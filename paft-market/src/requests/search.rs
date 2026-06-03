@@ -28,6 +28,7 @@ pub struct SearchRequest {
 /// Matches the serialized wire shape, then routes through
 /// [`SearchRequestBuilder::build`] so request validation cannot be skipped.
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct SearchRequestShadow {
     query: String,
     kind: Option<AssetKind>,

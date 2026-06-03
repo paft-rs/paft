@@ -65,6 +65,15 @@ fn search_request_deserialization_zero_limit_rejected() {
 }
 
 #[test]
+fn search_request_deserialization_unknown_field_rejected() {
+    let result = serde_json::from_str::<SearchRequest>(
+        r#"{"query":"AAPL","kind":null,"limit":10,"lang":null,"region":null,"limti":5}"#,
+    );
+
+    assert!(result.is_err());
+}
+
+#[test]
 fn search_request_validation_valid_request_passes() {
     let result = SearchRequest::builder("AAPL")
         .kind(AssetKind::Equity)
@@ -149,6 +158,23 @@ fn history_request_deserialization_period_start_ge_end_rejected() {
         },
         "interval": Interval::D1,
         "flags": 6
+    });
+
+    let result = serde_json::from_value::<HistoryRequest>(invalid);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn history_request_deserialization_unknown_field_rejected() {
+    let invalid = serde_json::json!({
+        "time_spec": {
+            "kind": "range",
+            "range": "1d"
+        },
+        "interval": Interval::D1,
+        "flags": 6,
+        "interavl": "1d"
     });
 
     let result = serde_json::from_value::<HistoryRequest>(invalid);
