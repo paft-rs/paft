@@ -55,15 +55,18 @@ All features are optional—disable the defaults (`default-features = false`) an
 
 - Market prices that share one denomination now carry `currency` once at the
   record level and use contextual `PriceAmount` fields. Sizes and volumes that
-  can be fractional now use `QuantityAmount`.
+  can be fractional now use `QuantityAmount`. Option contracts and updates now
+  carry premium `currency` explicitly; option quote amounts no longer inherit
+  `OptionContractKey::strike.currency()`.
 - `HistoryResponse::adjusted` is now `price_basis: OhlcPriceBasis`; providers
   should state whether OHLC values are raw, provider-adjusted, corporate-action
   adjusted, or contract-roll adjusted.
-- `Period` literals now use validated components. Prefer
-  `Period::annual(..)`, `Period::quarterly(..)`, and `Period::date(..)` over
-  enum struct literals.
+- `ReportingPeriod` literals now use validated components. Prefer
+  `ReportingPeriod::annual(..)`, `ReportingPeriod::quarterly(..)`, and `ReportingPeriod::date(..)` over
+  enum struct literals. Use `CalendarPeriod` for calendar boundary helpers
+  such as `start_date()` and `end_date()`.
 - EPS trend/revision helpers now use `Horizon` lookbacks such as `7d`, `1mo`,
-  and `1y`, not reporting `Period` values.
+  and `1y`, not reporting period values.
 - Extensible enum `Other` variants now carry enum-specific wrappers such as
   `OtherCurrency`, `OtherExchange`, and `OtherPeriod`; construct unknown
   values with `Type::other(..)` or `OtherType::new(..)`.

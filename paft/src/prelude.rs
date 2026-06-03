@@ -6,9 +6,9 @@
 // Re-export core types via namespaced modules
 #[cfg(feature = "domain")]
 pub use crate::domain::{
-    AssetKind, Canonical, Exchange, Figi, Horizon, Instrument, Isin, MarketState, OtherAssetKind,
-    OtherExchange, OtherHorizon, OtherPeriod, Period, PeriodDate, PeriodYear, QuarterOfYear,
-    StringCode, Symbol, canonicalize,
+    AssetKind, CalendarPeriod, Canonical, Exchange, Figi, Horizon, Instrument, Isin, MarketState,
+    OtherAssetKind, OtherExchange, OtherHorizon, OtherPeriod, PeriodDate, PeriodYear,
+    QuarterOfYear, ReportingPeriod, StringCode, Symbol, canonicalize,
 };
 #[cfg(feature = "money-formatting")]
 pub use crate::money::LocalizedMoney;

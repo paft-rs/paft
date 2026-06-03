@@ -1,6 +1,6 @@
 use paft_domain::{
     AssetKind, DomainError, Exchange, Horizon, MarketState, OtherAssetKind, OtherExchange,
-    OtherHorizon, OtherPeriod, Period,
+    OtherHorizon, OtherPeriod, ReportingPeriod,
 };
 use paft_money::{Currency, OtherCurrency};
 use std::str::FromStr;
@@ -35,11 +35,11 @@ fn other_roundtrip_is_stable_for_core_enums() {
     let other_asset = AssetKind::from_str("structured note").unwrap();
     assert_eq!(other_asset.to_string(), "STRUCTURED_NOTE");
 
-    // Period
-    assert_display_parse_display_idempotent::<Period, _>("2023Q4");
-    assert_display_parse_display_idempotent::<Period, _>("2023-12-31");
-    assert_display_parse_display_idempotent::<Period, _>("FY2023"); // normalizes to 2023
-    let other_period = Period::from_str("custom range").unwrap();
+    // ReportingPeriod
+    assert_display_parse_display_idempotent::<ReportingPeriod, _>("2023Q4");
+    assert_display_parse_display_idempotent::<ReportingPeriod, _>("2023-12-31");
+    assert_display_parse_display_idempotent::<ReportingPeriod, _>("FY2023"); // normalizes to 2023
+    let other_period = ReportingPeriod::from_str("custom range").unwrap();
     assert_eq!(other_period.to_string(), "CUSTOM_RANGE");
 
     // Horizon

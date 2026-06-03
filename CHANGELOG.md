@@ -17,8 +17,8 @@ All notable changes to this project will be documented in this file.
   amount for values whose currency is supplied by an enclosing market record.
 - Money/facade: added `QuantityAmount`, a transparent non-negative decimal
   quantity amount for provider-agnostic market sizes and volumes.
-- Domain/facade: added `Period::{start_date, end_date}` helpers for explicit
-  chronological sorting and range-boundary policies.
+- Domain/facade: added `CalendarPeriod` for calendar year/quarter/date
+  boundary helpers such as `start_date`, `end_date`, and bucket comparison.
 - Domain/facade: added `Horizon` and `OtherHorizon` for relative lookback
   windows such as `7d`, `1mo`, and `1y`.
 - Market/facade: added `Ohlc` plus OHLC price-basis modeling types
@@ -52,7 +52,8 @@ All notable changes to this project will be documented in this file.
 - Market/aggregates: high-cardinality price records now carry denomination once
   at the containing record and store contextual `PriceAmount` values for
   candles, order-book levels, quotes, quote updates, snapshots, and option
-  quote fields.
+  quote fields. Option contracts/updates carry an explicit premium `currency`
+  so quote fields do not inherit the strike currency implicitly.
 - Market/aggregates: book-level sizes and provider-agnostic volume fields now
   use contextual `QuantityAmount` values so fractional crypto, FX,
   commodities, and base/quote-volume feeds can be represented without rounding
@@ -60,12 +61,12 @@ All notable changes to this project will be documented in this file.
 - Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
-- Domain/facade: structured `Period` variants now store validated
-  `PeriodYear`, `QuarterOfYear`, and `PeriodDate` components; use
-  `Period::annual`, `Period::quarterly`, and `Period::date` when constructing
-  annual, quarterly, and date periods.
+- Domain/facade: `Period` was split into `ReportingPeriod` for fiscal/provider
+  labels and `CalendarPeriod` for date-boundary logic. Structured period
+  variants now store validated `PeriodYear`, `QuarterOfYear`, and
+  `PeriodDate` components.
 - Fundamentals/facade: EPS trend and revision historical points now use
-  `Horizon` for lookback windows instead of overloading `Period`.
+  `Horizon` for lookback windows instead of overloading `ReportingPeriod`.
 - Domain/money/fundamentals/facade: extensible enum `Other` variants now use
   enum-specific unknown-code wrappers (`OtherCurrency`, `OtherExchange`,
   `OtherAssetKind`, `OtherPeriod`, `OtherRecommendationGrade`,
@@ -105,11 +106,11 @@ All notable changes to this project will be documented in this file.
 - Decimal/money: constrained decimal and contextual amount `Display`
   implementations now emit canonical decimal strings without gratuitous
   trailing zeroes, matching serde and hash behavior.
-- Domain: structured `Period` values can no longer expose invalid public
+- Domain: structured `ReportingPeriod` values can no longer expose invalid public
   states such as quarter 5 or date/period years outside `0..=9999`, and low
   years now emit four-digit canonical codes so display/serde round trips
   preserve identity.
-- Domain: `Horizon` and `Period` parsing now rejects malformed inputs whose
+- Domain: `Horizon` and `ReportingPeriod` parsing now rejects malformed inputs whose
   canonical fallback would become a modeled token, such as `-1d` or
   `-2023Q4`, instead of accepting them as valid structured values.
 - Domain/money/fundamentals: string enum parsers now reject malformed inputs
@@ -157,11 +158,14 @@ All notable changes to this project will be documented in this file.
 - Market/fundamentals: `Action` and `Profile` JSON moved from externally tagged
   enum objects to flat tagged payloads with `kind`; fund profiles now put the
   fund type in `fund_kind` so it does not collide with the discriminator.
-- Domain/facade: `Period::Quarter { year, quarter }`,
-  `Period::Year { year }`, and `Period::Date(date)` now require validated
-  component newtypes instead of raw integers or `NaiveDate`. Existing literals
-  should move to `Period::quarterly(year, quarter)?`, `Period::annual(year)?`,
-  or `Period::date(date)?`.
+- Domain/facade: `Period` was replaced by `ReportingPeriod` for
+  fiscal/provider labels and `CalendarPeriod` for calendar boundary logic.
+  `ReportingPeriod::Quarter { year, quarter }`,
+  `ReportingPeriod::Year { year }`, and `ReportingPeriod::Date(date)` now
+  require validated component newtypes instead of raw integers or `NaiveDate`.
+  Existing reporting literals should move to
+  `ReportingPeriod::quarterly(year, quarter)?`,
+  `ReportingPeriod::annual(year)?`, or `ReportingPeriod::date(date)?`.
 - Market/facade: `Candle` now has `currency: Currency` and flattened
   `ohlc: Ohlc` `PriceAmount` values instead of independent `Price` fields for
   `open`, `high`, `low`, and `close`; `close_unadj` is now
@@ -174,8 +178,9 @@ All notable changes to this project will be documented in this file.
   `QuoteUpdate::volume` was renamed to `volume_delta` and now also uses
   `Option<QuantityAmount>`.
 - Market/facade: option contract/update quote fields (`price`, `bid`, `ask`,
-  and `last_price`) now use `PriceAmount`; `OptionContractKey::strike` remains
-  a standalone `Price`.
+  and `last_price`) now use `PriceAmount`, and option contracts/updates now
+  require `currency: Currency` for those premium amounts.
+  `OptionContractKey::strike` remains a standalone `Price`.
 - Domain/facade: `Instrument::unique_key()` no longer returns bare FIGI, ISIN,
   `SYMBOL@EXCHANGE`, or `SYMBOL` strings. It now includes asset kind and
   identifier source, e.g. `EQUITY|SYMBOL|4:AAPL` or
@@ -185,9 +190,9 @@ All notable changes to this project will be documented in this file.
 - Domain/fundamentals/facade: removed `Default` from `Symbol`, `Exchange`,
   `AssetKind`, and `FundKind` because their old defaults (`DEFAULT`, `NASDAQ`,
   `EQUITY`, and `ETF`) looked like real financial identity data.
-- Domain/facade: `Period` no longer implements `Ord`/`PartialOrd`; callers must
-  choose explicit semantics such as `start_date()`, `end_date()`, or a
-  provider-specific structural sort key.
+- Domain/facade: `ReportingPeriod` no longer exposes calendar boundary helpers
+  or `Ord`/`PartialOrd`; callers must choose `CalendarPeriod` for calendar
+  boundaries or a provider-specific structural sort key for fiscal labels.
 - Fundamentals/facade: `TrendPoint::period` and `RevisionPoint::period` were
   renamed to `horizon` and now use `Horizon`; helper methods were renamed from
   `find_by_period*`/`available_periods` to

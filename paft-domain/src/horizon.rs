@@ -1,8 +1,8 @@
 //! Lookback horizon primitives.
 //!
 //! [`Horizon`] models relative lookback windows such as `7d`, `1mo`, or `1y`.
-//! It is intentionally separate from [`crate::Period`], which models fiscal or
-//! reporting periods such as `2023Q4`, `2023`, or `2023-12-31`.
+//! It is intentionally separate from [`crate::ReportingPeriod`], which models
+//! fiscal or reporting labels such as `2023Q4`, `2023`, or `2023-12-31`.
 
 use std::borrow::Cow;
 use std::fmt;

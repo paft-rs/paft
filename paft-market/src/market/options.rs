@@ -12,7 +12,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use df_derive_macros::ToDataFrame;
 use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::Instrument;
-use paft_money::{Price, PriceAmount};
+use paft_money::{Currency, Price, PriceAmount};
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -123,11 +123,14 @@ pub struct GenericOptionContract<M = ()> {
     /// Provider or venue instrument identifier for the option contract, when known.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub contract_instrument: Option<Instrument>,
-    /// Last traded price amount, denominated in `key.strike.currency()`.
+    /// Premium currency for `price`, `bid`, and `ask`.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub currency: Currency,
+    /// Last traded price amount, denominated in `currency`.
     pub price: Option<PriceAmount>,
-    /// Best bid amount, denominated in `key.strike.currency()`.
+    /// Best bid amount, denominated in `currency`.
     pub bid: Option<PriceAmount>,
-    /// Best ask amount, denominated in `key.strike.currency()`.
+    /// Best ask amount, denominated in `currency`.
     pub ask: Option<PriceAmount>,
     /// Traded volume.
     pub volume: Option<u64>,
@@ -160,10 +163,11 @@ impl<M: Default> GenericOptionContract<M> {
     /// default to `None`, including `in_the_money`. `provider` is
     /// initialised via `M::default()`.
     #[must_use]
-    pub fn new(key: OptionContractKey) -> Self {
+    pub fn new(key: OptionContractKey, currency: Currency) -> Self {
         Self {
             key,
             contract_instrument: None,
+            currency,
             price: None,
             bid: None,
             ask: None,
@@ -252,11 +256,14 @@ pub struct GenericOptionUpdate<M = ()> {
     /// Timestamp of the update as Unix milliseconds.
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
-    /// Best bid amount for the contract, denominated in `key.strike.currency()`.
+    /// Premium currency for `bid`, `ask`, and `last_price`.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub currency: Currency,
+    /// Best bid amount for the contract, denominated in `currency`.
     pub bid: Option<PriceAmount>,
-    /// Best ask amount for the contract, denominated in `key.strike.currency()`.
+    /// Best ask amount for the contract, denominated in `currency`.
     pub ask: Option<PriceAmount>,
-    /// Last traded price amount, denominated in `key.strike.currency()`.
+    /// Last traded price amount, denominated in `currency`.
     pub last_price: Option<PriceAmount>,
     /// Implied volatility estimate, if available.
     #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
@@ -271,11 +278,12 @@ impl<M: Default> GenericOptionUpdate<M> {
     /// quoting fields default to `None` and `provider` is initialised via
     /// `M::default()`.
     #[must_use]
-    pub fn new(key: OptionContractKey, ts: DateTime<Utc>) -> Self {
+    pub fn new(key: OptionContractKey, currency: Currency, ts: DateTime<Utc>) -> Self {
         Self {
             key,
             contract_instrument: None,
             ts,
+            currency,
             bid: None,
             ask: None,
             last_price: None,

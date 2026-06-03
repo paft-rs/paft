@@ -1,7 +1,7 @@
 #![cfg(feature = "dataframe")]
 use chrono::{TimeZone, Utc};
 use paft_decimal::{Decimal, Ratio};
-use paft_domain::{Horizon, Isin, Period};
+use paft_domain::{Horizon, Isin, ReportingPeriod};
 use paft_fundamentals::{
     Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
     EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
@@ -50,12 +50,12 @@ fn earnings_to_dataframe() {
             earnings: Some(usd(450)),
         }],
         quarterly: vec![EarningsQuarter {
-            period: Period::quarterly(2024, 1).unwrap(),
+            period: ReportingPeriod::quarterly(2024, 1).unwrap(),
             revenue: Some(usd(300)),
             earnings: Some(usd(110)),
         }],
         quarterly_eps: vec![EarningsQuarterEps {
-            period: Period::quarterly(2024, 1).unwrap(),
+            period: ReportingPeriod::quarterly(2024, 1).unwrap(),
             actual: Some(usd_price(2)),
             estimate: Some(usd_price(1)),
         }],
@@ -79,7 +79,7 @@ fn earnings_year_to_dataframe() {
 #[test]
 fn earnings_quarter_to_dataframe() {
     let quarter = EarningsQuarter {
-        period: Period::quarterly(2024, 2).unwrap(),
+        period: ReportingPeriod::quarterly(2024, 2).unwrap(),
         revenue: Some(usd(250)),
         earnings: Some(usd(75)),
     };
@@ -91,7 +91,7 @@ fn earnings_quarter_to_dataframe() {
 #[test]
 fn earnings_quarter_eps_to_dataframe() {
     let eps = EarningsQuarterEps {
-        period: Period::quarterly(2024, 2).unwrap(),
+        period: ReportingPeriod::quarterly(2024, 2).unwrap(),
         actual: Some(usd_price(3)),
         estimate: Some(usd_price(2)),
     };
@@ -116,7 +116,7 @@ fn price_target_to_dataframe() {
 #[test]
 fn recommendation_row_to_dataframe() {
     let r = RecommendationRow {
-        period: Period::annual(2024).unwrap(),
+        period: ReportingPeriod::annual(2024).unwrap(),
         strong_buy: Some(5),
         buy: Some(7),
         hold: Some(3),
@@ -130,7 +130,7 @@ fn recommendation_row_to_dataframe() {
 #[test]
 fn recommendation_summary_to_dataframe() {
     let summary = RecommendationSummary {
-        latest_period: Some(Period::quarterly(2024, 2).unwrap()),
+        latest_period: Some(ReportingPeriod::quarterly(2024, 2).unwrap()),
         strong_buy: Some(5),
         buy: Some(7),
         hold: Some(3),
@@ -267,7 +267,7 @@ fn earnings_trend_row_to_dataframe() {
     };
 
     let row = EarningsTrendRow {
-        period: Period::quarterly(2024, 1).unwrap(),
+        period: ReportingPeriod::quarterly(2024, 1).unwrap(),
         growth: Some(dec("0.12")),
         earnings_estimate,
         revenue_estimate,
@@ -282,7 +282,7 @@ fn earnings_trend_row_to_dataframe() {
 #[test]
 fn statements_row_to_dataframe() {
     let row = IncomeStatementRow {
-        period: Period::annual(2024).unwrap(),
+        period: ReportingPeriod::annual(2024).unwrap(),
         total_revenue: None,
         gross_profit: None,
         operating_income: None,
@@ -298,7 +298,7 @@ fn statements_row_to_dataframe() {
 #[test]
 fn balance_sheet_row_to_dataframe() {
     let row = BalanceSheetRow {
-        period: Period::annual(2024).unwrap(),
+        period: ReportingPeriod::annual(2024).unwrap(),
         total_assets: Some(usd(5_000)),
         total_liabilities: Some(usd(3_000)),
         total_equity: Some(usd(2_000)),
@@ -322,7 +322,7 @@ fn balance_sheet_row_to_dataframe() {
 #[test]
 fn cashflow_row_to_dataframe() {
     let row = CashflowRow {
-        period: Period::annual(2024).unwrap(),
+        period: ReportingPeriod::annual(2024).unwrap(),
         operating_cashflow: Some(usd(1_200)),
         capital_expenditures: Some(usd(300)),
         free_cash_flow: Some(usd(900)),
@@ -433,7 +433,7 @@ fn insider_roster_holder_to_dataframe() {
 #[test]
 fn net_share_purchase_activity_to_dataframe() {
     let activity = NetSharePurchaseActivity {
-        period: Period::quarterly(2023, 4).unwrap(),
+        period: ReportingPeriod::quarterly(2023, 4).unwrap(),
         buy_shares: Some(2_000),
         buy_count: Some(10),
         sell_shares: Some(1_500),

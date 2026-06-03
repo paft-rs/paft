@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_decimal::Decimal;
-use paft_domain::{DomainError, Horizon, Period};
+use paft_domain::{DomainError, Horizon, ReportingPeriod};
 use paft_money::{Money, Price};
 
 use crate::FundamentalsError;
@@ -223,9 +223,9 @@ pub struct EarningsYear {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Quarterly earnings summary for a period key (e.g., 2023Q4 or 2023-10-01).
 pub struct EarningsQuarter {
-    /// Period with structured variants and extensible fallback.
+    /// `ReportingPeriod` with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
+    pub period: ReportingPeriod,
     /// Revenue for the period.
     pub revenue: Option<Money>,
     /// Earnings for the period.
@@ -236,9 +236,9 @@ pub struct EarningsQuarter {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Quarterly EPS actual vs estimate for a period key.
 pub struct EarningsQuarterEps {
-    /// Period with structured variants and extensible fallback.
+    /// `ReportingPeriod` with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
+    pub period: ReportingPeriod,
     /// Actual EPS.
     pub actual: Option<Price>,
     /// Estimated EPS.
@@ -263,9 +263,9 @@ pub struct PriceTarget {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Distribution of analyst recommendations for a period.
 pub struct RecommendationRow {
-    /// Period with structured variants and extensible fallback.
+    /// `ReportingPeriod` with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
+    pub period: ReportingPeriod,
     /// Count of "strong buy" recommendations.
     pub strong_buy: Option<u32>,
     /// Count of "buy" recommendations.
@@ -284,7 +284,7 @@ pub struct RecommendationRow {
 pub struct RecommendationSummary {
     /// Most recent period of the summary.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub latest_period: Option<Period>,
+    pub latest_period: Option<ReportingPeriod>,
     /// Count of "strong buy" recommendations.
     pub strong_buy: Option<u32>,
     /// Count of "buy" recommendations.
@@ -585,7 +585,7 @@ impl EpsRevisions {
 pub struct EarningsTrendRow {
     /// The period the trend data applies to with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
+    pub period: ReportingPeriod,
     /// The growth rate.
     #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub growth: Option<Decimal>,

@@ -73,7 +73,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 - **Instruments & Identifiers**: `Instrument` (flat: `symbol`, `exchange`, `figi`, `isin`, `kind`), `AssetKind`, `Exchange`
   - IDs: `Symbol`, `Figi`, `Isin`
   - Prediction-market identity (in `paft-prediction`): `PredictionInstrument`, `EventID`, `OutcomeID`
-  - Time periods and lookbacks: `Period`, `Horizon`
+  - Time periods and lookbacks: `ReportingPeriod`, `CalendarPeriod`, `Horizon`
 - **Market Data**: `Quote`, `QuoteUpdate`, `OrderBook`, `Candle`, `Ohlc`, `Action`, `MarketState`
 - **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `OhlcPriceBasis`, `PriceBasis`, `Interval`, `Range`
 - **Money & Currency**: `Money`, `Price`, `PriceAmount`, `MonetaryAmount`, `QuantityAmount`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
@@ -133,7 +133,7 @@ paft ships with optional, feature-gated instrumentation using the `tracing` crat
 
 ### What’s instrumented
 
-- `paft-domain`: `Isin::new`, `Figi::new`, `Symbol::new`, `Period::from_str`, `Exchange::try_from_str`, `Instrument` fallible helpers
+- `paft-domain`: `Isin::new`, `Figi::new`, `Symbol::new`, `ReportingPeriod::from_str`, `CalendarPeriod::from_str`, `Exchange::try_from_str`, `Instrument` fallible helpers
 - `paft-money`: `Money::{new, from_canonical_str, from_minor_units}`, `Price`, `MonetaryAmount`, arithmetic ops (`try_add`, `try_sub`, `try_mul`, `try_div`, `try_convert_with`), parser, `currency_utils::set_currency_metadata`
 - `paft-market`: `HistoryRequestBuilder::build`, `SearchRequestBuilder::build`, `SearchRequest::new`
 - `paft-fundamentals`: enum `try_from_str` and `TrendPoint/RevisionPoint::try_new_str`
@@ -194,7 +194,7 @@ The paft ecosystem is designed around interoperable layers that work together to
 ### Core Crates
 
 - **`paft`** - Facade crate re-exporting standardized financial data types, unified error, and forwarded features. This is what most users will depend on directly.
-- **`paft-domain`** - Domain models (`Instrument`, `Exchange`, `Period`), typed identifiers (`Isin`, `Figi`), and related errors.
+- **`paft-domain`** - Domain models (`Instrument`, `Exchange`, `ReportingPeriod`, `CalendarPeriod`), typed identifiers (`Isin`, `Figi`), and related errors.
 - **`paft-market`** - Market data types, requests, and responses.
 - **`paft-fundamentals`** - Fundamentals types (financial statements, ESG, holders, analysis helpers).
 - **`paft-aggregates`** - Aggregated snapshot types for instrument rollups.

@@ -12,7 +12,9 @@
 //! # Quickstart
 //!
 //! ```rust
-//! use paft_domain::{AssetKind, Exchange, Horizon, Instrument, Period, Symbol};
+//! use paft_domain::{
+//!     AssetKind, CalendarPeriod, Exchange, Horizon, Instrument, ReportingPeriod, Symbol,
+//! };
 //!
 //! let symbol = Symbol::new("AAPL").unwrap();
 //! let aapl = Instrument::from_symbol_and_exchange(
@@ -23,8 +25,10 @@
 //! assert_eq!(aapl.symbol.as_str(), "AAPL");
 //! assert!(aapl.exchange.is_some());
 //!
-//! let q4 = "2023-Q4".parse::<Period>().unwrap();
+//! let q4 = "2023-Q4".parse::<ReportingPeriod>().unwrap();
 //! assert_eq!(q4.to_string(), "2023Q4");
+//! let calendar_q4 = CalendarPeriod::quarterly(2023, 4).unwrap();
+//! assert_eq!(calendar_q4.start_date().to_string(), "2023-10-01");
 //!
 //! let horizon = "3mo".parse::<Horizon>().unwrap();
 //! assert_eq!(horizon.to_string(), "3mo");
@@ -56,7 +60,9 @@ pub use horizon::{Horizon, OtherHorizon};
 pub use identifiers::{Figi, Isin, Symbol};
 pub use instrument::{AssetKind, Instrument, OtherAssetKind};
 pub use market_state::MarketState;
-pub use period::{OtherPeriod, Period, PeriodDate, PeriodYear, QuarterOfYear};
+pub use period::{
+    CalendarPeriod, OtherPeriod, PeriodDate, PeriodYear, QuarterOfYear, ReportingPeriod,
+};
 
 #[cfg(feature = "dataframe")]
 pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};

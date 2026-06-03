@@ -6,11 +6,19 @@ use paft_market::{
     OptionChainRequest, OptionContract, OptionContractKey, OptionExpirationsRequest,
     OptionExpirationsResponse, OptionGreeks, OptionSide, OptionUpdate,
 };
-use paft_money::{Currency, IsoCurrency, Price};
+use paft_money::{Currency, IsoCurrency, Price, PriceAmount};
 use std::str::FromStr;
 
 fn usd(amount: i64) -> Price {
     Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
+}
+
+const fn usd_currency() -> Currency {
+    Currency::Iso(IsoCurrency::USD)
+}
+
+const fn eur_currency() -> Currency {
+    Currency::Iso(IsoCurrency::EUR)
 }
 
 fn dec(value: &str) -> Decimal {
@@ -62,7 +70,7 @@ fn option_expirations_response_roundtrip() {
 
 #[test]
 fn option_contract_in_the_money_distinguishes_unknown_from_false() {
-    let unknown: OptionContract = OptionContract::new(option_key());
+    let unknown: OptionContract = OptionContract::new(option_key(), usd_currency());
     assert_eq!(unknown.in_the_money, None);
 
     let mut value = serde_json::to_value(&unknown).unwrap();
@@ -74,7 +82,7 @@ fn option_contract_in_the_money_distinguishes_unknown_from_false() {
     let decoded_unknown: OptionContract = serde_json::from_value(value).unwrap();
     assert_eq!(decoded_unknown.in_the_money, None);
 
-    let mut explicit_false = OptionContract::new(option_key());
+    let mut explicit_false = OptionContract::new(option_key(), usd_currency());
     explicit_false.in_the_money = Some(false);
 
     let value = serde_json::to_value(&explicit_false).unwrap();
@@ -82,6 +90,20 @@ fn option_contract_in_the_money_distinguishes_unknown_from_false() {
 
     let decoded_false: OptionContract = serde_json::from_value(value).unwrap();
     assert_eq!(decoded_false.in_the_money, Some(false));
+}
+
+#[test]
+fn option_quote_currency_is_independent_from_strike_currency() {
+    let mut contract = OptionContract::new(option_key(), eur_currency());
+    contract.price = Some(PriceAmount::new(dec("5.25")));
+
+    assert_eq!(contract.key.strike.currency(), &usd_currency());
+    assert_eq!(contract.currency, eur_currency());
+
+    let value = serde_json::to_value(&contract).unwrap();
+    assert_eq!(value["strike"]["currency"], serde_json::json!("USD"));
+    assert_eq!(value["currency"], serde_json::json!("EUR"));
+    assert_eq!(value["price"], serde_json::json!("5.25"));
 }
 
 #[test]
@@ -109,6 +131,7 @@ fn option_greeks_decimal_serde_uses_canonical_strings() {
 fn option_update_ts_serde_uses_unix_milliseconds() {
     let update: MarketOptionUpdate = OptionUpdate::new(
         option_key(),
+        usd_currency(),
         DateTime::from_timestamp(1_640_995_200, 789_000_000).unwrap(),
     );
 
@@ -118,6 +141,7 @@ fn option_update_ts_serde_uses_unix_milliseconds() {
         Some(&serde_json::json!(1_640_995_200_789_i64))
     );
     assert_eq!(value.get("side"), Some(&serde_json::json!("CALL")));
+    assert_eq!(value.get("currency"), Some(&serde_json::json!("USD")));
     assert!(value.get("underlying").is_some());
 
     let deserialized: OptionUpdate = serde_json::from_value(value).unwrap();

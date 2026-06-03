@@ -232,6 +232,7 @@ fn sample_contract() -> OptionContract {
         contract_instrument: Some(
             Instrument::from_symbol("AAPL240621C00150000", AssetKind::Option).unwrap(),
         ),
+        currency: usd(),
         price: Some(usd_amount(5)),
         bid: Some(usd_amount(4)),
         ask: Some(usd_amount(6)),
@@ -280,6 +281,7 @@ fn option_chain_to_dataframe() {
                 contract_instrument: Some(
                     Instrument::from_symbol("AAPL240621P00150000", AssetKind::Option).unwrap(),
                 ),
+                currency: usd(),
                 in_the_money: Some(false),
                 ..contract
             },

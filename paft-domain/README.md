@@ -9,7 +9,8 @@ Domain modeling primitives for the paft ecosystem: instruments, exchanges, perio
 - Strongly-typed identifiers for securities (`Symbol`, `Figi`, `Isin`) with enforced validation
 - `Instrument` with hierarchical identifiers for securities (FIGI → ISIN → Symbol@Exchange → Symbol)
 - Canonical, serde-stable enums (`Exchange`, `AssetKind`, `MarketState`)
-- `Period` parsing for quarters, years, and dates with a canonical wire format
+- `ReportingPeriod` parsing for fiscal/provider labels with a canonical wire format
+- `CalendarPeriod` helpers for calendar year/quarter/date boundaries
 - `Horizon` parsing for relative lookback windows such as `7d`, `1mo`, and `1y`
 
 Install
@@ -50,7 +51,9 @@ you depend on the facade crate instead, import these types from `paft::domain`
 or `paft::prelude`.
 
 ```rust
-use paft_domain::{AssetKind, Exchange, Figi, Horizon, Instrument, Isin, Period, Symbol};
+use paft_domain::{
+    AssetKind, CalendarPeriod, Exchange, Figi, Horizon, Instrument, Isin, ReportingPeriod, Symbol,
+};
 
 // Minimal: instrument from symbol + exchange
 let aapl = Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
@@ -68,17 +71,19 @@ let aapl_pro = Instrument {
 assert_eq!(aapl_pro.unique_key(), "EQUITY|FIGI|BBG000B9XRY4");
 assert_eq!(aapl_pro.display_key(), "BBG000B9XRY4");
 
-// Period constructors validate component ranges and expose explicit boundary
-// helpers for sorting/range policies.
-let q4 = Period::quarterly(2023, 4).unwrap();
-assert_eq!(q4.to_string(), "2023Q4");
-assert_eq!(q4.start_date().unwrap().to_string(), "2023-10-01");
-assert_eq!(q4.end_date().unwrap().to_string(), "2023-12-31");
-assert!(Period::quarterly(2023, 5).is_err());
+// ReportingPeriod constructors validate fiscal/provider labels.
+let reported_q4 = ReportingPeriod::quarterly(2023, 4).unwrap();
+assert_eq!(reported_q4.to_string(), "2023Q4");
+assert!(ReportingPeriod::quarterly(2023, 5).is_err());
+
+// CalendarPeriod is the type for calendar date-boundary logic.
+let calendar_q4 = CalendarPeriod::quarterly(2023, 4).unwrap();
+assert_eq!(calendar_q4.start_date().to_string(), "2023-10-01");
+assert_eq!(calendar_q4.end_date().to_string(), "2023-12-31");
 
 // Parsing keeps provider-friendly inputs available too.
-let parsed = "2023-Q4".parse::<Period>().unwrap();
-assert_eq!(parsed, q4);
+let parsed = "2023-Q4".parse::<ReportingPeriod>().unwrap();
+assert_eq!(parsed, reported_q4);
 
 // Horizon parsing is separate from reporting period parsing.
 let horizon = "3mo".parse::<Horizon>().unwrap();

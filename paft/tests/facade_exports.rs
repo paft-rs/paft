@@ -60,10 +60,14 @@ fn fundamentals_errors_convert_into_facade_result() {
 fn period_date_is_available_from_facade_and_prelude() {
     fn assert_export<T>() {}
 
+    assert_export::<paft::domain::CalendarPeriod>();
     assert_export::<paft::domain::Horizon>();
     assert_export::<paft::domain::OtherHorizon>();
+    assert_export::<paft::domain::ReportingPeriod>();
+    assert_export::<paft::prelude::CalendarPeriod>();
     assert_export::<paft::prelude::Horizon>();
     assert_export::<paft::prelude::OtherHorizon>();
+    assert_export::<paft::prelude::ReportingPeriod>();
     assert_export::<paft::domain::PeriodDate>();
     assert_export::<paft::prelude::PeriodDate>();
 }
@@ -122,8 +126,11 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let side: FacadeOptionSide = PreludeOptionSide::Put;
     let _: PreludeOptionSide = side;
 
-    let update: FacadeOptionUpdate =
-        PreludeOptionUpdate::new(key, DateTime::from_timestamp(0, 0).unwrap());
+    let update: FacadeOptionUpdate = PreludeOptionUpdate::new(
+        key,
+        Currency::Iso(IsoCurrency::USD),
+        DateTime::from_timestamp(0, 0).unwrap(),
+    );
     let _: PreludeOptionUpdate = update;
 
     let amount = PriceAmount::new(Decimal::from(150));

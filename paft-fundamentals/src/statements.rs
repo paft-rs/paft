@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_domain::Period;
+use paft_domain::ReportingPeriod;
 use paft_money::Money;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -14,7 +14,7 @@ use paft_money::Money;
 pub struct IncomeStatementRow {
     /// Financial period with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
+    pub period: ReportingPeriod,
     /// Total revenue.
     pub total_revenue: Option<Money>,
     /// Gross profit.
@@ -37,7 +37,7 @@ pub struct IncomeStatementRow {
 pub struct BalanceSheetRow {
     /// Financial period with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
+    pub period: ReportingPeriod,
     /// Total assets.
     pub total_assets: Option<Money>,
     /// Total liabilities.
@@ -74,7 +74,7 @@ pub struct BalanceSheetRow {
 pub struct CashflowRow {
     /// Financial period with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
+    pub period: ReportingPeriod,
     /// Operating cashflow.
     pub operating_cashflow: Option<Money>,
     /// Capital expenditures.

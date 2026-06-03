@@ -13,8 +13,8 @@
 use chrono::{DateTime, Utc};
 use paft::money::IsoCurrency;
 use paft::prelude::{
-    AssetKind, Candle, Currency, EpsRevisions, EpsTrend, Exchange, HistoryRequest, HistoryResponse,
-    Instrument, Interval, MajorHolder, MarketState, Ohlc, OhlcPriceBasis, Period, Price,
+    AssetKind, CalendarPeriod, Candle, Currency, EpsRevisions, EpsTrend, Exchange, HistoryRequest,
+    HistoryResponse, Instrument, Interval, MajorHolder, MarketState, Ohlc, OhlcPriceBasis, Price,
     PriceAmount, PriceBasis, QuantityAmount, Quote, Range, Ratio, RevisionPoint, TrendPoint,
 };
 use paft::{Decimal, Result};
@@ -50,8 +50,8 @@ fn main() -> Result<()> {
         }
     ));
 
-    let annual = Period::annual(2024)?;
-    let q4 = Period::quarterly(2024, 4)?;
+    let annual = CalendarPeriod::annual(2024)?;
+    let q4 = CalendarPeriod::quarterly(2024, 4)?;
     println!(
         "periods: {annual} covers {:?}..{:?}; q4 starts {:?}",
         annual.start_date(),

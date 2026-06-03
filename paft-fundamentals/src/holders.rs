@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_decimal::{Decimal, Ratio};
-use paft_domain::Period;
+use paft_domain::ReportingPeriod;
 use paft_money::Money;
 
 use crate::FundamentalsError;
@@ -289,9 +289,9 @@ pub struct InsiderRosterHolder {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct NetSharePurchaseActivity {
-    /// The period the summary covers (e.g., `Period::quarterly(2023, 4)?`).
+    /// The period the summary covers (e.g., `ReportingPeriod::quarterly(2023, 4)?`).
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
+    pub period: ReportingPeriod,
     /// The total number of shares purchased by insiders.
     pub buy_shares: Option<u64>,
     /// The number of separate buy transactions.

@@ -1,7 +1,6 @@
 //! Financial period primitives.
 //!
-//! Provides a structured `Period` type with parsing/formatting helpers and an
-//! extensible fallback variant.
+//! Provides separate reporting/fiscal period labels and calendar period buckets.
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as DeError};
 use std::borrow::Cow;
@@ -13,7 +12,7 @@ use paft_utils::Canonical;
 
 /// Valid year component for structured financial periods.
 ///
-/// `Period` accepts calendar-style four-digit years in `0..=9999`. The lower
+/// `ReportingPeriod` accepts calendar-style four-digit years in `0..=9999`. The lower
 /// bound preserves the crate's existing parser behavior for tokens like
 /// `0000`; the upper bound keeps structured period display/serde canonical as
 /// exactly four year digits.
@@ -201,19 +200,21 @@ impl fmt::Display for QuarterOfYear {
 }
 
 paft_core::other_string_code_type!(
-    /// Provider-specific period token that is not modeled by [`Period`].
-    pub struct OtherPeriod for Period;
+    /// Provider-specific period token that is not modeled by [`ReportingPeriod`].
+    pub struct OtherPeriod for ReportingPeriod;
     type Error = DomainError;
-    parse(input) => input.parse::<Period>();
+    parse(input) => input.parse::<ReportingPeriod>();
     invalid(input) => DomainError::InvalidPeriodFormat {
         format: input.to_string(),
     };
 );
 
-/// Financial period enumeration with structured variants and extensible fallback.
+/// Reporting or fiscal period label with structured variants and extensible fallback.
 ///
-/// This enum provides type-safe handling of financial periods while gracefully
-/// handling unknown or provider-specific period formats through the `Other` variant.
+/// `ReportingPeriod` models labels reported by issuers, analysts, or providers:
+/// `2023Q4`, `FY2023`, `2023-12-31`, and provider-specific ranges are labels,
+/// not calendar boundary claims. A fiscal `2023Q4` may not overlap calendar Q4.
+/// Use [`CalendarPeriod`] when you need date boundary helpers.
 ///
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII where applicable)
@@ -232,12 +233,12 @@ paft_core::other_string_code_type!(
 /// accepts common provider variants (e.g., `FY2023`, `2023-Q4`, `12/31/2023`) and
 /// normalizes to the single canonical emission for round-trip stability.
 ///
-/// `Period` intentionally does not implement `Ord`: cross-granularity ordering
-/// needs caller-chosen semantics (`start_date`, `end_date`, exact date, fiscal
-/// calendar, provider-specific `Other`, etc.).
+/// `ReportingPeriod` intentionally does not implement `Ord` or date-boundary
+/// helpers: cross-granularity ordering needs caller-chosen semantics (fiscal
+/// calendar, exact date, provider-specific `Other`, etc.).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-pub enum Period {
+pub enum ReportingPeriod {
     /// Quarterly period with year and quarter number
     Quarter {
         /// The year of the quarter
@@ -259,7 +260,7 @@ pub enum Period {
     Other(OtherPeriod),
 }
 
-impl Period {
+impl ReportingPeriod {
     /// Builds a validated quarterly period.
     ///
     /// # Errors
@@ -293,12 +294,12 @@ impl Period {
         Ok(Self::Date(PeriodDate::new(date)?))
     }
 
-    /// Builds an unknown period token, rejecting tokens modeled by [`Period`].
+    /// Builds an unknown period token, rejecting tokens modeled by [`ReportingPeriod`].
     ///
     /// # Errors
     ///
     /// Returns an error if `input` is empty, cannot be canonicalized, has an
-    /// invalid structured period shape, or parses to a modeled [`Period`]
+    /// invalid structured period shape, or parses to a modeled [`ReportingPeriod`]
     /// variant.
     pub fn other(input: &str) -> Result<Self, DomainError> {
         OtherPeriod::new(input).map(Self::Other)
@@ -367,23 +368,148 @@ impl Period {
     pub const fn is_date(&self) -> bool {
         matches!(self, Self::Date(_))
     }
+}
 
-    /// Returns the next chronological quarter bucket after this period, if applicable.
+/// Calendar period bucket with date-boundary helpers.
+///
+/// `CalendarPeriod` is closed over actual calendar years, quarters, and dates.
+/// It intentionally has no provider-specific `Other` variant and rejects fiscal
+/// aliases such as `FY2023`; use [`ReportingPeriod`] for fiscal/provider labels.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum CalendarPeriod {
+    /// Calendar quarter with year and quarter number.
+    Quarter {
+        /// The calendar year of the quarter.
+        year: PeriodYear,
+        /// The quarter number (1-4).
+        quarter: QuarterOfYear,
+    },
+    /// Calendar year.
+    Year {
+        /// The calendar year.
+        year: PeriodYear,
+    },
+    /// Specific calendar date.
+    Date(
+        /// Validated calendar date.
+        PeriodDate,
+    ),
+}
+
+impl CalendarPeriod {
+    /// Builds a validated calendar quarter.
+    ///
+    /// # Errors
+    /// Returns [`DomainError::InvalidPeriodYear`] or
+    /// [`DomainError::InvalidPeriodQuarter`] when either component is outside
+    /// its accepted range.
+    pub fn quarterly(year: i32, quarter: u8) -> Result<Self, DomainError> {
+        Ok(Self::Quarter {
+            year: PeriodYear::new(year)?,
+            quarter: QuarterOfYear::new(quarter)?,
+        })
+    }
+
+    /// Builds a validated calendar year.
+    ///
+    /// # Errors
+    /// Returns [`DomainError::InvalidPeriodYear`] when `year` is outside
+    /// `0..=9999`.
+    pub fn annual(year: i32) -> Result<Self, DomainError> {
+        Ok(Self::Year {
+            year: PeriodYear::new(year)?,
+        })
+    }
+
+    /// Builds a validated calendar date.
+    ///
+    /// # Errors
+    /// Returns [`DomainError::InvalidPeriodYear`] when `date.year()` is
+    /// outside `0..=9999`.
+    pub fn date(date: NaiveDate) -> Result<Self, DomainError> {
+        Ok(Self::Date(PeriodDate::new(date)?))
+    }
+
+    /// Returns the canonical display/serde code for this calendar period.
+    #[must_use]
+    pub fn code(&self) -> Cow<'_, str> {
+        match self {
+            Self::Quarter { year, quarter } => Cow::Owned(format!("{year}Q{quarter}")),
+            Self::Year { year } => Cow::Owned(year.to_string()),
+            Self::Date(date) => Cow::Owned(date.to_string()),
+        }
+    }
+
+    /// Returns the year for this calendar period, if applicable.
+    #[must_use]
+    pub const fn year(&self) -> Option<i32> {
+        match self {
+            Self::Quarter { year, .. } | Self::Year { year } => Some(year.get()),
+            Self::Date(_) => None,
+        }
+    }
+
+    /// Returns the validated year component for this calendar period, if applicable.
+    #[must_use]
+    pub const fn period_year(&self) -> Option<PeriodYear> {
+        match self {
+            Self::Quarter { year, .. } | Self::Year { year } => Some(*year),
+            Self::Date(_) => None,
+        }
+    }
+
+    /// Returns the quarter number for calendar quarters.
+    #[must_use]
+    pub const fn quarter(&self) -> Option<u8> {
+        match self {
+            Self::Quarter { quarter, .. } => Some(quarter.get()),
+            Self::Year { .. } | Self::Date(_) => None,
+        }
+    }
+
+    /// Returns the validated quarter component for calendar quarters.
+    #[must_use]
+    pub const fn quarter_of_year(&self) -> Option<QuarterOfYear> {
+        match self {
+            Self::Quarter { quarter, .. } => Some(*quarter),
+            Self::Year { .. } | Self::Date(_) => None,
+        }
+    }
+
+    /// Returns true if this is a calendar quarter.
+    #[must_use]
+    pub const fn is_quarterly(&self) -> bool {
+        matches!(self, Self::Quarter { .. })
+    }
+
+    /// Returns true if this is a calendar year.
+    #[must_use]
+    pub const fn is_annual(&self) -> bool {
+        matches!(self, Self::Year { .. })
+    }
+
+    /// Returns true if this is a specific calendar date.
+    #[must_use]
+    pub const fn is_date(&self) -> bool {
+        matches!(self, Self::Date(_))
+    }
+
+    /// Returns the next chronological quarter bucket after this calendar period.
     ///
     /// - For `Date`, computes the quarter containing the date, then returns the next quarter.
     /// - For `Quarter`, returns the next quarter (wrapping to Q1 of the next year).
     /// - For `Year`, returns `Q1` of the next year.
-    /// - For `Other`, returns `None`.
     #[must_use]
     pub fn next_quarter(&self) -> Option<Self> {
         match self {
             Self::Date(d) => {
-                let (year, quarter) = Self::quarter_for_date(d.get())?;
-                let (year, quarter) = Self::increment_quarter(year, quarter)?;
+                let (year, quarter) = quarter_for_date(d.get())?;
+                let (year, quarter) = increment_quarter(year, quarter)?;
                 Some(Self::Quarter { year, quarter })
             }
             Self::Quarter { year, quarter } => {
-                let (year, quarter) = Self::increment_quarter(*year, *quarter)?;
+                let (year, quarter) = increment_quarter(*year, *quarter)?;
                 Some(Self::Quarter { year, quarter })
             }
             Self::Year { year } => {
@@ -393,84 +519,76 @@ impl Period {
                     quarter: QuarterOfYear::Q1,
                 })
             }
-            Self::Other(_) => None,
         }
     }
 
     /// Returns the last calendar date of the year this period belongs to.
     ///
-    /// - For `Date`, uses the date's year
-    /// - For `Quarter`, uses the quarter's year
-    /// - For `Year`, uses that year
-    /// - For `Other`, returns `None`
+    /// - For `Date`, uses the date's year.
+    /// - For `Quarter`, uses the quarter's calendar year.
+    /// - For `Year`, uses that year.
     #[must_use]
-    pub fn year_end(&self) -> Option<NaiveDate> {
+    pub fn year_end(&self) -> NaiveDate {
         let y = match self {
             Self::Date(d) => d.get().year(),
             Self::Quarter { year, .. } | Self::Year { year } => year.get(),
-            Self::Other(_) => return None,
         };
-        NaiveDate::from_ymd_opt(y, 12, 31)
+        expect_valid_date(y, 12, 31)
     }
 
     /// Returns the first calendar date covered by this period.
     ///
-    /// - For `Date`, returns the date itself
-    /// - For `Quarter`, returns the first day of that quarter
-    /// - For `Year`, returns January 1 of that year
-    /// - For `Other`, returns `None`
+    /// - For `Date`, returns the date itself.
+    /// - For `Quarter`, returns the first day of that calendar quarter.
+    /// - For `Year`, returns January 1 of that year.
     #[must_use]
-    pub const fn start_date(&self) -> Option<NaiveDate> {
+    pub const fn start_date(&self) -> NaiveDate {
         match self {
-            Self::Date(d) => Some(d.get()),
+            Self::Date(d) => d.get(),
             Self::Quarter { year, quarter } => {
                 let month = match quarter.get() {
                     1 => 1,
                     2 => 4,
                     3 => 7,
                     4 => 10,
-                    _ => return None,
+                    _ => unreachable!(),
                 };
-                NaiveDate::from_ymd_opt(year.get(), month, 1)
+                expect_valid_date(year.get(), month, 1)
             }
-            Self::Year { year } => NaiveDate::from_ymd_opt(year.get(), 1, 1),
-            Self::Other(_) => None,
+            Self::Year { year } => expect_valid_date(year.get(), 1, 1),
         }
     }
 
     /// Returns the last calendar date covered by this period.
     ///
-    /// - For `Date`, returns the date itself
-    /// - For `Quarter`, returns the last day of that quarter
-    /// - For `Year`, returns December 31 of that year
-    /// - For `Other`, returns `None`
+    /// - For `Date`, returns the date itself.
+    /// - For `Quarter`, returns the last day of that calendar quarter.
+    /// - For `Year`, returns December 31 of that year.
     #[must_use]
-    pub const fn end_date(&self) -> Option<NaiveDate> {
+    pub const fn end_date(&self) -> NaiveDate {
         match self {
-            Self::Date(d) => Some(d.get()),
+            Self::Date(d) => d.get(),
             Self::Quarter { year, quarter } => {
                 let (month, day) = match quarter.get() {
                     1 => (3, 31),
                     2 => (6, 30),
                     3 => (9, 30),
                     4 => (12, 31),
-                    _ => return None,
+                    _ => unreachable!(),
                 };
-                NaiveDate::from_ymd_opt(year.get(), month, day)
+                expect_valid_date(year.get(), month, day)
             }
-            Self::Year { year } => NaiveDate::from_ymd_opt(year.get(), 12, 31),
-            Self::Other(_) => None,
+            Self::Year { year } => expect_valid_date(year.get(), 12, 31),
         }
     }
 
-    /// Returns true if both values describe the same time bucket.
+    /// Returns true if both values describe the same calendar bucket.
     ///
     /// Cross-variant rules:
-    /// - Year vs Date: true if date.year == year
-    /// - Year vs Quarter: true if quarter.year == year
-    /// - Quarter vs Date: true if date falls within that quarter of that year
-    /// - Other vs Other: true if canonical strings match
-    /// - Otherwise, same-variant exact equality
+    /// - Year vs Date: true if `date.year == year`.
+    /// - Year vs Quarter: true if `quarter.year == year`.
+    /// - Quarter vs Date: true if the date falls within that calendar quarter.
+    /// - Otherwise, same-variant exact equality.
     #[must_use]
     pub fn is_same_bucket_as(&self, other: &Self) -> bool {
         match (self, other) {
@@ -493,40 +611,13 @@ impl Period {
             ) => ay == by && aq == bq,
             (Self::Quarter { year, quarter }, Self::Date(d))
             | (Self::Date(d), Self::Quarter { year, quarter }) => {
-                let Some((dy, dq)) = Self::quarter_for_date(d.get()) else {
+                let Some((dy, dq)) = quarter_for_date(d.get()) else {
                     return false;
                 };
                 dy == *year && dq == *quarter
             }
 
             (Self::Date(a), Self::Date(b)) => a.get() == b.get(),
-            (Self::Other(a), Self::Other(b)) => a.as_ref() == b.as_ref(),
-            _ => false,
-        }
-    }
-
-    fn quarter_for_date(d: NaiveDate) -> Option<(PeriodYear, QuarterOfYear)> {
-        let year = PeriodYear::new(d.year()).ok()?;
-        let m = d.month();
-        let quarter = match m {
-            1..=3 => QuarterOfYear::Q1,
-            4..=6 => QuarterOfYear::Q2,
-            7..=9 => QuarterOfYear::Q3,
-            _ => QuarterOfYear::Q4,
-        };
-        Some((year, quarter))
-    }
-
-    fn increment_quarter(
-        year: PeriodYear,
-        quarter: QuarterOfYear,
-    ) -> Option<(PeriodYear, QuarterOfYear)> {
-        if quarter.get() < QuarterOfYear::MAX {
-            let next_quarter = QuarterOfYear::new(quarter.get() + 1).ok()?;
-            Some((year, next_quarter))
-        } else {
-            let next_year = PeriodYear::new(year.get() + 1).ok()?;
-            Some((next_year, QuarterOfYear::Q1))
         }
     }
 }
@@ -534,12 +625,20 @@ impl Period {
 // Per-format parser results.
 //
 // `Some(Ok(p))` means the input fully matched the format and produced a valid
-// `Period`. `Some(Err(()))` means the input matched the format structurally
+// `ReportingPeriod`. `Some(Err(()))` means the input matched the format structurally
 // (i.e., the original regex would have matched) but the captured values were
 // invalid (e.g., `2023Q5`, `2023-13-01`); the caller treats this as
 // `InvalidPeriodFormat`. `None` means the input does not match this format
 // and the caller should try the next one.
-type PeriodAttempt = Option<Result<Period, ()>>;
+type ReportingPeriodAttempt = Option<Result<ReportingPeriod, ()>>;
+
+#[inline]
+const fn expect_valid_date(year: i32, month: u32, day: u32) -> NaiveDate {
+    let Some(date) = NaiveDate::from_ymd_opt(year, month, day) else {
+        unreachable!();
+    };
+    date
+}
 
 #[inline]
 fn read_4_digits(b: &[u8], start: usize) -> Option<i32> {
@@ -573,16 +672,49 @@ fn read_1_or_2_digits(b: &[u8], start: usize) -> Option<(u32, usize)> {
 }
 
 #[inline]
-fn date_or_err(year: i32, month: u32, day: u32) -> Result<Period, ()> {
+fn date_or_err(year: i32, month: u32, day: u32) -> Result<ReportingPeriod, ()> {
     NaiveDate::from_ymd_opt(year, month, day)
         .ok_or(())
-        .and_then(|date| Period::date(date).map_err(|_| ()))
+        .and_then(|date| ReportingPeriod::date(date).map_err(|_| ()))
 }
 
-impl Period {
+fn calendar_year(s: &str) -> Option<PeriodYear> {
+    let b = s.as_bytes();
+    if b.len() != 4 {
+        return None;
+    }
+    PeriodYear::new(read_4_digits(b, 0)?).ok()
+}
+
+fn quarter_for_date(d: NaiveDate) -> Option<(PeriodYear, QuarterOfYear)> {
+    let year = PeriodYear::new(d.year()).ok()?;
+    let m = d.month();
+    let quarter = match m {
+        1..=3 => QuarterOfYear::Q1,
+        4..=6 => QuarterOfYear::Q2,
+        7..=9 => QuarterOfYear::Q3,
+        _ => QuarterOfYear::Q4,
+    };
+    Some((year, quarter))
+}
+
+fn increment_quarter(
+    year: PeriodYear,
+    quarter: QuarterOfYear,
+) -> Option<(PeriodYear, QuarterOfYear)> {
+    if quarter.get() < QuarterOfYear::MAX {
+        let next_quarter = QuarterOfYear::new(quarter.get() + 1).ok()?;
+        Some((year, next_quarter))
+    } else {
+        let next_year = PeriodYear::new(year.get() + 1).ok()?;
+        Some((next_year, QuarterOfYear::Q1))
+    }
+}
+
+impl ReportingPeriod {
     /// Parse quarterly period format: "2023Q4", "2023-Q4", "2023 Q4",
     /// "2023  Q4", "2023\tQ4", "2023 \t Q4".
-    fn parse_quarterly(s: &str) -> PeriodAttempt {
+    fn parse_quarterly(s: &str) -> ReportingPeriodAttempt {
         let b = s.as_bytes();
         // Minimum form is `YYYYQ#` (6 bytes).
         if b.len() < 6 {
@@ -669,7 +801,7 @@ impl Period {
 
     /// Parse date period: ISO `YYYY[-/]M[M][-/]D[D]`, US `M[M]/D[D]/YYYY`,
     /// or day-first `D[D]-M[M]-YYYY`.
-    fn parse_date(s: &str) -> PeriodAttempt {
+    fn parse_date(s: &str) -> ReportingPeriodAttempt {
         let b = s.as_bytes();
         if !(8..=10).contains(&b.len()) {
             return None;
@@ -725,19 +857,19 @@ impl Period {
     }
 }
 
-impl From<Period> for String {
-    fn from(val: Period) -> Self {
+impl From<ReportingPeriod> for String {
+    fn from(val: ReportingPeriod) -> Self {
         val.code().into_owned()
     }
 }
 
-impl fmt::Display for Period {
+impl fmt::Display for ReportingPeriod {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.code())
     }
 }
 
-impl Serialize for Period {
+impl Serialize for ReportingPeriod {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -746,7 +878,7 @@ impl Serialize for Period {
     }
 }
 
-impl<'de> Deserialize<'de> for Period {
+impl<'de> Deserialize<'de> for ReportingPeriod {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -756,21 +888,21 @@ impl<'de> Deserialize<'de> for Period {
     }
 }
 
-impl std::str::FromStr for Period {
+impl std::str::FromStr for ReportingPeriod {
     type Err = DomainError;
 
-    /// Invariant: the canonical form of a `Period::Other` produced here is
+    /// Invariant: the canonical form of a `ReportingPeriod::Other` produced here is
     /// guaranteed not to parse as any structured variant on a subsequent
     /// deserialize. Without this, inputs like `"-2023Q4"` (rejected by the
     /// structured parsers because of the leading `-`) would canonicalize to
     /// `"2023Q4"` and serialize back to a string that re-parses as
-    /// `Period::Quarter`, breaking round-trip identity.
+    /// `ReportingPeriod::Quarter`, breaking round-trip identity.
     ///
     /// To maintain the invariant without accepting malformed aliases, we
     /// re-run the structured parsers on the canonicalized form before
     /// returning `Other`. If any parser recognizes the canonical form, we
     /// return `InvalidPeriodFormat`; otherwise a malformed input such as
-    /// `"-2023Q4"` would silently become `Period::Quarter`.
+    /// `"-2023Q4"` would silently become `ReportingPeriod::Quarter`.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim();
@@ -824,7 +956,116 @@ impl std::str::FromStr for Period {
     }
 }
 
-impl TryFrom<String> for Period {
+impl TryFrom<String> for ReportingPeriod {
+    type Error = DomainError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.as_str().parse()
+    }
+}
+
+impl TryFrom<ReportingPeriod> for CalendarPeriod {
+    type Error = DomainError;
+
+    fn try_from(period: ReportingPeriod) -> Result<Self, Self::Error> {
+        match period {
+            ReportingPeriod::Quarter { year, quarter } => Ok(Self::Quarter { year, quarter }),
+            ReportingPeriod::Year { year } => Ok(Self::Year { year }),
+            ReportingPeriod::Date(date) => Ok(Self::Date(date)),
+            ReportingPeriod::Other(other) => Err(DomainError::InvalidPeriodFormat {
+                format: other.to_string(),
+            }),
+        }
+    }
+}
+
+impl From<CalendarPeriod> for ReportingPeriod {
+    fn from(period: CalendarPeriod) -> Self {
+        match period {
+            CalendarPeriod::Quarter { year, quarter } => Self::Quarter { year, quarter },
+            CalendarPeriod::Year { year } => Self::Year { year },
+            CalendarPeriod::Date(date) => Self::Date(date),
+        }
+    }
+}
+
+impl From<CalendarPeriod> for String {
+    fn from(val: CalendarPeriod) -> Self {
+        val.code().into_owned()
+    }
+}
+
+impl fmt::Display for CalendarPeriod {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.code())
+    }
+}
+
+impl Serialize for CalendarPeriod {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.code())
+    }
+}
+
+impl<'de> Deserialize<'de> for CalendarPeriod {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        raw.parse::<Self>().map_err(DeError::custom)
+    }
+}
+
+impl std::str::FromStr for CalendarPeriod {
+    type Err = DomainError;
+
+    /// Parses calendar-only period tokens.
+    ///
+    /// Unlike [`ReportingPeriod`], this parser rejects fiscal aliases such as
+    /// `FY2023` and unknown provider-specific labels.
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let trimmed = s.trim();
+
+        if trimmed.is_empty() {
+            return Err(DomainError::InvalidPeriodFormat {
+                format: s.to_string(),
+            });
+        }
+
+        let invalid = || DomainError::InvalidPeriodFormat {
+            format: s.to_string(),
+        };
+
+        match ReportingPeriod::parse_quarterly(trimmed) {
+            Some(Ok(ReportingPeriod::Quarter { year, quarter })) => {
+                return Ok(Self::Quarter { year, quarter });
+            }
+            Some(Ok(_)) => unreachable!("quarter parser only emits quarter periods"),
+            Some(Err(())) => return Err(invalid()),
+            None => {}
+        }
+
+        if let Some(year) = calendar_year(trimmed) {
+            return Ok(Self::Year { year });
+        }
+
+        match ReportingPeriod::parse_date(trimmed) {
+            Some(Ok(ReportingPeriod::Date(date))) => return Ok(Self::Date(date)),
+            Some(Ok(_)) => unreachable!("date parser only emits date periods"),
+            Some(Err(())) => return Err(invalid()),
+            None => {}
+        }
+
+        Err(invalid())
+    }
+}
+
+impl TryFrom<String> for CalendarPeriod {
     type Error = DomainError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
