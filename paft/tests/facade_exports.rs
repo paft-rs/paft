@@ -14,10 +14,11 @@ fn market_exports_are_available_from_facade_and_prelude() {
     use paft::money::IsoCurrency;
     use paft::prelude::{
         AssetKind, Currency, Instrument, NewsRequest as PreludeNewsRequest,
-        NewsTab as PreludeNewsTab, OptionContractKey as PreludeOptionContractKey,
+        NewsTab as PreludeNewsTab, Ohlc as PreludeOhlc,
+        OptionContractKey as PreludeOptionContractKey,
         OptionExpirationsResponse as PreludeOptionExpirationsResponse,
         OptionGreeks as PreludeOptionGreeks, OptionSide as PreludeOptionSide,
-        OptionUpdate as PreludeOptionUpdate, Price, Range,
+        OptionUpdate as PreludeOptionUpdate, Price, PriceAmount, Range,
         SearchRequestBuilder as PreludeSearchRequestBuilder, TimeSpec as PreludeTimeSpec,
     };
     use std::num::NonZeroU32;
@@ -54,6 +55,9 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let update: FacadeOptionUpdate =
         PreludeOptionUpdate::new(key, DateTime::from_timestamp(0, 0).unwrap());
     let _: PreludeOptionUpdate = update;
+
+    let amount = PriceAmount::new(Decimal::from(150));
+    let _: PreludeOhlc = PreludeOhlc::new(amount.clone(), amount.clone(), amount.clone(), amount);
 }
 
 #[cfg(feature = "market")]
@@ -81,6 +85,7 @@ fn generic_market_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::market::CorporateActionAdjustmentCause>();
     assert_export::<paft::market::CorporateActionAdjustmentCauses>();
     assert_export::<paft::market::HistoryFlags>();
+    assert_export::<paft::market::Ohlc>();
     assert_export::<paft::market::OhlcPriceBasis>();
     assert_export::<paft::market::PriceBasis>();
     assert_export::<paft::market::SearchRequestBuilder>();
@@ -106,6 +111,7 @@ fn generic_market_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prelude::CorporateActionAdjustmentCause>();
     assert_export::<paft::prelude::CorporateActionAdjustmentCauses>();
     assert_export::<paft::prelude::HistoryFlags>();
+    assert_export::<paft::prelude::Ohlc>();
     assert_export::<paft::prelude::OhlcPriceBasis>();
     assert_export::<paft::prelude::PriceBasis>();
     assert_export::<paft::prelude::SearchRequestBuilder>();

@@ -5,7 +5,7 @@ use iso_currency::Currency as IsoCurrency;
 use serde_json::{Value, json};
 
 use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
-use paft_money::{Currency, MonetaryAmount, Money, MoneyError, Price};
+use paft_money::{Currency, MonetaryAmount, Money, MoneyError, Price, PriceAmount};
 
 const fn usd() -> Currency {
     Currency::Iso(IsoCurrency::USD)
@@ -220,6 +220,43 @@ fn price_serde_accepts_over_minor_unit_precision() {
 
     assert_eq!(decoded.amount(), parse_decimal("1.3578"));
     assert_eq!(decoded.currency(), &usd());
+}
+
+#[test]
+fn price_amount_is_contextual_decimal() {
+    let amount = PriceAmount::new(parse_decimal("1.35780"));
+
+    assert_eq!(amount.as_decimal(), &parse_decimal("1.35780"));
+    assert_eq!(amount.to_string(), "1.35780");
+    assert_eq!(
+        amount.with_currency(usd()),
+        Price::new(parse_decimal("1.35780"), usd())
+    );
+    assert_eq!(amount.into_inner(), parse_decimal("1.35780"));
+}
+
+#[test]
+fn price_amount_serde_is_transparent() {
+    let amount = PriceAmount::new(parse_decimal("1.3578"));
+
+    assert_eq!(serde_json::to_value(amount).unwrap(), json!("1.3578"));
+
+    let decoded: PriceAmount = serde_json::from_value(json!("1.3578")).unwrap();
+    assert_eq!(decoded.as_decimal(), &parse_decimal("1.3578"));
+}
+
+#[test]
+fn price_amount_hash_uses_canonical_decimal() {
+    let amount = PriceAmount::new(parse_decimal("10.0"));
+    let amount_again = PriceAmount::new(parse_decimal("10.00"));
+
+    let mut hasher_a = DefaultHasher::new();
+    amount.hash(&mut hasher_a);
+
+    let mut hasher_b = DefaultHasher::new();
+    amount_again.hash(&mut hasher_b);
+
+    assert_eq!(hasher_a.finish(), hasher_b.finish());
 }
 
 #[test]

@@ -22,6 +22,7 @@ fn generic_metadata_types_are_root_exports() {
     assert_export::<paft_market::CorporateActionAdjustmentCause>();
     assert_export::<paft_market::CorporateActionAdjustmentCauses>();
     assert_export::<paft_market::HistoryFlags>();
+    assert_export::<paft_market::Ohlc>();
     assert_export::<paft_market::OhlcPriceBasis>();
     assert_export::<paft_market::PriceBasis>();
     assert_export::<paft_market::SearchRequestBuilder>();
@@ -53,6 +54,7 @@ fn generic_metadata_types_are_responses_and_market_exports() {
     assert_export::<paft_market::responses::AdjustmentMethod>();
     assert_export::<paft_market::responses::CorporateActionAdjustmentCause>();
     assert_export::<paft_market::responses::CorporateActionAdjustmentCauses>();
+    assert_export::<paft_market::responses::Ohlc>();
     assert_export::<paft_market::responses::OhlcPriceBasis>();
     assert_export::<paft_market::responses::PriceBasis>();
 

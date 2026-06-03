@@ -34,11 +34,12 @@
 use chrono::{DateTime, Utc};
 use paft::market::quote::{GenericQuote, Quote};
 use paft::market::responses::history::{
-    GenericCandle, GenericHistoryResponse, OhlcPriceBasis, PriceBasis,
+    GenericCandle, GenericHistoryResponse, Ohlc, OhlcPriceBasis, PriceBasis,
 };
 use paft::money::IsoCurrency;
 use paft::prelude::{
-    AssetKind, Currency, Exchange, Instrument, MarketState, Price, ToDataFrame, ToDataFrameVec,
+    AssetKind, Currency, Exchange, Instrument, MarketState, PriceAmount, ToDataFrame,
+    ToDataFrameVec,
 };
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};
@@ -84,6 +85,7 @@ fn standard_quote_schema() -> Result<()> {
             AssetKind::Equity,
         )?,
         name: Some("Apple Inc.".to_string()),
+        currency: usd(),
         price: Some(price(150)),
         previous_close: Some(price(147)),
         day_volume: Some(78_900_000),
@@ -112,6 +114,7 @@ fn enriched_quote_dataframe() -> Result<()> {
                 AssetKind::Equity,
             )?,
             name: Some("Apple Inc.".to_string()),
+            currency: usd(),
             price: Some(price(150)),
             previous_close: Some(price(147)),
             day_volume: Some(78_900_000),
@@ -132,6 +135,7 @@ fn enriched_quote_dataframe() -> Result<()> {
                 AssetKind::Equity,
             )?,
             name: Some("Microsoft".to_string()),
+            currency: usd(),
             price: Some(price(420)),
             previous_close: Some(price(418)),
             day_volume: Some(20_000_000),
@@ -190,10 +194,8 @@ fn mk_candle(
 ) -> GenericCandle<HftMeta> {
     GenericCandle {
         ts: ts(ts_secs),
-        open: price(open),
-        high: price(high),
-        low: price(low),
-        close: price(close),
+        currency: usd(),
+        ohlc: Ohlc::new(price(open), price(high), price(low), price(close)),
         close_unadj: None,
         volume: Some(1_000),
         provider: HftMeta {
@@ -204,8 +206,12 @@ fn mk_candle(
     }
 }
 
-fn price(units: i64) -> Price {
-    Price::new(Decimal::from(units), Currency::Iso(IsoCurrency::USD))
+fn price(units: i64) -> PriceAmount {
+    PriceAmount::new(Decimal::from(units))
+}
+
+const fn usd() -> Currency {
+    Currency::Iso(IsoCurrency::USD)
 }
 
 const fn ts(secs: i64) -> DateTime<Utc> {

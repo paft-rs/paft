@@ -230,7 +230,7 @@ pub use locale::Locale;
 #[cfg(feature = "money-formatting")]
 pub use money::LocalizedMoney;
 pub use money::{ExchangeRate, Money};
-pub use price::Price;
+pub use price::{Price, PriceAmount};
 
 /// Re-export `iso_currency::Currency` for convenience.
 pub use iso_currency::Currency as IsoCurrency;

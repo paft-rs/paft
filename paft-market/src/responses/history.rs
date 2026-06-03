@@ -7,7 +7,7 @@
 
 use std::num::NonZeroU16;
 
-use paft_money::Price;
+use paft_money::{Currency, PriceAmount};
 use serde::ser::SerializeSeq;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -17,6 +17,38 @@ use chrono_tz::Tz;
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_domain::Instrument;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
+/// Open, high, low, and close price amounts for one denominated bar.
+pub struct Ohlc {
+    /// Open price.
+    pub open: PriceAmount,
+    /// High price.
+    pub high: PriceAmount,
+    /// Low price.
+    pub low: PriceAmount,
+    /// Close price in the history response's primary OHLC price basis.
+    pub close: PriceAmount,
+}
+
+impl Ohlc {
+    /// Build an OHLC price vector.
+    #[must_use]
+    pub const fn new(
+        open: PriceAmount,
+        high: PriceAmount,
+        low: PriceAmount,
+        close: PriceAmount,
+    ) -> Self {
+        Self {
+            open,
+            high,
+            low,
+            close,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
@@ -35,20 +67,19 @@ pub struct GenericCandle<M = ()> {
     /// Timestamp for the bar as Unix milliseconds.
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
-    /// Open price.
-    pub open: Price,
-    /// High price.
-    pub high: Price,
-    /// Low price.
-    pub low: Price,
-    /// Close price in the history response's primary OHLC price basis.
-    pub close: Price,
+    /// Currency shared by every price amount in this candle.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub currency: Currency,
+    /// Primary OHLC price amounts.
+    #[serde(flatten)]
+    #[cfg_attr(feature = "dataframe", df_derive(flatten))]
+    pub ohlc: Ohlc,
     /// Raw provider close price, if available.
     ///
     /// This field is separate from the primary OHLC fields and may therefore
     /// have a different basis from [`GenericHistoryResponse::price_basis`].
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub close_unadj: Option<Price>,
+    pub close_unadj: Option<PriceAmount>,
     /// Volume if available.
     pub volume: Option<u64>,
     /// Provider-specific payload, flattened into the serialized form.
@@ -61,13 +92,11 @@ impl<M: Default> GenericCandle<M> {
     /// `close_unadj` and `volume` default to `None`; `provider` is initialised
     /// via `M::default()`.
     #[must_use]
-    pub fn new(ts: DateTime<Utc>, open: Price, high: Price, low: Price, close: Price) -> Self {
+    pub fn new(ts: DateTime<Utc>, currency: Currency, ohlc: Ohlc) -> Self {
         Self {
             ts,
-            open,
-            high,
-            low,
-            close,
+            currency,
+            ohlc,
             close_unadj: None,
             volume: None,
             provider: M::default(),

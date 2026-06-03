@@ -1,10 +1,14 @@
 use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::orderbook::{BookLevel, OrderBook};
-use paft_money::{Currency, IsoCurrency, Price};
+use paft_money::{Currency, IsoCurrency, PriceAmount};
 
-fn usd(amount: i64) -> Price {
-    Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
+const fn usd() -> Currency {
+    Currency::Iso(IsoCurrency::USD)
+}
+
+fn amount(value: i64) -> PriceAmount {
+    PriceAmount::new(Decimal::from(value))
 }
 
 fn aapl() -> Instrument {
@@ -17,22 +21,22 @@ fn size(amount: i64) -> NonNegativeDecimal {
 
 #[test]
 fn book_level_constructor_with_size() {
-    let level = BookLevel::new(usd(100), Some(size(500)));
-    assert_eq!(level.price, usd(100));
+    let level = BookLevel::new(amount(100), Some(size(500)));
+    assert_eq!(level.price, amount(100));
     assert_eq!(level.size, Some(size(500)));
 }
 
 #[test]
 fn book_level_constructor_without_size() {
-    let level = BookLevel::new(usd(100), None);
-    assert_eq!(level.price, usd(100));
+    let level = BookLevel::new(amount(100), None);
+    assert_eq!(level.price, amount(100));
     assert!(level.size.is_none());
 }
 
 #[test]
 fn book_level_serde_roundtrip_with_size() {
     let level = BookLevel {
-        price: usd(100),
+        price: amount(100),
         size: Some(size(500)),
         provider: (),
     };
@@ -44,7 +48,7 @@ fn book_level_serde_roundtrip_with_size() {
 #[test]
 fn book_level_rejects_negative_size() {
     let level = BookLevel {
-        price: usd(100),
+        price: amount(100),
         size: Some(size(1)),
         provider: (),
     };
@@ -57,7 +61,7 @@ fn book_level_rejects_negative_size() {
 #[test]
 fn book_level_serde_roundtrip_no_size() {
     let level = BookLevel {
-        price: usd(100),
+        price: amount(100),
         size: None,
         provider: (),
     };
@@ -72,13 +76,14 @@ fn order_book_with_mixed_size_availability() {
     let book = OrderBook {
         instrument: aapl(),
         as_of: chrono::DateTime::from_timestamp(1_700_000_000, 456_000_000),
+        currency: usd(),
         asks: vec![
-            BookLevel::new(usd(101), Some(size(200))),
-            BookLevel::new(usd(102), None),
+            BookLevel::new(amount(101), Some(size(200))),
+            BookLevel::new(amount(102), None),
         ],
         bids: vec![
-            BookLevel::new(usd(99), Some(size(300))),
-            BookLevel::new(usd(98), None),
+            BookLevel::new(amount(99), Some(size(300))),
+            BookLevel::new(amount(98), None),
         ],
         provider: (),
     };
@@ -102,13 +107,14 @@ fn order_book_with_mixed_size_availability() {
 
 #[test]
 fn order_book_constructor_sets_required_context() {
-    let book = OrderBook::new(aapl());
+    let book = OrderBook::new(aapl(), usd());
 
     assert_eq!(
         book.instrument.unique_key().as_ref(),
         "EQUITY|SYMBOL|4:AAPL"
     );
     assert!(book.as_of.is_none());
+    assert_eq!(book.currency, usd());
     assert!(book.asks.is_empty());
     assert!(book.bids.is_empty());
 }
@@ -117,6 +123,7 @@ fn order_book_constructor_sets_required_context() {
 fn order_book_deserializes_missing_as_of_as_none() {
     let json = r#"{
         "instrument": { "symbol": "AAPL", "kind": "equity" },
+        "currency": "USD",
         "asks": [],
         "bids": []
     }"#;
@@ -128,4 +135,5 @@ fn order_book_deserializes_missing_as_of_as_none() {
         "EQUITY|SYMBOL|4:AAPL"
     );
     assert!(book.as_of.is_none());
+    assert_eq!(book.currency, usd());
 }

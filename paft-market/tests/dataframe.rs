@@ -12,17 +12,41 @@ use paft_market::{
         quote::Quote,
     },
     responses::{
-        history::{Candle, HistoryMeta},
+        history::{Candle, HistoryMeta, Ohlc},
         search::SearchResult,
     },
 };
-use paft_money::{Currency, IsoCurrency, Price};
+use paft_money::{Currency, IsoCurrency, Price, PriceAmount};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 use std::num::NonZeroU32;
 use std::str::FromStr;
 
-fn usd(amount: i64) -> Price {
-    Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
+const fn usd() -> Currency {
+    Currency::Iso(IsoCurrency::USD)
+}
+
+fn usd_price(amount: i64) -> Price {
+    Price::new(Decimal::from(amount), usd())
+}
+
+fn usd_amount(amount: i64) -> PriceAmount {
+    PriceAmount::new(Decimal::from(amount))
+}
+
+fn candle(ts: chrono::DateTime<Utc>, open: i64, high: i64, low: i64, close: i64) -> Candle {
+    Candle {
+        ts,
+        currency: usd(),
+        ohlc: Ohlc::new(
+            usd_amount(open),
+            usd_amount(high),
+            usd_amount(low),
+            usd_amount(close),
+        ),
+        close_unadj: None,
+        volume: Some(2_500_000),
+        provider: (),
+    }
 }
 
 fn dec(value: &str) -> Decimal {
@@ -40,7 +64,7 @@ fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
 #[test]
 fn book_level_to_dataframe_with_size() {
     let level = BookLevel {
-        price: usd(100),
+        price: usd_amount(100),
         size: Some(non_negative("500")),
         provider: (),
     };
@@ -51,7 +75,7 @@ fn book_level_to_dataframe_with_size() {
 #[test]
 fn book_level_to_dataframe_without_size() {
     let level = BookLevel {
-        price: usd(100),
+        price: usd_amount(100),
         size: None,
         provider: (),
     };
@@ -64,8 +88,9 @@ fn order_book_to_dataframe_smoke() {
     let book = OrderBook {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         as_of: Some(sample_ts(1_700_000_000)),
-        asks: vec![BookLevel::new(usd(101), Some(non_negative("200")))],
-        bids: vec![BookLevel::new(usd(99), None)],
+        currency: usd(),
+        asks: vec![BookLevel::new(usd_amount(101), Some(non_negative("200")))],
+        bids: vec![BookLevel::new(usd_amount(99), None)],
         provider: (),
     };
     let df = book.to_dataframe().unwrap();
@@ -100,8 +125,9 @@ fn vec_quote_to_dataframe_smoke() {
         )
         .unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(usd(150)),
-        previous_close: Some(usd(147)),
+        currency: usd(),
+        price: Some(usd_amount(150)),
+        previous_close: Some(usd_amount(147)),
         day_volume: None,
         market_state: None,
         as_of: None,
@@ -125,8 +151,9 @@ fn quote_to_dataframe_smoke() {
         )
         .unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(usd(150)),
-        previous_close: Some(usd(147)),
+        currency: usd(),
+        price: Some(usd_amount(150)),
+        previous_close: Some(usd_amount(147)),
         day_volume: None,
         market_state: None,
         as_of: None,
@@ -146,8 +173,9 @@ fn quote_update_to_dataframe_smoke() {
     use paft_market::market::quote::QuoteUpdate;
     let update = QuoteUpdate {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
-        price: Some(usd(150)),
-        previous_close: Some(usd(147)),
+        currency: usd(),
+        price: Some(usd_amount(150)),
+        previous_close: Some(usd_amount(147)),
         volume: None,
         ts: chrono::DateTime::from_timestamp(0, 0).unwrap(),
 
@@ -194,15 +222,15 @@ fn sample_contract() -> OptionContract {
         key: OptionContractKey::new(
             Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
             OptionSide::Call,
-            usd(150),
+            usd_price(150),
             NaiveDate::from_ymd_opt(2024, 6, 21).unwrap(),
         ),
         contract_instrument: Some(
             Instrument::from_symbol("AAPL240621C00150000", AssetKind::Option).unwrap(),
         ),
-        price: Some(usd(5)),
-        bid: Some(usd(4)),
-        ask: Some(usd(6)),
+        price: Some(usd_amount(5)),
+        bid: Some(usd_amount(4)),
+        ask: Some(usd_amount(6)),
         volume: Some(1_000),
         open_interest: Some(5_000),
         implied_volatility: Some(non_negative("0.25")),
@@ -273,11 +301,14 @@ fn option_chain_to_dataframe() {
 fn candle_to_dataframe() {
     let candle = Candle {
         ts: sample_ts(1_700_000_000),
-        open: usd(150),
-        high: usd(155),
-        low: usd(148),
-        close: usd(152),
-        close_unadj: Some(usd(151)),
+        currency: usd(),
+        ohlc: Ohlc::new(
+            usd_amount(150),
+            usd_amount(155),
+            usd_amount(148),
+            usd_amount(152),
+        ),
+        close_unadj: Some(usd_amount(151)),
         volume: Some(2_500_000),
 
         provider: (),
@@ -303,7 +334,7 @@ fn actions_to_dataframe() {
     let actions = [
         Action::Dividend {
             ts: sample_ts(1_700_000_000),
-            amount: usd(1),
+            amount: usd_price(1),
         },
         Action::Split {
             ts: sample_ts(1_600_000_000),
@@ -312,7 +343,7 @@ fn actions_to_dataframe() {
         },
         Action::CapitalGain {
             ts: sample_ts(1_650_000_000),
-            gain: usd(3),
+            gain: usd_price(3),
         },
     ];
 
@@ -330,17 +361,7 @@ fn candle_update_to_dataframe_smoke() {
         instrument: paft_domain::Instrument::from_symbol("AAPL", paft_domain::AssetKind::Equity)
             .unwrap(),
         interval: Interval::I1m,
-        candle: Candle {
-            ts: sample_ts(1_700_000_000),
-            open: usd(150),
-            high: usd(155),
-            low: usd(148),
-            close: usd(152),
-            close_unadj: None,
-            volume: Some(2_500_000),
-
-            provider: (),
-        },
+        candle: candle(sample_ts(1_700_000_000), 150, 155, 148, 152),
         is_final: false,
 
         provider: (),
@@ -362,17 +383,7 @@ fn vec_candle_update_to_dataframe_smoke() {
             )
             .unwrap(),
             interval: Interval::I1m,
-            candle: Candle {
-                ts: sample_ts(1_700_000_000),
-                open: usd(150),
-                high: usd(155),
-                low: usd(148),
-                close: usd(152),
-                close_unadj: None,
-                volume: Some(2_500_000),
-
-                provider: (),
-            },
+            candle: candle(sample_ts(1_700_000_000), 150, 155, 148, 152),
             is_final: false,
 
             provider: (),
@@ -385,15 +396,8 @@ fn vec_candle_update_to_dataframe_smoke() {
             .unwrap(),
             interval: Interval::I1m,
             candle: Candle {
-                ts: sample_ts(1_700_000_060),
-                open: usd(152),
-                high: usd(156),
-                low: usd(149),
-                close: usd(154),
-                close_unadj: None,
                 volume: Some(1_000_000),
-
-                provider: (),
+                ..candle(sample_ts(1_700_000_060), 152, 156, 149, 154)
             },
             is_final: true,
 

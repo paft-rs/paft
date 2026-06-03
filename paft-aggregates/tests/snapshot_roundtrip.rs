@@ -1,9 +1,18 @@
 use chrono::{TimeZone, Utc};
 use paft_aggregates::Snapshot;
+use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
-use paft_money::IsoCurrency;
-use paft_money::{Currency, Price};
+use paft_money::{Currency, IsoCurrency, PriceAmount};
 use pretty_assertions::assert_eq;
+use std::str::FromStr;
+
+const fn usd() -> Currency {
+    Currency::Iso(IsoCurrency::USD)
+}
+
+fn amount(value: &str) -> PriceAmount {
+    PriceAmount::new(Decimal::from_str(value).unwrap())
+}
 
 #[test]
 fn snapshot_roundtrip_minimal() {
@@ -12,6 +21,7 @@ fn snapshot_roundtrip_minimal() {
         name: None,
         market_state: None,
         as_of: None,
+        currency: usd(),
         last: None,
         previous_close: None,
         open: None,
@@ -29,7 +39,6 @@ fn snapshot_roundtrip_minimal() {
 
 #[test]
 fn snapshot_roundtrip_full() {
-    let usd = Currency::Iso(IsoCurrency::USD);
     let snapshot = Snapshot {
         instrument: Instrument::from_symbol_and_exchange(
             "MSFT",
@@ -40,11 +49,12 @@ fn snapshot_roundtrip_full() {
         name: Some("Microsoft Corporation".to_string()),
         market_state: Some(MarketState::Pre),
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
-        last: Some(Price::from_canonical_str("430.01", usd.clone()).unwrap()),
-        previous_close: Some(Price::from_canonical_str("429.50", usd.clone()).unwrap()),
-        open: Some(Price::from_canonical_str("428.00", usd.clone()).unwrap()),
-        day_high: Some(Price::from_canonical_str("432.22", usd.clone()).unwrap()),
-        day_low: Some(Price::from_canonical_str("427.80", usd).unwrap()),
+        currency: usd(),
+        last: Some(amount("430.01")),
+        previous_close: Some(amount("429.50")),
+        open: Some(amount("428.00")),
+        day_high: Some(amount("432.22")),
+        day_low: Some(amount("427.80")),
         volume: Some(25_000_000),
 
         provider: (),

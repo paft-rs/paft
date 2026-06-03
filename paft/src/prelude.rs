@@ -13,8 +13,8 @@ pub use crate::domain::{
 pub use crate::money::LocalizedMoney;
 pub use crate::money::{
     Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
-    MonetaryAmount, Price, clear_currency_metadata, currency_metadata, set_currency_metadata,
-    try_normalize_currency_code,
+    MonetaryAmount, Price, PriceAmount, clear_currency_metadata, currency_metadata,
+    set_currency_metadata, try_normalize_currency_code,
 };
 pub use crate::money::{ExchangeRate, Money};
 pub use crate::{
@@ -61,7 +61,7 @@ pub use crate::market::{
     GenericDownloadResponse, GenericHistoryResponse, GenericNewsArticle, GenericOptionChain,
     GenericOptionContract, GenericOptionUpdate, GenericOrderBook, GenericQuote, GenericQuoteUpdate,
     GenericSearchResponse, GenericSearchResult, HistoryFlags, HistoryMeta, HistoryRequest,
-    HistoryRequestBuilder, HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab,
+    HistoryRequestBuilder, HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab, Ohlc,
     OhlcPriceBasis, OptionChain, OptionChainRequest, OptionContract, OptionContractKey,
     OptionExpirationsRequest, OptionExpirationsResponse, OptionGreeks, OptionSide, OptionUpdate,
     OrderBook, PriceBasis, Quote, QuoteUpdate, Range, SearchRequest, SearchRequestBuilder,

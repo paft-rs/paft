@@ -30,6 +30,57 @@ pub struct Price {
     currency: Currency,
 }
 
+/// Full-precision price amount whose currency is supplied by surrounding context.
+///
+/// Use `PriceAmount` for fields that are price-domain values but are already
+/// denominated by an enclosing record, such as OHLC values in a candle or
+/// levels in an order book. Use [`Price`] when the value must stand alone.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
+#[cfg_attr(not(feature = "bigdecimal"), derive(Copy))]
+pub struct PriceAmount {
+    amount: Decimal,
+}
+
+impl PriceAmount {
+    /// Creates a contextual price amount.
+    #[must_use]
+    pub const fn new(amount: Decimal) -> Self {
+        Self { amount }
+    }
+
+    /// Returns the wrapped decimal by reference.
+    #[must_use]
+    pub const fn as_decimal(&self) -> &Decimal {
+        &self.amount
+    }
+
+    /// Returns the wrapped decimal.
+    #[must_use]
+    pub fn into_inner(self) -> Decimal {
+        self.amount
+    }
+
+    /// Attaches a currency and returns a standalone [`Price`].
+    #[must_use]
+    pub fn with_currency(&self, currency: Currency) -> Price {
+        Price::new(copy_decimal(&self.amount), currency)
+    }
+}
+
+impl Hash for PriceAmount {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        decimal::to_canonical_string(&self.amount).hash(state);
+    }
+}
+
+impl fmt::Display for PriceAmount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.amount.fmt(f)
+    }
+}
+
 impl Price {
     /// Creates a full-precision price.
     #[must_use]

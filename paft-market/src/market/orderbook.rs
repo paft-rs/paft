@@ -8,7 +8,7 @@
 use chrono::{DateTime, Utc};
 use paft_decimal::NonNegativeDecimal;
 use paft_domain::Instrument;
-use paft_money::Price;
+use paft_money::{Currency, PriceAmount};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
@@ -37,7 +37,7 @@ use df_derive_macros::ToDataFrame;
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericBookLevel<M = ()> {
     /// The price at this level.
-    pub price: Price,
+    pub price: PriceAmount,
 
     /// The displayed size at this price, when reported by the source.
     #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
@@ -52,7 +52,7 @@ impl<M: Default> GenericBookLevel<M> {
     /// Build a book level with the given price and (optional) size; `provider`
     /// is initialised via `M::default()`.
     #[must_use]
-    pub fn new(price: Price, size: Option<NonNegativeDecimal>) -> Self {
+    pub fn new(price: PriceAmount, size: Option<NonNegativeDecimal>) -> Self {
         Self {
             price,
             size,
@@ -84,6 +84,10 @@ pub struct GenericOrderBook<M = ()> {
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
 
+    /// Currency shared by every price amount in this book.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub currency: Currency,
+
     /// A vector of ask (sell) levels, typically sorted by price ascending.
     pub asks: Vec<GenericBookLevel<M>>,
 
@@ -99,10 +103,11 @@ impl<M: Default> GenericOrderBook<M> {
     /// Build an empty order book for the given instrument with no snapshot
     /// timestamp; `provider` is initialised via `M::default()`.
     #[must_use]
-    pub fn new(instrument: Instrument) -> Self {
+    pub fn new(instrument: Instrument, currency: Currency) -> Self {
         Self {
             instrument,
             as_of: None,
+            currency,
             asks: Vec::new(),
             bids: Vec::new(),
             provider: M::default(),

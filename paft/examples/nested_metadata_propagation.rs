@@ -39,11 +39,12 @@ use paft::market::orderbook::{GenericBookLevel, GenericOrderBook};
 use paft::market::quote::GenericQuote;
 use paft::market::responses::download::{GenericDownloadEntry, GenericDownloadResponse};
 use paft::market::responses::history::{
-    GenericCandle, GenericCandleUpdate, GenericHistoryResponse, OhlcPriceBasis, PriceBasis,
+    GenericCandle, GenericCandleUpdate, GenericHistoryResponse, Ohlc, OhlcPriceBasis, PriceBasis,
 };
 use paft::money::IsoCurrency;
 use paft::prelude::{
     Action, AssetKind, Currency, Exchange, HistoryMeta, Instrument, Interval, MarketState, Price,
+    PriceAmount,
 };
 use paft::{Decimal, NonNegativeDecimal, Result};
 use serde::{Deserialize, Serialize};
@@ -99,6 +100,7 @@ fn order_book_propagation() -> Result<()> {
             AssetKind::Equity,
         )?,
         as_of: Some(ts(1_700_000_000)),
+        currency: usd(),
         asks: vec![
             entry(150_50, 100, feed_meta(1, "L2_AAPL")),
             entry(150_55, 250, feed_meta(2, "L2_AAPL")),
@@ -182,7 +184,7 @@ fn history_propagation() -> Result<()> {
         println!(
             "  bar @ ts={} close={} per-bar seq={}",
             c.ts.timestamp(),
-            c.close,
+            c.ohlc.close,
             c.provider.seq
         );
     }
@@ -295,7 +297,8 @@ fn candle_update_propagation() -> Result<()> {
     let plain_quote = GenericQuote::<()> {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
         name: None,
-        price: Some(price(150)),
+        currency: usd(),
+        price: Some(amount(150)),
         bid: None,
         ask: None,
         previous_close: None,
@@ -315,10 +318,7 @@ fn candle_update_propagation() -> Result<()> {
 
 fn entry(price_cents: i64, size_units: i64, provider: FeedMeta) -> GenericBookLevel<FeedMeta> {
     GenericBookLevel {
-        price: Price::new(
-            Decimal::from(price_cents) / Decimal::from(100),
-            Currency::Iso(IsoCurrency::USD),
-        ),
+        price: PriceAmount::new(Decimal::from(price_cents) / Decimal::from(100)),
         size: Some(non_negative(Decimal::from(size_units))),
         provider,
     }
@@ -338,10 +338,8 @@ fn candle(
 ) -> GenericCandle<FeedMeta> {
     GenericCandle {
         ts: ts(ts_secs),
-        open: price(open),
-        high: price(high),
-        low: price(low),
-        close: price(close),
+        currency: usd(),
+        ohlc: Ohlc::new(amount(open), amount(high), amount(low), amount(close)),
         close_unadj: None,
         volume: Some(1_000),
         provider,
@@ -363,9 +361,9 @@ fn option_contract(
             chrono::NaiveDate::from_ymd_opt(2024, 12, 20).unwrap(),
         ),
         contract_instrument: Some(Instrument::from_symbol(symbol, AssetKind::Option).unwrap()),
-        price: Some(price(5)),
-        bid: Some(price(4)),
-        ask: Some(price(6)),
+        price: Some(amount(5)),
+        bid: Some(amount(4)),
+        ask: Some(amount(6)),
         volume: Some(100),
         open_interest: Some(500),
         implied_volatility: Some(non_negative(Decimal::from(25) / Decimal::from(100))),
@@ -396,7 +394,15 @@ fn download_entry(
 }
 
 fn price(units: i64) -> Price {
-    Price::new(Decimal::from(units), Currency::Iso(IsoCurrency::USD))
+    Price::new(Decimal::from(units), usd())
+}
+
+fn amount(units: i64) -> PriceAmount {
+    PriceAmount::new(Decimal::from(units))
+}
+
+const fn usd() -> Currency {
+    Currency::Iso(IsoCurrency::USD)
 }
 
 const fn ts(secs: i64) -> DateTime<Utc> {

@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 - Decimal/facade: added constrained decimal newtypes
   `NonNegativeDecimal`, `PositiveDecimal`, and `Ratio`, plus
   `DecimalConstraintError`.
+- Money/facade: added `PriceAmount`, a transparent contextual price-domain
+  amount for values whose currency is supplied by an enclosing market record.
 
 ### Changed
 
@@ -29,6 +31,10 @@ All notable changes to this project will be documented in this file.
 - Market history: `HistoryResponse` now exposes `price_basis:
   OhlcPriceBasis`, describing the returned OHLC price basis as either uniform
   `PriceBasis` metadata or per-field open/high/low/close bases.
+- Market/aggregates: high-cardinality price records now carry denomination once
+  at the containing record and store contextual `PriceAmount` values for
+  candles, order-book levels, quotes, quote updates, snapshots, and option
+  quote fields.
 - Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
@@ -58,6 +64,15 @@ All notable changes to this project will be documented in this file.
   `HistoryRequest::auto_adjust` to `HistoryFlags::PREFER_ADJUSTED_PRICES`,
   `HistoryRequestBuilder::prefer_adjusted_prices`, and
   `HistoryRequest::prefer_adjusted_prices`.
+- Market/facade: `Candle` now has `currency: Currency` and flattened
+  `ohlc: Ohlc` `PriceAmount` values instead of independent `Price` fields for
+  `open`, `high`, `low`, `close`, and `close_unadj`.
+- Market/facade: `OrderBook`, `Quote`, `QuoteUpdate`, and aggregate `Snapshot`
+  now require a record-level `currency`; their contained price fields use
+  `PriceAmount`.
+- Market/facade: option contract/update quote fields (`price`, `bid`, `ask`,
+  and `last_price`) now use `PriceAmount`; `OptionContractKey::strike` remains
+  a standalone `Price`.
 - Domain/facade: `Instrument::unique_key()` no longer returns bare FIGI, ISIN,
   `SYMBOL@EXCHANGE`, or `SYMBOL` strings. It now includes asset kind and
   identifier source, e.g. `EQUITY|SYMBOL|4:AAPL` or

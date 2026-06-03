@@ -65,10 +65,10 @@ pub mod market {
         GenericOptionChain, GenericOptionContract, GenericOptionUpdate, GenericOrderBook,
         GenericQuote, GenericQuoteUpdate, GenericSearchResponse, GenericSearchResult, HistoryFlags,
         HistoryMeta, HistoryRequest, HistoryRequestBuilder, HistoryResponse, Interval, NewsArticle,
-        NewsRequest, NewsTab, OhlcPriceBasis, OptionChain, OptionChainRequest, OptionContract,
-        OptionContractKey, OptionExpirationsRequest, OptionExpirationsResponse, OptionGreeks,
-        OptionSide, OptionUpdate, OrderBook, PriceBasis, Quote, QuoteUpdate, Range, SearchRequest,
-        SearchRequestBuilder, SearchResponse, SearchResult, TimeSpec,
+        NewsRequest, NewsTab, Ohlc, OhlcPriceBasis, OptionChain, OptionChainRequest,
+        OptionContract, OptionContractKey, OptionExpirationsRequest, OptionExpirationsResponse,
+        OptionGreeks, OptionSide, OptionUpdate, OrderBook, PriceBasis, Quote, QuoteUpdate, Range,
+        SearchRequest, SearchRequestBuilder, SearchResponse, SearchResult, TimeSpec,
     };
 }
 
@@ -79,8 +79,8 @@ pub mod money {
     pub use paft_money::{
         Currency, CurrencyMetadata, ExchangeRate, IsoCurrency, Locale, MAX_DECIMAL_PRECISION,
         MAX_MINOR_UNIT_DECIMALS, MinorUnitError, MonetaryAmount, Money, MoneyError,
-        MoneyParseError, Price, clear_currency_metadata, currency_metadata, set_currency_metadata,
-        try_normalize_currency_code,
+        MoneyParseError, Price, PriceAmount, clear_currency_metadata, currency_metadata,
+        set_currency_metadata, try_normalize_currency_code,
     };
 }
 

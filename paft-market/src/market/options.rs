@@ -12,7 +12,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use df_derive_macros::ToDataFrame;
 use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::Instrument;
-use paft_money::Price;
+use paft_money::{Price, PriceAmount};
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -118,12 +118,12 @@ pub struct GenericOptionContract<M = ()> {
     /// Provider or venue instrument identifier for the option contract, when known.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub contract_instrument: Option<Instrument>,
-    /// Last traded price.
-    pub price: Option<Price>,
-    /// Best bid.
-    pub bid: Option<Price>,
-    /// Best ask.
-    pub ask: Option<Price>,
+    /// Last traded price amount, denominated in `key.strike.currency()`.
+    pub price: Option<PriceAmount>,
+    /// Best bid amount, denominated in `key.strike.currency()`.
+    pub bid: Option<PriceAmount>,
+    /// Best ask amount, denominated in `key.strike.currency()`.
+    pub ask: Option<PriceAmount>,
     /// Traded volume.
     pub volume: Option<u64>,
     /// Open interest at the time of fetch.
@@ -247,12 +247,12 @@ pub struct GenericOptionUpdate<M = ()> {
     /// Timestamp of the update as Unix milliseconds.
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
-    /// Best bid for the contract, if available.
-    pub bid: Option<Price>,
-    /// Best ask for the contract, if available.
-    pub ask: Option<Price>,
-    /// Last traded price, if available.
-    pub last_price: Option<Price>,
+    /// Best bid amount for the contract, denominated in `key.strike.currency()`.
+    pub bid: Option<PriceAmount>,
+    /// Best ask amount for the contract, denominated in `key.strike.currency()`.
+    pub ask: Option<PriceAmount>,
+    /// Last traded price amount, denominated in `key.strike.currency()`.
+    pub last_price: Option<PriceAmount>,
     /// Implied volatility estimate, if available.
     #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
     pub implied_volatility: Option<NonNegativeDecimal>,
