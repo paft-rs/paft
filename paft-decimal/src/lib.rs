@@ -155,7 +155,14 @@ pub fn parse_decimal(value: &str) -> Option<Decimal> {
     if trimmed.contains(['e', 'E']) {
         return None;
     }
-    let normalized = trimmed.strip_prefix('+').unwrap_or(trimmed);
+    let normalized = if let Some(rest) = trimmed.strip_prefix('+') {
+        if rest.is_empty() || rest.starts_with(['+', '-']) {
+            return None;
+        }
+        rest
+    } else {
+        trimmed
+    };
     backend::parse_decimal(normalized)
 }
 
@@ -241,6 +248,15 @@ mod tests {
             parse_decimal("-42.1").unwrap(),
             Decimal::from_str("-42.1").unwrap()
         );
+    }
+
+    #[test]
+    fn parse_rejects_duplicate_explicit_signs() {
+        assert!(parse_decimal("+-1").is_none());
+        assert!(parse_decimal("++1").is_none());
+        assert!(parse_decimal("+").is_none());
+        assert!(parse_decimal("+1").is_some());
+        assert!(parse_decimal("-1").is_some());
     }
 
     #[test]

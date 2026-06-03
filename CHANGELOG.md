@@ -55,6 +55,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Decimal: `parse_decimal` now rejects duplicate explicit sign prefixes such as
+  `+-1` and `++1` instead of accepting them after leading-plus normalization.
 - Dataframe: `Decimal128Encode` now rejects target scales above Polars decimal
   precision and uses checked exponentiation when rescaling mantissas.
 - Market requests: `HistoryRequest` and `SearchRequest` JSON deserialization
