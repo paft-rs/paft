@@ -7,7 +7,7 @@
 
 use std::num::NonZeroU16;
 
-use paft_money::{Currency, PriceAmount};
+use paft_money::{Currency, PriceAmount, QuantityAmount};
 use serde::ser::SerializeSeq;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -80,8 +80,8 @@ pub struct GenericCandle<M = ()> {
     /// have a different basis from [`GenericHistoryResponse::price_basis`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub close_unadj: Option<PriceAmount>,
-    /// Volume if available.
-    pub volume: Option<u64>,
+    /// Volume if available, in the provider's stated quantity unit.
+    pub volume: Option<QuantityAmount>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,

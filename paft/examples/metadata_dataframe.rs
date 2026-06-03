@@ -38,8 +38,8 @@ use paft::market::responses::history::{
 };
 use paft::money::IsoCurrency;
 use paft::prelude::{
-    AssetKind, Currency, Exchange, Instrument, MarketState, PriceAmount, ToDataFrame,
-    ToDataFrameVec,
+    AssetKind, Currency, Exchange, Instrument, MarketState, PriceAmount, QuantityAmount,
+    ToDataFrame, ToDataFrameVec,
 };
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};
@@ -88,7 +88,7 @@ fn standard_quote_schema() -> Result<()> {
         currency: usd(),
         price: Some(price(150)),
         previous_close: Some(price(147)),
-        day_volume: Some(78_900_000),
+        day_volume: Some(quantity(78_900_000)),
         market_state: Some(MarketState::Regular),
         as_of: None,
         bid: None,
@@ -117,7 +117,7 @@ fn enriched_quote_dataframe() -> Result<()> {
             currency: usd(),
             price: Some(price(150)),
             previous_close: Some(price(147)),
-            day_volume: Some(78_900_000),
+            day_volume: Some(quantity(78_900_000)),
             market_state: Some(MarketState::Regular),
             as_of: None,
             bid: None,
@@ -138,7 +138,7 @@ fn enriched_quote_dataframe() -> Result<()> {
             currency: usd(),
             price: Some(price(420)),
             previous_close: Some(price(418)),
-            day_volume: Some(20_000_000),
+            day_volume: Some(quantity(20_000_000)),
             market_state: Some(MarketState::Regular),
             as_of: None,
             bid: None,
@@ -197,7 +197,7 @@ fn mk_candle(
         currency: usd(),
         ohlc: Ohlc::new(price(open), price(high), price(low), price(close)),
         close_unadj: None,
-        volume: Some(1_000),
+        volume: Some(quantity(1_000)),
         provider: HftMeta {
             rx_ns: 1_700_000_000_000_000_000 + seq,
             seq,
@@ -208,6 +208,10 @@ fn mk_candle(
 
 fn price(units: i64) -> PriceAmount {
     PriceAmount::new(Decimal::from(units))
+}
+
+fn quantity(units: i64) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from(units)).unwrap()
 }
 
 const fn usd() -> Currency {

@@ -44,7 +44,7 @@ use paft::market::responses::history::{
 use paft::money::IsoCurrency;
 use paft::prelude::{
     Action, AssetKind, Currency, Exchange, HistoryMeta, Instrument, Interval, MarketState, Price,
-    PriceAmount,
+    PriceAmount, QuantityAmount,
 };
 use paft::{Decimal, NonNegativeDecimal, Result};
 use serde::{Deserialize, Serialize};
@@ -341,7 +341,7 @@ fn candle(
         currency: usd(),
         ohlc: Ohlc::new(amount(open), amount(high), amount(low), amount(close)),
         close_unadj: None,
-        volume: Some(1_000),
+        volume: Some(quantity(1_000)),
         provider,
     }
 }
@@ -399,6 +399,10 @@ fn price(units: i64) -> Price {
 
 fn amount(units: i64) -> PriceAmount {
     PriceAmount::new(Decimal::from(units))
+}
+
+fn quantity(units: i64) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from(units)).unwrap()
 }
 
 const fn usd() -> Currency {

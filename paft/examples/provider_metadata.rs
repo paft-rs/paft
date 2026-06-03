@@ -37,7 +37,9 @@
 use chrono::{DateTime, Utc};
 use paft::market::quote::{GenericQuote, GenericQuoteUpdate, Quote, QuoteUpdate};
 use paft::money::IsoCurrency;
-use paft::prelude::{AssetKind, Currency, Exchange, Instrument, MarketState, PriceAmount};
+use paft::prelude::{
+    AssetKind, Currency, Exchange, Instrument, MarketState, PriceAmount, QuantityAmount,
+};
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};
 
@@ -77,7 +79,7 @@ fn standard_quote_no_metadata() -> Result<()> {
     quote.name = Some("Apple Inc.".to_string());
     quote.price = Some(price(150));
     quote.previous_close = Some(price(147));
-    quote.day_volume = Some(78_900_000);
+    quote.day_volume = Some(quantity(78_900_000));
     quote.market_state = Some(MarketState::Regular);
 
     // (2) equivalent full literal — note the `provider: ()` is required because
@@ -93,7 +95,7 @@ fn standard_quote_no_metadata() -> Result<()> {
         currency: usd(),
         price: Some(price(150)),
         previous_close: Some(price(147)),
-        day_volume: Some(78_900_000),
+        day_volume: Some(quantity(78_900_000)),
         market_state: Some(MarketState::Regular),
         as_of: None,
         bid: None,
@@ -138,7 +140,7 @@ fn hft_quote_round_trip() -> Result<()> {
         currency: usd(),
         price: Some(price(150)),
         previous_close: Some(price(147)),
-        day_volume: Some(78_900_000),
+        day_volume: Some(quantity(78_900_000)),
         market_state: Some(MarketState::Regular),
         as_of: None,
         bid: None,
@@ -182,7 +184,7 @@ fn parse_provider_json() -> Result<()> {
         "currency": "USD",
         "price": "150",
         "previous_close": "147",
-        "day_volume": 78900000,
+        "day_volume": "78900000",
         "market_state": "REGULAR",
         // Provider-specific fields — flattened next to the canonical ones:
         "received_ns": 1_700_000_000_123_456_789u64,
@@ -250,7 +252,7 @@ fn different_meta_per_stream() -> Result<()> {
         currency: usd(),
         price: Some(price(421)),
         previous_close: Some(price(418)),
-        volume: Some(100),
+        volume_delta: Some(quantity(100)),
         ts: ts(1_700_000_000),
         provider: BrokerMeta {
             account_id: "ACC-7".into(),
@@ -271,7 +273,7 @@ fn different_meta_per_stream() -> Result<()> {
         currency: usd(),
         price: Some(price(421)),
         previous_close: Some(price(418)),
-        volume: Some(100),
+        volume_delta: Some(quantity(100)),
         ts: ts(1_700_000_000),
         provider: (),
     };
@@ -285,6 +287,10 @@ fn different_meta_per_stream() -> Result<()> {
 
 fn price(units: i64) -> PriceAmount {
     PriceAmount::new(Decimal::from(units))
+}
+
+fn quantity(units: i64) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from(units)).unwrap()
 }
 
 const fn usd() -> Currency {

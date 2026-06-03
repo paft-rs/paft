@@ -3,7 +3,7 @@ use chrono::{TimeZone, Utc};
 use paft_aggregates::Snapshot;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
-use paft_money::{Currency, IsoCurrency, PriceAmount};
+use paft_money::{Currency, IsoCurrency, PriceAmount, QuantityAmount};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
 const fn usd() -> Currency {
@@ -12,6 +12,10 @@ const fn usd() -> Currency {
 
 fn amount(value: i64) -> PriceAmount {
     PriceAmount::new(Decimal::from(value))
+}
+
+fn quantity(value: i64) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from(value)).unwrap()
 }
 
 #[test]
@@ -32,7 +36,7 @@ fn snapshot_to_dataframe() {
         open: Some(amount(148)),
         day_high: Some(amount(151)),
         day_low: Some(amount(147)),
-        volume: Some(1_234_567),
+        volume: Some(quantity(1_234_567)),
 
         provider: (),
     };
@@ -59,7 +63,7 @@ fn snapshot_vec_to_dataframe() {
         open: Some(amount(148)),
         day_high: Some(amount(151)),
         day_low: Some(amount(147)),
-        volume: Some(1_000_000),
+        volume: Some(quantity(1_000_000)),
 
         provider: (),
     };

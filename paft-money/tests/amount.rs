@@ -5,7 +5,7 @@ use iso_currency::Currency as IsoCurrency;
 use serde_json::{Value, json};
 
 use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
-use paft_money::{Currency, MonetaryAmount, Money, MoneyError, Price, PriceAmount};
+use paft_money::{Currency, MonetaryAmount, Money, MoneyError, Price, PriceAmount, QuantityAmount};
 
 const fn usd() -> Currency {
     Currency::Iso(IsoCurrency::USD)
@@ -255,6 +255,46 @@ fn price_amount_hash_uses_canonical_decimal() {
 
     let mut hasher_b = DefaultHasher::new();
     amount_again.hash(&mut hasher_b);
+
+    assert_eq!(hasher_a.finish(), hasher_b.finish());
+}
+
+#[test]
+fn quantity_amount_is_non_negative_contextual_decimal() {
+    let quantity = QuantityAmount::from_decimal(parse_decimal("0.000001")).unwrap();
+
+    assert_eq!(quantity.as_decimal(), &parse_decimal("0.000001"));
+    assert_eq!(quantity.to_string(), "0.000001");
+    assert_eq!(
+        quantity.into_inner().as_decimal(),
+        &parse_decimal("0.000001")
+    );
+
+    let err = QuantityAmount::from_decimal(parse_decimal("-0.1")).unwrap_err();
+    assert_eq!(err.type_name(), "NonNegativeDecimal");
+}
+
+#[test]
+fn quantity_amount_serde_is_transparent() {
+    let quantity = QuantityAmount::from_decimal(parse_decimal("123.456")).unwrap();
+
+    assert_eq!(serde_json::to_value(quantity).unwrap(), json!("123.456"));
+
+    let decoded: QuantityAmount = serde_json::from_value(json!("123.456")).unwrap();
+    assert_eq!(decoded.as_decimal(), &parse_decimal("123.456"));
+    assert!(serde_json::from_value::<QuantityAmount>(json!("-1")).is_err());
+}
+
+#[test]
+fn quantity_amount_hash_uses_canonical_decimal() {
+    let quantity = QuantityAmount::from_decimal(parse_decimal("10.0")).unwrap();
+    let quantity_again = QuantityAmount::from_decimal(parse_decimal("10.00")).unwrap();
+
+    let mut hasher_a = DefaultHasher::new();
+    quantity.hash(&mut hasher_a);
+
+    let mut hasher_b = DefaultHasher::new();
+    quantity_again.hash(&mut hasher_b);
 
     assert_eq!(hasher_a.finish(), hasher_b.finish());
 }

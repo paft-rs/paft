@@ -2,7 +2,7 @@ use chrono::{TimeZone, Utc};
 use paft_aggregates::Snapshot;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
-use paft_money::{Currency, IsoCurrency, PriceAmount};
+use paft_money::{Currency, IsoCurrency, PriceAmount, QuantityAmount};
 use pretty_assertions::assert_eq;
 use std::str::FromStr;
 
@@ -12,6 +12,10 @@ const fn usd() -> Currency {
 
 fn amount(value: &str) -> PriceAmount {
     PriceAmount::new(Decimal::from_str(value).unwrap())
+}
+
+fn quantity(value: &str) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from_str(value).unwrap()).unwrap()
 }
 
 #[test]
@@ -55,12 +59,14 @@ fn snapshot_roundtrip_full() {
         open: Some(amount("428.00")),
         day_high: Some(amount("432.22")),
         day_low: Some(amount("427.80")),
-        volume: Some(25_000_000),
+        volume: Some(quantity("25000000.5")),
 
         provider: (),
     };
 
     let json = serde_json::to_string(&snapshot).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(value["volume"], serde_json::json!("25000000.5"));
     let back: Snapshot = serde_json::from_str(&json).unwrap();
     assert_eq!(back, snapshot);
 }

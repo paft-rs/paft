@@ -76,7 +76,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   - Time periods: `Period`
 - **Market Data**: `Quote`, `QuoteUpdate`, `Candle`, `Action`, `MarketState`
 - **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `Interval`, `Range`
-- **Money & Currency**: `Money`, `Price`, `MonetaryAmount`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
+- **Money & Currency**: `Money`, `Price`, `MonetaryAmount`, `QuantityAmount`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
 - **Fundamentals – Profile**: `CompanyProfile`, `FundProfile`, `FundKind`, `Profile`, `Address`, `ShareCount`
 - **Fundamentals – Statements**: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`, `Calendar`
 - **Fundamentals – Analysis**: `AnalysisSummary`, `Earnings`, `EarningsYear`, `EarningsQuarter`, `EarningsQuarterEps`, `EarningsEstimate`, `RevenueEstimate`, `EarningsTrendRow`, `TrendPoint`, `EpsTrend`, `RevisionPoint`, `EpsRevisions`, `PriceTarget`, `RecommendationAction`, `RecommendationGrade`, `RecommendationRow`, `RecommendationSummary`, `UpgradeDowngradeRow`

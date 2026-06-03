@@ -66,6 +66,8 @@
 //! - [`Price`]: full-precision per-unit/per-share quoted values.
 //! - [`MonetaryAmount`]: full-precision currency-denominated totals and
 //!   intermediate values before final settlement rounding.
+//! - [`QuantityAmount`]: full-precision non-negative market quantities whose
+//!   unit is supplied by surrounding context.
 //!
 //! ```rust
 //! # use paft_money::IsoCurrency;
@@ -218,6 +220,7 @@ pub mod currency_utils;
 pub mod error;
 pub mod money;
 mod price;
+mod quantity;
 
 pub use amount::MonetaryAmount;
 pub use currency::{Currency, OtherCurrency};
@@ -231,6 +234,7 @@ pub use locale::Locale;
 pub use money::LocalizedMoney;
 pub use money::{ExchangeRate, Money};
 pub use price::{Price, PriceAmount};
+pub use quantity::QuantityAmount;
 
 /// Re-export `iso_currency::Currency` for convenience.
 pub use iso_currency::Currency as IsoCurrency;

@@ -61,7 +61,7 @@ fn market_exports_are_available_from_facade_and_prelude() {
         OptionContractKey as PreludeOptionContractKey,
         OptionExpirationsResponse as PreludeOptionExpirationsResponse,
         OptionGreeks as PreludeOptionGreeks, OptionSide as PreludeOptionSide,
-        OptionUpdate as PreludeOptionUpdate, Price, PriceAmount, Range,
+        OptionUpdate as PreludeOptionUpdate, Price, PriceAmount, QuantityAmount, Range,
         SearchRequestBuilder as PreludeSearchRequestBuilder, TimeSpec as PreludeTimeSpec,
     };
     use std::num::NonZeroU32;
@@ -100,6 +100,8 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let _: PreludeOptionUpdate = update;
 
     let amount = PriceAmount::new(Decimal::from(150));
+    let quantity = QuantityAmount::from_decimal(Decimal::from(150)).unwrap();
+    assert_eq!(quantity.as_decimal(), &Decimal::from(150));
 
     #[cfg(not(feature = "bigdecimal"))]
     let _: PreludeOhlc = PreludeOhlc::new(amount, amount, amount, amount);

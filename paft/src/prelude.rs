@@ -14,8 +14,8 @@ pub use crate::domain::{
 pub use crate::money::LocalizedMoney;
 pub use crate::money::{
     Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
-    MonetaryAmount, OtherCurrency, Price, PriceAmount, clear_currency_metadata, currency_metadata,
-    set_currency_metadata, try_normalize_currency_code,
+    MonetaryAmount, OtherCurrency, Price, PriceAmount, QuantityAmount, clear_currency_metadata,
+    currency_metadata, set_currency_metadata, try_normalize_currency_code,
 };
 pub use crate::money::{ExchangeRate, Money};
 pub use crate::{

@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
   `DecimalConstraintError`.
 - Money/facade: added `PriceAmount`, a transparent contextual price-domain
   amount for values whose currency is supplied by an enclosing market record.
+- Money/facade: added `QuantityAmount`, a transparent non-negative decimal
+  quantity amount for provider-agnostic market sizes and volumes.
 - Domain/facade: added `Period::{start_date, end_date}` helpers for explicit
   chronological sorting and range-boundary policies.
 
@@ -40,6 +42,10 @@ All notable changes to this project will be documented in this file.
   at the containing record and store contextual `PriceAmount` values for
   candles, order-book levels, quotes, quote updates, snapshots, and option
   quote fields.
+- Market/aggregates: provider-agnostic volume fields now use contextual
+  `QuantityAmount` values so fractional crypto, FX, commodities, and
+  base/quote-volume feeds can be represented without rounding or metadata
+  side channels.
 - Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
@@ -110,6 +116,10 @@ All notable changes to this project will be documented in this file.
 - Market/facade: `OrderBook`, `Quote`, `QuoteUpdate`, and aggregate `Snapshot`
   now require a record-level `currency`; their contained price fields use
   `PriceAmount`.
+- Market/facade: `Candle::volume`, `Quote::day_volume`, and
+  `Snapshot::volume` now use `Option<QuantityAmount>` instead of `Option<u64>`;
+  `QuoteUpdate::volume` was renamed to `volume_delta` and now also uses
+  `Option<QuantityAmount>`.
 - Market/facade: option contract/update quote fields (`price`, `bid`, `ask`,
   and `last_price`) now use `PriceAmount`; `OptionContractKey::strike` remains
   a standalone `Price`.

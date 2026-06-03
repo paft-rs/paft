@@ -1,12 +1,13 @@
 use paft::money::{
     Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
-    MoneyParseError, PriceAmount, clear_currency_metadata, currency_metadata,
+    MoneyParseError, PriceAmount, QuantityAmount, clear_currency_metadata, currency_metadata,
     set_currency_metadata,
 };
 use paft::prelude::{
     CurrencyMetadata as PreludeCurrencyMetadata, Locale as PreludeLocale,
     MAX_DECIMAL_PRECISION as PRELUDE_MAX_DECIMAL_PRECISION,
     MAX_MINOR_UNIT_DECIMALS as PRELUDE_MAX_MINOR_UNIT_DECIMALS, PriceAmount as PreludePriceAmount,
+    QuantityAmount as PreludeQuantityAmount,
     set_currency_metadata as prelude_set_currency_metadata,
 };
 
@@ -46,6 +47,13 @@ fn facade_reexports_money_precision_limits() {
 #[test]
 fn facade_reexports_price_amount() {
     let amount: PriceAmount = PreludePriceAmount::new(paft::Decimal::from(123));
+    assert_eq!(amount.as_decimal(), &paft::Decimal::from(123));
+}
+
+#[test]
+fn facade_reexports_quantity_amount() {
+    let amount: QuantityAmount =
+        PreludeQuantityAmount::from_decimal(paft::Decimal::from(123)).unwrap();
     assert_eq!(amount.as_decimal(), &paft::Decimal::from(123));
 }
 

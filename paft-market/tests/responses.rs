@@ -8,7 +8,7 @@ use paft_market::{
     CorporateActionAdjustmentCauses, HistoryMeta, HistoryResponse, Interval, Ohlc, OhlcPriceBasis,
     PriceBasis,
 };
-use paft_money::{Currency, IsoCurrency, Price, PriceAmount};
+use paft_money::{Currency, IsoCurrency, Price, PriceAmount, QuantityAmount};
 use std::num::NonZeroU32;
 use std::str::FromStr;
 
@@ -18,6 +18,10 @@ const fn usd() -> Currency {
 
 fn amount(value: &str) -> PriceAmount {
     PriceAmount::new(Decimal::from_str(value).unwrap())
+}
+
+fn quantity(value: &str) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from_str(value).unwrap()).unwrap()
 }
 
 fn ohlc(open: &str, high: &str, low: &str, close: &str) -> Ohlc {
@@ -31,7 +35,7 @@ fn candle_serialization() {
         currency: usd(),
         ohlc: ohlc("100.0", "110.0", "95.0", "105.0"),
         close_unadj: None,
-        volume: Some(1_000_000),
+        volume: Some(quantity("1000000.125")),
 
         provider: (),
     };
@@ -41,6 +45,7 @@ fn candle_serialization() {
     assert_eq!(value["ts"], serde_json::json!(1_640_995_200_321_i64));
     assert_eq!(value["currency"], serde_json::json!("USD"));
     assert_eq!(value["open"], serde_json::json!("100.0"));
+    assert_eq!(value["volume"], serde_json::json!("1000000.125"));
 
     let deserialized: Candle = serde_json::from_str(&json).unwrap();
     assert_eq!(candle, deserialized);
@@ -227,7 +232,7 @@ fn responses_smoke() {
         currency: usd(),
         ohlc: ohlc("100.0", "110.0", "95.0", "105.0"),
         close_unadj: None,
-        volume: Some(1_000_000),
+        volume: Some(quantity("1000000")),
 
         provider: (),
     }];
@@ -260,7 +265,7 @@ fn complex_nested_serialization() {
             currency: usd(),
             ohlc: ohlc("100.0", "110.0", "95.0", "105.0"),
             close_unadj: None,
-            volume: Some(1_000_000),
+            volume: Some(quantity("1000000")),
             provider: (),
         }],
         actions: vec![],
@@ -281,7 +286,7 @@ fn candle_update_serialization() {
         currency: usd(),
         ohlc: ohlc("150.0", "155.0", "148.0", "152.0"),
         close_unadj: None,
-        volume: Some(2_500_000),
+        volume: Some(quantity("2500000")),
 
         provider: (),
     };

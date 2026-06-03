@@ -110,7 +110,7 @@ let quote = Quote {
     bid: None,
     ask: None,
     previous_close: Some(PriceAmount::new(Decimal::from(18996) / Decimal::from(100))),
-    day_volume: Some(78_900_000),
+    day_volume: Some(QuantityAmount::from_decimal(Decimal::from(78_900_000)).unwrap()),
     market_state: Some(MarketState::Regular),
     as_of: None,
     provider: (),

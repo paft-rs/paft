@@ -11,6 +11,7 @@ Currency and money primitives for the paft ecosystem.
 - `Money` for settled/payable amounts with currency minor-unit enforcement
 - `Price` for full-precision per-unit quotes
 - `MonetaryAmount` for exact currency totals before settlement rounding
+- `QuantityAmount` for full-precision non-negative contextual quantities
 - Runtime currency metadata overlays for ISO codes without minor-unit exponents (e.g., `XAU`, `XDR`) and custom/non-ISO currencies
 
 Install
@@ -71,15 +72,18 @@ Choose the level of structure you need:
 - `Money` carries a currency and enforces settlement minor units
 - `Price` carries a currency and preserves provider quote precision
 - `MonetaryAmount` carries a currency and preserves exact totals/intermediates until final settlement rounding
+- `QuantityAmount` carries a non-negative decimal quantity whose unit comes from the surrounding market record
 
 ```rust
 use paft_decimal::{self as decimal, RoundingStrategy};
-use paft_money::{Currency, IsoCurrency, MonetaryAmount, MoneyError, Price};
+use paft_money::{Currency, IsoCurrency, MonetaryAmount, MoneyError, Price, QuantityAmount};
 
 fn run() -> Result<(), MoneyError> {
     let usd = Currency::Iso(IsoCurrency::USD);
     let quote = Price::from_canonical_str("1.3578", usd.clone())?;
-    let exact_total = quote.try_total(&decimal::from_minor_units(250, 2))?;
+    let quantity = QuantityAmount::from_decimal(decimal::from_minor_units(250, 2)).unwrap();
+    let exact_total = quote.try_total(quantity.as_decimal())?;
+    assert_eq!(quantity.to_string(), "2.5");
     let adjustment = MonetaryAmount::from_canonical_str("0.0049", usd)?;
     let subtotal = exact_total.try_add(&adjustment)?;
     let money = subtotal.to_money_with(

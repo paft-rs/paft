@@ -14,7 +14,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_domain::{Instrument, MarketState};
-use paft_money::{Currency, PriceAmount};
+use paft_money::{Currency, PriceAmount, QuantityAmount};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -56,8 +56,8 @@ pub struct GenericSnapshot<M = ()> {
     pub day_high: Option<PriceAmount>,
     /// Lowest traded price observed during the current session.
     pub day_low: Option<PriceAmount>,
-    /// Today's trading volume.
-    pub volume: Option<u64>,
+    /// Today's trading volume in the provider's stated quantity unit.
+    pub volume: Option<QuantityAmount>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,

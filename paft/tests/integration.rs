@@ -7,8 +7,8 @@ use iso_currency::Currency as IsoCurrency;
 use paft::market::MarketError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
-    Instrument, Interval, MarketState, Ohlc, OhlcPriceBasis, Price, PriceAmount, PriceBasis, Quote,
-    QuoteUpdate, Range, SearchRequest,
+    Instrument, Interval, MarketState, Ohlc, OhlcPriceBasis, Price, PriceAmount, PriceBasis,
+    QuantityAmount, Quote, QuoteUpdate, Range, SearchRequest,
 };
 use paft_decimal::Decimal;
 use std::num::NonZeroU32;
@@ -20,6 +20,10 @@ const fn usd() -> Currency {
 
 fn amount(value: impl Into<Decimal>) -> PriceAmount {
     PriceAmount::new(value.into())
+}
+
+fn quantity(value: impl Into<Decimal>) -> QuantityAmount {
+    QuantityAmount::from_decimal(value.into()).unwrap()
 }
 
 fn ohlc(open: &str, high: &str, low: &str, close: &str) -> Ohlc {
@@ -66,7 +70,7 @@ fn end_to_end_workflow() {
         currency: usd(),
         ohlc: ohlc("100.0", "110.0", "95.0", "105.0"),
         close_unadj: None,
-        volume: Some(1_000_000),
+        volume: Some(quantity(1_000_000)),
 
         provider: (),
     };
@@ -110,7 +114,7 @@ fn end_to_end_workflow() {
         currency: usd(),
         price: Some(amount(106)),
         previous_close: Some(amount(100)),
-        volume: None,
+        volume_delta: None,
         ts: DateTime::from_timestamp(1_640_995_260, 0).unwrap(),
 
         provider: (),

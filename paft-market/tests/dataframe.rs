@@ -16,7 +16,7 @@ use paft_market::{
         search::SearchResult,
     },
 };
-use paft_money::{Currency, IsoCurrency, Price, PriceAmount};
+use paft_money::{Currency, IsoCurrency, Price, PriceAmount, QuantityAmount};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 use std::num::NonZeroU32;
 use std::str::FromStr;
@@ -33,6 +33,10 @@ fn usd_amount(amount: i64) -> PriceAmount {
     PriceAmount::new(Decimal::from(amount))
 }
 
+fn quantity(amount: i64) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from(amount)).unwrap()
+}
+
 fn candle(ts: chrono::DateTime<Utc>, open: i64, high: i64, low: i64, close: i64) -> Candle {
     Candle {
         ts,
@@ -44,7 +48,7 @@ fn candle(ts: chrono::DateTime<Utc>, open: i64, high: i64, low: i64, close: i64)
             usd_amount(close),
         ),
         close_unadj: None,
-        volume: Some(2_500_000),
+        volume: Some(quantity(2_500_000)),
         provider: (),
     }
 }
@@ -176,7 +180,7 @@ fn quote_update_to_dataframe_smoke() {
         currency: usd(),
         price: Some(usd_amount(150)),
         previous_close: Some(usd_amount(147)),
-        volume: None,
+        volume_delta: None,
         ts: chrono::DateTime::from_timestamp(0, 0).unwrap(),
 
         provider: (),
@@ -309,7 +313,7 @@ fn candle_to_dataframe() {
             usd_amount(152),
         ),
         close_unadj: Some(usd_amount(151)),
-        volume: Some(2_500_000),
+        volume: Some(quantity(2_500_000)),
 
         provider: (),
     };
@@ -396,7 +400,7 @@ fn vec_candle_update_to_dataframe_smoke() {
             .unwrap(),
             interval: Interval::I1m,
             candle: Candle {
-                volume: Some(1_000_000),
+                volume: Some(quantity(1_000_000)),
                 ..candle(sample_ts(1_700_000_060), 152, 156, 149, 154)
             },
             is_final: true,

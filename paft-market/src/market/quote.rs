@@ -11,7 +11,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_domain::{Instrument, MarketState};
-use paft_money::{Currency, PriceAmount};
+use paft_money::{Currency, PriceAmount, QuantityAmount};
 
 use crate::market::orderbook::GenericBookLevel;
 
@@ -43,8 +43,8 @@ pub struct GenericQuote<M = ()> {
     pub ask: Option<GenericBookLevel<M>>,
     /// Previous close price.
     pub previous_close: Option<PriceAmount>,
-    /// Day volume.
-    pub day_volume: Option<u64>,
+    /// Day volume in the provider's stated quantity unit.
+    pub day_volume: Option<QuantityAmount>,
     /// Market state.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
@@ -102,8 +102,8 @@ pub struct GenericQuoteUpdate<M = ()> {
     pub price: Option<PriceAmount>,
     /// Previous close price.
     pub previous_close: Option<PriceAmount>,
-    /// Volume traded since the previous update.
-    pub volume: Option<u64>,
+    /// Volume traded since the previous update in the provider's stated quantity unit.
+    pub volume_delta: Option<QuantityAmount>,
     /// Event timestamp as Unix milliseconds.
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
@@ -122,7 +122,7 @@ impl<M: Default> GenericQuoteUpdate<M> {
             currency,
             price: None,
             previous_close: None,
-            volume: None,
+            volume_delta: None,
             ts,
             provider: M::default(),
         }

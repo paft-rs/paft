@@ -3,7 +3,7 @@ use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
 use paft_market::market::orderbook::BookLevel;
 use paft_market::market::quote::{Quote, QuoteUpdate};
-use paft_money::{Currency, IsoCurrency, PriceAmount};
+use paft_money::{Currency, IsoCurrency, PriceAmount, QuantityAmount};
 use std::str::FromStr;
 
 const fn usd() -> Currency {
@@ -12,6 +12,10 @@ const fn usd() -> Currency {
 
 fn amount(value: impl Into<Decimal>) -> PriceAmount {
     PriceAmount::new(value.into())
+}
+
+fn quantity(value: impl Into<Decimal>) -> QuantityAmount {
+    QuantityAmount::from_decimal(value.into()).unwrap()
 }
 
 fn size(value: i64) -> NonNegativeDecimal {
@@ -34,7 +38,7 @@ fn quote_construction() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        day_volume: None,
+        day_volume: Some(quantity(Decimal::from_str("12345.678").unwrap())),
         market_state: Some(MarketState::Regular),
         as_of: Some(DateTime::from_timestamp(1_640_995_200, 123_000_000).unwrap()),
         bid: None,
@@ -54,6 +58,10 @@ fn quote_construction() {
         Some(amount(Decimal::from(1475) / Decimal::from(10)))
     );
     assert_eq!(quote.instrument.exchange, Some(Exchange::NASDAQ));
+    assert_eq!(
+        quote.day_volume.as_ref().unwrap().as_decimal(),
+        &Decimal::from_str("12345.678").unwrap()
+    );
     assert_eq!(quote.market_state, Some(MarketState::Regular));
     assert_eq!(quote.as_of.unwrap().timestamp_millis(), 1_640_995_200_123);
 }
@@ -225,7 +233,7 @@ fn quote_update_construction() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume: None,
+        volume_delta: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -250,7 +258,7 @@ fn quote_update_partial_fields() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: None,
-        volume: None,
+        volume_delta: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -271,7 +279,7 @@ fn quote_update_clone() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume: None,
+        volume_delta: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -287,7 +295,7 @@ fn quote_update_debug_formatting() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume: None,
+        volume_delta: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -305,7 +313,7 @@ fn quote_serialization() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        day_volume: None,
+        day_volume: Some(quantity(Decimal::from_str("12345.678").unwrap())),
         market_state: Some(MarketState::Regular),
         as_of: None,
         bid: None,
@@ -317,6 +325,7 @@ fn quote_serialization() {
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(value["currency"], serde_json::json!("USD"));
     assert_eq!(value["price"], serde_json::json!("150"));
+    assert_eq!(value["day_volume"], serde_json::json!("12345.678"));
 
     let deserialized: Quote = serde_json::from_str(&json).unwrap();
     assert_eq!(quote, deserialized);
@@ -363,7 +372,7 @@ fn quote_update_serialization() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume: None,
+        volume_delta: None,
         ts: DateTime::from_timestamp(1_640_995_200, 654_000_000).unwrap(),
         provider: (),
     };
@@ -384,7 +393,7 @@ fn quote_update_with_none_fields() {
         currency: usd(),
         price: None,
         previous_close: None,
-        volume: None,
+        volume_delta: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
