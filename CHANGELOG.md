@@ -72,6 +72,8 @@ All notable changes to this project will be documented in this file.
   `OtherAssetKind`, `OtherPeriod`, `OtherRecommendationGrade`,
   `OtherRecommendationAction`, `OtherTransactionType`, `OtherInsiderPosition`,
   and `OtherFundKind`) instead of raw `Canonical` payloads.
+- Docs: standalone guide material was folded into the workspace and crate
+  READMEs so crate-local API guidance stays next to the code it documents.
 
 ### Fixed
 

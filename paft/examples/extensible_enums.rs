@@ -53,8 +53,8 @@ fn main() {
 /// `UNKNOWN_CURRENCY`) are preserved verbatim as typed `Other` values —
 /// the parser uppercases and normalizes them but does not promote them onto
 /// `Currency::BTC`. Mapping aliases onto canonical variants is the job of
-/// your provider adapter (see also `handle_currencies` and the docs/
-/// BEST_PRACTICES.md guide).
+/// your provider adapter (see also `handle_currencies` and the workspace
+/// README provider mapping rules).
 fn handle_currencies() {
     println!("1. Handling Currencies:");
 

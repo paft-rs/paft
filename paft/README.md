@@ -288,9 +288,29 @@ match currency {
 // Same pattern for exchanges, asset types, etc. Unknown constructors reject
 // tokens that paft already models as canonical variants or aliases.
 let exchange: Exchange = "DARK_POOL_X".parse().unwrap(); // Unknown exchange handled via Other
+
+let provider_coin = Currency::other("provider coin").unwrap();
+assert_eq!(provider_coin.to_string(), "PROVIDER_COIN");
+assert!(OtherCurrency::new("USD").is_err());
 ```
 
 This pattern ensures your code never breaks when providers return new or unexpected values.
+
+Rules to keep in mind:
+
+- Known variants emit one canonical token, and parsers may accept aliases.
+- `Other(OtherX)` serializes and displays as its canonical string, with no
+  escape prefix.
+- `OtherX::new(..)` rejects tokens that the owning enum parser maps to a known
+  variant or alias.
+- Unknown inputs normalize through paft's canonical string rules: trimmed,
+  uppercase ASCII, with separators collapsed.
+- Prefer canonical variants in your own code; reserve `Other` for values the
+  provider sent and paft does not model.
+- Match `Other` explicitly, and keep a fallback arm for future canonical
+  variants on non-exhaustive enums.
+- Treat `OtherX::as_ref()` as the already-canonical token; avoid allocating a
+  new uppercase string just to inspect or log it.
 
 ## Canonical Codes vs Human Labels
 
@@ -304,11 +324,13 @@ Keep the rule of thumb: *wire = code = Display; human prose = explicit helper*.
 
 ### More Details
 
-- **[Extensible Enums Guide](docs/EXTENSIBLE_ENUMS.md)**: Complete documentation and examples
-- **[Best Practices](docs/BEST_PRACTICES.md)**: Guidelines for library authors and consumers  
 - **[Working Examples](examples/)**: start with
   [`v09_ergonomics.rs`](examples/v09_ergonomics.rs), then see the
-  provider-metadata examples for advanced shapes
+  provider-metadata examples for advanced shapes.
+- **[Extensible Enum Example](examples/extensible_enums.rs)**: practical
+  unknown-value handling and provider normalization.
+- **[Workspace README](../README.md)**: provider adapter guidance and
+  ecosystem-level integration patterns.
 
 ## License
 

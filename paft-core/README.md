@@ -54,6 +54,53 @@ assert_eq!("sell".parse::<Side>().unwrap(), Side::Sell);
 assert!(matches!("".parse::<Side>(), Err(PaftError::InvalidEnumValue { .. })));
 ```
 
+Open enums with typed `Other`
+-----------------------------
+
+Use the open enum macros for provider-facing concepts where upstreams can
+invent new tokens. The typed `OtherX` wrapper preserves unknown values while
+rejecting tokens the enum already models.
+
+```rust
+use paft_core::{PaftError, impl_display_via_code, other_string_code_type, string_enum_with_code};
+use std::str::FromStr;
+
+other_string_code_type!(
+    /// Provider-specific venue not modeled by `Venue`.
+    pub struct OtherVenue for Venue;
+    type Error = PaftError;
+    parse(input) => Venue::from_str(input);
+    invalid(input) => PaftError::InvalidEnumValue {
+        enum_name: "Venue",
+        value: input.to_string(),
+    };
+);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum Venue {
+    Nasdaq,
+    Nyse,
+    Other(OtherVenue),
+}
+
+string_enum_with_code!(
+    Venue, Other(OtherVenue), "Venue",
+    {
+        "NASDAQ" => Venue::Nasdaq,
+        "NYSE" => Venue::Nyse
+    },
+    {
+        "NASDAQ_GS" => Venue::Nasdaq,
+        "NEW_YORK_STOCK_EXCHANGE" => Venue::Nyse
+    }
+);
+impl_display_via_code!(Venue);
+
+assert_eq!("nasdaq-gs".parse::<Venue>().unwrap(), Venue::Nasdaq);
+assert_eq!("dark pool".parse::<Venue>().unwrap().to_string(), "DARK_POOL");
+assert!(OtherVenue::new("NASDAQ").is_err());
+```
+
 Links
 -----
 

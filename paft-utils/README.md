@@ -51,6 +51,20 @@ let c = Canonical::try_new("nasdaq").unwrap();
 assert_eq!(c.as_str(), "NASDAQ");
 ```
 
+Canonical codes
+---------------
+
+`Canonical` is the storage invariant behind typed unknown enum wrappers such as
+`OtherCurrency` and `OtherExchange`: values are non-empty, trimmed, uppercase
+ASCII, and use single underscores between words.
+
+```rust
+use paft_utils::{Canonical, canonicalize};
+
+assert_eq!(canonicalize(" dark-pool x "), "DARK_POOL_X");
+assert!(Canonical::try_new("   ").is_err());
+```
+
 Links
 -----
 

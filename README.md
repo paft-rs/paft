@@ -176,13 +176,16 @@ If you're building trading systems, consider:
 
 Ready to use paft in your project? Head to the [paft crate README](paft/README.md) for installation instructions, code examples, and practical usage guidance.
 
-For a deeper dive into specific patterns and concepts, check out our [comprehensive documentation](paft/docs/):
+For a deeper dive into specific patterns and concepts, use the crate READMEs and
+runnable examples closest to the APIs they cover:
 
-- **[Extensible Enums](paft/docs/EXTENSIBLE_ENUMS.md)**: Understanding paft's graceful enum handling pattern
-- **[Best Practices](paft/docs/BEST_PRACTICES.md)**: Guidelines for library authors and consumers
 - **[Examples](paft/examples/)**: Working code examples for common patterns,
   including the no-metadata v0.9 ergonomics tour in
   [`v09_ergonomics.rs`](paft/examples/v09_ergonomics.rs)
+- **[paft README](paft/README.md)**: Facade usage, feature flags, and common
+  consumer patterns.
+- **[paft-core README](paft-core/README.md)**: Canonical string enum macro
+  patterns for maintainers adding new provider-facing enums.
 
 ## Ecosystem Architecture
 
@@ -235,6 +238,26 @@ Data provider crates are the bridge between proprietary APIs and standardized pa
 3. **Expose paft types**: Use paft types as your public API surface
 4. **Leverage paft patterns**: Use extensible enums and hierarchical identifiers
 
+### Provider Mapping Rules
+
+Provider-facing enums are intentionally extensible: known tokens parse to
+canonical variants, and unknown tokens fall back to typed wrappers such as
+`OtherCurrency`, `OtherExchange`, or `OtherPeriod`.
+
+- Map provider-specific aliases to canonical variants whenever paft models the
+  concept, for example `"US_DOLLAR"` -> `Currency::Iso(IsoCurrency::USD)`.
+- Use `Type::other(..)` or `OtherType::new(..)` only for genuinely unknown
+  provider tokens. These constructors reject values that already parse to a
+  modeled variant or alias.
+- Log unknown `Other` values in adapter code. That gives you evidence for
+  future canonical mappings without losing the provider token today.
+- Do not force incomplete provider records into paft concepts. If required
+  conceptual fields are absent, fail the conversion or keep the data in
+  provider metadata.
+- Test both sides of every mapping: provider aliases that should become
+  canonical variants, and truly unknown tokens that should round-trip through
+  typed `Other` values.
+
 ### Provider Architecture Example
 
 ```rust
@@ -253,27 +276,25 @@ struct GenericQuoteWire {
 impl GenericProvider {
     pub async fn get_quote(&self, symbol: &str) -> Result<Quote, Error> {
         let wire = self.fetch_quote_wire(symbol).await?;
-        Ok(wire.into_paft_quote(symbol))
+        Ok(wire.into_paft_quote(symbol)?)
     }
 }
 
 // Conversion handles provider-specific mappings
 impl GenericQuoteWire {
-    fn into_paft_quote(self, symbol: &str) -> Quote {
-        let exchange = self.exchange.as_ref().map(|ex| match ex.as_ref() {
-            "NASDAQ" => Exchange::NASDAQ,
-            "NYSE" => Exchange::NYSE,
-            // Graceful handling: paft canonicalizes the token for us.
-            other => Exchange::try_from_str(other).expect("non-empty exchange code"),
-        });
+    fn into_paft_quote(self, symbol: &str) -> paft::Result<Quote> {
+        let exchange = self
+            .exchange
+            .as_deref()
+            .map(Exchange::try_from_str)
+            .transpose()?;
         let instrument = match exchange {
             Some(exchange) => Instrument::from_symbol_and_exchange(symbol, exchange, AssetKind::Equity),
             None => Instrument::from_symbol(symbol, AssetKind::Equity),
-        }
-        .expect("validated upstream");
+        }?;
         let currency = Currency::Iso(IsoCurrency::USD);
 
-        Quote {
+        Ok(Quote {
             instrument,
             name: None,
             currency,
@@ -285,7 +306,7 @@ impl GenericQuoteWire {
             market_state: None,
             as_of: None,
             provider: (),
-        }
+        })
     }
 }
 ```
