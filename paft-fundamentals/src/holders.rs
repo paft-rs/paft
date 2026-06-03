@@ -239,7 +239,7 @@ pub struct InsiderRosterHolder {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct NetSharePurchaseActivity {
-    /// The period the summary covers (e.g., `Period::Quarter { year: 2023, quarter: 4 }`).
+    /// The period the summary covers (e.g., `Period::quarterly(2023, 4)?`).
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub period: Period,
     /// The total number of shares purchased by insiders.

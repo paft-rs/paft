@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use paft_domain::{DomainError, MarketState, Period};
+use paft_domain::{DomainError, MarketState, Period, PeriodYear, QuarterOfYear};
 use std::str::FromStr;
 
 #[test]
@@ -192,23 +192,43 @@ fn period_byte_parser_year_boundaries() {
     // too. Quarter boundaries 1 and 4 are inclusive.
     assert_eq!(
         "0000Q1".parse::<Period>().unwrap(),
-        Period::Quarter {
-            year: 0,
-            quarter: 1
-        }
+        Period::quarterly(0, 1).unwrap()
     );
     assert_eq!(
         "9999Q4".parse::<Period>().unwrap(),
-        Period::Quarter {
-            year: 9999,
-            quarter: 4
-        }
+        Period::quarterly(9999, 4).unwrap()
     );
-    assert_eq!("0000".parse::<Period>().unwrap(), Period::Year { year: 0 });
+    assert_eq!(
+        "0000".parse::<Period>().unwrap(),
+        Period::annual(0).unwrap()
+    );
     assert_eq!(
         "9999".parse::<Period>().unwrap(),
-        Period::Year { year: 9999 }
+        Period::annual(9999).unwrap()
     );
+}
+
+#[test]
+fn period_low_years_emit_four_digit_canonical_codes() {
+    let cases = [
+        ("0000", Period::annual(0).unwrap()),
+        ("0001", Period::annual(1).unwrap()),
+        ("0012", Period::annual(12).unwrap()),
+        ("0123", Period::annual(123).unwrap()),
+        ("0000Q1", Period::quarterly(0, 1).unwrap()),
+        ("0012Q4", Period::quarterly(12, 4).unwrap()),
+    ];
+
+    for (canonical, period) in cases {
+        assert_eq!(period.to_string(), canonical);
+
+        let display_round_trip: Period = period.to_string().parse().unwrap();
+        assert_eq!(display_round_trip, period);
+
+        let json = serde_json::to_string(&period).unwrap();
+        let serde_round_trip: Period = serde_json::from_str(&json).unwrap();
+        assert_eq!(serde_round_trip, period);
+    }
 }
 
 #[test]
@@ -220,7 +240,7 @@ fn period_byte_parser_iso_does_not_swallow_us_or_dayfirst() {
     // `"1234-"` is not in this list: its canonical form is `"1234"`, which is
     // a valid 4-digit year. The `FromStr` invariant requires that we never
     // produce an `Other` whose canonical token re-parses as a structured
-    // variant, so `"1234-"` is intentionally promoted to `Year { year: 1234 }`
+    // variant, so `"1234-"` is intentionally promoted to a structured year
     // (covered separately in
     // `period_other_canonical_does_not_collide_with_structured_variants`).
     let cases = [
@@ -256,10 +276,7 @@ fn period_byte_parser_quarter_separator_whitespace_variants() {
         "2023 \t \t Q4",
         "2023\t\tq4",
     ];
-    let expected = Period::Quarter {
-        year: 2023,
-        quarter: 4,
-    };
+    let expected = Period::quarterly(2023, 4).unwrap();
     for input in inputs {
         assert_eq!(
             input.parse::<Period>().unwrap(),
@@ -280,37 +297,19 @@ fn period_other_canonical_does_not_collide_with_structured_variants() {
     // `Other`), and each should round-trip cleanly via `Display`/`FromStr`
     // and serde.
     let cases: &[(&str, Period)] = &[
-        (
-            "-2023Q4",
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
-        ),
-        (
-            "(2023Q4)",
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
-        ),
+        ("-2023Q4", Period::quarterly(2023, 4).unwrap()),
+        ("(2023Q4)", Period::quarterly(2023, 4).unwrap()),
         // Leading non-alphanumerics that strip away cleanly during
         // canonicalization to leave a bare `YYYYQ#`.
-        (
-            "!2023Q4!",
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
-        ),
+        ("!2023Q4!", Period::quarterly(2023, 4).unwrap()),
         // Same idea, but ending up at a bare 4-digit year token.
-        ("(2023)", Period::Year { year: 2023 }),
-        ("-2023", Period::Year { year: 2023 }),
+        ("(2023)", Period::annual(2023).unwrap()),
+        ("-2023", Period::annual(2023).unwrap()),
         // 4-digit prefix followed by a stray separator: previously stored as
         // `Other("1234")`, which serde-deserialized to `Year { 1234 }` — the
         // exact identity-violation this fix prevents. Must now resolve to
         // `Year` directly.
-        ("1234-", Period::Year { year: 1234 }),
+        ("1234-", Period::annual(1234).unwrap()),
     ];
 
     for (input, expected) in cases {
@@ -380,10 +379,7 @@ fn period_calendar_boundaries_are_explicit() {
         Some(NaiveDate::from_ymd_opt(2023, 5, 17).unwrap())
     );
 
-    let quarter = Period::Quarter {
-        year: 2023,
-        quarter: 2,
-    };
+    let quarter = Period::quarterly(2023, 2).unwrap();
     assert_eq!(
         quarter.start_date(),
         Some(NaiveDate::from_ymd_opt(2023, 4, 1).unwrap())
@@ -393,7 +389,7 @@ fn period_calendar_boundaries_are_explicit() {
         Some(NaiveDate::from_ymd_opt(2023, 6, 30).unwrap())
     );
 
-    let year = Period::Year { year: 2023 };
+    let year = Period::annual(2023).unwrap();
     assert_eq!(
         year.start_date(),
         Some(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap())
@@ -411,70 +407,59 @@ fn period_calendar_boundaries_are_explicit() {
 #[test]
 fn period_boundaries_support_chronological_sort_keys() {
     let late_date = Period::Date(NaiveDate::from_ymd_opt(2099, 1, 1).unwrap());
-    let early_quarter = Period::Quarter {
-        year: 1900,
-        quarter: 1,
-    };
+    let early_quarter = Period::quarterly(1900, 1).unwrap();
 
     assert!(early_quarter.start_date() < late_date.start_date());
     assert!(early_quarter.end_date() < late_date.end_date());
 }
 
 #[test]
-fn invalid_manual_quarter_has_no_calendar_boundaries() {
-    let period = Period::Quarter {
-        year: 2023,
-        quarter: 5,
-    };
-
-    assert_eq!(period.start_date(), None);
-    assert_eq!(period.end_date(), None);
+fn period_constructors_reject_invalid_structured_components() {
+    assert_eq!(
+        Period::quarterly(2023, 5).unwrap_err(),
+        DomainError::InvalidPeriodQuarter { quarter: 5 }
+    );
+    assert_eq!(
+        QuarterOfYear::new(0).unwrap_err(),
+        DomainError::InvalidPeriodQuarter { quarter: 0 }
+    );
+    assert_eq!(
+        Period::annual(-1).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: -1 }
+    );
+    assert_eq!(
+        Period::annual(10_000).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: 10_000 }
+    );
+    assert_eq!(
+        PeriodYear::new(10_000).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: 10_000 }
+    );
 }
 
 #[test]
 fn period_helper_next_quarter() {
     // Date -> next quarter of its quarter bucket
     let d = Period::Date(NaiveDate::from_ymd_opt(2023, 3, 31).unwrap());
-    assert_eq!(
-        d.next_quarter(),
-        Some(Period::Quarter {
-            year: 2023,
-            quarter: 2
-        })
-    );
+    assert_eq!(d.next_quarter(), Some(Period::quarterly(2023, 2).unwrap()));
 
     // Quarter wrap
-    let q = Period::Quarter {
-        year: 2023,
-        quarter: 4,
-    };
-    assert_eq!(
-        q.next_quarter(),
-        Some(Period::Quarter {
-            year: 2024,
-            quarter: 1
-        })
-    );
+    let q = Period::quarterly(2023, 4).unwrap();
+    assert_eq!(q.next_quarter(), Some(Period::quarterly(2024, 1).unwrap()));
 
     // Year -> Q1 of next year
-    let y = Period::Year { year: 2023 };
-    assert_eq!(
-        y.next_quarter(),
-        Some(Period::Quarter {
-            year: 2024,
-            quarter: 1
-        })
-    );
+    let y = Period::annual(2023).unwrap();
+    assert_eq!(y.next_quarter(), Some(Period::quarterly(2024, 1).unwrap()));
+
+    assert_eq!(Period::quarterly(9999, 4).unwrap().next_quarter(), None);
+    assert_eq!(Period::annual(9999).unwrap().next_quarter(), None);
 }
 
 #[test]
 fn period_helper_year_end() {
     let d = Period::Date(NaiveDate::from_ymd_opt(2023, 6, 15).unwrap());
-    let q = Period::Quarter {
-        year: 2023,
-        quarter: 3,
-    };
-    let y = Period::Year { year: 2023 };
+    let q = Period::quarterly(2023, 3).unwrap();
+    let y = Period::annual(2023).unwrap();
 
     assert_eq!(
         d.year_end(),
@@ -493,32 +478,20 @@ fn period_helper_year_end() {
 #[test]
 fn period_helper_is_same_bucket_as() {
     // Year bucket
-    let y = Period::Year { year: 2023 };
+    let y = Period::annual(2023).unwrap();
     let d = Period::Date(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap());
-    let q = Period::Quarter {
-        year: 2023,
-        quarter: 2,
-    };
-    assert!(y.is_same_bucket_as(&Period::Year { year: 2023 }));
+    let q = Period::quarterly(2023, 2).unwrap();
+    assert!(y.is_same_bucket_as(&Period::annual(2023).unwrap()));
     assert!(y.is_same_bucket_as(&d));
     assert!(y.is_same_bucket_as(&q));
-    assert!(!y.is_same_bucket_as(&Period::Year { year: 2022 }));
+    assert!(!y.is_same_bucket_as(&Period::annual(2022).unwrap()));
 
     // Quarter bucket
     let d_q2 = Period::Date(NaiveDate::from_ymd_opt(2023, 4, 1).unwrap());
-    let q2 = Period::Quarter {
-        year: 2023,
-        quarter: 2,
-    };
+    let q2 = Period::quarterly(2023, 2).unwrap();
     assert!(q2.is_same_bucket_as(&d_q2));
-    assert!(q2.is_same_bucket_as(&Period::Quarter {
-        year: 2023,
-        quarter: 2
-    }));
-    assert!(!q2.is_same_bucket_as(&Period::Quarter {
-        year: 2023,
-        quarter: 3
-    }));
+    assert!(q2.is_same_bucket_as(&Period::quarterly(2023, 2).unwrap()));
+    assert!(!q2.is_same_bucket_as(&Period::quarterly(2023, 3).unwrap()));
 
     // Date exact
     let d1 = Period::Date(NaiveDate::from_ymd_opt(2023, 7, 4).unwrap());
@@ -543,15 +516,12 @@ fn period_cases() -> Vec<PeriodCase> {
     vec![
         PeriodCase {
             input: "2023Q4",
-            expected: Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
+            expected: Period::quarterly(2023, 4).unwrap(),
             canonical: "2023Q4",
         },
         PeriodCase {
             input: "2023",
-            expected: Period::Year { year: 2023 },
+            expected: Period::annual(2023).unwrap(),
             canonical: "2023",
         },
         PeriodCase {

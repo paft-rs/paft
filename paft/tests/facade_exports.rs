@@ -194,10 +194,11 @@ fn analysis_helpers_are_available_from_facade_and_prelude() {
     let _: PreludeEpsRevisions = eps_revisions;
 
     let price = Price::from_canonical_str("1.00", Currency::Iso(IsoCurrency::USD)).unwrap();
-    let trend_point: FacadeTrendPoint = PreludeTrendPoint::new(Period::Year { year: 2024 }, price);
+    let trend_point: FacadeTrendPoint =
+        PreludeTrendPoint::new(Period::annual(2024).unwrap(), price);
     let _: PreludeTrendPoint = trend_point;
 
     let revision_point: FacadeRevisionPoint =
-        PreludeRevisionPoint::new(Period::Year { year: 2024 }, 2, 1);
+        PreludeRevisionPoint::new(Period::annual(2024).unwrap(), 2, 1);
     let _: PreludeRevisionPoint = revision_point;
 }

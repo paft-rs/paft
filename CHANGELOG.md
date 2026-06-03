@@ -43,6 +43,9 @@ All notable changes to this project will be documented in this file.
 - Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
+- Domain/facade: structured `Period` variants now store validated
+  `PeriodYear` and `QuarterOfYear` components; use `Period::annual` and
+  `Period::quarterly` when constructing annual and quarterly periods.
 
 ### Fixed
 
@@ -52,6 +55,9 @@ All notable changes to this project will be documented in this file.
   active decimal backend precision instead of attempting unbounded zero padding.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
   constrained decimal constructors to compose with `paft::prelude::Result`.
+- Domain: structured `Period` values can no longer expose invalid public
+  states such as quarter 5 or five-digit/negative years, and low years now emit
+  four-digit canonical codes so display/serde round trips preserve identity.
 
 ### Breaking Changes
 
@@ -78,6 +84,10 @@ All notable changes to this project will be documented in this file.
   `HistoryRequest::auto_adjust` to `HistoryFlags::PREFER_ADJUSTED_PRICES`,
   `HistoryRequestBuilder::prefer_adjusted_prices`, and
   `HistoryRequest::prefer_adjusted_prices`.
+- Domain/facade: `Period::Quarter { year, quarter }` and
+  `Period::Year { year }` now require validated component newtypes instead of
+  raw integers. Existing literals should move to `Period::quarterly(year,
+  quarter)?` or `Period::annual(year)?`.
 - Market/facade: `Candle` now has `currency: Currency` and flattened
   `ohlc: Ohlc` `PriceAmount` values instead of independent `Price` fields for
   `open`, `high`, `low`, `close`, and `close_unadj`.

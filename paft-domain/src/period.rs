@@ -11,6 +11,150 @@ use crate::error::DomainError;
 use chrono::{Datelike, NaiveDate};
 use paft_utils::Canonical;
 
+/// Valid year component for structured financial periods.
+///
+/// `Period` accepts calendar-style four-digit years in `0..=9999`. The lower
+/// bound preserves the crate's existing parser behavior for tokens like
+/// `0000`; the upper bound keeps structured period display/serde canonical as
+/// exactly four year digits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct PeriodYear(u16);
+
+impl PeriodYear {
+    /// Smallest valid structured period year.
+    pub const MIN: u16 = 0;
+
+    /// Largest valid structured period year.
+    pub const MAX: u16 = 9999;
+
+    /// Builds a validated period year.
+    ///
+    /// # Errors
+    /// Returns [`DomainError::InvalidPeriodYear`] when `year` is outside
+    /// `0..=9999`.
+    pub fn new(year: i32) -> Result<Self, DomainError> {
+        let Ok(year_u16) = u16::try_from(year) else {
+            return Err(DomainError::InvalidPeriodYear { year });
+        };
+
+        if year_u16 <= Self::MAX {
+            Ok(Self(year_u16))
+        } else {
+            Err(DomainError::InvalidPeriodYear { year })
+        }
+    }
+
+    /// Returns the year as an `i32`, matching [`chrono::Datelike::year`].
+    #[must_use]
+    #[allow(clippy::cast_lossless)]
+    pub const fn get(self) -> i32 {
+        self.0 as i32
+    }
+
+    /// Returns the year as the compact unsigned storage type.
+    #[must_use]
+    pub const fn as_u16(self) -> u16 {
+        self.0
+    }
+}
+
+impl TryFrom<i32> for PeriodYear {
+    type Error = DomainError;
+
+    fn try_from(year: i32) -> Result<Self, Self::Error> {
+        Self::new(year)
+    }
+}
+
+impl TryFrom<u16> for PeriodYear {
+    type Error = DomainError;
+
+    fn try_from(year: u16) -> Result<Self, Self::Error> {
+        Self::new(i32::from(year))
+    }
+}
+
+impl From<PeriodYear> for i32 {
+    fn from(year: PeriodYear) -> Self {
+        year.get()
+    }
+}
+
+impl From<PeriodYear> for u16 {
+    fn from(year: PeriodYear) -> Self {
+        year.as_u16()
+    }
+}
+
+impl fmt::Display for PeriodYear {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:04}", self.0)
+    }
+}
+
+/// Valid quarter-of-year component for structured financial periods.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct QuarterOfYear(u8);
+
+impl QuarterOfYear {
+    /// First quarter.
+    pub const Q1: Self = Self(1);
+
+    /// Second quarter.
+    pub const Q2: Self = Self(2);
+
+    /// Third quarter.
+    pub const Q3: Self = Self(3);
+
+    /// Fourth quarter.
+    pub const Q4: Self = Self(4);
+
+    /// Smallest valid quarter number.
+    pub const MIN: u8 = 1;
+
+    /// Largest valid quarter number.
+    pub const MAX: u8 = 4;
+
+    /// Builds a validated quarter-of-year.
+    ///
+    /// # Errors
+    /// Returns [`DomainError::InvalidPeriodQuarter`] when `quarter` is outside
+    /// `1..=4`.
+    pub const fn new(quarter: u8) -> Result<Self, DomainError> {
+        if quarter >= Self::MIN && quarter <= Self::MAX {
+            Ok(Self(quarter))
+        } else {
+            Err(DomainError::InvalidPeriodQuarter { quarter })
+        }
+    }
+
+    /// Returns the quarter number.
+    #[must_use]
+    pub const fn get(self) -> u8 {
+        self.0
+    }
+}
+
+impl TryFrom<u8> for QuarterOfYear {
+    type Error = DomainError;
+
+    fn try_from(quarter: u8) -> Result<Self, Self::Error> {
+        Self::new(quarter)
+    }
+}
+
+impl From<QuarterOfYear> for u8 {
+    fn from(quarter: QuarterOfYear) -> Self {
+        quarter.get()
+    }
+}
+
+impl fmt::Display for QuarterOfYear {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 /// Financial period enumeration with structured variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of financial periods while gracefully
@@ -42,14 +186,14 @@ pub enum Period {
     /// Quarterly period with year and quarter number
     Quarter {
         /// The year of the quarter
-        year: i32,
+        year: PeriodYear,
         /// The quarter number (1-4)
-        quarter: u8,
+        quarter: QuarterOfYear,
     },
     /// Annual period with year
     Year {
         /// The year of the annual period
-        year: i32,
+        year: PeriodYear,
     },
     /// Specific date
     Date(
@@ -61,6 +205,30 @@ pub enum Period {
 }
 
 impl Period {
+    /// Builds a validated quarterly period.
+    ///
+    /// # Errors
+    /// Returns [`DomainError::InvalidPeriodYear`] or
+    /// [`DomainError::InvalidPeriodQuarter`] when either component is outside
+    /// its accepted range.
+    pub fn quarterly(year: i32, quarter: u8) -> Result<Self, DomainError> {
+        Ok(Self::Quarter {
+            year: PeriodYear::new(year)?,
+            quarter: QuarterOfYear::new(quarter)?,
+        })
+    }
+
+    /// Builds a validated annual period.
+    ///
+    /// # Errors
+    /// Returns [`DomainError::InvalidPeriodYear`] when `year` is outside
+    /// `0..=9999`.
+    pub fn annual(year: i32) -> Result<Self, DomainError> {
+        Ok(Self::Year {
+            year: PeriodYear::new(year)?,
+        })
+    }
+
     /// Returns the canonical display/serde code for this period.
     #[must_use]
     pub fn code(&self) -> Cow<'_, str> {
@@ -75,6 +243,15 @@ impl Period {
     #[must_use]
     pub const fn year(&self) -> Option<i32> {
         match self {
+            Self::Quarter { year, .. } | Self::Year { year } => Some(year.get()),
+            _ => None,
+        }
+    }
+
+    /// Returns the validated year component for this period, if applicable.
+    #[must_use]
+    pub const fn period_year(&self) -> Option<PeriodYear> {
+        match self {
             Self::Quarter { year, .. } | Self::Year { year } => Some(*year),
             _ => None,
         }
@@ -83,6 +260,15 @@ impl Period {
     /// Returns the quarter number for quarterly periods
     #[must_use]
     pub const fn quarter(&self) -> Option<u8> {
+        match self {
+            Self::Quarter { quarter, .. } => Some(quarter.get()),
+            _ => None,
+        }
+    }
+
+    /// Returns the validated quarter component for quarterly periods.
+    #[must_use]
+    pub const fn quarter_of_year(&self) -> Option<QuarterOfYear> {
         match self {
             Self::Quarter { quarter, .. } => Some(*quarter),
             _ => None,
@@ -117,24 +303,21 @@ impl Period {
     pub fn next_quarter(&self) -> Option<Self> {
         match self {
             Self::Date(d) => {
-                let (y, q) = Self::quarter_for_date(*d);
-                let (ny, nq) = Self::increment_quarter(y, q);
-                Some(Self::Quarter {
-                    year: ny,
-                    quarter: nq,
-                })
+                let (year, quarter) = Self::quarter_for_date(*d)?;
+                let (year, quarter) = Self::increment_quarter(year, quarter)?;
+                Some(Self::Quarter { year, quarter })
             }
             Self::Quarter { year, quarter } => {
-                let (ny, nq) = Self::increment_quarter(*year, *quarter);
+                let (year, quarter) = Self::increment_quarter(*year, *quarter)?;
+                Some(Self::Quarter { year, quarter })
+            }
+            Self::Year { year } => {
+                let next_year = PeriodYear::new(year.get() + 1).ok()?;
                 Some(Self::Quarter {
-                    year: ny,
-                    quarter: nq,
+                    year: next_year,
+                    quarter: QuarterOfYear::Q1,
                 })
             }
-            Self::Year { year } => Some(Self::Quarter {
-                year: *year + 1,
-                quarter: 1,
-            }),
             Self::Other(_) => None,
         }
     }
@@ -149,7 +332,7 @@ impl Period {
     pub fn year_end(&self) -> Option<NaiveDate> {
         let y = match self {
             Self::Date(d) => d.year(),
-            Self::Quarter { year, .. } | Self::Year { year } => *year,
+            Self::Quarter { year, .. } | Self::Year { year } => year.get(),
             Self::Other(_) => return None,
         };
         NaiveDate::from_ymd_opt(y, 12, 31)
@@ -161,23 +344,21 @@ impl Period {
     /// - For `Quarter`, returns the first day of that quarter
     /// - For `Year`, returns January 1 of that year
     /// - For `Other`, returns `None`
-    ///
-    /// Manually constructed quarters outside `1..=4` return `None`.
     #[must_use]
     pub const fn start_date(&self) -> Option<NaiveDate> {
         match self {
             Self::Date(d) => Some(*d),
             Self::Quarter { year, quarter } => {
-                let month = match *quarter {
+                let month = match quarter.get() {
                     1 => 1,
                     2 => 4,
                     3 => 7,
                     4 => 10,
                     _ => return None,
                 };
-                NaiveDate::from_ymd_opt(*year, month, 1)
+                NaiveDate::from_ymd_opt(year.get(), month, 1)
             }
-            Self::Year { year } => NaiveDate::from_ymd_opt(*year, 1, 1),
+            Self::Year { year } => NaiveDate::from_ymd_opt(year.get(), 1, 1),
             Self::Other(_) => None,
         }
     }
@@ -188,23 +369,21 @@ impl Period {
     /// - For `Quarter`, returns the last day of that quarter
     /// - For `Year`, returns December 31 of that year
     /// - For `Other`, returns `None`
-    ///
-    /// Manually constructed quarters outside `1..=4` return `None`.
     #[must_use]
     pub const fn end_date(&self) -> Option<NaiveDate> {
         match self {
             Self::Date(d) => Some(*d),
             Self::Quarter { year, quarter } => {
-                let (month, day) = match *quarter {
+                let (month, day) = match quarter.get() {
                     1 => (3, 31),
                     2 => (6, 30),
                     3 => (9, 30),
                     4 => (12, 31),
                     _ => return None,
                 };
-                NaiveDate::from_ymd_opt(*year, month, day)
+                NaiveDate::from_ymd_opt(year.get(), month, day)
             }
-            Self::Year { year } => NaiveDate::from_ymd_opt(*year, 12, 31),
+            Self::Year { year } => NaiveDate::from_ymd_opt(year.get(), 12, 31),
             Self::Other(_) => None,
         }
     }
@@ -222,7 +401,7 @@ impl Period {
         match (self, other) {
             (Self::Year { year: ay }, Self::Year { year: by }) => ay == by,
             (Self::Year { year }, Self::Date(d)) | (Self::Date(d), Self::Year { year }) => {
-                d.year() == *year
+                d.year() == year.get()
             }
             (Self::Year { year }, Self::Quarter { year: qy, .. })
             | (Self::Quarter { year: qy, .. }, Self::Year { year }) => qy == year,
@@ -239,7 +418,9 @@ impl Period {
             ) => ay == by && aq == bq,
             (Self::Quarter { year, quarter }, Self::Date(d))
             | (Self::Date(d), Self::Quarter { year, quarter }) => {
-                let (dy, dq) = Self::quarter_for_date(*d);
+                let Some((dy, dq)) = Self::quarter_for_date(*d) else {
+                    return false;
+                };
                 dy == *year && dq == *quarter
             }
 
@@ -249,23 +430,28 @@ impl Period {
         }
     }
 
-    fn quarter_for_date(d: NaiveDate) -> (i32, u8) {
-        let y = d.year();
+    fn quarter_for_date(d: NaiveDate) -> Option<(PeriodYear, QuarterOfYear)> {
+        let year = PeriodYear::new(d.year()).ok()?;
         let m = d.month();
-        let q = match m {
-            1..=3 => 1,
-            4..=6 => 2,
-            7..=9 => 3,
-            _ => 4,
+        let quarter = match m {
+            1..=3 => QuarterOfYear::Q1,
+            4..=6 => QuarterOfYear::Q2,
+            7..=9 => QuarterOfYear::Q3,
+            _ => QuarterOfYear::Q4,
         };
-        (y, q)
+        Some((year, quarter))
     }
 
-    const fn increment_quarter(year: i32, quarter: u8) -> (i32, u8) {
-        if quarter < 4 {
-            (year, quarter + 1)
+    fn increment_quarter(
+        year: PeriodYear,
+        quarter: QuarterOfYear,
+    ) -> Option<(PeriodYear, QuarterOfYear)> {
+        if quarter.get() < QuarterOfYear::MAX {
+            let next_quarter = QuarterOfYear::new(quarter.get() + 1).ok()?;
+            Some((year, next_quarter))
         } else {
-            (year + 1, 1)
+            let next_year = PeriodYear::new(year.get() + 1).ok()?;
+            Some((next_year, QuarterOfYear::Q1))
         }
     }
 }
@@ -328,7 +514,7 @@ impl Period {
             return None;
         }
 
-        let year = read_4_digits(b, 0)?;
+        let year = PeriodYear::new(read_4_digits(b, 0)?).ok()?;
         let mut idx = 4;
 
         // Optional separator between the year and the `Q`:
@@ -373,10 +559,11 @@ impl Period {
             return None;
         }
         let quarter = c - b'0';
-        match quarter {
-            1..=4 => Some(Ok(Self::Quarter { year, quarter })),
-            _ => Some(Err(())),
-        }
+        let Ok(quarter) = QuarterOfYear::new(quarter) else {
+            return Some(Err(()));
+        };
+
+        Some(Ok(Self::Quarter { year, quarter }))
     }
 
     /// Parse year period format: "2023", "FY2023", "Fiscal 2023".
@@ -401,7 +588,7 @@ impl Period {
         if b.len() - digits_start != 4 {
             return None;
         }
-        let year = read_4_digits(b, digits_start)?;
+        let year = PeriodYear::new(read_4_digits(b, digits_start)?).ok()?;
         Some(Self::Year { year })
     }
 

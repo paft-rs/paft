@@ -15,6 +15,20 @@ pub enum DomainError {
         format: String,
     },
 
+    /// Invalid structured period year.
+    #[error("Invalid period year: {year} - expected a year in 0..=9999")]
+    InvalidPeriodYear {
+        /// The invalid structured period year.
+        year: i32,
+    },
+
+    /// Invalid structured period quarter.
+    #[error("Invalid period quarter: {quarter} - expected a quarter in 1..=4")]
+    InvalidPeriodQuarter {
+        /// The invalid structured period quarter.
+        quarter: u8,
+    },
+
     /// Invalid exchange token encountered while parsing.
     #[error("Invalid exchange value: '{value}'")]
     InvalidExchangeValue {

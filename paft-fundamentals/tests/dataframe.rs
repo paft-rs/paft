@@ -50,18 +50,12 @@ fn earnings_to_dataframe() {
             earnings: Some(usd(450)),
         }],
         quarterly: vec![EarningsQuarter {
-            period: Period::Quarter {
-                year: 2024,
-                quarter: 1,
-            },
+            period: Period::quarterly(2024, 1).unwrap(),
             revenue: Some(usd(300)),
             earnings: Some(usd(110)),
         }],
         quarterly_eps: vec![EarningsQuarterEps {
-            period: Period::Quarter {
-                year: 2024,
-                quarter: 1,
-            },
+            period: Period::quarterly(2024, 1).unwrap(),
             actual: Some(usd_price(2)),
             estimate: Some(usd_price(1)),
         }],
@@ -85,10 +79,7 @@ fn earnings_year_to_dataframe() {
 #[test]
 fn earnings_quarter_to_dataframe() {
     let quarter = EarningsQuarter {
-        period: Period::Quarter {
-            year: 2024,
-            quarter: 2,
-        },
+        period: Period::quarterly(2024, 2).unwrap(),
         revenue: Some(usd(250)),
         earnings: Some(usd(75)),
     };
@@ -100,10 +91,7 @@ fn earnings_quarter_to_dataframe() {
 #[test]
 fn earnings_quarter_eps_to_dataframe() {
     let eps = EarningsQuarterEps {
-        period: Period::Quarter {
-            year: 2024,
-            quarter: 2,
-        },
+        period: Period::quarterly(2024, 2).unwrap(),
         actual: Some(usd_price(3)),
         estimate: Some(usd_price(2)),
     };
@@ -128,7 +116,7 @@ fn price_target_to_dataframe() {
 #[test]
 fn recommendation_row_to_dataframe() {
     let r = RecommendationRow {
-        period: Period::Year { year: 2024 },
+        period: Period::annual(2024).unwrap(),
         strong_buy: Some(5),
         buy: Some(7),
         hold: Some(3),
@@ -142,10 +130,7 @@ fn recommendation_row_to_dataframe() {
 #[test]
 fn recommendation_summary_to_dataframe() {
     let summary = RecommendationSummary {
-        latest_period: Some(Period::Quarter {
-            year: 2024,
-            quarter: 2,
-        }),
+        latest_period: Some(Period::quarterly(2024, 2).unwrap()),
         strong_buy: Some(5),
         buy: Some(7),
         hold: Some(3),
@@ -220,13 +205,7 @@ fn revenue_estimate_to_dataframe() {
 
 #[test]
 fn trend_point_to_dataframe() {
-    let point = TrendPoint::new(
-        Period::Quarter {
-            year: 2023,
-            quarter: 4,
-        },
-        usd_price(2),
-    );
+    let point = TrendPoint::new(Period::quarterly(2023, 4).unwrap(), usd_price(2));
 
     let df = point.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -236,7 +215,7 @@ fn trend_point_to_dataframe() {
 fn eps_trend_to_dataframe() {
     let trend = EpsTrend {
         current: Some(usd_price(3)),
-        historical: vec![TrendPoint::new(Period::Year { year: 2022 }, usd_price(2))],
+        historical: vec![TrendPoint::new(Period::annual(2022).unwrap(), usd_price(2))],
     };
 
     let df = trend.to_dataframe().unwrap();
@@ -245,14 +224,7 @@ fn eps_trend_to_dataframe() {
 
 #[test]
 fn revision_point_to_dataframe() {
-    let point = RevisionPoint::new(
-        Period::Quarter {
-            year: 2023,
-            quarter: 4,
-        },
-        4,
-        1,
-    );
+    let point = RevisionPoint::new(Period::quarterly(2023, 4).unwrap(), 4, 1);
 
     let df = point.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -261,7 +233,7 @@ fn revision_point_to_dataframe() {
 #[test]
 fn eps_revisions_to_dataframe() {
     let revisions = EpsRevisions {
-        historical: vec![RevisionPoint::new(Period::Year { year: 2023 }, 5, 2)],
+        historical: vec![RevisionPoint::new(Period::annual(2023).unwrap(), 5, 2)],
     };
 
     let df = revisions.to_dataframe().unwrap();
@@ -289,29 +261,20 @@ fn earnings_trend_row_to_dataframe() {
     let eps_trend = EpsTrend {
         current: Some(usd_price(3)),
         historical: vec![TrendPoint::new(
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
+            Period::quarterly(2023, 4).unwrap(),
             usd_price(2),
         )],
     };
     let eps_revisions = EpsRevisions {
         historical: vec![RevisionPoint::new(
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
+            Period::quarterly(2023, 4).unwrap(),
             4,
             1,
         )],
     };
 
     let row = EarningsTrendRow {
-        period: Period::Quarter {
-            year: 2024,
-            quarter: 1,
-        },
+        period: Period::quarterly(2024, 1).unwrap(),
         growth: Some(dec("0.12")),
         earnings_estimate,
         revenue_estimate,
@@ -326,7 +289,7 @@ fn earnings_trend_row_to_dataframe() {
 #[test]
 fn statements_row_to_dataframe() {
     let row = IncomeStatementRow {
-        period: Period::Year { year: 2024 },
+        period: Period::annual(2024).unwrap(),
         total_revenue: None,
         gross_profit: None,
         operating_income: None,
@@ -342,7 +305,7 @@ fn statements_row_to_dataframe() {
 #[test]
 fn balance_sheet_row_to_dataframe() {
     let row = BalanceSheetRow {
-        period: Period::Year { year: 2024 },
+        period: Period::annual(2024).unwrap(),
         total_assets: Some(usd(5_000)),
         total_liabilities: Some(usd(3_000)),
         total_equity: Some(usd(2_000)),
@@ -366,7 +329,7 @@ fn balance_sheet_row_to_dataframe() {
 #[test]
 fn cashflow_row_to_dataframe() {
     let row = CashflowRow {
-        period: Period::Year { year: 2024 },
+        period: Period::annual(2024).unwrap(),
         operating_cashflow: Some(usd(1_200)),
         capital_expenditures: Some(usd(300)),
         free_cash_flow: Some(usd(900)),
@@ -477,10 +440,7 @@ fn insider_roster_holder_to_dataframe() {
 #[test]
 fn net_share_purchase_activity_to_dataframe() {
     let activity = NetSharePurchaseActivity {
-        period: Period::Quarter {
-            year: 2023,
-            quarter: 4,
-        },
+        period: Period::quarterly(2023, 4).unwrap(),
         buy_shares: Some(2_000),
         buy_count: Some(10),
         sell_shares: Some(1_500),
