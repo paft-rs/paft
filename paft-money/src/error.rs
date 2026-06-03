@@ -101,6 +101,16 @@ pub enum MoneyError {
         /// Expected exponent for the currency.
         exponent: u8,
     },
+    /// Occurs when localized formatting requests more fractional digits than
+    /// the active decimal backend supports.
+    #[cfg(feature = "money-formatting")]
+    #[error("format fraction digits {actual_fraction_digits} exceed maximum {max_fraction_digits}")]
+    FormatPrecisionExceeded {
+        /// Requested display fractional digits.
+        actual_fraction_digits: u32,
+        /// Maximum display fractional digits supported by this build.
+        max_fraction_digits: u32,
+    },
     /// Occurs when attempting to use an unsupported locale for formatting or parsing.
     #[cfg(feature = "money-formatting")]
     #[error("unsupported locale: {locale:?}")]

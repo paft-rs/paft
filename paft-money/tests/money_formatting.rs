@@ -1,7 +1,10 @@
 #![cfg(feature = "money-formatting")]
 
 use iso_currency::Currency as IsoCurrency;
-use paft_money::{Currency, Locale, Money, MoneyError, clear_currency_metadata, currency_metadata};
+use paft_money::{
+    Currency, Locale, MAX_DECIMAL_PRECISION, Money, MoneyError, clear_currency_metadata,
+    currency_metadata,
+};
 
 const fn usd() -> Currency {
     Currency::Iso(IsoCurrency::USD)
@@ -151,6 +154,42 @@ fn amount_string_supports_custom_digits() {
             .amount_string_with_locale(Locale::EnEu, 4)
             .unwrap(),
         "1.234,5700"
+    );
+}
+
+#[test]
+fn localized_formatting_rejects_excessive_fraction_digits() {
+    let usd_value = Money::from_canonical_str("1", usd()).unwrap();
+    let max_fraction_digits = u32::from(MAX_DECIMAL_PRECISION);
+
+    assert_eq!(
+        usd_value
+            .localized(Locale::EnUs)
+            .fraction_digits(max_fraction_digits + 1)
+            .into_string()
+            .unwrap_err(),
+        MoneyError::FormatPrecisionExceeded {
+            actual_fraction_digits: max_fraction_digits + 1,
+            max_fraction_digits,
+        }
+    );
+
+    assert_eq!(
+        usd_value
+            .amount_string_with_locale(Locale::EnUs, u32::MAX)
+            .unwrap_err(),
+        MoneyError::FormatPrecisionExceeded {
+            actual_fraction_digits: u32::MAX,
+            max_fraction_digits,
+        }
+    );
+
+    assert_eq!(
+        format!(
+            "{}",
+            usd_value.localized(Locale::EnUs).fraction_digits(u32::MAX)
+        ),
+        "1 USD"
     );
 }
 

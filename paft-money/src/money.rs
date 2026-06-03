@@ -17,7 +17,7 @@ use std::borrow::Cow;
 use df_derive_macros::ToDataFrame;
 
 use crate::currency::Currency;
-#[cfg(not(feature = "bigdecimal"))]
+#[cfg(any(not(feature = "bigdecimal"), feature = "money-formatting"))]
 use crate::currency_utils::MAX_DECIMAL_PRECISION;
 use crate::currency_utils::MAX_MINOR_UNIT_DECIMALS;
 use crate::exact::{
@@ -422,12 +422,14 @@ impl Money {
 
     /// Renders the numeric portion with custom fraction digits (no symbol or code).
     ///
-    /// The `fraction_digits` parameter allows any number of digits and will pad with zeros
-    /// or round as needed. This is useful for UI sliders, CSV exports, and other cases
-    /// where you need flexible display precision beyond the currency's natural scale.
+    /// The `fraction_digits` parameter pads with zeros or rounds as needed.
+    /// Requests above [`MAX_DECIMAL_PRECISION`] are rejected to keep display
+    /// formatting bounded.
     ///
     /// # Errors
-    /// Returns [`MoneyError::InvalidAmountFormat`] when rounding fails (rare).
+    /// Returns [`MoneyError::FormatPrecisionExceeded`] when `fraction_digits`
+    /// exceeds [`MAX_DECIMAL_PRECISION`], or
+    /// [`MoneyError::InvalidAmountFormat`] when rounding fails (rare).
     #[cfg(feature = "money-formatting")]
     pub fn amount_string_with_locale(
         &self,
@@ -597,6 +599,14 @@ impl Money {
         symbol_first_override: Option<bool>,
         rounding_digits: u32,
     ) -> Result<String, MoneyError> {
+        let max_fraction_digits = u32::from(MAX_DECIMAL_PRECISION);
+        if rounding_digits > max_fraction_digits {
+            return Err(MoneyError::FormatPrecisionExceeded {
+                actual_fraction_digits: rounding_digits,
+                max_fraction_digits,
+            });
+        }
+
         let mut symbol = if include_symbol {
             self.currency.symbol().filter(|s| !s.as_ref().is_empty())
         } else {
@@ -762,7 +772,10 @@ impl<'a> LocalizedMoney<'a> {
     /// Produce the localized string according to the configured options.
     ///
     /// # Errors
-    /// Returns [`MoneyError::InvalidAmountFormat`] when the number cannot be represented with the requested fraction digits.
+    /// Returns [`MoneyError::FormatPrecisionExceeded`] when the requested
+    /// fraction digits exceed [`crate::MAX_DECIMAL_PRECISION`], or
+    /// [`MoneyError::InvalidAmountFormat`] when the number cannot be
+    /// represented with the requested fraction digits.
     pub fn into_string(self) -> Result<String, MoneyError> {
         self.format_internal()
     }
