@@ -108,13 +108,6 @@ impl Symbol {
     }
 }
 
-impl Default for Symbol {
-    fn default() -> Self {
-        // Safe unwrap: "DEFAULT" satisfies all invariants.
-        Self::new("DEFAULT").expect("static default symbol is valid")
-    }
-}
-
 impl AsRef<str> for Symbol {
     fn as_ref(&self) -> &str {
         self.as_str()

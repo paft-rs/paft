@@ -29,11 +29,10 @@ paft_core::other_string_code_type!(
 /// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Exchange {
     /// NASDAQ Stock Market
-    #[default]
     NASDAQ,
     /// New York Stock Exchange
     NYSE,

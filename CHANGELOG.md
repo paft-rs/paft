@@ -177,6 +177,9 @@ All notable changes to this project will be documented in this file.
   `CRYPTO|SYMBOL|3:BTC`, so symbol-equivalent instruments from different asset
   classes cannot collide. Use `Instrument::display_key()` when the old compact
   display format is desired.
+- Domain/fundamentals/facade: removed `Default` from `Symbol`, `Exchange`,
+  `AssetKind`, and `FundKind` because their old defaults (`DEFAULT`, `NASDAQ`,
+  `EQUITY`, and `ETF`) looked like real financial identity data.
 - Domain/facade: `Period` no longer implements `Ord`/`PartialOrd`; callers must
   choose explicit semantics such as `start_date()`, `end_date()`, or a
   provider-specific structural sort key.
