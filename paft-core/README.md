@@ -17,14 +17,14 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.8.0"
+paft = "0.9.0"
 ```
 
 Advanced (direct dependency, minimal):
 
 ```toml
 [dependencies]
-paft-core = { version = "0.8.0", default-features = false }
+paft-core = { version = "0.9.0", default-features = false }
 ```
 
 Serde helpers are included in the minimal crate; there are no optional serde feature flags.

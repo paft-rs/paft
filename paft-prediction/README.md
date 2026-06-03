@@ -13,22 +13,22 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = { version = "0.8.0", features = ["prediction"] }
+paft = { version = "0.9.0", features = ["prediction"] }
 ```
 
 Advanced (direct dependency, minimal features):
 
 ```toml
 [dependencies]
-paft-prediction = { version = "0.8.0", default-features = false }
+paft-prediction = { version = "0.9.0", default-features = false }
 ```
 
 With DataFrame integration:
 
 ```toml
 [dependencies]
-paft-prediction = { version = "0.8.0", default-features = false, features = ["dataframe"] }
-paft-utils = { version = "0.8.0", default-features = false, features = ["dataframe"] } # trait imports for direct users
+paft-prediction = { version = "0.9.0", default-features = false, features = ["dataframe"] }
+paft-utils = { version = "0.9.0", default-features = false, features = ["dataframe"] } # trait imports for direct users
 ```
 
 What's inside

@@ -18,21 +18,21 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.8.0"
+paft = "0.9.0"
 ```
 
 Advanced (direct dependency, minimal):
 
 ```toml
 [dependencies]
-paft-domain = { version = "0.8.0", default-features = false }
+paft-domain = { version = "0.9.0", default-features = false }
 ```
 
 Enable DataFrame helpers as needed:
 
 ```toml
 [dependencies]
-paft-domain = { version = "0.8.0", default-features = false, features = ["dataframe"] }
+paft-domain = { version = "0.9.0", default-features = false, features = ["dataframe"] }
 ```
 
 Features
@@ -79,8 +79,8 @@ Prediction-market identity is intentionally outside `paft-domain`; use the separ
 
 ```toml
 [dependencies]
-paft-domain = "0.8.0"
-paft-prediction = "0.8.0"
+paft-domain = "0.9.0"
+paft-prediction = "0.9.0"
 ```
 
 ```rust
