@@ -65,6 +65,8 @@ All notable changes to this project will be documented in this file.
   labels and `CalendarPeriod` for date-boundary logic. Structured period
   variants now store validated `PeriodYear`, `QuarterOfYear`, and
   `PeriodDate` components.
+- Fundamentals/facade: `EarningsYear::year` now uses the validated
+  `PeriodYear` newtype instead of raw `i32`.
 - Fundamentals/facade: EPS trend and revision historical points now use
   `Horizon` for lookback windows instead of overloading `ReportingPeriod`.
 - Domain/money/fundamentals/facade: extensible enum `Other` variants now use
@@ -166,6 +168,9 @@ All notable changes to this project will be documented in this file.
   Existing reporting literals should move to
   `ReportingPeriod::quarterly(year, quarter)?`,
   `ReportingPeriod::annual(year)?`, or `ReportingPeriod::date(date)?`.
+- Fundamentals/facade: `EarningsYear::year` now uses `PeriodYear`; construct
+  with `EarningsYear::new(year)?` or `PeriodYear::new(year)?` in struct
+  literals. `EarningsYear` no longer implements `Default`.
 - Market/facade: `Candle` now has `currency: Currency` and flattened
   `ohlc: Ohlc` `PriceAmount` values instead of independent `Price` fields for
   `open`, `high`, `low`, and `close`; `close_unadj` is now

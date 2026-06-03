@@ -67,8 +67,8 @@ use paft_fundamentals::{
 };
 use paft_money::{Currency, IsoCurrency, Price};
 
-let earnings = Earnings { yearly: vec![EarningsYear { year: 2023, ..Default::default() }], ..Default::default() };
-assert_eq!(earnings.yearly[0].year, 2023);
+let earnings = Earnings { yearly: vec![EarningsYear::new(2023).unwrap()], ..Default::default() };
+assert_eq!(earnings.yearly[0].year.get(), 2023);
 
 let usd = Currency::Iso(IsoCurrency::USD);
 let eps_trend = EpsTrend::new(

@@ -1,7 +1,7 @@
 #![cfg(feature = "dataframe")]
 use chrono::{TimeZone, Utc};
 use paft_decimal::{Decimal, Ratio};
-use paft_domain::{Horizon, Isin, ReportingPeriod};
+use paft_domain::{Horizon, Isin, PeriodYear, ReportingPeriod};
 use paft_fundamentals::{
     Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
     EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
@@ -45,7 +45,7 @@ fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
 fn earnings_to_dataframe() {
     let earnings = Earnings {
         yearly: vec![EarningsYear {
-            year: 2024,
+            year: PeriodYear::new(2024).unwrap(),
             revenue: Some(usd(1200)),
             earnings: Some(usd(450)),
         }],
@@ -68,7 +68,7 @@ fn earnings_to_dataframe() {
 #[test]
 fn earnings_year_to_dataframe() {
     let e = EarningsYear {
-        year: 2024,
+        year: PeriodYear::new(2024).unwrap(),
         revenue: None,
         earnings: Some(usd(10)),
     };

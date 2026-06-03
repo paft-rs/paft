@@ -10,11 +10,11 @@
 //! use paft_fundamentals::{Earnings, EarningsYear, Profile, CompanyProfile};
 //!
 //! let earnings = Earnings {
-//!     yearly: vec![EarningsYear { year: 2023, revenue: None, earnings: None }],
+//!     yearly: vec![EarningsYear::new(2023).unwrap()],
 //!     quarterly: vec![],
 //!     quarterly_eps: vec![],
 //! };
-//! assert_eq!(earnings.yearly[0].year, 2023);
+//! assert_eq!(earnings.yearly[0].year.get(), 2023);
 //!
 //! let profile = Profile::Company(CompanyProfile {
 //!     name: "Example Corp".to_string(),

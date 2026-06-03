@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_decimal::Decimal;
-use paft_domain::{DomainError, Horizon, ReportingPeriod};
+use paft_domain::{DomainError, Horizon, PeriodYear, ReportingPeriod};
 use paft_money::{Money, Price};
 
 use crate::FundamentalsError;
@@ -207,16 +207,32 @@ pub struct Earnings {
     pub quarterly_eps: Vec<EarningsQuarterEps>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Yearly earnings summary.
 pub struct EarningsYear {
     /// Fiscal year.
-    pub year: i32,
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub year: PeriodYear,
     /// Revenue for the year.
     pub revenue: Option<Money>,
     /// Earnings for the year.
     pub earnings: Option<Money>,
+}
+
+impl EarningsYear {
+    /// Builds a yearly earnings summary with validated fiscal year.
+    ///
+    /// # Errors
+    /// Returns [`DomainError::InvalidPeriodYear`] when `year` is outside
+    /// `0..=9999`.
+    pub fn new(year: i32) -> Result<Self, DomainError> {
+        Ok(Self {
+            year: PeriodYear::new(year)?,
+            revenue: None,
+            earnings: None,
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

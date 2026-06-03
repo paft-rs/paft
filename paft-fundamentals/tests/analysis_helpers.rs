@@ -1,6 +1,8 @@
 use paft_decimal::Decimal;
 use paft_domain::Horizon;
-use paft_fundamentals::{EpsRevisions, EpsTrend, RecommendationSummary, RevisionPoint, TrendPoint};
+use paft_fundamentals::{
+    EarningsYear, EpsRevisions, EpsTrend, RecommendationSummary, RevisionPoint, TrendPoint,
+};
 use paft_money::{Currency, IsoCurrency, Price};
 use std::str::FromStr;
 
@@ -88,4 +90,23 @@ fn recommendation_summary_defaults() {
     let s = RecommendationSummary::default();
     assert!(s.latest_period.is_none());
     assert!(s.mean.is_none());
+}
+
+#[test]
+fn earnings_year_uses_validated_period_year() {
+    let row = EarningsYear::new(2024).unwrap();
+    assert_eq!(row.year.get(), 2024);
+
+    let value = serde_json::to_value(&row).unwrap();
+    assert_eq!(value["year"], serde_json::json!(2024));
+
+    assert!(EarningsYear::new(10_000).is_err());
+    assert!(
+        serde_json::from_value::<EarningsYear>(serde_json::json!({
+            "year": 10000,
+            "revenue": null,
+            "earnings": null
+        }))
+        .is_err()
+    );
 }

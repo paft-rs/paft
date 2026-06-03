@@ -254,6 +254,19 @@ fn period_low_years_emit_four_digit_canonical_codes() {
 }
 
 #[test]
+fn period_year_serde_uses_numeric_wire_shape_and_validates() {
+    let year = PeriodYear::new(2024).unwrap();
+    let json = serde_json::to_string(&year).unwrap();
+    assert_eq!(json, "2024");
+
+    let round_trip: PeriodYear = serde_json::from_str(&json).unwrap();
+    assert_eq!(round_trip, year);
+
+    assert!(serde_json::from_str::<PeriodYear>("10000").is_err());
+    assert!(serde_json::from_str::<PeriodYear>("-1").is_err());
+}
+
+#[test]
 fn period_byte_parser_iso_does_not_swallow_us_or_dayfirst() {
     // A 4-digit-leading + '/'/'-' prefix that fails ISO must NOT cascade to US
     // or day-first (those start with 1-2 digits). Verify by checking inputs

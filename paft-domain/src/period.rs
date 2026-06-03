@@ -91,6 +91,25 @@ impl fmt::Display for PeriodYear {
     }
 }
 
+impl Serialize for PeriodYear {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_i32(self.get())
+    }
+}
+
+impl<'de> Deserialize<'de> for PeriodYear {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let year = i32::deserialize(deserializer)?;
+        Self::new(year).map_err(DeError::custom)
+    }
+}
+
 /// Valid date component for structured financial periods.
 ///
 /// The wrapped [`NaiveDate`] always has a year in `0..=9999`, matching
