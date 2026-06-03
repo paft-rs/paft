@@ -118,9 +118,13 @@ let quote = Quote {
 ### Hierarchical Identifiers
 
 ```rust
-// Automatic prioritization: FIGI > ISIN > Symbol@Exchange > Symbol
-println!("{}", apple.unique_key());   // "BBG000B9XRY4" (uses FIGI)
-println!("{}", bitcoin.unique_key()); // "BTC-USD" (uses symbol)
+// `unique_key()` is kind-aware and namespaced for identity use.
+println!("{}", apple.unique_key());   // "EQUITY|FIGI|BBG000B9XRY4"
+println!("{}", bitcoin.unique_key()); // "CRYPTO|SYMBOL|7:BTC-USD"
+
+// `display_key()` keeps the compact identifier chain: FIGI > ISIN > Symbol@Exchange > Symbol.
+println!("{}", apple.display_key());   // "BBG000B9XRY4"
+println!("{}", bitcoin.display_key()); // "BTC-USD"
 
 // Check identification levels — fields are public on the flat struct.
 if apple.figi.is_some() || apple.isin.is_some() {

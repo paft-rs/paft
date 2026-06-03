@@ -208,10 +208,41 @@ impl Instrument {
         })
     }
 
-    /// Returns the best available unique identifier for this instrument
-    /// (FIGI > ISIN > SYMBOL@EXCHANGE > SYMBOL).
+    /// Returns a stable, namespaced identity key for this instrument.
+    ///
+    /// The key includes the asset kind and identifier source so instruments that
+    /// share a raw symbol (for example, an equity and a crypto asset both named
+    /// `BTC`) do not collapse to the same key. Symbol payloads include their
+    /// byte length to avoid delimiter collisions with symbols that contain
+    /// characters such as `@`.
     #[must_use]
     pub fn unique_key(&self) -> Cow<'_, str> {
+        let kind = self.kind.code();
+
+        if let Some(figi) = &self.figi {
+            return Cow::Owned(format!("{kind}|FIGI|{}", figi.as_ref()));
+        }
+        if let Some(isin) = &self.isin {
+            return Cow::Owned(format!("{kind}|ISIN|{}", isin.as_ref()));
+        }
+
+        let symbol = self.symbol.as_str();
+        let symbol_len = symbol.len();
+
+        if let Some(exchange) = &self.exchange {
+            return Cow::Owned(format!(
+                "{kind}|SYMBOL|{symbol_len}:{symbol}|EXCHANGE|{}",
+                exchange.code()
+            ));
+        }
+
+        Cow::Owned(format!("{kind}|SYMBOL|{symbol_len}:{symbol}"))
+    }
+
+    /// Returns the best available compact identifier for display
+    /// (FIGI > ISIN > SYMBOL@EXCHANGE > SYMBOL).
+    #[must_use]
+    pub fn display_key(&self) -> Cow<'_, str> {
         if let Some(figi) = &self.figi {
             return Cow::Borrowed(figi.as_ref());
         }
@@ -227,6 +258,6 @@ impl Instrument {
 
 impl std::fmt::Display for Instrument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.unique_key())
+        write!(f, "{}", self.display_key())
     }
 }

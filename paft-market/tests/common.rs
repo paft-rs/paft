@@ -59,5 +59,8 @@ fn quote_construction_smoke() {
         ask: None,
         provider: (),
     };
-    assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL@NASDAQ");
+    assert_eq!(
+        quote.instrument.unique_key().as_ref(),
+        "EQUITY|SYMBOL|4:AAPL|EXCHANGE|NASDAQ"
+    );
 }

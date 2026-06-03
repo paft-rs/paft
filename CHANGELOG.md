@@ -29,6 +29,9 @@ All notable changes to this project will be documented in this file.
 - Market history: `HistoryResponse` now exposes `price_basis:
   OhlcPriceBasis`, describing the returned OHLC price basis as either uniform
   `PriceBasis` metadata or per-field open/high/low/close bases.
+- Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
+  source-namespaced identity key; new `Instrument::display_key()` preserves the
+  compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
 
 ### Breaking Changes
 
@@ -55,6 +58,12 @@ All notable changes to this project will be documented in this file.
   `HistoryRequest::auto_adjust` to `HistoryFlags::PREFER_ADJUSTED_PRICES`,
   `HistoryRequestBuilder::prefer_adjusted_prices`, and
   `HistoryRequest::prefer_adjusted_prices`.
+- Domain/facade: `Instrument::unique_key()` no longer returns bare FIGI, ISIN,
+  `SYMBOL@EXCHANGE`, or `SYMBOL` strings. It now includes asset kind and
+  identifier source, e.g. `EQUITY|SYMBOL|4:AAPL` or
+  `CRYPTO|SYMBOL|3:BTC`, so symbol-equivalent instruments from different asset
+  classes cannot collide. Use `Instrument::display_key()` when the old compact
+  display format is desired.
 
 ## [0.8.0] - 2026-05-27
 

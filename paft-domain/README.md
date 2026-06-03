@@ -64,7 +64,8 @@ let aapl_pro = Instrument {
     isin: Some(Isin::new("US0378331005").unwrap()),
     kind: AssetKind::Equity,
 };
-assert_eq!(aapl_pro.unique_key(), "BBG000B9XRY4");
+assert_eq!(aapl_pro.unique_key(), "EQUITY|FIGI|BBG000B9XRY4");
+assert_eq!(aapl_pro.display_key(), "BBG000B9XRY4");
 
 // Period parsing with canonical output (wire = Display)
 let q4 = "2023-Q4".parse::<Period>().unwrap();

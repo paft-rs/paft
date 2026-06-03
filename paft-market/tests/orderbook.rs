@@ -93,7 +93,10 @@ fn order_book_with_mixed_size_availability() {
     assert_eq!(decoded.asks[0].size, Some(size(200)));
     assert!(decoded.asks[1].size.is_none());
     assert!(decoded.bids[1].size.is_none());
-    assert_eq!(decoded.instrument.unique_key().as_ref(), "AAPL");
+    assert_eq!(
+        decoded.instrument.unique_key().as_ref(),
+        "EQUITY|SYMBOL|4:AAPL"
+    );
     assert_eq!(decoded.as_of.unwrap().timestamp_millis(), 1_700_000_000_456);
 }
 
@@ -101,7 +104,10 @@ fn order_book_with_mixed_size_availability() {
 fn order_book_constructor_sets_required_context() {
     let book = OrderBook::new(aapl());
 
-    assert_eq!(book.instrument.unique_key().as_ref(), "AAPL");
+    assert_eq!(
+        book.instrument.unique_key().as_ref(),
+        "EQUITY|SYMBOL|4:AAPL"
+    );
     assert!(book.as_of.is_none());
     assert!(book.asks.is_empty());
     assert!(book.bids.is_empty());
@@ -117,6 +123,9 @@ fn order_book_deserializes_missing_as_of_as_none() {
 
     let book: OrderBook = serde_json::from_str(json).unwrap();
 
-    assert_eq!(book.instrument.unique_key().as_ref(), "AAPL");
+    assert_eq!(
+        book.instrument.unique_key().as_ref(),
+        "EQUITY|SYMBOL|4:AAPL"
+    );
     assert!(book.as_of.is_none());
 }
