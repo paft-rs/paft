@@ -7,7 +7,7 @@
 #[cfg(feature = "domain")]
 pub use crate::domain::{
     AssetKind, Canonical, Exchange, Figi, Instrument, Isin, MarketState, OtherAssetKind,
-    OtherExchange, OtherPeriod, Period, PeriodYear, QuarterOfYear, StringCode, Symbol,
+    OtherExchange, OtherPeriod, Period, PeriodDate, PeriodYear, QuarterOfYear, StringCode, Symbol,
     canonicalize,
 };
 #[cfg(feature = "money-formatting")]

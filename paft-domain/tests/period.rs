@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use paft_domain::{DomainError, MarketState, Period, PeriodYear, QuarterOfYear};
+use paft_domain::{DomainError, MarketState, Period, PeriodDate, PeriodYear, QuarterOfYear};
 use std::str::FromStr;
 
 #[test]
@@ -44,6 +44,10 @@ fn assert_period_roundtrips(input: &str) -> Period {
     let reparsed: Period = serde_json::from_str(&json).unwrap();
     assert_eq!(p, reparsed, "serde round-trip failed for {input:?}");
     p
+}
+
+fn date_period(year: i32, month: u32, day: u32) -> Period {
+    Period::date(NaiveDate::from_ymd_opt(year, month, day).unwrap()).unwrap()
 }
 
 #[test]
@@ -369,7 +373,7 @@ fn period_byte_parser_too_long_inputs_fall_through() {
 
 #[test]
 fn period_calendar_boundaries_are_explicit() {
-    let date = Period::Date(NaiveDate::from_ymd_opt(2023, 5, 17).unwrap());
+    let date = date_period(2023, 5, 17);
     assert_eq!(
         date.start_date(),
         Some(NaiveDate::from_ymd_opt(2023, 5, 17).unwrap())
@@ -406,7 +410,7 @@ fn period_calendar_boundaries_are_explicit() {
 
 #[test]
 fn period_boundaries_support_chronological_sort_keys() {
-    let late_date = Period::Date(NaiveDate::from_ymd_opt(2099, 1, 1).unwrap());
+    let late_date = date_period(2099, 1, 1);
     let early_quarter = Period::quarterly(1900, 1).unwrap();
 
     assert!(early_quarter.start_date() < late_date.start_date());
@@ -435,12 +439,20 @@ fn period_constructors_reject_invalid_structured_components() {
         PeriodYear::new(10_000).unwrap_err(),
         DomainError::InvalidPeriodYear { year: 10_000 }
     );
+    assert_eq!(
+        PeriodDate::new(NaiveDate::from_ymd_opt(10_000, 1, 1).unwrap()).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: 10_000 }
+    );
+    assert_eq!(
+        Period::date(NaiveDate::from_ymd_opt(10_000, 1, 1).unwrap()).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: 10_000 }
+    );
 }
 
 #[test]
 fn period_helper_next_quarter() {
     // Date -> next quarter of its quarter bucket
-    let d = Period::Date(NaiveDate::from_ymd_opt(2023, 3, 31).unwrap());
+    let d = date_period(2023, 3, 31);
     assert_eq!(d.next_quarter(), Some(Period::quarterly(2023, 2).unwrap()));
 
     // Quarter wrap
@@ -457,7 +469,7 @@ fn period_helper_next_quarter() {
 
 #[test]
 fn period_helper_year_end() {
-    let d = Period::Date(NaiveDate::from_ymd_opt(2023, 6, 15).unwrap());
+    let d = date_period(2023, 6, 15);
     let q = Period::quarterly(2023, 3).unwrap();
     let y = Period::annual(2023).unwrap();
 
@@ -479,7 +491,7 @@ fn period_helper_year_end() {
 fn period_helper_is_same_bucket_as() {
     // Year bucket
     let y = Period::annual(2023).unwrap();
-    let d = Period::Date(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap());
+    let d = date_period(2023, 1, 1);
     let q = Period::quarterly(2023, 2).unwrap();
     assert!(y.is_same_bucket_as(&Period::annual(2023).unwrap()));
     assert!(y.is_same_bucket_as(&d));
@@ -487,16 +499,16 @@ fn period_helper_is_same_bucket_as() {
     assert!(!y.is_same_bucket_as(&Period::annual(2022).unwrap()));
 
     // Quarter bucket
-    let d_q2 = Period::Date(NaiveDate::from_ymd_opt(2023, 4, 1).unwrap());
+    let d_q2 = date_period(2023, 4, 1);
     let q2 = Period::quarterly(2023, 2).unwrap();
     assert!(q2.is_same_bucket_as(&d_q2));
     assert!(q2.is_same_bucket_as(&Period::quarterly(2023, 2).unwrap()));
     assert!(!q2.is_same_bucket_as(&Period::quarterly(2023, 3).unwrap()));
 
     // Date exact
-    let d1 = Period::Date(NaiveDate::from_ymd_opt(2023, 7, 4).unwrap());
-    let d2 = Period::Date(NaiveDate::from_ymd_opt(2023, 7, 4).unwrap());
-    let d3 = Period::Date(NaiveDate::from_ymd_opt(2023, 7, 5).unwrap());
+    let d1 = date_period(2023, 7, 4);
+    let d2 = date_period(2023, 7, 4);
+    let d3 = date_period(2023, 7, 5);
     assert!(d1.is_same_bucket_as(&d2));
     assert!(!d1.is_same_bucket_as(&d3));
 }
@@ -526,7 +538,7 @@ fn period_cases() -> Vec<PeriodCase> {
         },
         PeriodCase {
             input: "2023-12-31",
-            expected: Period::Date(NaiveDate::from_ymd_opt(2023, 12, 31).unwrap()),
+            expected: date_period(2023, 12, 31),
             canonical: "2023-12-31",
         },
     ]

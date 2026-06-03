@@ -50,7 +50,7 @@ pub use exchange::{Exchange, OtherExchange};
 pub use identifiers::{Figi, Isin, Symbol};
 pub use instrument::{AssetKind, Instrument, OtherAssetKind};
 pub use market_state::MarketState;
-pub use period::{OtherPeriod, Period, PeriodYear, QuarterOfYear};
+pub use period::{OtherPeriod, Period, PeriodDate, PeriodYear, QuarterOfYear};
 
 #[cfg(feature = "dataframe")]
 pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};

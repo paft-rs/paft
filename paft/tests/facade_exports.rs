@@ -32,6 +32,15 @@ fn constrained_decimal_errors_convert_into_facade_result() {
     ));
 }
 
+#[cfg(feature = "domain")]
+#[test]
+fn period_date_is_available_from_facade_and_prelude() {
+    fn assert_export<T>() {}
+
+    assert_export::<paft::domain::PeriodDate>();
+    assert_export::<paft::prelude::PeriodDate>();
+}
+
 #[cfg(feature = "market")]
 #[test]
 fn market_exports_are_available_from_facade_and_prelude() {

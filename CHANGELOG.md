@@ -44,8 +44,9 @@ All notable changes to this project will be documented in this file.
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
 - Domain/facade: structured `Period` variants now store validated
-  `PeriodYear` and `QuarterOfYear` components; use `Period::annual` and
-  `Period::quarterly` when constructing annual and quarterly periods.
+  `PeriodYear`, `QuarterOfYear`, and `PeriodDate` components; use
+  `Period::annual`, `Period::quarterly`, and `Period::date` when constructing
+  annual, quarterly, and date periods.
 - Domain/money/fundamentals/facade: extensible enum `Other` variants now use
   enum-specific unknown-code wrappers (`OtherCurrency`, `OtherExchange`,
   `OtherAssetKind`, `OtherPeriod`, `OtherRecommendationGrade`,
@@ -64,8 +65,9 @@ All notable changes to this project will be documented in this file.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
   constrained decimal constructors to compose with `paft::prelude::Result`.
 - Domain: structured `Period` values can no longer expose invalid public
-  states such as quarter 5 or five-digit/negative years, and low years now emit
-  four-digit canonical codes so display/serde round trips preserve identity.
+  states such as quarter 5 or date/period years outside `0..=9999`, and low
+  years now emit four-digit canonical codes so display/serde round trips
+  preserve identity.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
   payloads can no longer use tokens already modeled by the owning enum,
   preserving serde identity for values created through public constructors.
@@ -95,10 +97,11 @@ All notable changes to this project will be documented in this file.
   `HistoryRequest::auto_adjust` to `HistoryFlags::PREFER_ADJUSTED_PRICES`,
   `HistoryRequestBuilder::prefer_adjusted_prices`, and
   `HistoryRequest::prefer_adjusted_prices`.
-- Domain/facade: `Period::Quarter { year, quarter }` and
-  `Period::Year { year }` now require validated component newtypes instead of
-  raw integers. Existing literals should move to `Period::quarterly(year,
-  quarter)?` or `Period::annual(year)?`.
+- Domain/facade: `Period::Quarter { year, quarter }`,
+  `Period::Year { year }`, and `Period::Date(date)` now require validated
+  component newtypes instead of raw integers or `NaiveDate`. Existing literals
+  should move to `Period::quarterly(year, quarter)?`, `Period::annual(year)?`,
+  or `Period::date(date)?`.
 - Market/facade: `Candle` now has `currency: Currency` and flattened
   `ohlc: Ohlc` `PriceAmount` values instead of independent `Price` fields for
   `open`, `high`, `low`, `close`, and `close_unadj`.
