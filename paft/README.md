@@ -54,8 +54,8 @@ All features are optional—disable the defaults (`default-features = false`) an
 ## Migration Notes
 
 - Market prices that share one denomination now carry `currency` once at the
-  record level and use contextual `PriceAmount` fields. Volumes that can be
-  fractional now use `QuantityAmount`.
+  record level and use contextual `PriceAmount` fields. Sizes and volumes that
+  can be fractional now use `QuantityAmount`.
 - `HistoryResponse::adjusted` is now `price_basis: OhlcPriceBasis`; providers
   should state whether OHLC values are raw, provider-adjusted, corporate-action
   adjusted, or contract-roll adjusted.

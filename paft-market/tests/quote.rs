@@ -1,5 +1,5 @@
 use chrono::DateTime;
-use paft_decimal::{Decimal, NonNegativeDecimal};
+use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
 use paft_market::market::orderbook::BookLevel;
 use paft_market::market::quote::{Quote, QuoteUpdate};
@@ -16,10 +16,6 @@ fn amount(value: impl Into<Decimal>) -> PriceAmount {
 
 fn quantity(value: impl Into<Decimal>) -> QuantityAmount {
     QuantityAmount::from_decimal(value.into()).unwrap()
-}
-
-fn size(value: i64) -> NonNegativeDecimal {
-    NonNegativeDecimal::new(Decimal::from(value)).unwrap()
 }
 
 fn aapl() -> Instrument {
@@ -431,7 +427,7 @@ fn serialization_roundtrip_preserves_precision() {
 fn quote_with_bid_and_ask_roundtrips() {
     let bid = BookLevel {
         price: amount(149),
-        size: Some(size(200)),
+        size: Some(quantity(200)),
         provider: (),
     };
     let ask = BookLevel {
@@ -458,7 +454,7 @@ fn quote_with_bid_and_ask_roundtrips() {
     let decoded_ask = decoded.ask.as_ref().unwrap();
     assert!(decoded_ask.size.is_none(), "ask size None preserved");
     let decoded_bid = decoded.bid.as_ref().unwrap();
-    assert_eq!(decoded_bid.size, Some(size(200)));
+    assert_eq!(decoded_bid.size, Some(quantity(200)));
 }
 
 #[test]

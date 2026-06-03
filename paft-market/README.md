@@ -9,7 +9,7 @@ Market data models and request builders for the paft ecosystem.
 - Unified market models: `Quote`, `Candle`, `HistoryResponse`, `OptionContract`, `OptionChain`, `OptionUpdate`, `NewsArticle`
 - Snapshot-shaped market data (`Quote`, `OrderBook`) carries optional `as_of` timestamps for staleness checks
 - Price-heavy market payloads carry `Currency` once per record and use
-  contextual `PriceAmount` values; fractional-capable volumes use
+  contextual `PriceAmount` values; fractional-capable sizes and volumes use
   `QuantityAmount`
 - History responses describe returned OHLC values with explicit
   `OhlcPriceBasis` / `PriceBasis` metadata

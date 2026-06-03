@@ -1,7 +1,7 @@
-use paft_decimal::{Decimal, NonNegativeDecimal};
+use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::orderbook::{BookLevel, OrderBook};
-use paft_money::{Currency, IsoCurrency, PriceAmount};
+use paft_money::{Currency, IsoCurrency, PriceAmount, QuantityAmount};
 
 const fn usd() -> Currency {
     Currency::Iso(IsoCurrency::USD)
@@ -15,8 +15,8 @@ fn aapl() -> Instrument {
     Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap()
 }
 
-fn size(amount: i64) -> NonNegativeDecimal {
-    NonNegativeDecimal::new(Decimal::from(amount)).unwrap()
+fn size(amount: i64) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from(amount)).unwrap()
 }
 
 #[test]

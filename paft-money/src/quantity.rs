@@ -73,6 +73,16 @@ impl AsRef<NonNegativeDecimal> for QuantityAmount {
     }
 }
 
+#[cfg(feature = "dataframe")]
+impl paft_utils::dataframe::Decimal128Encode for QuantityAmount {
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        paft_utils::dataframe::Decimal128Encode::try_to_i128_mantissa(
+            self.as_non_negative_decimal(),
+            target_scale,
+        )
+    }
+}
+
 impl TryFrom<Decimal> for QuantityAmount {
     type Error = DecimalConstraintError;
 

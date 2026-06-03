@@ -69,7 +69,7 @@ fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
 fn book_level_to_dataframe_with_size() {
     let level = BookLevel {
         price: usd_amount(100),
-        size: Some(non_negative("500")),
+        size: Some(quantity(500)),
         provider: (),
     };
     let df = level.to_dataframe().unwrap();
@@ -93,7 +93,7 @@ fn order_book_to_dataframe_smoke() {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         as_of: Some(sample_ts(1_700_000_000)),
         currency: usd(),
-        asks: vec![BookLevel::new(usd_amount(101), Some(non_negative("200")))],
+        asks: vec![BookLevel::new(usd_amount(101), Some(quantity(200)))],
         bids: vec![BookLevel::new(usd_amount(99), None)],
         provider: (),
     };

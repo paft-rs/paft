@@ -33,10 +33,9 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Workspace: version bumped to `0.9.0`.
-- Market/fundamentals: universally constrained quantities now use dedicated
-  newtypes: book-level sizes and option implied volatility use
-  `NonNegativeDecimal`, holder fractions use `Ratio`, and news request counts
-  use `NonZeroU32`.
+- Market/fundamentals: universally constrained non-amount fields now use
+  dedicated newtypes: option implied volatility uses `NonNegativeDecimal`,
+  holder fractions use `Ratio`, and news request counts use `NonZeroU32`.
 - Fundamentals: `InsiderTransaction::url` is now `Option<String>` so missing
   filing URLs can be represented without sentinel strings.
 - Money: scalar arithmetic helpers now borrow decimal operands:
@@ -54,10 +53,10 @@ All notable changes to this project will be documented in this file.
   at the containing record and store contextual `PriceAmount` values for
   candles, order-book levels, quotes, quote updates, snapshots, and option
   quote fields.
-- Market/aggregates: provider-agnostic volume fields now use contextual
-  `QuantityAmount` values so fractional crypto, FX, commodities, and
-  base/quote-volume feeds can be represented without rounding or metadata
-  side channels.
+- Market/aggregates: book-level sizes and provider-agnostic volume fields now
+  use contextual `QuantityAmount` values so fractional crypto, FX,
+  commodities, and base/quote-volume feeds can be represented without rounding
+  or metadata side channels.
 - Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
@@ -105,9 +104,10 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking Changes
 
-- Market/facade: `BookLevel::size`, `OptionContract::implied_volatility`, and
-  `OptionUpdate::implied_volatility` now use `Option<NonNegativeDecimal>`.
-  `NewsRequest::count` now uses `std::num::NonZeroU32`.
+- Market/facade: `BookLevel::size` now uses `Option<QuantityAmount>`;
+  `OptionContract::implied_volatility` and `OptionUpdate::implied_volatility`
+  now use `Option<NonNegativeDecimal>`. `NewsRequest::count` now uses
+  `std::num::NonZeroU32`.
 - Fundamentals/facade: `MajorHolder::value` now uses `Ratio`, and
   `InstitutionalHolder::pct_held` now uses `Option<Ratio>`.
 - Fundamentals/facade: `InsiderTransaction` struct literals and consumers must

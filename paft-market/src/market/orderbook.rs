@@ -6,9 +6,8 @@
 #![allow(clippy::derive_partial_eq_without_eq)]
 
 use chrono::{DateTime, Utc};
-use paft_decimal::NonNegativeDecimal;
 use paft_domain::Instrument;
-use paft_money::{Currency, PriceAmount};
+use paft_money::{Currency, PriceAmount, QuantityAmount};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "dataframe")]
@@ -41,7 +40,7 @@ pub struct GenericBookLevel<M = ()> {
 
     /// The displayed size at this price, when reported by the source.
     #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
-    pub size: Option<NonNegativeDecimal>,
+    pub size: Option<QuantityAmount>,
 
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
@@ -52,7 +51,7 @@ impl<M: Default> GenericBookLevel<M> {
     /// Build a book level with the given price and (optional) size; `provider`
     /// is initialised via `M::default()`.
     #[must_use]
-    pub fn new(price: PriceAmount, size: Option<NonNegativeDecimal>) -> Self {
+    pub fn new(price: PriceAmount, size: Option<QuantityAmount>) -> Self {
         Self {
             price,
             size,

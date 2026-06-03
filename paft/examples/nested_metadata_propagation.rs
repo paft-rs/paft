@@ -120,10 +120,7 @@ fn order_book_propagation() -> Result<()> {
     println!(
         "Top of book ask: price={} size={} (entry seq={})",
         book.asks[0].price,
-        book.asks[0]
-            .size
-            .clone()
-            .unwrap_or_else(|| non_negative(Decimal::from(0))),
+        book.asks[0].size.clone().unwrap_or_else(|| quantity(0)),
         book.asks[0].provider.seq,
     );
 
@@ -319,7 +316,7 @@ fn candle_update_propagation() -> Result<()> {
 fn entry(price_cents: i64, size_units: i64, provider: FeedMeta) -> GenericBookLevel<FeedMeta> {
     GenericBookLevel {
         price: PriceAmount::new(Decimal::from(price_cents) / Decimal::from(100)),
-        size: Some(non_negative(Decimal::from(size_units))),
+        size: Some(quantity(size_units)),
         provider,
     }
 }
