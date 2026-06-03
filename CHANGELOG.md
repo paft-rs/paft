@@ -50,6 +50,8 @@ All notable changes to this project will be documented in this file.
   precision and uses checked exponentiation when rescaling mantissas.
 - Money: localized formatting now rejects fraction digit requests above the
   active decimal backend precision instead of attempting unbounded zero padding.
+- Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
+  constrained decimal constructors to compose with `paft::prelude::Result`.
 
 ### Breaking Changes
 

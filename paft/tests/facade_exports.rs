@@ -1,3 +1,37 @@
+#[test]
+fn constrained_decimal_errors_convert_into_facade_result() {
+    use paft::prelude::{Decimal, Error, NonNegativeDecimal, PositiveDecimal, Ratio, Result};
+
+    fn non_negative(value: Decimal) -> Result<NonNegativeDecimal> {
+        Ok(NonNegativeDecimal::new(value)?)
+    }
+
+    fn positive(value: Decimal) -> Result<PositiveDecimal> {
+        Ok(PositiveDecimal::new(value)?)
+    }
+
+    fn ratio(value: Decimal) -> Result<Ratio> {
+        Ok(Ratio::new(value)?)
+    }
+
+    assert!(non_negative(Decimal::from(0)).is_ok());
+    assert!(positive(Decimal::from(1)).is_ok());
+    assert!(ratio(Decimal::from(1)).is_ok());
+
+    assert!(matches!(
+        non_negative(Decimal::from(-1)),
+        Err(Error::DecimalConstraint(_))
+    ));
+    assert!(matches!(
+        positive(Decimal::from(0)),
+        Err(Error::DecimalConstraint(_))
+    ));
+    assert!(matches!(
+        ratio(Decimal::from(2)),
+        Err(Error::DecimalConstraint(_))
+    ));
+}
+
 #[cfg(feature = "market")]
 #[test]
 fn market_exports_are_available_from_facade_and_prelude() {

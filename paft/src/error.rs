@@ -11,6 +11,10 @@ pub enum Error {
     #[error(transparent)]
     Core(#[from] paft_core::error::PaftError),
 
+    /// Error originating from constrained decimal construction.
+    #[error(transparent)]
+    DecimalConstraint(#[from] paft_decimal::DecimalConstraintError),
+
     /// Error originating from `paft-domain`.
     #[cfg(feature = "domain")]
     #[error(transparent)]
