@@ -64,15 +64,25 @@ fn horizon_other_roundtrips_without_colliding_with_modeled_values() {
     let minute_like = Horizon::from_str("1m").unwrap();
     assert_eq!(minute_like.to_string(), "1M");
     assert!(matches!(minute_like, Horizon::Other(_)));
+}
 
-    let punctuation_alias = Horizon::from_str("(7d)").unwrap();
-    assert_eq!(punctuation_alias, Horizon::Days(nonzero(7)));
+#[test]
+fn horizon_rejects_inputs_that_canonicalize_to_modeled_tokens() {
+    for input in ["-1d", "+1d", "(7d)", "!3mo!", "1y-"] {
+        assert_eq!(
+            input.parse::<Horizon>().unwrap_err(),
+            DomainError::InvalidHorizonFormat {
+                format: input.to_string()
+            }
+        );
+    }
 }
 
 #[test]
 fn other_horizon_rejects_modeled_horizon_tokens() {
     assert!(OtherHorizon::new("7d").is_err());
     assert!(OtherHorizon::new("3mo").is_err());
+    assert!(OtherHorizon::new("-1d").is_err());
     assert!(OtherHorizon::new("(1y)").is_err());
     assert_eq!(
         OtherHorizon::new("provider horizon").unwrap().as_ref(),

@@ -247,8 +247,8 @@ impl std::str::FromStr for Horizon {
         };
         let canonical = Canonical::try_new(trimmed).map_err(|_| invalid())?;
 
-        if let Some(parsed) = parse_modeled(canonical.as_ref()) {
-            return parsed;
+        if parse_modeled(canonical.as_ref()).is_some() {
+            return Err(invalid());
         }
 
         Ok(Self::Other(OtherHorizon::from_canonical_unchecked(

@@ -766,13 +766,11 @@ impl std::str::FromStr for Period {
     /// `"2023Q4"` and serialize back to a string that re-parses as
     /// `Period::Quarter`, breaking round-trip identity.
     ///
-    /// To maintain the invariant we re-run the structured parsers on the
-    /// canonicalized form before returning `Other`. If any parser succeeds
-    /// with a valid structured variant we return that variant. If any parser
-    /// recognizes the canonical form structurally but rejects its values (for
-    /// example `"2023Q5"` after canonicalization), we return
-    /// `InvalidPeriodFormat`; otherwise serializing an `Other("2023Q5")`
-    /// would produce a token that later fails deserialization.
+    /// To maintain the invariant without accepting malformed aliases, we
+    /// re-run the structured parsers on the canonicalized form before
+    /// returning `Other`. If any parser recognizes the canonical form, we
+    /// return `InvalidPeriodFormat`; otherwise a malformed input such as
+    /// `"-2023Q4"` would silently become `Period::Quarter`.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim();
@@ -805,22 +803,19 @@ impl std::str::FromStr for Period {
 
         let canonical = Canonical::try_new(trimmed).map_err(|_| invalid())?;
 
-        // Re-run the structured parsers against the canonical token. Valid
-        // structured matches are promoted, while structurally invalid matches
-        // are rejected; both cases would make `Other` fail serde identity.
+        // Re-run the structured parsers against the canonical token. Any
+        // structured match is rejected: supported aliases have already matched
+        // above, so reaching this point means canonicalization would otherwise
+        // convert a malformed spelling into a modeled value.
         let canonical_str = canonical.as_ref();
-        match Self::parse_quarterly(canonical_str) {
-            Some(Ok(period)) => return Ok(period),
-            Some(Err(())) => return Err(invalid()),
-            None => {}
+        if Self::parse_quarterly(canonical_str).is_some() {
+            return Err(invalid());
         }
-        if let Some(period) = Self::parse_year(canonical_str) {
-            return Ok(period);
+        if Self::parse_year(canonical_str).is_some() {
+            return Err(invalid());
         }
-        match Self::parse_date(canonical_str) {
-            Some(Ok(period)) => return Ok(period),
-            Some(Err(())) => return Err(invalid()),
-            None => {}
+        if Self::parse_date(canonical_str).is_some() {
+            return Err(invalid());
         }
 
         Ok(Self::Other(OtherPeriod::from_canonical_unchecked(

@@ -107,6 +107,9 @@ All notable changes to this project will be documented in this file.
   states such as quarter 5 or date/period years outside `0..=9999`, and low
   years now emit four-digit canonical codes so display/serde round trips
   preserve identity.
+- Domain: `Horizon` and `Period` parsing now rejects malformed inputs whose
+  canonical fallback would become a modeled token, such as `-1d` or
+  `-2023Q4`, instead of accepting them as valid structured values.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
   payloads can no longer use tokens already modeled by the owning enum,
   preserving serde identity for values created through public constructors.

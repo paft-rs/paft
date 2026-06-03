@@ -149,6 +149,17 @@ fn period_rejects_inputs_that_canonicalize_to_invalid_structured_tokens() {
 }
 
 #[test]
+fn period_rejects_inputs_that_canonicalize_to_modeled_tokens() {
+    let cases = [
+        "-2023Q4", "+2023Q4", "(2023Q4)", "!2023Q4!", "(2023)", "-2023", "+2023", "1234-",
+    ];
+
+    for input in cases {
+        assert_invalid_period_format(input);
+    }
+}
+
+#[test]
 fn period_byte_parser_falls_through_to_other() {
     // Inputs that look quarterly/year/date-ish but fail every structural check.
     // Each must canonicalize to Other(...) instead of erroring.
@@ -241,12 +252,6 @@ fn period_byte_parser_iso_does_not_swallow_us_or_dayfirst() {
     // or day-first (those start with 1-2 digits). Verify by checking inputs
     // that begin with 4 digits and the ISO branch ultimately fails.
     //
-    // `"1234-"` is not in this list: its canonical form is `"1234"`, which is
-    // a valid 4-digit year. The `FromStr` invariant requires that we never
-    // produce an `Other` whose canonical token re-parses as a structured
-    // variant, so `"1234-"` is intentionally promoted to a structured year
-    // (covered separately in
-    // `period_other_canonical_does_not_collide_with_structured_variants`).
     let cases = [
         "1234-X", // length 6, ISO partial then non-digit → Other
         "1234/X", // length 6, ISO partial then non-digit → Other
@@ -287,53 +292,6 @@ fn period_byte_parser_quarter_separator_whitespace_variants() {
             expected,
             "input: {input:?}"
         );
-    }
-}
-
-#[test]
-fn period_other_canonical_does_not_collide_with_structured_variants() {
-    // Inputs that the structured parsers reject directly but whose canonical
-    // form *does* parse as a structured variant. The fix re-runs the
-    // structured parsers on the canonical form so we never produce an
-    // `Other` whose serialised form would re-parse as a different variant.
-    //
-    // Each of these should parse straight to a structured variant (not
-    // `Other`), and each should round-trip cleanly via `Display`/`FromStr`
-    // and serde.
-    let cases: &[(&str, Period)] = &[
-        ("-2023Q4", Period::quarterly(2023, 4).unwrap()),
-        ("(2023Q4)", Period::quarterly(2023, 4).unwrap()),
-        // Leading non-alphanumerics that strip away cleanly during
-        // canonicalization to leave a bare `YYYYQ#`.
-        ("!2023Q4!", Period::quarterly(2023, 4).unwrap()),
-        // Same idea, but ending up at a bare 4-digit year token.
-        ("(2023)", Period::annual(2023).unwrap()),
-        ("-2023", Period::annual(2023).unwrap()),
-        // 4-digit prefix followed by a stray separator: previously stored as
-        // `Other("1234")`, which serde-deserialized to `Year { 1234 }` — the
-        // exact identity-violation this fix prevents. Must now resolve to
-        // `Year` directly.
-        ("1234-", Period::annual(1234).unwrap()),
-    ];
-
-    for (input, expected) in cases {
-        let p: Period = input.parse().unwrap();
-        assert_eq!(&p, expected, "input: {input:?}");
-
-        // Display round-trip
-        let s = p.to_string();
-        let p_disp: Period = s.parse().unwrap();
-        assert_eq!(
-            p_disp, p,
-            "Display round-trip for {input:?} (display: {s:?})"
-        );
-
-        // Serde round-trip — this is what was originally broken: serializing
-        // an `Other` whose canonical token re-parsed as `Quarter` yielded a
-        // different variant on deserialize.
-        let json = serde_json::to_string(&p).unwrap();
-        let p2: Period = serde_json::from_str(&json).unwrap();
-        assert_eq!(p, p2, "round-trip identity violated for {input:?} ({p:?})");
     }
 }
 
