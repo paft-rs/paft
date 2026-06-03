@@ -8,7 +8,7 @@ Fundamentals data models for the paft ecosystem: financial statements, analysis,
 
 - Profiles: `CompanyProfile`, `FundProfile`
 - Statements: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`
-- Analysis: earnings, recommendations, price targets, trend/revision helper rows
+- Analysis: earnings, recommendations, price targets, horizon-based trend/revision helper rows
 - Statistics: `KeyStatistics`
 - Holders: institutional, insiders
 - ESG: scores, involvement, summary

@@ -1,7 +1,7 @@
 #![cfg(feature = "dataframe")]
 use chrono::{TimeZone, Utc};
 use paft_decimal::{Decimal, Ratio};
-use paft_domain::{Isin, Period};
+use paft_domain::{Horizon, Isin, Period};
 use paft_fundamentals::{
     Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
     EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
@@ -205,7 +205,7 @@ fn revenue_estimate_to_dataframe() {
 
 #[test]
 fn trend_point_to_dataframe() {
-    let point = TrendPoint::new(Period::quarterly(2023, 4).unwrap(), usd_price(2));
+    let point = TrendPoint::new(Horizon::months(3).unwrap(), usd_price(2));
 
     let df = point.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -215,7 +215,7 @@ fn trend_point_to_dataframe() {
 fn eps_trend_to_dataframe() {
     let trend = EpsTrend {
         current: Some(usd_price(3)),
-        historical: vec![TrendPoint::new(Period::annual(2022).unwrap(), usd_price(2))],
+        historical: vec![TrendPoint::new(Horizon::years(1).unwrap(), usd_price(2))],
     };
 
     let df = trend.to_dataframe().unwrap();
@@ -224,7 +224,7 @@ fn eps_trend_to_dataframe() {
 
 #[test]
 fn revision_point_to_dataframe() {
-    let point = RevisionPoint::new(Period::quarterly(2023, 4).unwrap(), 4, 1);
+    let point = RevisionPoint::new(Horizon::months(3).unwrap(), 4, 1);
 
     let df = point.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -233,7 +233,7 @@ fn revision_point_to_dataframe() {
 #[test]
 fn eps_revisions_to_dataframe() {
     let revisions = EpsRevisions {
-        historical: vec![RevisionPoint::new(Period::annual(2023).unwrap(), 5, 2)],
+        historical: vec![RevisionPoint::new(Horizon::days(30).unwrap(), 5, 2)],
     };
 
     let df = revisions.to_dataframe().unwrap();
@@ -260,17 +260,10 @@ fn earnings_trend_row_to_dataframe() {
     };
     let eps_trend = EpsTrend {
         current: Some(usd_price(3)),
-        historical: vec![TrendPoint::new(
-            Period::quarterly(2023, 4).unwrap(),
-            usd_price(2),
-        )],
+        historical: vec![TrendPoint::new(Horizon::months(3).unwrap(), usd_price(2))],
     };
     let eps_revisions = EpsRevisions {
-        historical: vec![RevisionPoint::new(
-            Period::quarterly(2023, 4).unwrap(),
-            4,
-            1,
-        )],
+        historical: vec![RevisionPoint::new(Horizon::months(3).unwrap(), 4, 1)],
     };
 
     let row = EarningsTrendRow {

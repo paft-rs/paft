@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
   quantity amount for provider-agnostic market sizes and volumes.
 - Domain/facade: added `Period::{start_date, end_date}` helpers for explicit
   chronological sorting and range-boundary policies.
+- Domain/facade: added `Horizon` and `OtherHorizon` for relative lookback
+  windows such as `7d`, `1mo`, and `1y`.
 
 ### Changed
 
@@ -58,6 +60,8 @@ All notable changes to this project will be documented in this file.
   `PeriodYear`, `QuarterOfYear`, and `PeriodDate` components; use
   `Period::annual`, `Period::quarterly`, and `Period::date` when constructing
   annual, quarterly, and date periods.
+- Fundamentals/facade: EPS trend and revision historical points now use
+  `Horizon` for lookback windows instead of overloading `Period`.
 - Domain/money/fundamentals/facade: extensible enum `Other` variants now use
   enum-specific unknown-code wrappers (`OtherCurrency`, `OtherExchange`,
   `OtherAssetKind`, `OtherPeriod`, `OtherRecommendationGrade`,
@@ -140,6 +144,10 @@ All notable changes to this project will be documented in this file.
 - Domain/facade: `Period` no longer implements `Ord`/`PartialOrd`; callers must
   choose explicit semantics such as `start_date()`, `end_date()`, or a
   provider-specific structural sort key.
+- Fundamentals/facade: `TrendPoint::period` and `RevisionPoint::period` were
+  renamed to `horizon` and now use `Horizon`; helper methods were renamed from
+  `find_by_period*`/`available_periods` to
+  `find_by_horizon*`/`available_horizons`.
 - Domain/money/fundamentals/facade: public `Other(Canonical)` enum payloads were
   replaced by typed wrappers. Use `Type::other("TOKEN")?`,
   `OtherType::new("TOKEN")?`, or the existing `FromStr`/serde parsers instead

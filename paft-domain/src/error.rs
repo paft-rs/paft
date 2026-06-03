@@ -29,6 +29,20 @@ pub enum DomainError {
         quarter: u8,
     },
 
+    /// Invalid horizon format provided for parsing.
+    #[error("Invalid horizon format: '{format}' - expected forms like '7d', '1mo', or '1y'")]
+    InvalidHorizonFormat {
+        /// The invalid horizon string that could not be parsed.
+        format: String,
+    },
+
+    /// Invalid horizon count.
+    #[error("Invalid horizon count: {count} - expected a non-zero positive integer")]
+    InvalidHorizonCount {
+        /// The invalid horizon count.
+        count: u32,
+    },
+
     /// Invalid exchange token encountered while parsing.
     #[error("Invalid exchange value: '{value}'")]
     InvalidExchangeValue {

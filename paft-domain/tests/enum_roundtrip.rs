@@ -1,6 +1,6 @@
 use paft_domain::{
-    AssetKind, DomainError, Exchange, MarketState, OtherAssetKind, OtherExchange, OtherPeriod,
-    Period,
+    AssetKind, DomainError, Exchange, Horizon, MarketState, OtherAssetKind, OtherExchange,
+    OtherHorizon, OtherPeriod, Period,
 };
 use paft_money::{Currency, OtherCurrency};
 use std::str::FromStr;
@@ -41,6 +41,13 @@ fn other_roundtrip_is_stable_for_core_enums() {
     assert_display_parse_display_idempotent::<Period, _>("FY2023"); // normalizes to 2023
     let other_period = Period::from_str("custom range").unwrap();
     assert_eq!(other_period.to_string(), "CUSTOM_RANGE");
+
+    // Horizon
+    assert_display_parse_display_idempotent::<Horizon, _>("7d");
+    assert_display_parse_display_idempotent::<Horizon, _>("1mo");
+    assert_display_parse_display_idempotent::<Horizon, _>("1y");
+    let other_horizon = Horizon::from_str("provider range").unwrap();
+    assert_eq!(other_horizon.to_string(), "PROVIDER_RANGE");
 }
 
 #[test]
@@ -167,5 +174,12 @@ fn other_wrappers_reject_modeled_core_tokens() {
     assert_eq!(
         OtherPeriod::new("custom range").unwrap().as_ref(),
         "CUSTOM_RANGE"
+    );
+
+    assert!(OtherHorizon::new("7d").is_err());
+    assert!(OtherHorizon::new("1mo").is_err());
+    assert_eq!(
+        OtherHorizon::new("provider range").unwrap().as_ref(),
+        "PROVIDER_RANGE"
     );
 }

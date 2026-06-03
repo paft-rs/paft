@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use df_derive_macros::ToDataFrame;
 use paft_core::error::PaftError;
 use paft_decimal::Decimal;
-use paft_domain::{DomainError, Period};
+use paft_domain::{DomainError, Horizon, Period};
 use paft_money::{Money, Price};
 
 paft_core::other_string_code_type!(
@@ -370,50 +370,51 @@ pub struct RevenueEstimate {
 
 /// A flexible data point for time-series trend data.
 ///
-/// This struct allows any provider to represent trend data for any time period,
-/// making the system provider-agnostic instead of tied to specific hardcoded buckets.
+/// This struct allows any provider to represent trend data for any lookback
+/// horizon, making the system provider-agnostic instead of tied to specific
+/// hardcoded buckets.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct TrendPoint {
-    /// The period this data point represents (e.g., "7d", "1mo", "3mo").
-    /// This allows providers to use their own time period conventions.
+    /// The lookback horizon this data point represents (e.g., "7d", "1mo", "3mo").
+    /// This allows providers to use their own horizon conventions.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
-    /// The value for this time period.
+    pub horizon: Horizon,
+    /// The value for this horizon.
     pub value: Price,
 }
 
 impl TrendPoint {
-    /// Creates a new trend point with the specified period and value.
+    /// Creates a new trend point with the specified horizon and value.
     #[must_use]
-    pub const fn new(period: Period, value: Price) -> Self {
-        Self { period, value }
+    pub const fn new(horizon: Horizon, value: Price) -> Self {
+        Self { horizon, value }
     }
 
-    /// Creates a new trend point from a period string.
+    /// Creates a new trend point from a horizon string.
     ///
     /// # Errors
-    /// Returns an error if the period string cannot be parsed.
+    /// Returns an error if the horizon string cannot be parsed.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_new_str(period: &str, value: Price) -> Result<Self, DomainError> {
+    pub fn try_new_str(horizon: &str, value: Price) -> Result<Self, DomainError> {
         Ok(Self {
-            period: period.parse()?,
+            horizon: horizon.parse()?,
             value,
         })
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-/// EPS trend changes over different time periods.
+/// EPS trend changes over different lookback horizons.
 ///
 /// This struct now uses a flexible collection of trend points instead of
 /// hardcoded time buckets, making it provider-agnostic.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct EpsTrend {
     /// Current EPS trend.
     pub current: Option<Price>,
-    /// Historical EPS trend data points with flexible time periods.
-    /// Each provider can populate this with their available time periods
+    /// Historical EPS trend data points with flexible lookback horizons.
+    /// Each provider can populate this with their available horizons
     /// (e.g., a generic provider might use "7d", "30d", "60d", "90d" while another
     /// provider might use "1mo", "3mo", "6mo").
     pub historical: Vec<TrendPoint>,
@@ -429,81 +430,84 @@ impl EpsTrend {
         }
     }
 
-    /// Finds a trend point by period.
+    /// Finds a trend point by horizon.
     #[must_use]
-    pub fn find_by_period(&self, period: &Period) -> Option<&TrendPoint> {
-        self.historical.iter().find(|point| &point.period == period)
-    }
-
-    /// Finds a trend point by period string.
-    ///
-    /// Parses `period` using `Period`'s string parser and performs the lookup.
-    ///
-    /// # Errors
-    /// Returns `DomainError` if the provided `period` string cannot be parsed.
-    pub fn find_by_period_str(&self, period: &str) -> Result<Option<&TrendPoint>, DomainError> {
-        let parsed: Period = period.parse()?;
-        Ok(self.find_by_period(&parsed))
-    }
-
-    /// Returns all available periods in the historical data.
-    #[must_use]
-    pub fn available_periods(&self) -> Vec<Period> {
+    pub fn find_by_horizon(&self, horizon: &Horizon) -> Option<&TrendPoint> {
         self.historical
             .iter()
-            .map(|point| point.period.clone())
+            .find(|point| &point.horizon == horizon)
+    }
+
+    /// Finds a trend point by horizon string.
+    ///
+    /// Parses `horizon` using [`Horizon`]'s string parser and performs the lookup.
+    ///
+    /// # Errors
+    /// Returns `DomainError` if the provided `horizon` string cannot be parsed.
+    pub fn find_by_horizon_str(&self, horizon: &str) -> Result<Option<&TrendPoint>, DomainError> {
+        let parsed: Horizon = horizon.parse()?;
+        Ok(self.find_by_horizon(&parsed))
+    }
+
+    /// Returns all available horizons in the historical data.
+    #[must_use]
+    pub fn available_horizons(&self) -> Vec<Horizon> {
+        self.historical
+            .iter()
+            .map(|point| point.horizon.clone())
             .collect()
     }
 }
 
-/// A flexible data point for revision counts over different time periods.
+/// A flexible data point for revision counts over different lookback horizons.
 ///
-/// This struct allows any provider to represent revision data for any time period,
-/// making the system provider-agnostic instead of tied to specific hardcoded buckets.
+/// This struct allows any provider to represent revision data for any lookback
+/// horizon, making the system provider-agnostic instead of tied to specific
+/// hardcoded buckets.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct RevisionPoint {
-    /// The period this data point represents (e.g., "7d", "1mo", "3mo").
-    /// This allows providers to use their own time period conventions.
+    /// The lookback horizon this data point represents (e.g., "7d", "1mo", "3mo").
+    /// This allows providers to use their own horizon conventions.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
-    /// Number of upward revisions in this period.
+    pub horizon: Horizon,
+    /// Number of upward revisions in this horizon.
     pub up_count: u32,
-    /// Number of downward revisions in this period.
+    /// Number of downward revisions in this horizon.
     pub down_count: u32,
 }
 
 impl RevisionPoint {
-    /// Creates a new revision point with the specified period and counts.
+    /// Creates a new revision point with the specified horizon and counts.
     #[must_use]
-    pub const fn new(period: Period, up_count: u32, down_count: u32) -> Self {
+    pub const fn new(horizon: Horizon, up_count: u32, down_count: u32) -> Self {
         Self {
-            period,
+            horizon,
             up_count,
             down_count,
         }
     }
 
-    /// Creates a new revision point from a period string.
+    /// Creates a new revision point from a horizon string.
     ///
     /// # Errors
-    /// Returns an error if the period string cannot be parsed.
+    /// Returns an error if the horizon string cannot be parsed.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_new_str(period: &str, up: u32, down: u32) -> Result<Self, DomainError> {
+    pub fn try_new_str(horizon: &str, up: u32, down: u32) -> Result<Self, DomainError> {
         Ok(Self {
-            period: period.parse()?,
+            horizon: horizon.parse()?,
             up_count: up,
             down_count: down,
         })
     }
 
-    /// Returns the total number of revisions (up + down) in this period.
+    /// Returns the total number of revisions (up + down) in this horizon.
     #[must_use]
     pub fn total_revisions(&self) -> u64 {
         u64::from(self.up_count) + u64::from(self.down_count)
     }
 
-    /// Returns the net revision count (up - down) in this period.
+    /// Returns the net revision count (up - down) in this horizon.
     /// Positive values indicate more upward revisions, negative values indicate more downward revisions.
     #[must_use]
     pub fn net_revisions(&self) -> i64 {
@@ -511,15 +515,15 @@ impl RevisionPoint {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// EPS revisions tracking upward and downward changes.
 ///
 /// This struct now uses a flexible collection of revision points instead of
 /// hardcoded time buckets, making it provider-agnostic.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct EpsRevisions {
-    /// Historical EPS revision data points with flexible time periods.
-    /// Each provider can populate this with their available time periods
+    /// Historical EPS revision data points with flexible lookback horizons.
+    /// Each provider can populate this with their available horizons
     /// (e.g., a generic provider might use "7d", "30d" while another provider might
     /// use "1mo", "3mo", "6mo").
     pub historical: Vec<RevisionPoint>,
@@ -532,33 +536,38 @@ impl EpsRevisions {
         Self { historical }
     }
 
-    /// Finds a revision point by period.
+    /// Finds a revision point by horizon.
     #[must_use]
-    pub fn find_by_period(&self, period: &Period) -> Option<&RevisionPoint> {
-        self.historical.iter().find(|point| &point.period == period)
-    }
-
-    /// Finds a revision point by period string.
-    ///
-    /// Parses `period` using `Period`'s string parser and performs the lookup.
-    ///
-    /// # Errors
-    /// Returns `DomainError` if the provided `period` string cannot be parsed.
-    pub fn find_by_period_str(&self, period: &str) -> Result<Option<&RevisionPoint>, DomainError> {
-        let parsed: Period = period.parse()?;
-        Ok(self.find_by_period(&parsed))
-    }
-
-    /// Returns all available periods in the historical data.
-    #[must_use]
-    pub fn available_periods(&self) -> Vec<Period> {
+    pub fn find_by_horizon(&self, horizon: &Horizon) -> Option<&RevisionPoint> {
         self.historical
             .iter()
-            .map(|point| point.period.clone())
+            .find(|point| &point.horizon == horizon)
+    }
+
+    /// Finds a revision point by horizon string.
+    ///
+    /// Parses `horizon` using [`Horizon`]'s string parser and performs the lookup.
+    ///
+    /// # Errors
+    /// Returns `DomainError` if the provided `horizon` string cannot be parsed.
+    pub fn find_by_horizon_str(
+        &self,
+        horizon: &str,
+    ) -> Result<Option<&RevisionPoint>, DomainError> {
+        let parsed: Horizon = horizon.parse()?;
+        Ok(self.find_by_horizon(&parsed))
+    }
+
+    /// Returns all available horizons in the historical data.
+    #[must_use]
+    pub fn available_horizons(&self) -> Vec<Horizon> {
+        self.historical
+            .iter()
+            .map(|point| point.horizon.clone())
             .collect()
     }
 
-    /// Returns the total number of upward revisions across all periods.
+    /// Returns the total number of upward revisions across all horizons.
     #[must_use]
     pub fn total_up_revisions(&self) -> u64 {
         self.historical
@@ -567,7 +576,7 @@ impl EpsRevisions {
             .sum()
     }
 
-    /// Returns the total number of downward revisions across all periods.
+    /// Returns the total number of downward revisions across all horizons.
     #[must_use]
     pub fn total_down_revisions(&self) -> u64 {
         self.historical
@@ -576,7 +585,7 @@ impl EpsRevisions {
             .sum()
     }
 
-    /// Returns the net revision count across all periods (total up - total down).
+    /// Returns the net revision count across all horizons (total up - total down).
     #[must_use]
     pub fn net_revisions(&self) -> i64 {
         self.historical
@@ -600,8 +609,8 @@ pub struct EarningsTrendRow {
     pub earnings_estimate: EarningsEstimate,
     /// Revenue estimate data with analyst consensus.
     pub revenue_estimate: RevenueEstimate,
-    /// EPS trend changes over different time periods.
+    /// EPS trend changes over different lookback horizons.
     pub eps_trend: EpsTrend,
-    /// EPS revisions tracking upward and downward changes.
+    /// EPS revisions tracking upward and downward changes by lookback horizon.
     pub eps_revisions: EpsRevisions,
 }

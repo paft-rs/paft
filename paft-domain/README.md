@@ -1,7 +1,7 @@
 paft-domain
 ===========
 
-Domain modeling primitives for the paft ecosystem: instruments, exchanges, periods, and market state.
+Domain modeling primitives for the paft ecosystem: instruments, exchanges, periods, horizons, and market state.
 
 [![Crates.io](https://img.shields.io/crates/v/paft-domain)](https://crates.io/crates/paft-domain)
 [![Docs.rs](https://docs.rs/paft-domain/badge.svg)](https://docs.rs/paft-domain)
@@ -10,6 +10,7 @@ Domain modeling primitives for the paft ecosystem: instruments, exchanges, perio
 - `Instrument` with hierarchical identifiers for securities (FIGI → ISIN → Symbol@Exchange → Symbol)
 - Canonical, serde-stable enums (`Exchange`, `AssetKind`, `MarketState`)
 - `Period` parsing for quarters, years, and dates with a canonical wire format
+- `Horizon` parsing for relative lookback windows such as `7d`, `1mo`, and `1y`
 
 Install
 -------
@@ -49,7 +50,7 @@ you depend on the facade crate instead, import these types from `paft::domain`
 or `paft::prelude`.
 
 ```rust
-use paft_domain::{AssetKind, Exchange, Figi, Instrument, Isin, Period, Symbol};
+use paft_domain::{AssetKind, Exchange, Figi, Horizon, Instrument, Isin, Period, Symbol};
 
 // Minimal: instrument from symbol + exchange
 let aapl = Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
@@ -70,6 +71,10 @@ assert_eq!(aapl_pro.display_key(), "BBG000B9XRY4");
 // Period parsing with canonical output (wire = Display)
 let q4 = "2023-Q4".parse::<Period>().unwrap();
 assert_eq!(q4.to_string(), "2023Q4");
+
+// Horizon parsing is separate from reporting period parsing.
+let horizon = "3mo".parse::<Horizon>().unwrap();
+assert_eq!(horizon.to_string(), "3mo");
 ```
 
 Prediction markets

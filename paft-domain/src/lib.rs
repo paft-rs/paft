@@ -1,8 +1,9 @@
 //! Core domain types for the paft ecosystem.
 //!
 //! This crate defines strongly-typed primitives for instruments, exchanges,
-//! market sessions, security identifiers (`Symbol`, `Figi`, `Isin`), and
-//! financial periods used across the paft ecosystem. Types are designed to be:
+//! market sessions, security identifiers (`Symbol`, `Figi`, `Isin`), financial
+//! periods, and lookback horizons used across the paft ecosystem. Types are
+//! designed to be:
 //! - Canonical and stable in string form (for serde, display, and storage)
 //! - Liberal in what they accept when parsing (aliases, case-insensitivity),
 //!   strict and consistent in emission
@@ -11,7 +12,7 @@
 //! # Quickstart
 //!
 //! ```rust
-//! use paft_domain::{AssetKind, Exchange, Instrument, Period, Symbol};
+//! use paft_domain::{AssetKind, Exchange, Horizon, Instrument, Period, Symbol};
 //!
 //! let symbol = Symbol::new("AAPL").unwrap();
 //! let aapl = Instrument::from_symbol_and_exchange(
@@ -24,6 +25,9 @@
 //!
 //! let q4 = "2023-Q4".parse::<Period>().unwrap();
 //! assert_eq!(q4.to_string(), "2023Q4");
+//!
+//! let horizon = "3mo".parse::<Horizon>().unwrap();
+//! assert_eq!(horizon.to_string(), "3mo");
 //! ```
 //!
 //! # Serde
@@ -40,6 +44,7 @@
 
 pub mod error;
 pub mod exchange;
+pub mod horizon;
 pub mod identifiers;
 pub mod instrument;
 pub mod market_state;
@@ -47,6 +52,7 @@ pub mod period;
 
 pub use error::DomainError;
 pub use exchange::{Exchange, OtherExchange};
+pub use horizon::{Horizon, OtherHorizon};
 pub use identifiers::{Figi, Isin, Symbol};
 pub use instrument::{AssetKind, Instrument, OtherAssetKind};
 pub use market_state::MarketState;

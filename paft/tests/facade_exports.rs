@@ -37,6 +37,10 @@ fn constrained_decimal_errors_convert_into_facade_result() {
 fn period_date_is_available_from_facade_and_prelude() {
     fn assert_export<T>() {}
 
+    assert_export::<paft::domain::Horizon>();
+    assert_export::<paft::domain::OtherHorizon>();
+    assert_export::<paft::prelude::Horizon>();
+    assert_export::<paft::prelude::OtherHorizon>();
     assert_export::<paft::domain::PeriodDate>();
     assert_export::<paft::prelude::PeriodDate>();
 }
@@ -188,7 +192,7 @@ fn analysis_helpers_are_available_from_facade_and_prelude() {
     use paft::money::IsoCurrency;
     use paft::prelude::{
         Currency, EarningsEstimate as PreludeEarningsEstimate, EpsRevisions as PreludeEpsRevisions,
-        EpsTrend as PreludeEpsTrend, Period, Price, RevenueEstimate as PreludeRevenueEstimate,
+        EpsTrend as PreludeEpsTrend, Horizon, Price, RevenueEstimate as PreludeRevenueEstimate,
         RevisionPoint as PreludeRevisionPoint, TrendPoint as PreludeTrendPoint,
     };
 
@@ -205,11 +209,10 @@ fn analysis_helpers_are_available_from_facade_and_prelude() {
     let _: PreludeEpsRevisions = eps_revisions;
 
     let price = Price::from_canonical_str("1.00", Currency::Iso(IsoCurrency::USD)).unwrap();
-    let trend_point: FacadeTrendPoint =
-        PreludeTrendPoint::new(Period::annual(2024).unwrap(), price);
+    let trend_point: FacadeTrendPoint = PreludeTrendPoint::new(Horizon::days(30).unwrap(), price);
     let _: PreludeTrendPoint = trend_point;
 
     let revision_point: FacadeRevisionPoint =
-        PreludeRevisionPoint::new(Period::annual(2024).unwrap(), 2, 1);
+        PreludeRevisionPoint::new(Horizon::months(3).unwrap(), 2, 1);
     let _: PreludeRevisionPoint = revision_point;
 }

@@ -73,7 +73,7 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 - **Instruments & Identifiers**: `Instrument` (flat: `symbol`, `exchange`, `figi`, `isin`, `kind`), `AssetKind`, `Exchange`
   - IDs: `Symbol`, `Figi`, `Isin`
   - Prediction-market identity (in `paft-prediction`): `PredictionInstrument`, `EventID`, `OutcomeID`
-  - Time periods: `Period`
+  - Time periods and lookbacks: `Period`, `Horizon`
 - **Market Data**: `Quote`, `QuoteUpdate`, `Candle`, `Action`, `MarketState`
 - **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `Interval`, `Range`
 - **Money & Currency**: `Money`, `Price`, `MonetaryAmount`, `QuantityAmount`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
