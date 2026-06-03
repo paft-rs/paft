@@ -76,6 +76,12 @@ fn action_dividend_serialization() {
     };
 
     let json = serde_json::to_string(&action).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(value["kind"], serde_json::json!("dividend"));
+    assert_eq!(value["ts"], serde_json::json!(1_640_995_200_000_i64));
+    assert_eq!(value["amount"]["amount"], serde_json::json!("0.5"));
+    assert_eq!(value["amount"]["currency"], serde_json::json!("USD"));
+
     let deserialized: Action = serde_json::from_str(&json).unwrap();
     assert_eq!(action, deserialized);
 }
@@ -89,6 +95,17 @@ fn action_split_serialization() {
     };
 
     let json = serde_json::to_string(&action).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(
+        value,
+        serde_json::json!({
+            "kind": "split",
+            "ts": 1_640_995_200_000_i64,
+            "numerator": 2,
+            "denominator": 1,
+        })
+    );
+
     let deserialized: Action = serde_json::from_str(&json).unwrap();
     assert_eq!(action, deserialized);
 }
@@ -97,16 +114,31 @@ fn action_split_serialization() {
 fn action_split_rejects_zero_ratios() {
     for (numerator, denominator) in [(0, 1), (2, 0)] {
         let value = serde_json::json!({
-            "Split": {
-                "ts": 1_640_995_200_000_i64,
-                "numerator": numerator,
-                "denominator": denominator,
-            }
+            "kind": "split",
+            "ts": 1_640_995_200_000_i64,
+            "numerator": numerator,
+            "denominator": denominator,
         });
 
         let err = serde_json::from_value::<Action>(value).unwrap_err();
         assert!(err.to_string().contains("nonzero"));
     }
+}
+
+#[test]
+fn action_rejects_unknown_fields() {
+    let value = serde_json::json!({
+        "kind": "dividend",
+        "ts": 1_640_995_200_000_i64,
+        "amount": {
+            "amount": "0.5",
+            "currency": "USD",
+        },
+        "provider_field": true,
+    });
+
+    let err = serde_json::from_value::<Action>(value).unwrap_err();
+    assert!(err.to_string().contains("unknown field"));
 }
 
 #[test]
@@ -117,6 +149,12 @@ fn action_capital_gain_serialization() {
     };
 
     let json = serde_json::to_string(&action).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(value["kind"], serde_json::json!("capital_gain"));
+    assert_eq!(value["ts"], serde_json::json!(1_640_995_200_000_i64));
+    assert_eq!(value["gain"]["amount"], serde_json::json!("1.0"));
+    assert_eq!(value["gain"]["currency"], serde_json::json!("USD"));
+
     let deserialized: Action = serde_json::from_str(&json).unwrap();
     assert_eq!(action, deserialized);
 }

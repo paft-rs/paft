@@ -12,6 +12,7 @@ use paft_money::Price;
 use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 #[non_exhaustive]
 /// Corporate action attached to a history series.
 pub enum Action {

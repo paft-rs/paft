@@ -1,6 +1,6 @@
 //! Profile-related types under `paft_fundamentals::profile`.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
@@ -159,13 +159,111 @@ pub struct FundProfile {
 }
 
 /// Union of supported profile kinds.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// Serde uses a flat tagged shape with a `kind` discriminator. Fund profiles
+/// use `fund_kind` on the wire to avoid colliding with the discriminator.
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Profile {
     /// Company profile.
     Company(CompanyProfile),
     /// Fund profile.
     Fund(FundProfile),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+enum ProfileWire {
+    Company {
+        name: String,
+        sector: Option<String>,
+        industry: Option<String>,
+        website: Option<String>,
+        address: Option<Address>,
+        summary: Option<String>,
+        isin: Option<Isin>,
+    },
+    Fund {
+        name: String,
+        family: Option<String>,
+        fund_kind: FundKind,
+        isin: Option<Isin>,
+    },
+}
+
+impl From<&Profile> for ProfileWire {
+    fn from(profile: &Profile) -> Self {
+        match profile {
+            Profile::Company(company) => Self::Company {
+                name: company.name.clone(),
+                sector: company.sector.clone(),
+                industry: company.industry.clone(),
+                website: company.website.clone(),
+                address: company.address.clone(),
+                summary: company.summary.clone(),
+                isin: company.isin.clone(),
+            },
+            Profile::Fund(fund) => Self::Fund {
+                name: fund.name.clone(),
+                family: fund.family.clone(),
+                fund_kind: fund.kind.clone(),
+                isin: fund.isin.clone(),
+            },
+        }
+    }
+}
+
+impl From<ProfileWire> for Profile {
+    fn from(wire: ProfileWire) -> Self {
+        match wire {
+            ProfileWire::Company {
+                name,
+                sector,
+                industry,
+                website,
+                address,
+                summary,
+                isin,
+            } => Self::Company(CompanyProfile {
+                name,
+                sector,
+                industry,
+                website,
+                address,
+                summary,
+                isin,
+            }),
+            ProfileWire::Fund {
+                name,
+                family,
+                fund_kind,
+                isin,
+            } => Self::Fund(FundProfile {
+                name,
+                family,
+                kind: fund_kind,
+                isin,
+            }),
+        }
+    }
+}
+
+impl Serialize for Profile {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        ProfileWire::from(self).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Profile {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(Self::from(ProfileWire::deserialize(deserializer)?))
+    }
 }
 
 impl Profile {

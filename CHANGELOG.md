@@ -246,13 +246,18 @@ wire-format update across the workspace.
   `contract_symbol` became optional `contract_instrument`, `in_the_money` is
   `Option<bool>`, `OptionChain` uses `contracts` plus `calls()`/`puts()`, and
   option requests use `underlying: Instrument` instead of `symbol: Symbol`.
-- Market actions: `Action::Split` numerator and denominator fields are now
-  `NonZeroU32` instead of `u32`; serde deserialization rejects zero split ratio
-  components.
+- Market actions: `Action` serde now uses tagged snake_case JSON with a
+  `"kind"` discriminator instead of externally tagged Rust variant names.
+  `Action::Split` numerator and denominator fields are now `NonZeroU32`
+  instead of `u32`; serde deserialization rejects zero split ratio components.
 - Market, aggregates, and fundamentals timestamps that were serialized as Unix
   seconds now serialize as Unix milliseconds in the affected structs.
 - Market payload aliases no longer implement `Eq`, and refactored generic
   payloads do not derive `Hash`; compare or hash explicit keys instead.
+- Fundamentals: `Profile` serde now uses tagged snake_case JSON with a `"kind"`
+  discriminator instead of externally tagged Rust variant names; `Profile::Fund`
+  payloads use `"fund_kind"` for the fund type to avoid colliding with the
+  profile discriminator.
 - Fundamentals: analyst, ESG, holder, profile, and statement structs changed
   several field types (`Money` to `Price`, `f64` to `Decimal`, seconds to
   milliseconds) and added new optional statement fields. Revision helper totals
