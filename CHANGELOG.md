@@ -95,6 +95,9 @@ All notable changes to this project will be documented in this file.
 - Market/facade: `SearchRequest` now stores result limits as
   `Option<std::num::NonZeroU32>` and validates builder/deserialized limits from
   `u32`, avoiding platform-dependent `usize` in serialized request models.
+- Market requests: `HistoryFlags` now serializes as an explicit `u8` bitset,
+  and deserialization rejects unknown flag bits instead of retaining unmodeled
+  request behavior.
 - Money: localized formatting now rejects fraction digit requests above the
   active decimal backend precision instead of attempting unbounded zero padding.
 - Decimal/money: constrained decimal and contextual amount `Display`

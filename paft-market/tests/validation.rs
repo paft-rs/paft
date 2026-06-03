@@ -1,7 +1,7 @@
 use chrono::DateTime;
 use paft_domain::AssetKind;
 use paft_market::MarketError;
-use paft_market::requests::{HistoryRequest, Interval, Range, SearchRequest};
+use paft_market::requests::{HistoryFlags, HistoryRequest, Interval, Range, SearchRequest};
 use std::num::NonZeroU32;
 
 #[test]
@@ -236,6 +236,29 @@ fn history_request_deserialization_unknown_field_rejected() {
         "interval": Interval::D1,
         "flags": 6,
         "interavl": "1d"
+    });
+
+    let result = serde_json::from_value::<HistoryRequest>(invalid);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn history_flags_deserialization_unknown_bits_rejected() {
+    let result = serde_json::from_value::<HistoryFlags>(serde_json::json!(0b0001_0000_u8));
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn history_request_deserialization_unknown_flag_bits_rejected() {
+    let invalid = serde_json::json!({
+        "time_spec": {
+            "kind": "range",
+            "range": "1d"
+        },
+        "interval": Interval::D1,
+        "flags": 0b0001_0000_u8
     });
 
     let result = serde_json::from_value::<HistoryRequest>(invalid);

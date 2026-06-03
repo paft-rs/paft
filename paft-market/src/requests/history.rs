@@ -438,8 +438,7 @@ impl<'de> Deserialize<'de> for Interval {
 
 bitflags! {
     /// Flags to control additional behaviors in history requests.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    #[serde(transparent)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct HistoryFlags: u8 {
         /// Include pre/post market sessions if supported.
         const INCLUDE_PREPOST = 0b0001;
@@ -449,6 +448,27 @@ bitflags! {
         const PREFER_ADJUSTED_PRICES = 0b0100;
         /// Keep missing candle slots as placeholders depending on consumer.
         const KEEPNA = 0b1000;
+    }
+}
+
+impl Serialize for HistoryFlags {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u8(self.bits())
+    }
+}
+
+impl<'de> Deserialize<'de> for HistoryFlags {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let bits = u8::deserialize(deserializer)?;
+        Self::from_bits(bits).ok_or_else(|| {
+            serde::de::Error::custom(format!("unknown HistoryFlags bits: 0b{bits:08b}"))
+        })
     }
 }
 

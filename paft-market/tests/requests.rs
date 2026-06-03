@@ -96,6 +96,7 @@ fn history_request_serialization() {
         })
     );
     assert_eq!(value["interval"], serde_json::json!("1d"));
+    assert_eq!(value["flags"], serde_json::json!(3));
 
     let deserialized: HistoryRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
