@@ -68,9 +68,17 @@ let aapl_pro = Instrument {
 assert_eq!(aapl_pro.unique_key(), "EQUITY|FIGI|BBG000B9XRY4");
 assert_eq!(aapl_pro.display_key(), "BBG000B9XRY4");
 
-// Period parsing with canonical output (wire = Display)
-let q4 = "2023-Q4".parse::<Period>().unwrap();
+// Period constructors validate component ranges and expose explicit boundary
+// helpers for sorting/range policies.
+let q4 = Period::quarterly(2023, 4).unwrap();
 assert_eq!(q4.to_string(), "2023Q4");
+assert_eq!(q4.start_date().unwrap().to_string(), "2023-10-01");
+assert_eq!(q4.end_date().unwrap().to_string(), "2023-12-31");
+assert!(Period::quarterly(2023, 5).is_err());
+
+// Parsing keeps provider-friendly inputs available too.
+let parsed = "2023-Q4".parse::<Period>().unwrap();
+assert_eq!(parsed, q4);
 
 // Horizon parsing is separate from reporting period parsing.
 let horizon = "3mo".parse::<Horizon>().unwrap();

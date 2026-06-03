@@ -26,6 +26,9 @@ All notable changes to this project will be documented in this file.
   `CorporateActionAdjustmentCause`, and `CorporateActionAdjustmentCauses`.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
   constrained decimal constructors to compose with `paft::prelude::Result`.
+- Docs/examples: added a no-metadata v0.9 ergonomics example and refreshed
+  crate READMEs for contextual amounts, price basis, horizons, and constrained
+  decimals.
 
 ### Changed
 

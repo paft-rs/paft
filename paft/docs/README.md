@@ -35,6 +35,8 @@ Detailed best practices guide with practical implementation strategies:
 2. **Graceful Degradation**: Never fails on unknown provider values
 3. **Ecosystem Convergence**: Map provider-specific strings to canonical variants
 4. **Type Safety**: Compile-time checks for known variants, runtime handling for unknown
+5. **Contextual Amounts**: High-cardinality market records carry denomination
+   once and use `PriceAmount` / `QuantityAmount` for contained values
 
 ### Essential Pattern
 
@@ -67,7 +69,9 @@ match asset {
 
 ## Examples
 
-See [examples/extensible_enums.rs](../examples/extensible_enums.rs) for comprehensive examples showing:
+Start with [examples/v09_ergonomics.rs](../examples/v09_ergonomics.rs) for a
+small tour of the current market/fundamentals shapes, then see
+[examples/extensible_enums.rs](../examples/extensible_enums.rs) for comprehensive enum examples showing:
 
 - Proper handling of Other variants
 - Provider data normalization

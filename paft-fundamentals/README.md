@@ -55,11 +55,41 @@ Features
 Quickstart
 ----------
 
+When constructing rows directly, fundamentals types usually compose with
+`paft-domain`, `paft-money`, and `paft-decimal` primitives.
+
 ```rust
-use paft_fundamentals::{CompanyProfile, Earnings, EarningsYear, Profile};
+use paft_decimal::{Decimal, Ratio};
+use paft_domain::Horizon;
+use paft_fundamentals::{
+    CompanyProfile, Earnings, EarningsYear, EpsRevisions, EpsTrend, MajorHolder, Profile,
+    RevisionPoint, TrendPoint,
+};
+use paft_money::{Currency, IsoCurrency, Price};
 
 let earnings = Earnings { yearly: vec![EarningsYear { year: 2023, ..Default::default() }], ..Default::default() };
 assert_eq!(earnings.yearly[0].year, 2023);
+
+let usd = Currency::Iso(IsoCurrency::USD);
+let eps_trend = EpsTrend::new(
+    Some(Price::from_canonical_str("1.20", usd.clone()).unwrap()),
+    vec![TrendPoint::try_new_str(
+        "3mo",
+        Price::from_canonical_str("1.05", usd).unwrap(),
+    ).unwrap()],
+);
+assert!(eps_trend
+    .find_by_horizon(&Horizon::months(3).unwrap())
+    .is_some());
+
+let revisions = EpsRevisions::new(vec![RevisionPoint::try_new_str("30d", 4, 1).unwrap()]);
+assert_eq!(revisions.net_revisions(), 3);
+
+let holder = MajorHolder {
+    category: "% held by insiders".into(),
+    value: Ratio::new(Decimal::from(135) / Decimal::from(1000)).unwrap(),
+};
+assert_eq!(holder.value.to_string(), "0.135");
 
 let profile = Profile::Company(CompanyProfile {
     name: "Example Corp".into(),
@@ -72,6 +102,9 @@ let profile = Profile::Company(CompanyProfile {
 });
 if let Profile::Company(c) = profile { assert_eq!(c.name, "Example Corp"); }
 ```
+
+`Profile` serializes as a flat tagged shape with `kind`; fund profiles use
+`fund_kind` for the fund type so it cannot collide with the discriminator.
 
 Links
 -----

@@ -53,6 +53,20 @@ All features are optional—disable the defaults (`default-features = false`) an
 
 ## Migration Notes
 
+- Market prices that share one denomination now carry `currency` once at the
+  record level and use contextual `PriceAmount` fields. Volumes that can be
+  fractional now use `QuantityAmount`.
+- `HistoryResponse::adjusted` is now `price_basis: OhlcPriceBasis`; providers
+  should state whether OHLC values are raw, provider-adjusted, corporate-action
+  adjusted, or contract-roll adjusted.
+- `Period` literals now use validated components. Prefer
+  `Period::annual(..)`, `Period::quarterly(..)`, and `Period::date(..)` over
+  enum struct literals.
+- EPS trend/revision helpers now use `Horizon` lookbacks such as `7d`, `1mo`,
+  and `1y`, not reporting `Period` values.
+- Extensible enum `Other` variants now carry enum-specific wrappers such as
+  `OtherCurrency`, `OtherExchange`, and `OtherPeriod`; construct unknown
+  values with `Type::other(..)` or `OtherType::new(..)`.
 - `Instrument` is a flat struct (`symbol`, `exchange`, `figi`, `isin`, `kind`); `IdentifierScheme`, `SecurityId`, and `PredictionID` are gone. Construct with the `from_*` helpers or a struct literal; access identifier fields directly (e.g. `inst.figi.as_ref()`). Prediction-market outcomes now live in `paft-prediction` as `PredictionInstrument`.
 - `Instrument::figi` and `Instrument::isin` are typed `Option<Figi>` / `Option<Isin>`. Construct with `Figi::new("...")` and `Isin::new("...")`. When you need `&str`, use helpers like `inst.figi.as_ref().map(AsRef::as_ref)`.
 - `CompanyProfile::isin` and `FundProfile::isin` now store `Option<Isin>`; update struct literals to pass `Isin::new(..)?` and adjust deserialization expectations accordingly.
@@ -65,7 +79,7 @@ All features are optional—disable the defaults (`default-features = false`) an
 ### Core Types
 
 - **Instruments**: `Instrument` (flat struct: `symbol`, `exchange`, `figi`, `isin`, `kind`), `AssetKind`
-- **Market Data**: `Quote`, `Candle`, `HistoryResponse`, `MarketState`
+- **Market Data**: `Quote`, `OrderBook`, `Candle`, `Ohlc`, `HistoryResponse`, `OhlcPriceBasis`, `PriceBasis`, `MarketState`
 - **Fundamentals**: Financial statements, earnings, analyst ratings, and trend/revision helper rows
 - **Options**: `OptionContractKey`, `OptionSide`, `OptionContract`, `OptionGreeks`, `OptionChain`, `OptionUpdate`, `OptionExpirationsResponse`
 - **News & Search**: `NewsArticle`, `NewsRequest`, `NewsTab`, `SearchRequest`, `SearchResult`
@@ -142,10 +156,41 @@ if let Some(figi) = apple.figi.as_ref() {
 ### Historical Data
 
 ```rust
+use paft::money::IsoCurrency;
 use paft::prelude::*;
 
-// Request 6 months of daily data (validated in constructor)
-let request = HistoryRequest::try_from_range(Range::M6, Interval::D1).unwrap();
+// Request 6 months of daily data and prefer provider-adjusted prices when
+// the provider supports them.
+let request = HistoryRequest::builder()
+    .range(Range::M6)
+    .interval(Interval::D1)
+    .prefer_adjusted_prices(true)
+    .build()
+    .unwrap();
+
+// A response states what basis its OHLC values use.
+let candle = Candle::new(
+    chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap(),
+    Currency::Iso(IsoCurrency::USD),
+    Ohlc::new(
+        PriceAmount::new(Decimal::from(189)),
+        PriceAmount::new(Decimal::from(191)),
+        PriceAmount::new(Decimal::from(188)),
+        PriceAmount::new(Decimal::from(190)),
+    ),
+);
+let response = HistoryResponse {
+    candles: vec![candle],
+    actions: vec![],
+    price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
+    meta: None,
+    provider: (),
+};
+let close = response.candles[0]
+    .ohlc
+    .close
+    .with_currency(Currency::Iso(IsoCurrency::USD));
+assert_eq!(close.format(), "190 USD");
 ```
 
 ### DataFrame Integration
@@ -261,7 +306,9 @@ Keep the rule of thumb: *wire = code = Display; human prose = explicit helper*.
 
 - **[Extensible Enums Guide](docs/EXTENSIBLE_ENUMS.md)**: Complete documentation and examples
 - **[Best Practices](docs/BEST_PRACTICES.md)**: Guidelines for library authors and consumers  
-- **[Working Examples](examples/)**: See extensible enums in action
+- **[Working Examples](examples/)**: start with
+  [`v09_ergonomics.rs`](examples/v09_ergonomics.rs), then see the
+  provider-metadata examples for advanced shapes
 
 ## License
 

@@ -10,6 +10,8 @@ Currency and money primitives for the paft ecosystem.
 - Integrates with [`paft-decimal`](https://crates.io/crates/paft-decimal) for backend-agnostic decimal helpers
 - `Money` for settled/payable amounts with currency minor-unit enforcement
 - `Price` for full-precision per-unit quotes
+- `PriceAmount` for full-precision contextual price amounts whose currency is
+  supplied by a containing market record
 - `MonetaryAmount` for exact currency totals before settlement rounding
 - `QuantityAmount` for full-precision non-negative contextual quantities
 - Runtime currency metadata overlays for ISO codes without minor-unit exponents (e.g., `XAU`, `XDR`) and custom/non-ISO currencies
@@ -71,16 +73,23 @@ Choose the level of structure you need:
 - [`paft-decimal`](https://crates.io/crates/paft-decimal) exposes helpers such as `parse_decimal`, `from_minor_units`, `zero`, and `one`
 - `Money` carries a currency and enforces settlement minor units
 - `Price` carries a currency and preserves provider quote precision
+- `PriceAmount` carries only the decimal amount; attach a currency with
+  `with_currency` when the value needs to stand alone
 - `MonetaryAmount` carries a currency and preserves exact totals/intermediates until final settlement rounding
 - `QuantityAmount` carries a non-negative decimal quantity whose unit comes from the surrounding market record
 
 ```rust
 use paft_decimal::{self as decimal, RoundingStrategy};
-use paft_money::{Currency, IsoCurrency, MonetaryAmount, MoneyError, Price, QuantityAmount};
+use paft_money::{
+    Currency, IsoCurrency, MonetaryAmount, MoneyError, Price, PriceAmount, QuantityAmount,
+};
 
 fn run() -> Result<(), MoneyError> {
     let usd = Currency::Iso(IsoCurrency::USD);
     let quote = Price::from_canonical_str("1.3578", usd.clone())?;
+    let contextual_quote = PriceAmount::new(decimal::from_minor_units(13578, 4));
+    assert_eq!(contextual_quote.with_currency(usd.clone()), quote);
+
     let quantity = QuantityAmount::from_decimal(decimal::from_minor_units(250, 2)).unwrap();
     let exact_total = quote.try_total(quantity.as_decimal())?;
     assert_eq!(quantity.to_string(), "2.5");

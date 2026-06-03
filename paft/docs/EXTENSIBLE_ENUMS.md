@@ -69,7 +69,7 @@ Examples
 Handling unknown values gracefully:
 
 ```rust
-use paft_money::{Currency, IsoCurrency};
+use paft_money::{Currency, IsoCurrency, OtherCurrency};
 
 fn label(currency: Currency) -> String {
     match currency {
@@ -79,6 +79,13 @@ fn label(currency: Currency) -> String {
         _ => currency.to_string(),
     }
 }
+
+let provider_coin = Currency::other("provider coin").unwrap();
+assert_eq!(provider_coin.to_string(), "PROVIDER_COIN");
+
+// Typed Other constructors reject values the enum already models.
+assert!(OtherCurrency::new("USD").is_err());
+assert!(OtherCurrency::new("BTC").is_err());
 ```
 
 Normalizing provider strings to canonical variants:

@@ -74,9 +74,9 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   - IDs: `Symbol`, `Figi`, `Isin`
   - Prediction-market identity (in `paft-prediction`): `PredictionInstrument`, `EventID`, `OutcomeID`
   - Time periods and lookbacks: `Period`, `Horizon`
-- **Market Data**: `Quote`, `QuoteUpdate`, `Candle`, `Action`, `MarketState`
-- **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `Interval`, `Range`
-- **Money & Currency**: `Money`, `Price`, `MonetaryAmount`, `QuantityAmount`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
+- **Market Data**: `Quote`, `QuoteUpdate`, `OrderBook`, `Candle`, `Ohlc`, `Action`, `MarketState`
+- **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `OhlcPriceBasis`, `PriceBasis`, `Interval`, `Range`
+- **Money & Currency**: `Money`, `Price`, `PriceAmount`, `MonetaryAmount`, `QuantityAmount`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
 - **Fundamentals – Profile**: `CompanyProfile`, `FundProfile`, `FundKind`, `Profile`, `Address`, `ShareCount`
 - **Fundamentals – Statements**: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`, `Calendar`
 - **Fundamentals – Analysis**: `AnalysisSummary`, `Earnings`, `EarningsYear`, `EarningsQuarter`, `EarningsQuarterEps`, `EarningsEstimate`, `RevenueEstimate`, `EarningsTrendRow`, `TrendPoint`, `EpsTrend`, `RevisionPoint`, `EpsRevisions`, `PriceTarget`, `RecommendationAction`, `RecommendationGrade`, `RecommendationRow`, `RecommendationSummary`, `UpgradeDowngradeRow`
@@ -180,7 +180,9 @@ For a deeper dive into specific patterns and concepts, check out our [comprehens
 
 - **[Extensible Enums](paft/docs/EXTENSIBLE_ENUMS.md)**: Understanding paft's graceful enum handling pattern
 - **[Best Practices](paft/docs/BEST_PRACTICES.md)**: Guidelines for library authors and consumers
-- **[Examples](paft/examples/)**: Working code examples for common patterns
+- **[Examples](paft/examples/)**: Working code examples for common patterns,
+  including the no-metadata v0.9 ergonomics tour in
+  [`v09_ergonomics.rs`](paft/examples/v09_ergonomics.rs)
 
 ## Ecosystem Architecture
 

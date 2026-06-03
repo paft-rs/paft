@@ -8,6 +8,11 @@ Market data models and request builders for the paft ecosystem.
 
 - Unified market models: `Quote`, `Candle`, `HistoryResponse`, `OptionContract`, `OptionChain`, `OptionUpdate`, `NewsArticle`
 - Snapshot-shaped market data (`Quote`, `OrderBook`) carries optional `as_of` timestamps for staleness checks
+- Price-heavy market payloads carry `Currency` once per record and use
+  contextual `PriceAmount` values; fractional-capable volumes use
+  `QuantityAmount`
+- History responses describe returned OHLC values with explicit
+  `OhlcPriceBasis` / `PriceBasis` metadata
 - Validated builders: `HistoryRequest`, `SearchRequest`; request parameter types: `NewsRequest`, `OptionExpirationsRequest`, `OptionChainRequest`
 - Canonical, serde-stable string forms; optional DataFrame export
 - Integrates with `paft-domain` and `paft-money`
@@ -71,7 +76,39 @@ let news = NewsRequest {
     count: NonZeroU32::new(25).unwrap(),
     tab: NewsTab::News,
 };
-assert_eq!(news.count, 25);
+assert_eq!(news.count.get(), 25);
+```
+
+Facade users can construct market payloads without importing companion crates
+directly:
+
+```rust
+use paft::money::IsoCurrency;
+use paft::prelude::*;
+
+let instrument =
+    Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity).unwrap();
+let mut quote = Quote::new(instrument.clone(), Currency::Iso(IsoCurrency::USD));
+quote.price = Some(PriceAmount::new(Decimal::from(19012) / Decimal::from(100)));
+quote.day_volume = Some(QuantityAmount::from_decimal(Decimal::from(78_900_000)).unwrap());
+
+let history = HistoryResponse {
+    candles: vec![Candle::new(
+        chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap(),
+        Currency::Iso(IsoCurrency::USD),
+        Ohlc::new(
+            PriceAmount::new(Decimal::from(189)),
+            PriceAmount::new(Decimal::from(191)),
+            PriceAmount::new(Decimal::from(188)),
+            PriceAmount::new(Decimal::from(190)),
+        ),
+    )],
+    actions: vec![],
+    price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
+    meta: None,
+    provider: (),
+};
+assert_eq!(history.candles[0].ohlc.close.to_string(), "190");
 ```
 
 Links
