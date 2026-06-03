@@ -66,6 +66,39 @@ fn enums_uppercase_other_variants() {
     assert_eq!(fk.to_string(), "INTERVAL_FUND");
 }
 
+#[test]
+fn enums_reject_malformed_inputs_that_canonicalize_to_modeled_values() {
+    assert!(matches!(
+        RecommendationGrade::from_str("BUY!").unwrap_err(),
+        FundamentalsError::InvalidEnumValue { enum_name, value }
+            if enum_name == "RecommendationGrade" && value == "BUY!"
+    ));
+
+    assert!(matches!(
+        RecommendationAction::from_str("$UPGRADE").unwrap_err(),
+        FundamentalsError::InvalidEnumValue { enum_name, value }
+            if enum_name == "RecommendationAction" && value == "$UPGRADE"
+    ));
+
+    assert!(matches!(
+        TransactionType::from_str("---SELL").unwrap_err(),
+        FundamentalsError::InvalidEnumValue { enum_name, value }
+            if enum_name == "TransactionType" && value == "---SELL"
+    ));
+
+    assert!(matches!(
+        InsiderPosition::from_str("CEO!").unwrap_err(),
+        FundamentalsError::InvalidEnumValue { enum_name, value }
+            if enum_name == "InsiderPosition" && value == "CEO!"
+    ));
+
+    assert!(matches!(
+        FundKind::from_str("$ETF").unwrap_err(),
+        FundamentalsError::InvalidEnumValue { enum_name, value }
+            if enum_name == "FundKind" && value == "$ETF"
+    ));
+}
+
 fn recommendation_grade_cases() -> Vec<Case<RecommendationGrade>> {
     use RecommendationGrade::*;
 

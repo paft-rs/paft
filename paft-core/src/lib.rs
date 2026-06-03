@@ -110,6 +110,12 @@ macro_rules! __string_enum_base {
                     });
                 }
                 let token = $crate::__utils::canonicalize(trimmed);
+                if !$crate::__utils::has_canonical_token_boundaries(trimmed) {
+                    return Err({
+                        let $invalid_input = input;
+                        $invalid
+                    });
+                }
                 let parsed = match token.as_ref() {
                     $( $alias => $variant, )*
                     _ => {
@@ -213,18 +219,33 @@ macro_rules! __string_enum_base {
                     });
                 }
                 let token = $crate::__utils::canonicalize(trimmed);
-                let parsed = match token.as_ref() {
-                    $( $alias => $variant, )*
-                    _ => {
-                        let canon = $crate::__utils::Canonical::try_new(trimmed)
-                            .map_err(|_| {
-                                let $invalid_input = input;
-                                $invalid
-                            })?;
-                        return Ok($OtherVariant(canon));
+                if $crate::__utils::has_canonical_token_boundaries(trimmed) {
+                    let parsed = match token.as_ref() {
+                        $( $alias => $variant, )*
+                        _ => {
+                            let canon = $crate::__utils::Canonical::try_new(trimmed)
+                                .map_err(|_| {
+                                    let $invalid_input = input;
+                                    $invalid
+                                })?;
+                            return Ok($OtherVariant(canon));
+                        }
+                    };
+                    Ok(parsed)
+                } else {
+                    let canon = $crate::__utils::Canonical::try_new(trimmed)
+                        .map_err(|_| {
+                            let $invalid_input = input;
+                            $invalid
+                        })?;
+                    if matches!(canon.as_ref(), $( $alias )|*) {
+                        return Err({
+                            let $invalid_input = input;
+                            $invalid
+                        });
                     }
-                };
-                Ok(parsed)
+                    Ok($OtherVariant(canon))
+                }
             }
         }
 
@@ -323,18 +344,33 @@ macro_rules! __string_enum_base {
                     });
                 }
                 let token = $crate::__utils::canonicalize(trimmed);
-                let parsed = match token.as_ref() {
-                    $( $alias => $variant, )*
-                    _ => {
-                        let canon = $crate::__utils::Canonical::try_new(trimmed)
-                            .map_err(|_| {
-                                let $invalid_input = input;
-                                $invalid
-                            })?;
-                        return Ok($OtherVariant(<$OtherCode>::from_canonical_unchecked(canon)));
+                if $crate::__utils::has_canonical_token_boundaries(trimmed) {
+                    let parsed = match token.as_ref() {
+                        $( $alias => $variant, )*
+                        _ => {
+                            let canon = $crate::__utils::Canonical::try_new(trimmed)
+                                .map_err(|_| {
+                                    let $invalid_input = input;
+                                    $invalid
+                                })?;
+                            return Ok($OtherVariant(<$OtherCode>::from_canonical_unchecked(canon)));
+                        }
+                    };
+                    Ok(parsed)
+                } else {
+                    let canon = $crate::__utils::Canonical::try_new(trimmed)
+                        .map_err(|_| {
+                            let $invalid_input = input;
+                            $invalid
+                        })?;
+                    if matches!(canon.as_ref(), $( $alias )|*) {
+                        return Err({
+                            let $invalid_input = input;
+                            $invalid
+                        });
                     }
-                };
-                Ok(parsed)
+                    Ok($OtherVariant(<$OtherCode>::from_canonical_unchecked(canon)))
+                }
             }
         }
 

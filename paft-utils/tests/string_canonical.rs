@@ -1,4 +1,6 @@
-use paft_utils::{Canonical, CanonicalError, StringCode, canonicalize};
+use paft_utils::{
+    Canonical, CanonicalError, StringCode, canonicalize, has_canonical_token_boundaries,
+};
 use std::borrow::Cow;
 
 fn invalid_canonical_value(err: CanonicalError) -> String {
@@ -20,6 +22,20 @@ fn canonicalize_applies_normalization_rules() {
 fn canonicalize_collapses_and_trims_underscores() {
     assert_eq!(canonicalize("__foo--bar__"), "FOO_BAR");
     assert_eq!(canonicalize("!@#"), "");
+}
+
+#[test]
+fn canonical_token_boundaries_require_alphanumeric_edges_after_trim() {
+    assert!(has_canonical_token_boundaries("USD"));
+    assert!(has_canonical_token_boundaries("  market perform  "));
+    assert!(has_canonical_token_boundaries("10%_OWNER"));
+
+    assert!(!has_canonical_token_boundaries(""));
+    assert!(!has_canonical_token_boundaries("   "));
+    assert!(!has_canonical_token_boundaries("$USD"));
+    assert!(!has_canonical_token_boundaries("---NYSE"));
+    assert!(!has_canonical_token_boundaries("CLOSED!"));
+    assert!(!has_canonical_token_boundaries("€USD"));
 }
 
 #[test]

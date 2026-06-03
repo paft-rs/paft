@@ -2,7 +2,7 @@
 
 use std::{borrow::Cow, str::FromStr};
 
-use paft_utils::{Canonical, StringCode, canonicalize};
+use paft_utils::{Canonical, StringCode, canonicalize, has_canonical_token_boundaries};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::IsoCurrency;
@@ -277,23 +277,28 @@ impl FromStr for Currency {
         let token = canonicalize(trimmed);
         let canon = token.as_ref();
 
-        if canon == "BTC" {
-            return Ok(Self::BTC);
-        }
-        if canon == "ETH" {
-            return Ok(Self::ETH);
-        }
-        if canon == "XMR" {
-            return Ok(Self::XMR);
-        }
-        if canon == "USDC" {
-            return Ok(Self::USDC);
-        }
-        if canon == "USDT" {
-            return Ok(Self::USDT);
-        }
-        if let Some(iso) = IsoCurrency::from_code(canon) {
-            return Ok(Self::Iso(iso));
+        let known = if canon == "BTC" {
+            Some(Self::BTC)
+        } else if canon == "ETH" {
+            Some(Self::ETH)
+        } else if canon == "XMR" {
+            Some(Self::XMR)
+        } else if canon == "USDC" {
+            Some(Self::USDC)
+        } else if canon == "USDT" {
+            Some(Self::USDT)
+        } else {
+            IsoCurrency::from_code(canon).map(Self::Iso)
+        };
+
+        if let Some(currency) = known {
+            if has_canonical_token_boundaries(trimmed) {
+                return Ok(currency);
+            }
+            return Err(MoneyParseError::InvalidEnumValue {
+                enum_name: "Currency",
+                value: input.to_string(),
+            });
         }
 
         let other = Canonical::try_new(trimmed).map_err(|_| MoneyParseError::InvalidEnumValue {

@@ -114,6 +114,30 @@ fn closed_enums_reject_unknown_tokens() {
 }
 
 #[test]
+fn enum_parsers_reject_malformed_inputs_that_canonicalize_to_modeled_values() {
+    assert!(matches!(
+        Currency::from_str("$USD").unwrap_err(),
+        paft_money::MoneyParseError::InvalidEnumValue { enum_name, value }
+            if enum_name == "Currency" && value == "$USD"
+    ));
+
+    assert!(matches!(
+        Exchange::from_str("---NYSE").unwrap_err(),
+        DomainError::InvalidExchangeValue { value } if value == "---NYSE"
+    ));
+
+    assert!(matches!(
+        AssetKind::from_str("EQUITY!").unwrap_err(),
+        DomainError::InvalidAssetKindValue { value } if value == "EQUITY!"
+    ));
+
+    assert!(matches!(
+        MarketState::from_str("CLOSED!").unwrap_err(),
+        DomainError::InvalidMarketStateValue { value } if value == "CLOSED!"
+    ));
+}
+
+#[test]
 fn market_state_aliases_parse_to_expected_sessions() {
     assert_eq!(MarketState::from_str("PRE").unwrap(), MarketState::Pre);
     assert_eq!(

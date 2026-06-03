@@ -137,6 +137,26 @@ pub fn canonicalize(input: &str) -> Cow<'_, str> {
     Cow::Owned(out)
 }
 
+/// Returns true when `input` can safely be matched against a modeled enum token.
+///
+/// String enum parsers use this as a boundary check before resolving a
+/// canonicalized token to a known variant or alias. It allows ordinary
+/// case/separator normalization inside the token while rejecting leading or
+/// trailing separators such as `"$USD"` or `"CLOSED!"`, which would otherwise
+/// canonicalize into modeled values and lose their original identity.
+#[inline]
+#[must_use]
+pub fn has_canonical_token_boundaries(input: &str) -> bool {
+    let trimmed = input.trim();
+    let mut chars = trimmed.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    let last = chars.next_back().unwrap_or(first);
+
+    first.is_ascii_alphanumeric() && last.is_ascii_alphanumeric()
+}
+
 /// Checks if a string is already in canonical form.
 ///
 /// A string is canonical if:

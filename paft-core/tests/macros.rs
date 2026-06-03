@@ -79,6 +79,20 @@ fn closed_unknown_value_is_rejected() {
 }
 
 #[test]
+fn closed_rejects_malformed_input_that_canonicalizes_to_known_value() {
+    for input in ["$BUY", "---SELL", "BUY!"] {
+        let err = input.parse::<Side>().unwrap_err();
+        assert!(matches!(
+            err,
+            PaftError::InvalidEnumValue { enum_name, value }
+                if enum_name == "Side" && value == input
+        ));
+    }
+
+    assert!(serde_json::from_str::<Side>("\"SELL!\"").is_err());
+}
+
+#[test]
 fn closed_serde_round_trip_json() {
     let json = serde_json::to_string(&Side::Sell).unwrap();
     assert_eq!(json, "\"SELL\"");
@@ -202,6 +216,20 @@ fn open_empty_input_is_rejected() {
         PaftError::InvalidEnumValue { enum_name, value }
             if enum_name == "Venue" && value == "   "
     ));
+}
+
+#[test]
+fn open_rejects_malformed_input_that_canonicalizes_to_known_value() {
+    for input in ["$NASDAQ", "---NYSE", "BIG_BOARD!"] {
+        let err = input.parse::<Venue>().unwrap_err();
+        assert!(matches!(
+            err,
+            PaftError::InvalidEnumValue { enum_name, value }
+                if enum_name == "Venue" && value == input
+        ));
+    }
+
+    assert!(serde_json::from_str::<Venue>("\"NYSE!\"").is_err());
 }
 
 #[test]

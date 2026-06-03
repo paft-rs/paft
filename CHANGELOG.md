@@ -110,6 +110,9 @@ All notable changes to this project will be documented in this file.
 - Domain: `Horizon` and `Period` parsing now rejects malformed inputs whose
   canonical fallback would become a modeled token, such as `-1d` or
   `-2023Q4`, instead of accepting them as valid structured values.
+- Domain/money/fundamentals: string enum parsers now reject malformed inputs
+  whose canonicalized form would resolve to a modeled value, such as `$USD`,
+  `---NYSE`, or `CLOSED!`.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
   payloads can no longer use tokens already modeled by the owning enum,
   preserving serde identity for values created through public constructors.
