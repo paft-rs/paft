@@ -20,6 +20,7 @@ fn market_exports_are_available_from_facade_and_prelude() {
         OptionUpdate as PreludeOptionUpdate, Price, Range,
         SearchRequestBuilder as PreludeSearchRequestBuilder, TimeSpec as PreludeTimeSpec,
     };
+    use std::num::NonZeroU32;
 
     let greeks: FacadeOptionGreeks = PreludeOptionGreeks::default();
     let _: PreludeOptionGreeks = greeks;
@@ -28,7 +29,10 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let _: PreludeOptionExpirationsResponse = expirations;
 
     let tab: FacadeNewsTab = PreludeNewsTab::default();
-    let news: FacadeNewsRequest = PreludeNewsRequest { count: 10, tab };
+    let news: FacadeNewsRequest = PreludeNewsRequest {
+        count: NonZeroU32::new(10).unwrap(),
+        tab,
+    };
     let _: PreludeNewsRequest = news;
 
     let time_spec: FacadeTimeSpec = PreludeTimeSpec::Range(Range::M1);

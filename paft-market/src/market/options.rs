@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_decimal::Decimal;
+use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::Instrument;
 use paft_money::Price;
 use std::fmt;
@@ -128,8 +128,9 @@ pub struct GenericOptionContract<M = ()> {
     pub volume: Option<u64>,
     /// Open interest at the time of fetch.
     pub open_interest: Option<u64>,
-    /// Implied volatility as a fraction (e.g., 0.25 for 25%).
-    pub implied_volatility: Option<Decimal>,
+    /// Implied volatility as a non-negative fraction (e.g., 0.25 for 25%).
+    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
+    pub implied_volatility: Option<NonNegativeDecimal>,
     /// Whether the provider reports the option as currently in the money.
     ///
     /// `None` means the provider did not report this value.
@@ -253,7 +254,8 @@ pub struct GenericOptionUpdate<M = ()> {
     /// Last traded price, if available.
     pub last_price: Option<Price>,
     /// Implied volatility estimate, if available.
-    pub implied_volatility: Option<Decimal>,
+    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
+    pub implied_volatility: Option<NonNegativeDecimal>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,

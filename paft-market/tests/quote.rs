@@ -1,10 +1,14 @@
 use chrono::DateTime;
-use paft_decimal::Decimal;
+use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
 use paft_market::market::orderbook::BookLevel;
 use paft_market::market::quote::{Quote, QuoteUpdate};
 use paft_money::{Currency, IsoCurrency, Price};
 use std::str::FromStr;
+
+fn size(amount: i64) -> NonNegativeDecimal {
+    NonNegativeDecimal::new(Decimal::from(amount)).unwrap()
+}
 
 // -----------------
 // Quote tests
@@ -522,7 +526,7 @@ fn serialization_roundtrip_preserves_precision() {
 fn quote_with_bid_and_ask_roundtrips() {
     let bid = BookLevel {
         price: Price::new(Decimal::from(149), Currency::Iso(IsoCurrency::USD)),
-        size: Some(Decimal::from(200)),
+        size: Some(size(200)),
         provider: (),
     };
     let ask = BookLevel {
@@ -551,7 +555,7 @@ fn quote_with_bid_and_ask_roundtrips() {
     let decoded_ask = decoded.ask.as_ref().unwrap();
     assert!(decoded_ask.size.is_none(), "ask size None preserved");
     let decoded_bid = decoded.bid.as_ref().unwrap();
-    assert_eq!(decoded_bid.size, Some(Decimal::from(200)));
+    assert_eq!(decoded_bid.size, Some(size(200)));
 }
 
 #[test]

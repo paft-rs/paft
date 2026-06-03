@@ -75,6 +75,27 @@ impl Decimal128Encode for rust_decimal::Decimal {
     }
 }
 
+impl Decimal128Encode for paft_decimal::NonNegativeDecimal {
+    #[inline]
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        self.as_decimal().try_to_i128_mantissa(target_scale)
+    }
+}
+
+impl Decimal128Encode for paft_decimal::PositiveDecimal {
+    #[inline]
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        self.as_decimal().try_to_i128_mantissa(target_scale)
+    }
+}
+
+impl Decimal128Encode for paft_decimal::Ratio {
+    #[inline]
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        self.as_decimal().try_to_i128_mantissa(target_scale)
+    }
+}
+
 #[cfg(feature = "bigdecimal")]
 impl Decimal128Encode for bigdecimal::BigDecimal {
     fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {

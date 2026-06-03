@@ -17,7 +17,10 @@ pub use crate::money::{
     try_normalize_currency_code,
 };
 pub use crate::money::{ExchangeRate, Money};
-pub use crate::{Decimal, Error, Result, RoundingStrategy};
+pub use crate::{
+    Decimal, DecimalConstraintError, Error, NonNegativeDecimal, PositiveDecimal, Ratio, Result,
+    RoundingStrategy,
+};
 
 // Re-export dataframe traits
 #[cfg(feature = "dataframe")]

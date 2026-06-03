@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_core::error::PaftError;
-use paft_decimal::Decimal;
+use paft_decimal::{Decimal, Ratio};
 use paft_domain::Canonical;
 use paft_domain::Period;
 use paft_money::Money;
@@ -168,7 +168,8 @@ pub struct MajorHolder {
     /// The category of the holder (e.g., "% of Shares Held by All Insider").
     pub category: String,
     /// The value associated with the category as a numeric fraction (e.g., 0.255 for 25.5%).
-    pub value: Decimal,
+    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
+    pub value: Ratio,
 }
 
 /// Represents a single institutional or mutual fund holder.
@@ -183,7 +184,8 @@ pub struct InstitutionalHolder {
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub date_reported: DateTime<Utc>,
     /// The percentage of the company's outstanding shares held by this entity.
-    pub pct_held: Option<Decimal>,
+    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
+    pub pct_held: Option<Ratio>,
     /// The market value of the shares held.
     pub value: Option<Money>,
 }

@@ -1631,6 +1631,8 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "rust_decimal",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1722,6 +1724,7 @@ version = "0.9.0"
 dependencies = [
  "bigdecimal",
  "df-derive-core",
+ "paft-decimal",
  "polars",
  "rust_decimal",
  "smol_str",

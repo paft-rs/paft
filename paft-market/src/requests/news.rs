@@ -1,6 +1,7 @@
 //! News request parameters and enums.
 
 use std::fmt;
+use std::num::NonZeroU32;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -76,15 +77,20 @@ impl<'de> Deserialize<'de> for NewsTab {
 /// Parameters for fetching instrument news.
 pub struct NewsRequest {
     /// Maximum number of articles to fetch.
-    pub count: u32,
+    pub count: NonZeroU32,
     /// Content tab/category to fetch from the provider.
     pub tab: NewsTab,
+}
+
+impl NewsRequest {
+    /// Default maximum number of articles to fetch.
+    pub const DEFAULT_COUNT: NonZeroU32 = NonZeroU32::new(10).expect("10 is non-zero");
 }
 
 impl Default for NewsRequest {
     fn default() -> Self {
         Self {
-            count: 10,
+            count: Self::DEFAULT_COUNT,
             tab: NewsTab::default(),
         }
     }

@@ -84,8 +84,10 @@ pub mod money {
     };
 }
 
-/// Direct access to Decimal type
-pub use paft_decimal::{Decimal, RoundingStrategy};
+/// Direct access to decimal types.
+pub use paft_decimal::{
+    Decimal, DecimalConstraintError, NonNegativeDecimal, PositiveDecimal, Ratio, RoundingStrategy,
+};
 
 /// Top-level re-export of the dataframe runtime traits used by paft-owned
 /// types. For deriving dataframe support on your own structs, depend on

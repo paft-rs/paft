@@ -1,5 +1,6 @@
 use paft_domain::AssetKind;
 use paft_market::{HistoryRequest, Interval, NewsRequest, NewsTab, Range, SearchRequest, TimeSpec};
+use std::num::NonZeroU32;
 
 #[test]
 fn search_request_serialization() {
@@ -26,7 +27,7 @@ fn search_request_minimal() {
 #[test]
 fn news_request_serialization() {
     let request = NewsRequest {
-        count: 25,
+        count: NonZeroU32::new(25).unwrap(),
         tab: NewsTab::PressReleases,
     };
 
@@ -42,6 +43,16 @@ fn news_request_serialization() {
     let deserialized: NewsRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
     assert_eq!(NewsRequest::default().tab, NewsTab::News);
+}
+
+#[test]
+fn news_request_rejects_zero_count() {
+    let value = serde_json::json!({
+        "count": 0,
+        "tab": "NEWS"
+    });
+
+    assert!(serde_json::from_value::<NewsRequest>(value).is_err());
 }
 
 #[test]

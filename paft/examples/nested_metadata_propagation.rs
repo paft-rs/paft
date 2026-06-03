@@ -45,7 +45,7 @@ use paft::money::IsoCurrency;
 use paft::prelude::{
     Action, AssetKind, Currency, Exchange, HistoryMeta, Instrument, Interval, MarketState, Price,
 };
-use paft::{Decimal, Result};
+use paft::{Decimal, NonNegativeDecimal, Result};
 use serde::{Deserialize, Serialize};
 
 /// One metadata struct flows through every nested type in this example.
@@ -118,7 +118,10 @@ fn order_book_propagation() -> Result<()> {
     println!(
         "Top of book ask: price={} size={} (entry seq={})",
         book.asks[0].price,
-        book.asks[0].size.clone().unwrap_or_default(),
+        book.asks[0]
+            .size
+            .clone()
+            .unwrap_or_else(|| non_negative(Decimal::from(0))),
         book.asks[0].provider.seq,
     );
 
@@ -316,9 +319,13 @@ fn entry(price_cents: i64, size_units: i64, provider: FeedMeta) -> GenericBookLe
             Decimal::from(price_cents) / Decimal::from(100),
             Currency::Iso(IsoCurrency::USD),
         ),
-        size: Some(Decimal::from(size_units)),
+        size: Some(non_negative(Decimal::from(size_units))),
         provider,
     }
+}
+
+fn non_negative(value: Decimal) -> NonNegativeDecimal {
+    NonNegativeDecimal::new(value).unwrap()
 }
 
 fn candle(
@@ -361,7 +368,7 @@ fn option_contract(
         ask: Some(price(6)),
         volume: Some(100),
         open_interest: Some(500),
-        implied_volatility: Some(Decimal::from(25) / Decimal::from(100)),
+        implied_volatility: Some(non_negative(Decimal::from(25) / Decimal::from(100))),
         in_the_money: Some(in_the_money),
         expiration_at: None,
         last_trade_at: None,

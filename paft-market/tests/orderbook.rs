@@ -1,4 +1,4 @@
-use paft_decimal::Decimal;
+use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::orderbook::{BookLevel, OrderBook};
 use paft_money::{Currency, IsoCurrency, Price};
@@ -11,11 +11,15 @@ fn aapl() -> Instrument {
     Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap()
 }
 
+fn size(amount: i64) -> NonNegativeDecimal {
+    NonNegativeDecimal::new(Decimal::from(amount)).unwrap()
+}
+
 #[test]
 fn book_level_constructor_with_size() {
-    let level = BookLevel::new(usd(100), Some(Decimal::from(500)));
+    let level = BookLevel::new(usd(100), Some(size(500)));
     assert_eq!(level.price, usd(100));
-    assert_eq!(level.size, Some(Decimal::from(500)));
+    assert_eq!(level.size, Some(size(500)));
 }
 
 #[test]
@@ -29,12 +33,25 @@ fn book_level_constructor_without_size() {
 fn book_level_serde_roundtrip_with_size() {
     let level = BookLevel {
         price: usd(100),
-        size: Some(Decimal::from(500)),
+        size: Some(size(500)),
         provider: (),
     };
     let json = serde_json::to_string(&level).unwrap();
     let decoded: BookLevel = serde_json::from_str(&json).unwrap();
     assert_eq!(level, decoded);
+}
+
+#[test]
+fn book_level_rejects_negative_size() {
+    let level = BookLevel {
+        price: usd(100),
+        size: Some(size(1)),
+        provider: (),
+    };
+    let mut value = serde_json::to_value(level).unwrap();
+    value["size"] = serde_json::json!(-1);
+
+    assert!(serde_json::from_value::<BookLevel>(value).is_err());
 }
 
 #[test]
@@ -56,11 +73,11 @@ fn order_book_with_mixed_size_availability() {
         instrument: aapl(),
         as_of: chrono::DateTime::from_timestamp(1_700_000_000, 456_000_000),
         asks: vec![
-            BookLevel::new(usd(101), Some(Decimal::from(200))),
+            BookLevel::new(usd(101), Some(size(200))),
             BookLevel::new(usd(102), None),
         ],
         bids: vec![
-            BookLevel::new(usd(99), Some(Decimal::from(300))),
+            BookLevel::new(usd(99), Some(size(300))),
             BookLevel::new(usd(98), None),
         ],
         provider: (),
@@ -73,7 +90,7 @@ fn order_book_with_mixed_size_availability() {
     assert_eq!(book, decoded);
     assert_eq!(decoded.asks.len(), 2);
     assert_eq!(decoded.bids.len(), 2);
-    assert_eq!(decoded.asks[0].size, Some(Decimal::from(200)));
+    assert_eq!(decoded.asks[0].size, Some(size(200)));
     assert!(decoded.asks[1].size.is_none());
     assert!(decoded.bids[1].size.is_none());
     assert_eq!(decoded.instrument.unique_key().as_ref(), "AAPL");

@@ -1,6 +1,6 @@
 #![cfg(feature = "dataframe")]
 use chrono::{TimeZone, Utc};
-use paft_decimal::Decimal;
+use paft_decimal::{Decimal, Ratio};
 use paft_domain::{Isin, Period};
 use paft_fundamentals::{
     Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
@@ -32,6 +32,10 @@ fn usd_price(amount: i64) -> Price {
 
 fn dec(value: &str) -> Decimal {
     Decimal::from_str(value).unwrap()
+}
+
+fn ratio(value: &str) -> Ratio {
+    Ratio::new(dec(value)).unwrap()
 }
 fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
     Utc.timestamp_opt(secs, 0).unwrap()
@@ -418,7 +422,7 @@ fn key_statistics_default_to_dataframe() {
 fn major_holder_to_dataframe() {
     let holder = MajorHolder {
         category: "% Held by Insiders".to_string(),
-        value: dec("0.255"),
+        value: ratio("0.255"),
     };
 
     let df = holder.to_dataframe().unwrap();
@@ -431,7 +435,7 @@ fn institutional_holder_to_dataframe() {
         holder: "Example Fund".to_string(),
         shares: Some(10_000),
         date_reported: sample_ts(1_600_000_000),
-        pct_held: Some(dec("0.12")),
+        pct_held: Some(ratio("0.12")),
         value: Some(usd(1_200)),
     };
 

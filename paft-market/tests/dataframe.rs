@@ -1,7 +1,7 @@
 #![cfg(feature = "dataframe")]
 use chrono::{NaiveDate, TimeZone, Utc};
 use chrono_tz::UTC as TzUtc;
-use paft_decimal::Decimal;
+use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::{AssetKind, Exchange, Instrument};
 use paft_market::{
     market::{
@@ -28,6 +28,11 @@ fn usd(amount: i64) -> Price {
 fn dec(value: &str) -> Decimal {
     Decimal::from_str(value).unwrap()
 }
+
+fn non_negative(value: &str) -> NonNegativeDecimal {
+    NonNegativeDecimal::new(dec(value)).unwrap()
+}
+
 fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
     Utc.timestamp_opt(secs, 0).unwrap()
 }
@@ -36,7 +41,7 @@ fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
 fn book_level_to_dataframe_with_size() {
     let level = BookLevel {
         price: usd(100),
-        size: Some(Decimal::from(500)),
+        size: Some(non_negative("500")),
         provider: (),
     };
     let df = level.to_dataframe().unwrap();
@@ -59,7 +64,7 @@ fn order_book_to_dataframe_smoke() {
     let book = OrderBook {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         as_of: Some(sample_ts(1_700_000_000)),
-        asks: vec![BookLevel::new(usd(101), Some(Decimal::from(200)))],
+        asks: vec![BookLevel::new(usd(101), Some(non_negative("200")))],
         bids: vec![BookLevel::new(usd(99), None)],
         provider: (),
     };
@@ -200,7 +205,7 @@ fn sample_contract() -> OptionContract {
         ask: Some(usd(6)),
         volume: Some(1_000),
         open_interest: Some(5_000),
-        implied_volatility: Some(dec("0.25")),
+        implied_volatility: Some(non_negative("0.25")),
         in_the_money: Some(true),
         expiration_at: Some(sample_ts(1_719_196_800)),
         last_trade_at: Some(sample_ts(1_700_000_000)),

@@ -13,6 +13,10 @@
 
 use std::str::FromStr;
 
+mod constrained;
+
+pub use constrained::{DecimalConstraintError, NonNegativeDecimal, PositiveDecimal, Ratio};
+
 /// Rounding strategy supported by decimal operations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]

@@ -56,6 +56,7 @@ Quickstart
 
 ```rust
 use paft_market::{HistoryRequest, Interval, NewsRequest, NewsTab, Range, SearchRequest};
+use std::num::NonZeroU32;
 
 // 1 month of daily candles
 let req = HistoryRequest::try_from_range(Range::M1, Interval::D1).unwrap();
@@ -66,7 +67,10 @@ let search = SearchRequest::new("AAPL").unwrap();
 assert_eq!(search.query(), "AAPL");
 
 // News request parameters
-let news = NewsRequest { count: 25, tab: NewsTab::News };
+let news = NewsRequest {
+    count: NonZeroU32::new(25).unwrap(),
+    tab: NewsTab::News,
+};
 assert_eq!(news.count, 25);
 ```
 

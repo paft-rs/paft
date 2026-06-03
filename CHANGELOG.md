@@ -6,9 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ## [0.9.0] - 2026-06-02
 
+### Added
+
+- Decimal/facade: added constrained decimal newtypes
+  `NonNegativeDecimal`, `PositiveDecimal`, and `Ratio`, plus
+  `DecimalConstraintError`.
+
 ### Changed
 
 - Workspace: version bumped to `0.9.0`.
+- Market/fundamentals: universally constrained quantities now use dedicated
+  newtypes: book-level sizes and option implied volatility use
+  `NonNegativeDecimal`, holder fractions use `Ratio`, and news request counts
+  use `NonZeroU32`.
 - Fundamentals: `InsiderTransaction::url` is now `Option<String>` so missing
   filing URLs can be represented without sentinel strings.
 - Money: scalar arithmetic helpers now borrow decimal operands:
@@ -22,6 +32,13 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking Changes
 
+- Decimal/facade: callers can import the new constrained decimal types from
+  `paft_decimal` or the facade root/prelude.
+- Market/facade: `BookLevel::size`, `OptionContract::implied_volatility`, and
+  `OptionUpdate::implied_volatility` now use `Option<NonNegativeDecimal>`.
+  `NewsRequest::count` now uses `std::num::NonZeroU32`.
+- Fundamentals/facade: `MajorHolder::value` now uses `Ratio`, and
+  `InstitutionalHolder::pct_held` now uses `Option<Ratio>`.
 - Fundamentals/facade: `InsiderTransaction` struct literals and consumers must
   handle `url: Option<String>` instead of `url: String`.
 - Money/facade: callers of non-panicking scalar arithmetic helpers must pass
