@@ -92,6 +92,9 @@ All notable changes to this project will be documented in this file.
   construction paths.
 - Money: localized formatting now rejects fraction digit requests above the
   active decimal backend precision instead of attempting unbounded zero padding.
+- Decimal/money: constrained decimal and contextual amount `Display`
+  implementations now emit canonical decimal strings without gratuitous
+  trailing zeroes, matching serde and hash behavior.
 - Domain: structured `Period` values can no longer expose invalid public
   states such as quarter 5 or date/period years outside `0..=9999`, and low
   years now emit four-digit canonical codes so display/serde round trips

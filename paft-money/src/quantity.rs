@@ -101,6 +101,6 @@ impl Hash for QuantityAmount {
 
 impl fmt::Display for QuantityAmount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.amount.fmt(f)
+        f.write_str(&decimal::to_canonical_string(self.as_decimal()))
     }
 }

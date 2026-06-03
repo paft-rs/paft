@@ -49,6 +49,19 @@ fn ratio_accepts_only_inclusive_unit_interval() {
 }
 
 #[test]
+fn constrained_decimal_display_uses_canonical_decimal() {
+    assert_eq!(
+        NonNegativeDecimal::new(dec("0.2500")).unwrap().to_string(),
+        "0.25"
+    );
+    assert_eq!(
+        PositiveDecimal::new(dec("1.2300")).unwrap().to_string(),
+        "1.23"
+    );
+    assert_eq!(Ratio::new(dec("1.0000")).unwrap().to_string(), "1");
+}
+
+#[test]
 fn constrained_decimals_serialize_as_canonical_strings() {
     let decimal = dec("0.2500");
     let ratio_for_serialization = Ratio::new(decimal_for_reuse(&decimal)).unwrap();

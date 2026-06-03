@@ -227,7 +227,7 @@ fn price_amount_is_contextual_decimal() {
     let amount = PriceAmount::new(parse_decimal("1.35780"));
 
     assert_eq!(amount.as_decimal(), &parse_decimal("1.35780"));
-    assert_eq!(amount.to_string(), "1.35780");
+    assert_eq!(amount.to_string(), "1.3578");
     assert_eq!(
         amount.with_currency(usd()),
         Price::new(parse_decimal("1.35780"), usd())
@@ -278,6 +278,7 @@ fn quantity_amount_is_non_negative_contextual_decimal() {
 fn quantity_amount_serde_is_transparent() {
     let quantity = QuantityAmount::from_decimal(parse_decimal("123.4560")).unwrap();
 
+    assert_eq!(quantity.to_string(), "123.456");
     assert_eq!(serde_json::to_value(quantity).unwrap(), json!("123.456"));
 
     let decoded: QuantityAmount = serde_json::from_value(json!("123.456")).unwrap();

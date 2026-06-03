@@ -4,7 +4,7 @@ use std::fmt;
 
 use ::serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
-use crate::{Decimal, one, serde::canonical_str, zero};
+use crate::{Decimal, one, serde::canonical_str, to_canonical_string, zero};
 
 /// Error returned when a decimal does not satisfy a constrained decimal type.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -147,7 +147,7 @@ impl From<NonNegativeDecimal> for Decimal {
 
 impl fmt::Display for NonNegativeDecimal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
+        f.write_str(&to_canonical_string(&self.0))
     }
 }
 
@@ -243,7 +243,7 @@ impl From<PositiveDecimal> for NonNegativeDecimal {
 
 impl fmt::Display for PositiveDecimal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
+        f.write_str(&to_canonical_string(&self.0))
     }
 }
 
@@ -335,7 +335,7 @@ impl From<Ratio> for NonNegativeDecimal {
 
 impl fmt::Display for Ratio {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
+        f.write_str(&to_canonical_string(&self.0))
     }
 }
 
