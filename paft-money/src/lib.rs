@@ -220,7 +220,7 @@ pub mod money;
 mod price;
 
 pub use amount::MonetaryAmount;
-pub use currency::Currency;
+pub use currency::{Currency, OtherCurrency};
 pub use currency_utils::{
     CurrencyMetadata, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS, MinorUnitError,
     clear_currency_metadata, currency_metadata, set_currency_metadata, try_normalize_currency_code,

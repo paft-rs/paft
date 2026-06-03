@@ -1,5 +1,8 @@
-use paft_domain::{AssetKind, DomainError, Exchange, MarketState, Period};
-use paft_money::Currency;
+use paft_domain::{
+    AssetKind, DomainError, Exchange, MarketState, OtherAssetKind, OtherExchange, OtherPeriod,
+    Period,
+};
+use paft_money::{Currency, OtherCurrency};
 use std::str::FromStr;
 
 fn assert_display_parse_display_idempotent<T, E>(token: &str)
@@ -136,4 +139,33 @@ fn extensible_enums_preserve_other_canonical_tokens() {
         AssetKind::Other(ref canon) => assert_eq!(canon.as_ref(), "STRUCTURED_NOTE"),
         other => panic!("expected Other variant, got {other:?}"),
     }
+}
+
+#[test]
+fn other_wrappers_reject_modeled_core_tokens() {
+    assert!(OtherCurrency::new("USD").is_err());
+    assert!(OtherCurrency::new("BTC").is_err());
+    assert_eq!(OtherCurrency::new("my token").unwrap().as_ref(), "MY_TOKEN");
+
+    assert!(OtherExchange::new("NASDAQ").is_err());
+    assert!(OtherExchange::new("bombay").is_err());
+    assert_eq!(
+        OtherExchange::new("my exchange").unwrap().as_ref(),
+        "MY_EXCHANGE"
+    );
+
+    assert!(OtherAssetKind::new("EQUITY").is_err());
+    assert!(OtherAssetKind::new("stock").is_err());
+    assert_eq!(
+        OtherAssetKind::new("structured note").unwrap().as_ref(),
+        "STRUCTURED_NOTE"
+    );
+
+    assert!(OtherPeriod::new("2023Q4").is_err());
+    assert!(OtherPeriod::new("FY2023").is_err());
+    assert!(OtherPeriod::new("-2023Q4").is_err());
+    assert_eq!(
+        OtherPeriod::new("custom range").unwrap().as_ref(),
+        "CUSTOM_RANGE"
+    );
 }

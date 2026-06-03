@@ -206,6 +206,89 @@ macro_rules! __string_enum_base {
             ];
         }
     };
+
+    (
+        $Type:ident, $enum_name:literal, other($OtherVariant:path, $OtherCode:ty), {
+            $( $alias:literal => $variant:path ),+ $(,)?
+        }
+    ) => {
+        impl $crate::__utils::StringCode for $Type {
+            fn code(&self) -> &str { $Type::code(self) }
+            fn is_canonical(&self) -> bool { $Type::is_canonical(self) }
+        }
+
+        impl $Type {
+            /// Returns true when this value represents a canonical variant.
+            #[must_use]
+            pub const fn is_canonical(&self) -> bool { !matches!(self, $OtherVariant(_)) }
+        }
+
+        impl $crate::__serde::Serialize for $Type {
+            fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
+            where
+                S: $crate::__serde::Serializer,
+            {
+                serializer.serialize_str(self.code())
+            }
+        }
+
+        impl<'de> $crate::__serde::Deserialize<'de> for $Type {
+            fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+            where
+                D: $crate::__serde::Deserializer<'de>,
+            {
+                let raw = <String as $crate::__serde::Deserialize>::deserialize(deserializer)?;
+                <Self as ::std::str::FromStr>::from_str(&raw)
+                    .map_err($crate::__serde::de::Error::custom)
+            }
+        }
+
+        impl ::std::str::FromStr for $Type {
+            type Err = $crate::error::PaftError;
+
+            fn from_str(input: &str) -> ::std::result::Result<Self, Self::Err> {
+                let trimmed = input.trim();
+                if trimmed.is_empty() {
+                    return Err($crate::error::PaftError::InvalidEnumValue {
+                        enum_name: $enum_name,
+                        value: input.to_string(),
+                    });
+                }
+                let token = $crate::__utils::canonicalize(trimmed);
+                let parsed = match token.as_ref() {
+                    $( $alias => $variant, )*
+                    _ => {
+                        let canon = $crate::__utils::Canonical::try_new(trimmed)
+                            .map_err(|_| $crate::error::PaftError::InvalidEnumValue {
+                                enum_name: $enum_name,
+                                value: input.to_string(),
+                            })?;
+                        return Ok($OtherVariant(<$OtherCode>::from_canonical_unchecked(canon)));
+                    }
+                };
+                Ok(parsed)
+            }
+        }
+
+        impl ::std::convert::TryFrom<String> for $Type {
+            type Error = $crate::error::PaftError;
+
+            fn try_from(value: String) -> ::std::result::Result<Self, Self::Error> {
+                <Self as ::std::str::FromStr>::from_str(&value)
+            }
+        }
+
+        impl ::std::convert::From<$Type> for String {
+            fn from(v: $Type) -> Self { v.code().to_string() }
+        }
+
+        impl $Type {
+            #[doc(hidden)]
+            pub const __ALIASES: &'static [(&'static str, $Type)] = &[
+                $( ($alias, $variant) ),*
+            ];
+        }
+    };
 }
 
 /// Helper to implement Display using the type's `code()` method.
@@ -221,10 +304,118 @@ macro_rules! impl_display_via_code {
     };
 }
 
+/// Helper for enum-specific unknown-code wrapper types.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! other_string_code_type {
+    (
+        $(#[$meta:meta])*
+        $vis:vis struct $OtherCode:ident for $Enum:ident;
+        type Error = $Error:ty;
+        parse($parse_input:ident) => $parse:expr;
+        invalid($invalid_input:ident) => $invalid:expr $(;)?
+    ) => {
+        $(#[$meta])*
+        #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+        $vis struct $OtherCode($crate::__utils::Canonical);
+
+        impl $OtherCode {
+            /// Builds an unknown code, rejecting tokens modeled by the owning enum.
+            ///
+            /// # Errors
+            ///
+            /// Returns an error if the input is empty, cannot be canonicalized,
+            /// or parses to a modeled enum variant.
+            pub fn new(input: &str) -> ::std::result::Result<Self, $Error> {
+                match {
+                    let $parse_input = input;
+                    $parse
+                }? {
+                    $Enum::Other(code) => Ok(code),
+                    _ => Err({
+                        let $invalid_input = input;
+                        $invalid
+                    }),
+                }
+            }
+
+            /// Returns this unknown code's canonical string.
+            #[must_use]
+            pub fn as_str(&self) -> &str {
+                self.0.as_ref()
+            }
+
+            #[doc(hidden)]
+            pub(crate) const fn from_canonical_unchecked(
+                code: $crate::__utils::Canonical,
+            ) -> Self {
+                Self(code)
+            }
+        }
+
+        impl ::std::convert::AsRef<str> for $OtherCode {
+            fn as_ref(&self) -> &str {
+                self.as_str()
+            }
+        }
+
+        impl ::std::str::FromStr for $OtherCode {
+            type Err = $Error;
+
+            fn from_str(input: &str) -> ::std::result::Result<Self, Self::Err> {
+                Self::new(input)
+            }
+        }
+
+        impl ::std::fmt::Display for $OtherCode {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                f.write_str(self.as_str())
+            }
+        }
+    };
+}
+
 /// Open (extensible) string enum with macro-provided `code()` and open parsing.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! string_enum_with_code {
+    (
+        $Type:ident, $Other:ident($OtherCode:ty), $enum_name:literal,
+        { $( $canon_token:literal => $canon_variant:path ),+ $(,)? },
+        { $( $alias:literal => $variant:path ),* $(,)? }
+    ) => {
+        impl $Type {
+            /// Returns the canonical string code for this value.
+            #[must_use]
+            pub fn code(&self) -> &str {
+                match self {
+                    $( $canon_variant => $canon_token, )+
+                    $Type::$Other(s) => s.as_ref(),
+                }
+            }
+        }
+
+        impl ::std::convert::AsRef<str> for $Type {
+            fn as_ref(&self) -> &str { self.code() }
+        }
+
+        $crate::__string_enum_base! {
+            $Type, $enum_name, other($Type::$Other, $OtherCode),
+            { $( $canon_token => $canon_variant ),+ $(, $alias => $variant )* }
+        }
+    };
+
+    (
+        $Type:ident, $Other:ident($OtherCode:ty), $enum_name:literal,
+        { $( $canon_token:literal => $canon_variant:path ),+ $(,)? }
+    ) => {
+        $crate::string_enum_with_code!(
+            $Type, $Other($OtherCode), $enum_name,
+            { $( $canon_token => $canon_variant ),+ },
+            {}
+        );
+    };
+
     (
         $Type:ident, $Other:ident, $enum_name:literal,
         { $( $canon_token:literal => $canon_variant:path ),+ $(,)? },

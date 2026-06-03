@@ -155,6 +155,16 @@ impl fmt::Display for QuarterOfYear {
     }
 }
 
+paft_core::other_string_code_type!(
+    /// Provider-specific period token that is not modeled by [`Period`].
+    pub struct OtherPeriod for Period;
+    type Error = DomainError;
+    parse(input) => input.parse::<Period>();
+    invalid(input) => DomainError::InvalidPeriodFormat {
+        format: input.to_string(),
+    };
+);
+
 /// Financial period enumeration with structured variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of financial periods while gracefully
@@ -163,7 +173,7 @@ impl fmt::Display for QuarterOfYear {
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII where applicable)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive where appropriate)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical form for structured variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 ///
@@ -201,7 +211,7 @@ pub enum Period {
         NaiveDate,
     ),
     /// Unknown or provider-specific period format
-    Other(Canonical),
+    Other(OtherPeriod),
 }
 
 impl Period {
@@ -227,6 +237,17 @@ impl Period {
         Ok(Self::Year {
             year: PeriodYear::new(year)?,
         })
+    }
+
+    /// Builds an unknown period token, rejecting tokens modeled by [`Period`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty, cannot be canonicalized, has an
+    /// invalid structured period shape, or parses to a modeled [`Period`]
+    /// variant.
+    pub fn other(input: &str) -> Result<Self, DomainError> {
+        OtherPeriod::new(input).map(Self::Other)
     }
 
     /// Returns the canonical display/serde code for this period.
@@ -748,7 +769,9 @@ impl std::str::FromStr for Period {
             None => {}
         }
 
-        Ok(Self::Other(canonical))
+        Ok(Self::Other(OtherPeriod::from_canonical_unchecked(
+            canonical,
+        )))
     }
 }
 

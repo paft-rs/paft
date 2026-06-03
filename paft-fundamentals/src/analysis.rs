@@ -8,8 +8,19 @@ use chrono::{DateTime, Utc};
 use df_derive_macros::ToDataFrame;
 use paft_core::error::PaftError;
 use paft_decimal::Decimal;
-use paft_domain::{Canonical, DomainError, Period};
+use paft_domain::{DomainError, Period};
 use paft_money::{Money, Price};
+
+paft_core::other_string_code_type!(
+    /// Provider-specific recommendation grade not modeled by [`RecommendationGrade`].
+    pub struct OtherRecommendationGrade for RecommendationGrade;
+    type Error = PaftError;
+    parse(input) => RecommendationGrade::from_str(input);
+    invalid(input) => PaftError::InvalidEnumValue {
+        enum_name: "RecommendationGrade",
+        value: input.to_string(),
+    };
+);
 
 /// Analyst recommendation grades with canonical variants and extensible fallback.
 ///
@@ -19,7 +30,7 @@ use paft_money::{Money, Price};
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -40,7 +51,7 @@ pub enum RecommendationGrade {
     /// Underperform recommendation
     Underperform,
     /// Unknown or provider-specific grade
-    Other(Canonical),
+    Other(OtherRecommendationGrade),
 }
 
 impl RecommendationGrade {
@@ -52,13 +63,22 @@ impl RecommendationGrade {
     pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
         Self::from_str(input)
     }
+
+    /// Builds an unknown recommendation grade, rejecting modeled grades and aliases.
+    ///
+    /// # Errors
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`RecommendationGrade`] variant.
+    pub fn other(input: &str) -> Result<Self, PaftError> {
+        OtherRecommendationGrade::new(input).map(Self::Other)
+    }
 }
 
 // serde via macro
 
 // Implement code() and string impls via macro
 paft_core::string_enum_with_code!(
-    RecommendationGrade, Other, "RecommendationGrade",
+    RecommendationGrade, Other(OtherRecommendationGrade), "RecommendationGrade",
     {
         "STRONG_BUY" => RecommendationGrade::StrongBuy,
         "BUY" => RecommendationGrade::Buy,
@@ -80,6 +100,17 @@ paft_core::string_enum_with_code!(
 // Display should match code for these enums
 paft_core::impl_display_via_code!(RecommendationGrade);
 
+paft_core::other_string_code_type!(
+    /// Provider-specific recommendation action not modeled by [`RecommendationAction`].
+    pub struct OtherRecommendationAction for RecommendationAction;
+    type Error = PaftError;
+    parse(input) => RecommendationAction::from_str(input);
+    invalid(input) => PaftError::InvalidEnumValue {
+        enum_name: "RecommendationAction",
+        value: input.to_string(),
+    };
+);
+
 /// Analyst recommendation actions with canonical variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of recommendation actions while gracefully
@@ -88,7 +119,7 @@ paft_core::impl_display_via_code!(RecommendationGrade);
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -107,7 +138,7 @@ pub enum RecommendationAction {
     /// Suspend coverage
     Suspend,
     /// Unknown or provider-specific action
-    Other(Canonical),
+    Other(OtherRecommendationAction),
 }
 
 impl RecommendationAction {
@@ -119,11 +150,20 @@ impl RecommendationAction {
     pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
         Self::from_str(input)
     }
+
+    /// Builds an unknown recommendation action, rejecting modeled actions and aliases.
+    ///
+    /// # Errors
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`RecommendationAction`] variant.
+    pub fn other(input: &str) -> Result<Self, PaftError> {
+        OtherRecommendationAction::new(input).map(Self::Other)
+    }
 }
 
 // Implement code() and string impls via macro
 paft_core::string_enum_with_code!(
-    RecommendationAction, Other, "RecommendationAction",
+    RecommendationAction, Other(OtherRecommendationAction), "RecommendationAction",
     {
         "UPGRADE" => RecommendationAction::Upgrade,
         "DOWNGRADE" => RecommendationAction::Downgrade,

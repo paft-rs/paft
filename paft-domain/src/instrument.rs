@@ -2,18 +2,29 @@
 
 use super::Exchange;
 use crate::{
-    Canonical, DomainError,
+    DomainError,
     identifiers::{Figi, Isin, Symbol},
 };
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+
+paft_core::other_string_code_type!(
+    /// Provider-specific asset kind that is not modeled by [`AssetKind`].
+    pub struct OtherAssetKind for AssetKind;
+    type Error = paft_core::PaftError;
+    parse(input) => input.parse::<AssetKind>();
+    invalid(input) => paft_core::PaftError::InvalidEnumValue {
+        enum_name: "AssetKind",
+        value: input.to_string(),
+    };
+);
 
 /// Kinds of financial instruments.
 ///
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
@@ -57,11 +68,11 @@ pub enum AssetKind {
     /// Real-world assets (tokenized physical assets).
     RWA,
     /// Provider-specific asset kind not modeled as a canonical variant.
-    Other(Canonical),
+    Other(OtherAssetKind),
 }
 
 crate::string_enum_with_code!(
-    AssetKind, Other,
+    AssetKind, Other(OtherAssetKind),
     "AssetKind",
     {
         "EQUITY" => AssetKind::Equity,
@@ -92,6 +103,16 @@ crate::string_enum_with_code!(
 crate::impl_display_via_code!(AssetKind);
 
 impl AssetKind {
+    /// Builds an unknown asset kind, rejecting tokens modeled by [`AssetKind`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`AssetKind`] variant.
+    pub fn other(input: &str) -> Result<Self, paft_core::PaftError> {
+        OtherAssetKind::new(input).map(Self::Other)
+    }
+
     /// Human-readable label for displaying this asset kind.
     #[must_use]
     pub fn full_name(&self) -> Cow<'static, str> {

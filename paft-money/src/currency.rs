@@ -11,6 +11,59 @@ use crate::error::{MoneyError, MoneyParseError};
 #[cfg(feature = "money-formatting")]
 use crate::locale::Locale;
 
+/// Provider-specific currency code that is not modeled by [`Currency`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct OtherCurrency(Canonical);
+
+impl OtherCurrency {
+    /// Builds an unknown currency code, rejecting tokens modeled by [`Currency`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`Currency`] variant.
+    pub fn new(input: &str) -> Result<Self, MoneyParseError> {
+        match Currency::try_from_str(input)? {
+            Currency::Other(code) => Ok(code),
+            _ => Err(MoneyParseError::InvalidEnumValue {
+                enum_name: "Currency",
+                value: input.to_string(),
+            }),
+        }
+    }
+
+    /// Returns this unknown currency's canonical code.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        self.0.as_ref()
+    }
+
+    #[doc(hidden)]
+    pub(crate) const fn from_canonical_unchecked(code: Canonical) -> Self {
+        Self(code)
+    }
+}
+
+impl AsRef<str> for OtherCurrency {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl FromStr for OtherCurrency {
+    type Err = MoneyParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::new(input)
+    }
+}
+
+impl std::fmt::Display for OtherCurrency {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 /// Currency enumeration with major currencies and extensible fallback.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -28,7 +81,7 @@ pub enum Currency {
     /// USDT
     USDT,
     /// Unknown or provider-specific currency
-    Other(Canonical),
+    Other(OtherCurrency),
 }
 
 impl Currency {
@@ -38,6 +91,16 @@ impl Currency {
     /// Returns `MoneyParseError::InvalidEnumValue` when the input is empty or cannot be canonicalized.
     pub fn try_from_str(input: &str) -> Result<Self, MoneyParseError> {
         Self::from_str(input)
+    }
+
+    /// Builds an unknown currency value, rejecting tokens modeled by [`Currency`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`Currency`] variant.
+    pub fn other(input: &str) -> Result<Self, MoneyParseError> {
+        OtherCurrency::new(input).map(Self::Other)
     }
 
     /// Returns true if this is a major reserve currency.
@@ -237,7 +300,7 @@ impl FromStr for Currency {
             enum_name: "Currency",
             value: input.to_string(),
         })?;
-        Ok(Self::Other(other))
+        Ok(Self::Other(OtherCurrency::from_canonical_unchecked(other)))
     }
 }
 

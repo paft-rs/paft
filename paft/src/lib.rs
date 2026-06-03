@@ -44,7 +44,8 @@ pub mod core {
 pub mod domain {
     pub use paft_domain::{
         AssetKind, Canonical, CanonicalError, DomainError, Exchange, Figi, Instrument, Isin,
-        MarketState, Period, PeriodYear, QuarterOfYear, StringCode, Symbol, canonicalize,
+        MarketState, OtherAssetKind, OtherExchange, OtherPeriod, Period, PeriodYear, QuarterOfYear,
+        StringCode, Symbol, canonicalize,
     };
     #[cfg(feature = "dataframe")]
     pub use paft_domain::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
@@ -79,8 +80,8 @@ pub mod money {
     pub use paft_money::{
         Currency, CurrencyMetadata, ExchangeRate, IsoCurrency, Locale, MAX_DECIMAL_PRECISION,
         MAX_MINOR_UNIT_DECIMALS, MinorUnitError, MonetaryAmount, Money, MoneyError,
-        MoneyParseError, Price, PriceAmount, clear_currency_metadata, currency_metadata,
-        set_currency_metadata, try_normalize_currency_code,
+        MoneyParseError, OtherCurrency, Price, PriceAmount, clear_currency_metadata,
+        currency_metadata, set_currency_metadata, try_normalize_currency_code,
     };
 }
 
@@ -103,10 +104,11 @@ pub mod fundamentals {
         EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
         EpsRevisions, EpsTrend, EsgInvolvement, EsgScores, EsgSummary, FundKind, FundProfile,
         IncomeStatementRow, InsiderPosition, InsiderRosterHolder, InsiderTransaction,
-        InstitutionalHolder, KeyStatistics, MajorHolder, NetSharePurchaseActivity, PriceTarget,
-        Profile, RecommendationAction, RecommendationGrade, RecommendationRow,
-        RecommendationSummary, RevenueEstimate, RevisionPoint, ShareCount, TransactionType,
-        TrendPoint, UpgradeDowngradeRow,
+        InstitutionalHolder, KeyStatistics, MajorHolder, NetSharePurchaseActivity, OtherFundKind,
+        OtherInsiderPosition, OtherRecommendationAction, OtherRecommendationGrade,
+        OtherTransactionType, PriceTarget, Profile, RecommendationAction, RecommendationGrade,
+        RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint, ShareCount,
+        TransactionType, TrendPoint, UpgradeDowngradeRow,
     };
     pub use paft_fundamentals::{analysis, esg, holders, profile, statements, statistics};
 }

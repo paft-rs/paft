@@ -7,7 +7,7 @@ This directory contains comprehensive documentation for the paft (Provider Agnos
 ### [EXTENSIBLE_ENUMS.md](EXTENSIBLE_ENUMS.md)
 **The Extensible Enum Pattern in paft**
 
-Comprehensive guide to understanding and using paft's `Other(Canonical)` extensible enum pattern. Covers:
+Comprehensive guide to understanding and using paft's typed `Other` extensible enum pattern. Covers:
 
 - Philosophy and rationale behind the pattern
 - Implementation details and trade-offs
@@ -31,7 +31,7 @@ Detailed best practices guide with practical implementation strategies:
 
 ### Key Concepts
 
-1. **Extensible Enums**: Provider-facing paft enums use `Other(Canonical)` for unknown values
+1. **Extensible Enums**: Provider-facing paft enums use typed `Other` wrappers for unknown values
 2. **Graceful Degradation**: Never fails on unknown provider values
 3. **Ecosystem Convergence**: Map provider-specific strings to canonical variants
 4. **Type Safety**: Compile-time checks for known variants, runtime handling for unknown
@@ -81,7 +81,7 @@ The extensible enum pattern in paft addresses the fundamental challenge of finan
 Instead of failing when encountering unknown values, paft's extensible enums:
 
 1. **Try to parse** as known canonical variants first
-2. **Fall back gracefully** to `Other(Canonical)` for unknown values  
+2. **Fall back gracefully** to typed `Other` values for unknown values  
 3. **Normalize** unknown values to uppercase for consistency
 4. **Preserve** original strings for debugging and compatibility
 
@@ -96,7 +96,7 @@ This approach enables:
 
 When contributing to paft:
 
-1. **Follow the pattern**: Use `Other(Canonical)` for all new enums
+1. **Follow the pattern**: Use enum-specific typed `Other` wrappers for all new extensible enums
 2. **Document mappings**: Clearly document provider-specific mappings
 3. **Add tests**: Test both canonical and Other variants
 4. **Consider performance**: Avoid unnecessary string allocations

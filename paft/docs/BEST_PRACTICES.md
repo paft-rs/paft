@@ -72,9 +72,9 @@ fn normalize_currency(provider_code: &str) -> Currency {
         "BITCOIN" | "XBT" | "BTC" => Currency::BTC,
         "ETHEREUM" | "ETH" => Currency::ETH,
 
-        // Preserve other values using the library parser
+        // Preserve other values using the library parser.
         _ => Currency::try_from_str(provider_code)
-            .unwrap_or_else(|_| Currency::Other(paft_utils::Canonical::try_new(provider_code).unwrap())),
+            .unwrap_or_else(|_| Currency::other("UNKNOWN").expect("valid fallback code")),
     }
 }
 ```
@@ -120,7 +120,7 @@ impl From<GenericProviderCurrency> for Currency {
 
             // Preserve other values; the parser canonicalizes for us.
             other => Currency::try_from_str(other)
-                .unwrap_or_else(|_| Currency::Other(paft_utils::Canonical::try_new(other).unwrap())),
+                .unwrap_or_else(|_| Currency::other("UNKNOWN").expect("valid fallback code")),
         }
     }
 }
@@ -137,7 +137,7 @@ pub mod currency_utils {
     pub fn normalize_currency_code(code: &str) -> Currency {
         let trimmed = code.trim();
         if trimmed.is_empty() {
-            return Currency::Other(paft_utils::Canonical::try_new("UNKNOWN").unwrap());
+            return Currency::other("UNKNOWN").expect("valid fallback code");
         }
         match trimmed.to_uppercase().as_ref() {
             "DOLLAR" | "US_DOLLAR" | "USD" => Currency::Iso(IsoCurrency::USD),
@@ -145,7 +145,8 @@ pub mod currency_utils {
             "POUND" | "GBP" => Currency::Iso(IsoCurrency::GBP),
             "BITCOIN" | "XBT" | "BTC" => Currency::BTC,
             "ETHEREUM" | "ETH" => Currency::ETH,
-            other => Currency::Other(paft_utils::Canonical::try_new(other).unwrap()),
+            other => Currency::try_from_str(other)
+                .unwrap_or_else(|_| Currency::other("UNKNOWN").expect("valid fallback code")),
         }
     }
 
@@ -174,14 +175,15 @@ pub mod currency_utils {
 /// - "EURO" -> Currency::Iso(IsoCurrency::EUR) (canonical)
 /// - "BITCOIN" -> BTC (canonical)
 /// 
-/// Unmapped values are preserved as Other(Canonical) in uppercase
+/// Unmapped values are preserved as `Currency::Other(OtherCurrency)` in uppercase.
 impl From<AlphaVantageCurrency> for Currency {
     fn from(av_currency: AlphaVantageCurrency) -> Self {
         match av_currency.code.to_uppercase().as_ref() {
             "US_DOLLAR" => Currency::Iso(IsoCurrency::USD),
             "EURO" => Currency::Iso(IsoCurrency::EUR),
             "BITCOIN" => Currency::BTC,
-            _ => Currency::Other(paft_utils::Canonical::try_new(&av_currency.code).unwrap()),
+            _ => Currency::try_from_str(&av_currency.code)
+                .unwrap_or_else(|_| Currency::other("UNKNOWN").expect("valid fallback code")),
         }
     }
 }
@@ -254,14 +256,20 @@ impl ProviderAdapter {
         self.currency_mappings
             .get(&provider_code.to_uppercase())
             .cloned()
-            .unwrap_or_else(|| Currency::Other(paft_utils::Canonical::try_new(provider_code).unwrap()))
+            .unwrap_or_else(|| {
+                Currency::try_from_str(provider_code)
+                    .unwrap_or_else(|_| Currency::other("UNKNOWN").expect("valid fallback code"))
+            })
     }
     
     pub fn normalize_exchange(&self, provider_code: &str) -> Exchange {
         self.exchange_mappings
             .get(&provider_code.to_uppercase())
             .cloned()
-            .unwrap_or_else(|| Exchange::Other(paft_utils::Canonical::try_new(provider_code).unwrap()))
+            .unwrap_or_else(|| {
+                Exchange::try_from_str(provider_code)
+                    .unwrap_or_else(|_| Exchange::other("UNKNOWN").expect("valid fallback code"))
+            })
     }
 }
 ```
@@ -288,7 +296,10 @@ impl LazyProviderAdapter {
         self.get_mappings()
             .get(&provider_code.to_uppercase())
             .cloned()
-            .unwrap_or_else(|| Currency::Other(paft_utils::Canonical::try_new(provider_code).unwrap()))
+            .unwrap_or_else(|| {
+                Currency::try_from_str(provider_code)
+                    .unwrap_or_else(|_| Currency::other("UNKNOWN").expect("valid fallback code"))
+            })
     }
 }
 ```
@@ -324,7 +335,8 @@ fn migrate_currency_code(code: &str) -> Currency {
     match code {
         "USD" => Currency::Iso(IsoCurrency::USD),
         "EUR" => Currency::Iso(IsoCurrency::EUR),
-        _ => Currency::Other(paft_utils::Canonical::try_new(code).unwrap()),
+        _ => Currency::try_from_str(code)
+            .unwrap_or_else(|_| Currency::other("UNKNOWN").expect("valid fallback code")),
     }
 }
 ```
@@ -340,7 +352,7 @@ impl CurrencyCompat {
     pub fn from_string(code: &str) -> Self {
         Self {
             currency: Currency::try_from_str(code)
-                .unwrap_or_else(|_| Currency::Other(paft_utils::Canonical::try_new(code).unwrap())),
+                .unwrap_or_else(|_| Currency::other("UNKNOWN").expect("valid fallback code")),
         }
     }
     
@@ -404,14 +416,14 @@ impl CurrencyCache {
     pub fn wrapped_btc() -> &'static Currency {
         static CACHE: OnceLock<Currency> = OnceLock::new();
         CACHE.get_or_init(|| {
-            Currency::Other(paft_utils::Canonical::try_new("WBTC").unwrap())
+            Currency::other("WBTC").expect("valid unknown currency code")
         })
     }
 
     pub fn tether_erc20() -> &'static Currency {
         static CACHE: OnceLock<Currency> = OnceLock::new();
         CACHE.get_or_init(|| {
-            Currency::Other(paft_utils::Canonical::try_new("USDT_ERC20").unwrap())
+            Currency::other("USDT_ERC20").expect("valid unknown currency code")
         })
     }
 }
@@ -439,8 +451,8 @@ mod tests {
             "Bitcoin"
         );
 
-        // Truly unknown tokens land in Other(Canonical).
-        let unknown = Currency::Other(paft_utils::Canonical::try_new("UNKNOWN").unwrap());
+        // Truly unknown tokens land in `Currency::Other(OtherCurrency)`.
+        let unknown = Currency::other("UNKNOWN").unwrap();
         assert_eq!(
             process_currency(unknown),
             "Unknown currency: UNKNOWN"
@@ -453,7 +465,7 @@ mod tests {
         assert_eq!(normalize_currency("BITCOIN"), Currency::BTC);
         assert_eq!(
             normalize_currency("UNKNOWN"),
-            Currency::Other(paft_utils::Canonical::try_new("UNKNOWN").unwrap()),
+            Currency::other("UNKNOWN").unwrap(),
         );
     }
 }
@@ -474,10 +486,9 @@ proptest! {
     
     #[test]
     fn test_currency_normalization_preserves_other(
-        code in "[A-Z]{1,10}"
+        code in "XTEST[A-Z]{0,6}"
     ) {
-        let canonical = paft_utils::Canonical::try_new(&code).unwrap();
-        let currency = Currency::Other(canonical);
+        let currency = Currency::other(&code).unwrap();
         assert_eq!(currency.to_string(), code);
     }
 }
@@ -494,7 +505,7 @@ fn test_generic_provider_currency_mapping() {
         ("BTC", Currency::BTC),
         (
             "UNKNOWN",
-            Currency::Other(paft_utils::Canonical::try_new("UNKNOWN").unwrap()),
+            Currency::other("UNKNOWN").unwrap(),
         ),
     ];
 

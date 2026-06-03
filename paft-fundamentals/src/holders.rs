@@ -8,9 +8,19 @@ use chrono::{DateTime, Utc};
 use df_derive_macros::ToDataFrame;
 use paft_core::error::PaftError;
 use paft_decimal::{Decimal, Ratio};
-use paft_domain::Canonical;
 use paft_domain::Period;
 use paft_money::Money;
+
+paft_core::other_string_code_type!(
+    /// Provider-specific transaction type not modeled by [`TransactionType`].
+    pub struct OtherTransactionType for TransactionType;
+    type Error = PaftError;
+    parse(input) => TransactionType::from_str(input);
+    invalid(input) => PaftError::InvalidEnumValue {
+        enum_name: "TransactionType",
+        value: input.to_string(),
+    };
+);
 
 /// Transaction types for insider activities with canonical variants and extensible fallback.
 ///
@@ -20,7 +30,7 @@ use paft_money::Money;
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -39,7 +49,7 @@ pub enum TransactionType {
     /// Conversion of securities
     Conversion,
     /// Unknown or provider-specific transaction type
-    Other(Canonical),
+    Other(OtherTransactionType),
 }
 
 impl TransactionType {
@@ -51,11 +61,20 @@ impl TransactionType {
     pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
         Self::from_str(input)
     }
+
+    /// Builds an unknown transaction type, rejecting modeled types and aliases.
+    ///
+    /// # Errors
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`TransactionType`] variant.
+    pub fn other(input: &str) -> Result<Self, PaftError> {
+        OtherTransactionType::new(input).map(Self::Other)
+    }
 }
 
 // Centralized code() and string impls via macro
 paft_core::string_enum_with_code!(
-    TransactionType, Other, "TransactionType",
+    TransactionType, Other(OtherTransactionType), "TransactionType",
     {
         "BUY" => TransactionType::Buy,
         "SELL" => TransactionType::Sell,
@@ -79,6 +98,17 @@ paft_core::string_enum_with_code!(
 // Display equals code for these enums
 paft_core::impl_display_via_code!(TransactionType);
 
+paft_core::other_string_code_type!(
+    /// Provider-specific insider position not modeled by [`InsiderPosition`].
+    pub struct OtherInsiderPosition for InsiderPosition;
+    type Error = PaftError;
+    parse(input) => InsiderPosition::from_str(input);
+    invalid(input) => PaftError::InvalidEnumValue {
+        enum_name: "InsiderPosition",
+        value: input.to_string(),
+    };
+);
+
 /// Insider positions in a company with canonical variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of insider positions while gracefully
@@ -87,7 +117,7 @@ paft_core::impl_display_via_code!(TransactionType);
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -116,7 +146,7 @@ pub enum InsiderPosition {
     /// Treasurer
     Treasurer,
     /// Unknown or provider-specific position
-    Other(Canonical),
+    Other(OtherInsiderPosition),
 }
 
 impl InsiderPosition {
@@ -128,11 +158,20 @@ impl InsiderPosition {
     pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
         Self::from_str(input)
     }
+
+    /// Builds an unknown insider position, rejecting modeled positions and aliases.
+    ///
+    /// # Errors
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`InsiderPosition`] variant.
+    pub fn other(input: &str) -> Result<Self, PaftError> {
+        OtherInsiderPosition::new(input).map(Self::Other)
+    }
 }
 
 // Centralized code() and string impls via macro
 paft_core::string_enum_with_code!(
-    InsiderPosition, Other, "InsiderPosition",
+    InsiderPosition, Other(OtherInsiderPosition), "InsiderPosition",
     {
         "OFFICER" => InsiderPosition::Officer,
         "DIRECTOR" => InsiderPosition::Director,

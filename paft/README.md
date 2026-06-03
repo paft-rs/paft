@@ -222,7 +222,7 @@ untrusted data, keep this feature disabled and use the `try_*` APIs.
 
 ## Handling Unknown Values
 
-paft uses extensible enums with `Other(Canonical)` variants to gracefully handle unknown provider values:
+paft uses extensible enums with typed `Other` wrappers to gracefully handle unknown provider values:
 
 ```rust
 use paft::money::IsoCurrency;
@@ -240,7 +240,8 @@ match currency {
     _ => "Known currency",
 }
 
-// Same pattern for exchanges, asset types, etc.
+// Same pattern for exchanges, asset types, etc. Unknown constructors reject
+// tokens that paft already models as canonical variants or aliases.
 let exchange: Exchange = "DARK_POOL_X".parse().unwrap(); // Unknown exchange handled via Other
 ```
 

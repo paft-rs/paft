@@ -7,9 +7,20 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_core::error::PaftError;
-use paft_domain::{Canonical, Isin};
+use paft_domain::Isin;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
+
+paft_core::other_string_code_type!(
+    /// Provider-specific fund kind not modeled by [`FundKind`].
+    pub struct OtherFundKind for FundKind;
+    type Error = PaftError;
+    parse(input) => FundKind::from_str(input);
+    invalid(input) => PaftError::InvalidEnumValue {
+        enum_name: "FundKind",
+        value: input.to_string(),
+    };
+);
 
 /// Fund types with canonical variants and extensible fallback.
 ///
@@ -19,7 +30,7 @@ use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
@@ -43,7 +54,7 @@ pub enum FundKind {
     /// Unit Investment Trust
     UnitInvestmentTrust,
     /// Unknown or provider-specific fund type
-    Other(Canonical),
+    Other(OtherFundKind),
 }
 
 impl FundKind {
@@ -55,11 +66,20 @@ impl FundKind {
     pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
         Self::from_str(input)
     }
+
+    /// Builds an unknown fund kind, rejecting modeled fund kinds and aliases.
+    ///
+    /// # Errors
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`FundKind`] variant.
+    pub fn other(input: &str) -> Result<Self, PaftError> {
+        OtherFundKind::new(input).map(Self::Other)
+    }
 }
 
 // Centralized string impls via macro
 paft_core::string_enum_with_code!(
-    FundKind, Other, "FundKind",
+    FundKind, Other(OtherFundKind), "FundKind",
     {
         "ETF" => FundKind::Etf,
         "MUTUAL_FUND" => FundKind::MutualFund,

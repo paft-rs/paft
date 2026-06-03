@@ -46,11 +46,11 @@ pub mod market_state;
 pub mod period;
 
 pub use error::DomainError;
-pub use exchange::Exchange;
+pub use exchange::{Exchange, OtherExchange};
 pub use identifiers::{Figi, Isin, Symbol};
-pub use instrument::{AssetKind, Instrument};
+pub use instrument::{AssetKind, Instrument, OtherAssetKind};
 pub use market_state::MarketState;
-pub use period::{Period, PeriodYear, QuarterOfYear};
+pub use period::{OtherPeriod, Period, PeriodYear, QuarterOfYear};
 
 #[cfg(feature = "dataframe")]
 pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};

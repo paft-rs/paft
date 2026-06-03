@@ -3,13 +3,14 @@
 Overview
 --------
 
-paft uses a consistent `Other(Canonical)` extensible enum pattern across provider-facing enums (`Currency`, `Exchange`, `AssetKind`, `Period`, `RecommendationGrade`, etc.). This embraces the reality that providers invent new tokens and aliases over time. Instead of failing on unknown values, these enums parse known canonical tokens and fall back to `Other(Canonical)` for the rest.
+paft uses a consistent typed `Other` extensible enum pattern across provider-facing enums (`Currency`, `Exchange`, `AssetKind`, `Period`, `RecommendationGrade`, etc.). This embraces the reality that providers invent new tokens and aliases over time. Instead of failing on unknown values, these enums parse known canonical tokens and fall back to enum-specific unknown-code wrappers such as `OtherCurrency`, `OtherExchange`, and `OtherPeriod`.
 
 Rules at a glance
 -----------------
 
 - Emission is a single canonical token per known variant (ASCII UPPERCASE, no spaces). Parsers accept a superset of aliases case‑insensitively.
-- `Other(Canonical)` serializes and displays as its canonical string (no escape prefix) and must be non‑empty.
+- `Other(OtherX)` serializes and displays as its canonical string (no escape prefix).
+- Public `OtherX::new(...)` constructors reject tokens that the enum parser maps to modeled variants or aliases.
 - Unknown inputs normalize to uppercase with separators collapsed (via `paft_utils::canonicalize`).
 - Serde round‑trips preserve identity for canonical variants and normalize unknowns consistently.
 
@@ -19,18 +20,29 @@ Implementation Pattern
 Use `paft-core` macros for consistent behavior:
 
 ```rust
-use paft_core::{impl_display_via_code, string_enum_with_code};
-use paft_utils::Canonical;
+use paft_core::{PaftError, impl_display_via_code, other_string_code_type, string_enum_with_code};
+use std::str::FromStr;
+
+paft_core::other_string_code_type!(
+    /// Provider-specific example token not modeled by `ExampleEnum`.
+    pub struct OtherExampleEnum for ExampleEnum;
+    type Error = PaftError;
+    parse(input) => ExampleEnum::from_str(input);
+    invalid(input) => PaftError::InvalidEnumValue {
+        enum_name: "ExampleEnum",
+        value: input.to_string(),
+    };
+);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ExampleEnum {
     Variant1,
     Variant2,
-    Other(Canonical),
+    Other(OtherExampleEnum),
 }
 
 paft_core::string_enum_with_code!(
-    ExampleEnum, Other, "ExampleEnum",
+    ExampleEnum, Other(OtherExampleEnum), "ExampleEnum",
     {
         "VARIANT1" => ExampleEnum::Variant1,
         "VARIANT2" => ExampleEnum::Variant2
@@ -47,8 +59,8 @@ paft_core::impl_display_via_code!(ExampleEnum);
 Consumer Guidelines
 -------------------
 
-- Always handle `Other(Canonical)` in matches.
-- Prefer canonical variants in your own code; never create `Other` for things you model canonically.
+- Always handle `Other(OtherX)` in matches.
+- Prefer canonical variants in your own code; use `Type::other(...)` or `OtherX::new(...)` only for values that are not modeled by that enum.
 - Use `is_canonical()` where available to branch fast paths safely.
 
 Examples
@@ -80,7 +92,7 @@ fn normalize_currency(code: &str) -> Currency {
         "EUR" | "EURO" => Currency::Iso(IsoCurrency::EUR),
         "BTC" | "BITCOIN" | "XBT" => Currency::BTC,
         other => Currency::try_from_str(other)
-            .unwrap_or_else(|_| Currency::Other(paft_utils::Canonical::try_new(other).unwrap())),
+            .unwrap_or_else(|_| Currency::other("UNKNOWN").expect("valid fallback code")),
     }
 }
 ```
@@ -88,7 +100,7 @@ fn normalize_currency(code: &str) -> Currency {
 Why Canonical instead of String?
 -------------------------------
 
-`Canonical` enforces invariants (non‑empty, trimmed, uppercase ASCII with single underscores). This guarantees json/display round‑trips and prevents emitting empty strings for `Other`.
+The typed `OtherX` wrappers contain `Canonical`, which enforces lexical invariants (non‑empty, trimmed, uppercase ASCII with single underscores). The wrapper constructor adds the enum-specific invariant: a value cannot be `OtherX` if the owning enum parser recognizes it as a modeled variant or alias.
 
 Trade‑offs
 ----------

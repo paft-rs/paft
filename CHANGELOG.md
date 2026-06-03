@@ -46,6 +46,11 @@ All notable changes to this project will be documented in this file.
 - Domain/facade: structured `Period` variants now store validated
   `PeriodYear` and `QuarterOfYear` components; use `Period::annual` and
   `Period::quarterly` when constructing annual and quarterly periods.
+- Domain/money/fundamentals/facade: extensible enum `Other` variants now use
+  enum-specific unknown-code wrappers (`OtherCurrency`, `OtherExchange`,
+  `OtherAssetKind`, `OtherPeriod`, `OtherRecommendationGrade`,
+  `OtherRecommendationAction`, `OtherTransactionType`, `OtherInsiderPosition`,
+  and `OtherFundKind`) instead of raw `Canonical` payloads.
 
 ### Fixed
 
@@ -61,6 +66,9 @@ All notable changes to this project will be documented in this file.
 - Domain: structured `Period` values can no longer expose invalid public
   states such as quarter 5 or five-digit/negative years, and low years now emit
   four-digit canonical codes so display/serde round trips preserve identity.
+- Domain/money/fundamentals: manually constructed extensible enum `Other`
+  payloads can no longer use tokens already modeled by the owning enum,
+  preserving serde identity for values created through public constructors.
 
 ### Breaking Changes
 
@@ -109,6 +117,10 @@ All notable changes to this project will be documented in this file.
 - Domain/facade: `Period` no longer implements `Ord`/`PartialOrd`; callers must
   choose explicit semantics such as `start_date()`, `end_date()`, or a
   provider-specific structural sort key.
+- Domain/money/fundamentals/facade: public `Other(Canonical)` enum payloads were
+  replaced by typed wrappers. Use `Type::other("TOKEN")?`,
+  `OtherType::new("TOKEN")?`, or the existing `FromStr`/serde parsers instead
+  of constructing `Type::Other(Canonical::try_new(...).unwrap())` directly.
 
 ## [0.8.0] - 2026-05-27
 

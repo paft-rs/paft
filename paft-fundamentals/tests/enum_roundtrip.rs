@@ -1,6 +1,10 @@
-use paft_fundamentals::analysis::{RecommendationAction, RecommendationGrade};
-use paft_fundamentals::holders::{InsiderPosition, TransactionType};
-use paft_fundamentals::profile::FundKind;
+use paft_fundamentals::analysis::{
+    OtherRecommendationAction, OtherRecommendationGrade, RecommendationAction, RecommendationGrade,
+};
+use paft_fundamentals::holders::{
+    InsiderPosition, OtherInsiderPosition, OtherTransactionType, TransactionType,
+};
+use paft_fundamentals::profile::{FundKind, OtherFundKind};
 use std::str::FromStr;
 
 fn assert_display_parse_display_idempotent<T>(token: &str)
@@ -99,4 +103,46 @@ fn rejects_inputs_that_canonicalize_to_empty_fundamentals_enums() {
             _ => panic!("expected InvalidEnumValue"),
         }
     }
+}
+
+#[test]
+fn other_wrappers_reject_modeled_fundamentals_tokens() {
+    assert!(OtherRecommendationGrade::new("BUY").is_err());
+    assert!(OtherRecommendationGrade::new("market perform").is_err());
+    assert_eq!(
+        OtherRecommendationGrade::new("custom grade")
+            .unwrap()
+            .as_ref(),
+        "CUSTOM_GRADE"
+    );
+
+    assert!(OtherRecommendationAction::new("UPGRADE").is_err());
+    assert!(OtherRecommendationAction::new("up").is_err());
+    assert_eq!(
+        OtherRecommendationAction::new("affirm").unwrap().as_ref(),
+        "AFFIRM"
+    );
+
+    assert!(OtherTransactionType::new("BUY").is_err());
+    assert!(OtherTransactionType::new("purchase").is_err());
+    assert_eq!(
+        OtherTransactionType::new("vesting").unwrap().as_ref(),
+        "VESTING"
+    );
+
+    assert!(OtherInsiderPosition::new("CEO").is_err());
+    assert!(OtherInsiderPosition::new("chief executive officer").is_err());
+    assert_eq!(
+        OtherInsiderPosition::new("chief strategy officer")
+            .unwrap()
+            .as_ref(),
+        "CHIEF_STRATEGY_OFFICER"
+    );
+
+    assert!(OtherFundKind::new("ETF").is_err());
+    assert!(OtherFundKind::new("exchange traded fund").is_err());
+    assert_eq!(
+        OtherFundKind::new("interval fund").unwrap().as_ref(),
+        "INTERVAL_FUND"
+    );
 }

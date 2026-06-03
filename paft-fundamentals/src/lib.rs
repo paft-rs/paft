@@ -52,15 +52,18 @@ pub mod statistics;
 
 pub use analysis::{
     AnalysisSummary, Earnings, EarningsEstimate, EarningsQuarter, EarningsQuarterEps,
-    EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, PriceTarget, RecommendationAction,
-    RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
-    TrendPoint, UpgradeDowngradeRow,
+    EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, OtherRecommendationAction,
+    OtherRecommendationGrade, PriceTarget, RecommendationAction, RecommendationGrade,
+    RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint, TrendPoint,
+    UpgradeDowngradeRow,
 };
 pub use esg::{EsgInvolvement, EsgScores, EsgSummary};
 pub use holders::{
     InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, MajorHolder,
-    NetSharePurchaseActivity, TransactionType,
+    NetSharePurchaseActivity, OtherInsiderPosition, OtherTransactionType, TransactionType,
 };
-pub use profile::{Address, CompanyProfile, FundKind, FundProfile, Profile, ShareCount};
+pub use profile::{
+    Address, CompanyProfile, FundKind, FundProfile, OtherFundKind, Profile, ShareCount,
+};
 pub use statements::{BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow};
 pub use statistics::KeyStatistics;

@@ -11,9 +11,9 @@
 //!
 //! Many provider-facing paft enums (`Currency`, `Exchange`, `AssetKind`,
 //! `Period`, `RecommendationGrade`, ...) are open: they have a fixed set of
-//! canonical variants plus a single `Other(Canonical)` fallback for tokens
-//! the library does not model directly. Parsing never fails on unknown
-//! tokens — they round-trip losslessly through `Other(Canonical("..."))`.
+//! canonical variants plus a single typed `Other` fallback for tokens the
+//! library does not model directly. Parsing never fails on unknown tokens —
+//! they round-trip losslessly through the enum's typed unknown-code wrapper.
 //!
 //! Run with:
 //!     cargo run -p paft --example extensible_enums --features full
@@ -25,7 +25,7 @@
 //!    equivalent exists.
 //! 3. Working with `RecommendationGrade`, including a provider synonym
 //!    (`MARKET_PERFORM`) that maps onto a canonical variant.
-//! 4. The honest output for unknown provider codes: `Other(Canonical("..."))`.
+//! 4. The honest output for unknown provider codes: `Other(...)`.
 //!    The provider sent the token, paft normalized it, and we preserve it
 //!    even though it is not in our known set.
 
@@ -50,7 +50,7 @@ fn main() {
 
 /// Example 1: Handling currencies. Some inputs (`USD`, `EUR`, `BTC`, `ETH`)
 /// parse directly into canonical variants. Others (`xbt`, `bitcoin`,
-/// `UNKNOWN_CURRENCY`) are preserved verbatim as `Other(Canonical(..))` —
+/// `UNKNOWN_CURRENCY`) are preserved verbatim as typed `Other` values —
 /// the parser uppercases and normalizes them but does not promote them onto
 /// `Currency::BTC`. Mapping aliases onto canonical variants is the job of
 /// your provider adapter (see also `handle_currencies` and the docs/
@@ -80,9 +80,9 @@ fn handle_currencies() {
         } else if currency == Currency::BTC || currency == Currency::ETH {
             println!("  {currency} - canonical non-ISO variant");
         } else {
-            // Anything that didn't match above lands in Other(Canonical(..)).
+            // Anything that didn't match above lands in a typed Other wrapper.
             println!(
-                "  Unknown currency: {} - kept as Other(Canonical), needs investigation",
+                "  Unknown currency: {} - kept as Other, needs investigation",
                 currency.code()
             );
         }
@@ -116,10 +116,10 @@ fn handle_recommendation_grades() {
 }
 
 /// Example 3: Normalizing provider-specific data. The output here intentionally
-/// distinguishes between true canonical variants and `Other(Canonical(..))`
-/// fallbacks. Provider tokens like `BITCOIN`, `DOLLAR`, `EURO`, `XBT` are
-/// preserved verbatim by the parser but are NOT canonical — your provider
-/// adapter is the right place to map them onto canonical variants.
+/// distinguishes between true canonical variants and typed `Other` fallbacks.
+/// Provider tokens like `BITCOIN`, `DOLLAR`, `EURO`, `XBT` are preserved
+/// verbatim by the parser but are NOT canonical — your provider adapter is the
+/// right place to map them onto canonical variants.
 fn normalize_provider_data() {
     println!("3. Normalizing Provider-Specific Data:");
 
@@ -142,7 +142,7 @@ fn normalize_provider_data() {
 }
 
 /// Classify a parsed currency: was it a canonical variant, or did it fall
-/// through to `Other(Canonical(..))`? This is the honest version of what
+/// through to `Other`? This is the honest version of what
 /// most consumer code wants to know.
 fn classify(currency: &Currency) -> String {
     match currency {
@@ -153,7 +153,7 @@ fn classify(currency: &Currency) -> String {
             format!("{} (canonical, non-ISO)", currency.code())
         }
         // Everything else: provider-supplied token paft preserved verbatim.
-        Currency::Other(canonical) => format!("Other(Canonical({canonical})) - not in known set"),
+        Currency::Other(canonical) => format!("Other({canonical}) - not in known set"),
         _ => format!("{} (canonical, non-ISO)", currency.code()),
     }
 }

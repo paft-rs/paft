@@ -25,7 +25,7 @@ fn call_set_metadata(
 fn test_currency_parsing_accepts_aliases_and_unknown() {
     assert_eq!(
         Currency::try_from_str("BITCOIN").unwrap(),
-        Currency::Other("BITCOIN".parse().unwrap())
+        Currency::other("BITCOIN").unwrap()
     );
     let u = Currency::try_from_str("UNKNOWN").unwrap();
     assert_eq!(u.to_string(), "UNKNOWN");

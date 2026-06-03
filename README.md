@@ -237,7 +237,7 @@ Data provider crates are the bridge between proprietary APIs and standardized pa
 
 ```rust
 use paft::money::IsoCurrency;
-use paft::prelude::{AssetKind, Canonical, Currency, Exchange, Instrument, PriceAmount, Quote};
+use paft::prelude::{AssetKind, Currency, Exchange, Instrument, PriceAmount, Quote};
 
 // Internal wire types (efficient for serialization)
 #[derive(Deserialize)]
@@ -262,9 +262,7 @@ impl GenericQuoteWire {
             "NASDAQ" => Exchange::NASDAQ,
             "NYSE" => Exchange::NYSE,
             // Graceful handling: paft canonicalizes the token for us.
-            other => Exchange::Other(
-                Canonical::try_new(other).expect("non-empty exchange code"),
-            ),
+            other => Exchange::try_from_str(other).expect("non-empty exchange code"),
         });
         let instrument = match exchange {
             Some(exchange) => Instrument::from_symbol_and_exchange(symbol, exchange, AssetKind::Equity),

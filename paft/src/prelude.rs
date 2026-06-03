@@ -6,14 +6,15 @@
 // Re-export core types via namespaced modules
 #[cfg(feature = "domain")]
 pub use crate::domain::{
-    AssetKind, Canonical, Exchange, Figi, Instrument, Isin, MarketState, Period, PeriodYear,
-    QuarterOfYear, StringCode, Symbol, canonicalize,
+    AssetKind, Canonical, Exchange, Figi, Instrument, Isin, MarketState, OtherAssetKind,
+    OtherExchange, OtherPeriod, Period, PeriodYear, QuarterOfYear, StringCode, Symbol,
+    canonicalize,
 };
 #[cfg(feature = "money-formatting")]
 pub use crate::money::LocalizedMoney;
 pub use crate::money::{
     Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
-    MonetaryAmount, Price, PriceAmount, clear_currency_metadata, currency_metadata,
+    MonetaryAmount, OtherCurrency, Price, PriceAmount, clear_currency_metadata, currency_metadata,
     set_currency_metadata, try_normalize_currency_code,
 };
 pub use crate::money::{ExchangeRate, Money};
@@ -30,20 +31,21 @@ pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::analysis::{
     AnalysisSummary, Earnings, EarningsEstimate, EarningsQuarter, EarningsQuarterEps,
-    EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, PriceTarget, RecommendationAction,
-    RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
-    TrendPoint, UpgradeDowngradeRow,
+    EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, OtherRecommendationAction,
+    OtherRecommendationGrade, PriceTarget, RecommendationAction, RecommendationGrade,
+    RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint, TrendPoint,
+    UpgradeDowngradeRow,
 };
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::esg::{EsgInvolvement, EsgScores, EsgSummary};
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::holders::{
     InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, MajorHolder,
-    NetSharePurchaseActivity, TransactionType,
+    NetSharePurchaseActivity, OtherInsiderPosition, OtherTransactionType, TransactionType,
 };
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::profile::{
-    Address, CompanyProfile, FundKind, FundProfile, Profile, ShareCount,
+    Address, CompanyProfile, FundKind, FundProfile, OtherFundKind, Profile, ShareCount,
 };
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::statements::{
