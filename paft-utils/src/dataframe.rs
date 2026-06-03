@@ -25,9 +25,12 @@ pub mod __private {
 /// this as a `PolarsError::ComputeError`.
 pub trait Decimal128Encode {
     /// Returns the mantissa as `i128` after rescaling `self` to
-    /// `target_scale`, or `None` if the conversion would overflow.
+    /// `target_scale`, or `None` if the scale exceeds polars decimal
+    /// precision or the conversion would overflow.
     fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128>;
 }
+
+const POLARS_DECIMAL_PRECISION: u32 = 38;
 
 /// Polars `Decimal(38, _)` columns require `|mantissa| < 10^38` (matches
 /// polars's own `dec128_fits` strict-less-than precision check). `i128::MAX`
@@ -35,23 +38,27 @@ pub trait Decimal128Encode {
 /// slip through `i128` arithmetic and violate the column's declared
 /// precision. Both backend implementations reject any rescaled mantissa
 /// whose absolute value reaches this constant.
-const MAX_I128_MANTISSA: i128 = 10_i128.pow(38);
+const MAX_I128_MANTISSA: i128 = 10_i128.pow(POLARS_DECIMAL_PRECISION);
 
 impl Decimal128Encode for rust_decimal::Decimal {
     #[inline]
     fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        if target_scale > POLARS_DECIMAL_PRECISION {
+            return None;
+        }
+
         let source_scale = self.scale();
         let mantissa: i128 = self.mantissa();
         let rescaled = match source_scale.cmp(&target_scale) {
             std::cmp::Ordering::Equal => mantissa,
             std::cmp::Ordering::Less => {
                 let diff = target_scale - source_scale;
-                let pow = 10i128.pow(diff);
+                let pow = 10_i128.checked_pow(diff)?;
                 mantissa.checked_mul(pow)?
             }
             std::cmp::Ordering::Greater => {
                 let diff = source_scale - target_scale;
-                let pow = 10i128.pow(diff).cast_unsigned();
+                let pow = 10_i128.checked_pow(diff)?.cast_unsigned();
                 let neg = mantissa < 0;
                 let abs = mantissa.unsigned_abs();
                 let q = (abs / pow).cast_signed();
@@ -99,6 +106,10 @@ impl Decimal128Encode for paft_decimal::Ratio {
 #[cfg(feature = "bigdecimal")]
 impl Decimal128Encode for bigdecimal::BigDecimal {
     fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        if target_scale > POLARS_DECIMAL_PRECISION {
+            return None;
+        }
+
         let target = i64::from(target_scale);
         let rescaled = self.with_scale_round(target, bigdecimal::RoundingMode::HalfEven);
         // Polars `Decimal(38, _)` requires |mantissa| < 10^38. `i128::try_from`

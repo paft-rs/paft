@@ -44,6 +44,11 @@ All notable changes to this project will be documented in this file.
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
 
+### Fixed
+
+- Dataframe: `Decimal128Encode` now rejects target scales above Polars decimal
+  precision and uses checked exponentiation when rescaling mantissas.
+
 ### Breaking Changes
 
 - Decimal/facade: callers can import the new constrained decimal types from
