@@ -31,9 +31,12 @@
 //! storage and transport. Dataframe support emits string codes for enums.
 //!
 //! Request and semantic metadata wire shapes deserialize strictly when silently
-//! dropping fields could change meaning. Provider/data payload models are
-//! forward-compatible by default and ignore unknown JSON fields unless
-//! validation or flattened metadata collision rules require rejection.
+//! dropping fields could change meaning. A `kind` discriminator alone does not
+//! make a data payload strict. Provider/data payload models are
+//! forward-compatible by default and ignore unmodeled JSON fields unless
+//! validation requires rejection. Generic provider metadata is serde-flattened
+//! into the owning JSON object, so colliding JSON field names are unsupported;
+//! dataframe export keeps provider metadata under `provider.*` columns.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 

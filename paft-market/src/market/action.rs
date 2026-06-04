@@ -15,6 +15,9 @@ use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 #[serde(tag = "kind", rename_all = "snake_case")]
 #[non_exhaustive]
 /// Corporate action attached to a history series.
+///
+/// This is a tagged data payload, not a strict semantic metadata shape:
+/// deserialization intentionally ignores unmodeled provider fields.
 pub enum Action {
     /// Cash dividend.
     Dividend {

@@ -125,16 +125,20 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
 
 ## Wire Compatibility Policy
 
-paft uses strict serde boundaries for requests, configuration, and invariant-bearing
-tagged shapes where silently dropping fields could change meaning. Examples
+paft uses strict serde boundaries for requests, configuration, and semantic
+metadata shapes where silently dropping fields could change meaning. Examples
 include validated request shadows, history flags, `TimeSpec`, money scale
-payloads, and price-basis metadata.
+payloads, and price-basis metadata. A `kind` discriminator alone does not make
+a data payload strict.
 
-Provider/data payload models are forward-compatible by default: unknown JSON
-fields are ignored unless a flattened metadata field would collide with a paft
-field or validation requires rejection. This keeps older paft versions usable
-with provider payloads that add fields over time while preserving strictness at
-API and semantic-invariant boundaries.
+Provider/data payload models are forward-compatible by default: unmodeled JSON
+fields are ignored unless validation requires rejection. Generic provider
+metadata is serde-flattened into the owning JSON object, so metadata field names
+share the JSON namespace with paft fields. Colliding JSON names are unsupported;
+use provider-specific prefixes or nested metadata fields when in doubt.
+DataFrame export is separately namespaced: provider metadata columns are emitted
+under `provider.*`, while explicitly `df_derive(flatten)`ed fields validate
+duplicate output column names.
 
 ## Observability (tracing)
 

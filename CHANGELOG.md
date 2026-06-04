@@ -44,6 +44,10 @@ All notable changes to this project will be documented in this file.
 - Docs/examples: added a no-metadata v0.9 ergonomics example and refreshed
   crate READMEs for contextual amounts, price basis, horizons, and constrained
   decimals.
+- Docs: clarified the wire-compatibility policy: tagged provider/data payloads
+  remain forward-compatible, serde-flattened provider metadata collisions are
+  unsupported JSON key names rather than universally detected errors, and
+  dataframe exports namespace provider metadata under `provider.*` columns.
 
 ### Changed
 

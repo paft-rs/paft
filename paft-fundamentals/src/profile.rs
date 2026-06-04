@@ -167,6 +167,8 @@ pub struct FundProfile {
 ///
 /// Serde uses a flat tagged shape with a `kind` discriminator. Fund profiles
 /// use `fund_kind` on the wire to avoid colliding with the discriminator.
+/// This is a tagged data payload, not a strict semantic metadata shape:
+/// deserialization intentionally ignores unmodeled provider fields.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Profile {

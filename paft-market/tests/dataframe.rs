@@ -9,7 +9,7 @@ use paft_market::{
         news::NewsArticle,
         options::{OptionChain, OptionContract, OptionContractKey, OptionGreeks, OptionSide},
         orderbook::{BookLevel, OrderBook},
-        quote::Quote,
+        quote::{GenericQuote, Quote},
     },
     responses::{
         history::{Candle, HistoryMeta, Ohlc},
@@ -67,6 +67,12 @@ fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
 
 const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
     NaiveDate::from_ymd_opt(year, month, day).unwrap()
+}
+
+#[derive(df_derive_macros::ToDataFrame)]
+struct ProviderDfMeta {
+    price: u64,
+    instrument: String,
 }
 
 #[test]
@@ -174,6 +180,38 @@ fn quote_to_dataframe_smoke() {
     let cols = df.get_column_names();
     assert!(cols.iter().any(|c| c.as_str() == "instrument"));
     assert_eq!(df.height(), 1);
+}
+
+#[test]
+fn provider_metadata_dataframe_columns_are_provider_namespaced() {
+    let quote: GenericQuote<ProviderDfMeta> = GenericQuote {
+        instrument: Instrument::from_symbol_and_exchange(
+            "AAPL",
+            Exchange::NASDAQ,
+            AssetKind::Equity,
+        )
+        .unwrap(),
+        name: Some("Apple Inc.".to_string()),
+        currency: usd(),
+        price: Some(usd_amount(150)),
+        previous_close: Some(usd_amount(147)),
+        day_volume: None,
+        market_state: None,
+        as_of: None,
+        bid: None,
+        ask: None,
+        provider: ProviderDfMeta {
+            price: 42,
+            instrument: "raw-provider-symbol".to_string(),
+        },
+    };
+
+    let df = quote.to_dataframe().unwrap();
+    let cols = df.get_column_names();
+    assert!(cols.iter().any(|c| c.as_str() == "price.amount"));
+    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
+    assert!(cols.iter().any(|c| c.as_str() == "provider.price"));
+    assert!(cols.iter().any(|c| c.as_str() == "provider.instrument"));
 }
 
 #[test]

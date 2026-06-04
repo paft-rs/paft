@@ -29,11 +29,14 @@
 //!
 //! # Wire compatibility policy
 //!
-//! Serde boundaries are strict for requests, configuration, and
-//! invariant-bearing tagged shapes where silently dropping fields could change
-//! meaning. Provider/data payload models are forward-compatible by default:
-//! unknown JSON fields are ignored unless a flattened metadata field would
-//! collide with a paft field or validation requires rejection.
+//! Serde boundaries are strict for requests, configuration, and semantic
+//! metadata shapes where silently dropping fields could change meaning. A
+//! `kind` discriminator alone does not make a data payload strict.
+//! Provider/data payload models are forward-compatible by default: unmodeled
+//! JSON fields are ignored unless validation requires rejection. Generic
+//! provider metadata is serde-flattened into the owning JSON object, so
+//! colliding JSON field names are unsupported. DataFrame export is separately
+//! namespaced under `provider.*` columns.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
