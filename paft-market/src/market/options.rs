@@ -199,45 +199,46 @@ pub type OptionContract = GenericOptionContract<()>;
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A full option chain for one or more expirations.
 ///
-/// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation and propagated into each contract. Use the
-/// [`OptionChain`] alias for the standard shape (no extra metadata).
+/// Generic over a chain-level provider metadata payload `R`, which is
+/// flattened into the serialized representation, and a contract-level
+/// metadata payload `C`. Use the [`OptionChain`] alias for the standard shape
+/// (no extra metadata).
 ///
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-pub struct GenericOptionChain<M = ()> {
+pub struct GenericOptionChain<R = (), C = ()> {
     /// Option contracts in the chain.
-    pub contracts: Vec<GenericOptionContract<M>>,
+    pub contracts: Vec<GenericOptionContract<C>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
-    pub provider: M,
+    pub provider: R,
 }
 
-impl<M> GenericOptionChain<M> {
+impl<R, C> GenericOptionChain<R, C> {
     /// Iterate over contracts for the requested option side.
     pub fn by_side(
         &self,
         side: OptionSide,
-    ) -> impl Iterator<Item = &GenericOptionContract<M>> + '_ {
+    ) -> impl Iterator<Item = &GenericOptionContract<C>> + '_ {
         self.contracts
             .iter()
             .filter(move |contract| contract.key.side == side)
     }
 
     /// Iterate over call contracts.
-    pub fn calls(&self) -> impl Iterator<Item = &GenericOptionContract<M>> + '_ {
+    pub fn calls(&self) -> impl Iterator<Item = &GenericOptionContract<C>> + '_ {
         self.by_side(OptionSide::Call)
     }
 
     /// Iterate over put contracts.
-    pub fn puts(&self) -> impl Iterator<Item = &GenericOptionContract<M>> + '_ {
+    pub fn puts(&self) -> impl Iterator<Item = &GenericOptionContract<C>> + '_ {
         self.by_side(OptionSide::Put)
     }
 }
 
 /// Standard `OptionChain` with no extra provider metadata.
-pub type OptionChain = GenericOptionChain<()>;
+pub type OptionChain = GenericOptionChain<(), ()>;
 
 /// A point-in-time update for an option contract.
 ///

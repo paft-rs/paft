@@ -60,8 +60,8 @@ pub type BookLevel = GenericBookLevel<()>;
 
 /// A snapshot of the order book for a specific instrument.
 ///
-/// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation and propagated into each level. Use the
+/// Generic over a provider metadata payload `B`, which is flattened into the
+/// serialized representation, and a per-level metadata payload `L`. Use the
 /// [`OrderBook`] alias for the standard shape (no extra metadata).
 ///
 /// **Collision warning:** provider metadata is flattened into the same object
@@ -69,7 +69,7 @@ pub type BookLevel = GenericBookLevel<()>;
 /// names; prefer provider-specific prefixes when in doubt.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-pub struct GenericOrderBook<M = ()> {
+pub struct GenericOrderBook<B = (), L = ()> {
     /// Instrument identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
@@ -83,19 +83,19 @@ pub struct GenericOrderBook<M = ()> {
     pub currency: Currency,
 
     /// A vector of ask (sell) levels, typically sorted by price ascending.
-    pub asks: Vec<GenericBookLevel<M>>,
+    pub asks: Vec<GenericBookLevel<L>>,
 
     /// A vector of bid (buy) levels, typically sorted by price descending.
-    pub bids: Vec<GenericBookLevel<M>>,
+    pub bids: Vec<GenericBookLevel<L>>,
 
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
-    pub provider: M,
+    pub provider: B,
 }
 
-impl<M: Default> GenericOrderBook<M> {
+impl<B: Default, L> GenericOrderBook<B, L> {
     /// Build an empty order book for the given instrument with no snapshot
-    /// timestamp; `provider` is initialised via `M::default()`.
+    /// timestamp; `provider` is initialised via `B::default()`.
     #[must_use]
     pub fn new(instrument: Instrument, currency: Currency) -> Self {
         Self {
@@ -104,10 +104,10 @@ impl<M: Default> GenericOrderBook<M> {
             currency,
             asks: Vec::new(),
             bids: Vec::new(),
-            provider: M::default(),
+            provider: B::default(),
         }
     }
 }
 
 /// Standard `OrderBook` with no extra provider metadata.
-pub type OrderBook = GenericOrderBook<()>;
+pub type OrderBook = GenericOrderBook<(), ()>;

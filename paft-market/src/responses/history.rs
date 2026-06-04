@@ -106,14 +106,15 @@ pub type Candle = GenericCandle<()>;
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Streaming candle update event.
 ///
-/// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation and propagated into the inner candle. Use
-/// the [`CandleUpdate`] alias for the standard shape (no extra metadata).
+/// Generic over an update-level provider metadata payload `U`, which is
+/// flattened into the serialized representation, and a candle-level metadata
+/// payload `C`. Use the [`CandleUpdate`] alias for the standard shape
+/// (no extra metadata).
 ///
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-pub struct GenericCandleUpdate<M = ()> {
+pub struct GenericCandleUpdate<U = (), C = ()> {
     /// Instrument identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
@@ -121,22 +122,22 @@ pub struct GenericCandleUpdate<M = ()> {
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub interval: Interval,
     /// The candle payload for the interval.
-    pub candle: GenericCandle<M>,
+    pub candle: GenericCandle<C>,
     /// true when the bar is closed/final as per the upstream provider WebSocket
     pub is_final: bool,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
-    pub provider: M,
+    pub provider: U,
 }
 
-impl<M: Default> GenericCandleUpdate<M> {
+impl<U: Default, C> GenericCandleUpdate<U, C> {
     /// Build a candle-update event from its required parts.
-    /// `provider` is initialised via `M::default()`.
+    /// `provider` is initialised via `U::default()`.
     #[must_use]
     pub fn new(
         instrument: Instrument,
         interval: Interval,
-        candle: GenericCandle<M>,
+        candle: GenericCandle<C>,
         is_final: bool,
     ) -> Self {
         Self {
@@ -144,13 +145,13 @@ impl<M: Default> GenericCandleUpdate<M> {
             interval,
             candle,
             is_final,
-            provider: M::default(),
+            provider: U::default(),
         }
     }
 }
 
 /// Standard `CandleUpdate` with no extra provider metadata.
-pub type CandleUpdate = GenericCandleUpdate<()>;
+pub type CandleUpdate = GenericCandleUpdate<(), ()>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -552,16 +553,17 @@ pub struct HistoryMeta {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// A complete history response including candles, actions, and metadata.
 ///
-/// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation and propagated into each candle. Use the
-/// [`HistoryResponse`] alias for the standard shape (no extra metadata).
+/// Generic over a response-level provider metadata payload `R`, which is
+/// flattened into the serialized representation, and a candle-level metadata
+/// payload `C`. Use the [`HistoryResponse`] alias for the standard shape
+/// (no extra metadata).
 ///
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-pub struct GenericHistoryResponse<M = ()> {
+pub struct GenericHistoryResponse<R = (), C = ()> {
     /// Ordered candles.
-    pub candles: Vec<GenericCandle<M>>,
+    pub candles: Vec<GenericCandle<C>>,
     /// Corporate actions aligned to candles.
     pub actions: Vec<crate::market::action::Action>,
     /// Price basis of the primary open, high, low, and close fields.
@@ -570,8 +572,8 @@ pub struct GenericHistoryResponse<M = ()> {
     pub meta: Option<HistoryMeta>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
-    pub provider: M,
+    pub provider: R,
 }
 
 /// Standard `HistoryResponse` with no extra provider metadata.
-pub type HistoryResponse = GenericHistoryResponse<()>;
+pub type HistoryResponse = GenericHistoryResponse<(), ()>;

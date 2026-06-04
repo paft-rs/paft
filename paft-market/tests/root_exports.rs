@@ -89,5 +89,12 @@ fn generic_payloads_accept_partial_eq_only_metadata() {
     fn assert_partial_eq_impl<T: PartialEq>() {}
 
     assert_partial_eq_impl::<paft_market::GenericQuote<f64>>();
+    assert_partial_eq_impl::<paft_market::GenericQuote<(), f64>>();
+    assert_partial_eq_impl::<paft_market::GenericOrderBook<(), f64>>();
+    assert_partial_eq_impl::<paft_market::GenericSearchResponse<(), f64>>();
+    assert_partial_eq_impl::<paft_market::GenericCandleUpdate<(), f64>>();
     assert_partial_eq_impl::<paft_market::GenericHistoryResponse<f64>>();
+    assert_partial_eq_impl::<paft_market::GenericHistoryResponse<(), f64>>();
+    assert_partial_eq_impl::<paft_market::GenericOptionChain<(), f64>>();
+    assert_partial_eq_impl::<paft_market::GenericDownloadResponse<(), f64, f64, f64>>();
 }

@@ -10,26 +10,25 @@
     clippy::similar_names
 )]
 
-//! Nested metadata propagation.
+//! Layered nested metadata.
 //!
 //! When a parent type holds nested refactored types (e.g.
-//! `GenericOrderBook<M>::asks: Vec<GenericBookLevel<M>>`), `M` is
-//! propagated to the inner element. This means a single metadata type flows
-//! through the whole tree — every entry in the order book carries the same
-//! metadata shape, every candle in the history response, every contract in
-//! the option chain, and so on.
+//! `GenericHistoryResponse<R, C>::candles: Vec<GenericCandle<C>>`), each
+//! layer can choose the provider metadata shape that matches that layer.
+//! Response-level request IDs no longer have to share a Rust type with
+//! row-level venue or sequence metadata.
 //!
 //! Run with:
 //!     cargo run -p paft --example nested_metadata_propagation --features full
 //!
 //! What this example demonstrates:
-//! 1. `GenericOrderBook<M>` propagates `M` down into each `GenericBookLevel<M>`.
-//! 2. `GenericHistoryResponse<M>` propagates `M` down into each `GenericCandle<M>`.
-//! 3. `GenericOptionChain<M>` propagates `M` into every contract.
-//! 4. `GenericDownloadResponse<M>` propagates `M` two levels deep
-//!    (`DownloadEntry` → `HistoryResponse` → `Candle`), and the
+//! 1. `GenericOrderBook<B, L>` keeps book metadata separate from levels.
+//! 2. `GenericHistoryResponse<R, C>` keeps response metadata separate from candles.
+//! 3. `GenericOptionChain<R, C>` keeps chain metadata separate from contracts.
+//! 4. `GenericDownloadResponse<R, E, H, C>` supports response, entry,
+//!    history-response, and candle metadata independently, and the
 //!    `iter_by_symbol` helper still works without modification.
-//! 5. `GenericCandleUpdate<M>` propagates `M` into the embedded `GenericCandle<M>`.
+//! 5. `GenericCandleUpdate<U, C>` keeps update metadata separate from the embedded candle.
 
 use chrono::{DateTime, Utc};
 use paft::market::options::{
@@ -49,9 +48,7 @@ use paft::prelude::{
 use paft::{Decimal, NonNegativeDecimal, Result};
 use serde::{Deserialize, Serialize};
 
-/// One metadata struct flows through every nested type in this example.
-/// Pretend this came from a feed handler that stamps every event with a
-/// monotonic sequence number, an arrival timestamp, and the channel name.
+/// Row or leaf metadata from a feed handler.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 struct FeedMeta {
     /// Hardware NIC timestamp at arrival, ns since epoch.
@@ -62,6 +59,20 @@ struct FeedMeta {
     channel: String,
 }
 
+/// Container metadata attached to a response, snapshot, or update event.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+struct RequestMeta {
+    request_id: String,
+    received_ns: u64,
+}
+
+/// Metadata attached to one entry in a bulk download response.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+struct EntryMeta {
+    source_symbol: String,
+    entry_seq: u64,
+}
+
 fn feed_meta(seq: u64, channel: &str) -> FeedMeta {
     FeedMeta {
         rx_ns: 1_700_000_000_000_000_000 + seq,
@@ -70,17 +81,31 @@ fn feed_meta(seq: u64, channel: &str) -> FeedMeta {
     }
 }
 
+fn request_meta(request_id: &str, seq: u64) -> RequestMeta {
+    RequestMeta {
+        request_id: request_id.to_string(),
+        received_ns: 1_700_000_000_000_000_000 + seq,
+    }
+}
+
+fn entry_meta(symbol: &str, seq: u64) -> EntryMeta {
+    EntryMeta {
+        source_symbol: symbol.to_string(),
+        entry_seq: seq,
+    }
+}
+
 fn main() -> Result<()> {
-    println!("== 1. OrderBook (Vec<Entry<M>>) ==");
+    println!("== 1. OrderBook (book metadata + level metadata) ==");
     order_book_propagation()?;
 
-    println!("\n== 2. HistoryResponse (Vec<Candle<M>>) ==");
+    println!("\n== 2. HistoryResponse (response metadata + candle metadata) ==");
     history_propagation()?;
 
-    println!("\n== 3. OptionChain (contracts carry M) ==");
+    println!("\n== 3. OptionChain (chain metadata + contract metadata) ==");
     option_chain_propagation()?;
 
-    println!("\n== 4. DownloadResponse (two levels deep) ==");
+    println!("\n== 4. DownloadResponse (four metadata layers) ==");
     download_propagation()?;
 
     println!("\n== 5. CandleUpdate (single nested field) ==");
@@ -89,11 +114,12 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// `GenericOrderBook<FeedMeta>::asks` is `Vec<GenericBookLevel<FeedMeta>>`.
-/// Each entry carries its own per-tick `FeedMeta`, AND the book itself has
-/// one (e.g. for the snapshot timestamp).
+/// `GenericOrderBook<RequestMeta, FeedMeta>::asks` is
+/// `Vec<GenericBookLevel<FeedMeta>>`.
+/// Each entry carries its own per-tick `FeedMeta`, while the book itself has
+/// response metadata such as a request ID.
 fn order_book_propagation() -> Result<()> {
-    let book: GenericOrderBook<FeedMeta> = GenericOrderBook {
+    let book: GenericOrderBook<RequestMeta, FeedMeta> = GenericOrderBook {
         instrument: Instrument::from_symbol_and_exchange(
             "AAPL",
             Exchange::NASDAQ,
@@ -110,12 +136,12 @@ fn order_book_propagation() -> Result<()> {
             entry(150_45, 120, feed_meta(4, "L2_AAPL")),
             entry(150_40, 300, feed_meta(5, "L2_AAPL")),
         ],
-        provider: feed_meta(6, "L2_AAPL_SNAPSHOT"),
+        provider: request_meta("book-AAPL-001", 6),
     };
 
     println!(
-        "Book snapshot provider: seq={} channel={}",
-        book.provider.seq, book.provider.channel
+        "Book snapshot provider: request_id={} received_ns={}",
+        book.provider.request_id, book.provider.received_ns
     );
     println!(
         "Top of book ask: price={} size={} (entry seq={})",
@@ -126,18 +152,20 @@ fn order_book_propagation() -> Result<()> {
 
     // Round-trip preserves the per-entry metadata, not just the snapshot one.
     let json = serde_json::to_string(&book).unwrap();
-    let parsed: GenericOrderBook<FeedMeta> = serde_json::from_str(&json).unwrap();
+    let parsed: GenericOrderBook<RequestMeta, FeedMeta> = serde_json::from_str(&json).unwrap();
     assert_eq!(book, parsed);
     assert_eq!(parsed.bids[1].provider.seq, 5);
     println!("Per-entry metadata preserved through JSON ✓");
     Ok(())
 }
 
-/// `GenericHistoryResponse<FeedMeta>` propagates `M` to each candle.
+/// `GenericHistoryResponse<RequestMeta, FeedMeta>` stores request metadata at
+/// the response level and feed metadata at each candle.
 /// Note that `meta: Option<HistoryMeta>` is still there for the
-/// canonical timezone payload — it's a sibling of `provider: M`, not a clash.
+/// canonical timezone payload — it's a sibling of `provider: RequestMeta`,
+/// not a clash.
 fn history_propagation() -> Result<()> {
-    let response: GenericHistoryResponse<FeedMeta> = GenericHistoryResponse {
+    let response: GenericHistoryResponse<RequestMeta, FeedMeta> = GenericHistoryResponse {
         candles: vec![
             candle(
                 1_700_000_000,
@@ -173,10 +201,13 @@ fn history_propagation() -> Result<()> {
             timezone: Some("America/New_York".parse().unwrap()),
             utc_offset_seconds: Some(-18_000),
         }),
-        provider: feed_meta(100, "BARS_AAPL_BATCH"),
+        provider: request_meta("history-AAPL-001", 100),
     };
 
-    println!("Bar batch provider: seq={}", response.provider.seq);
+    println!(
+        "Bar batch provider: request_id={}",
+        response.provider.request_id
+    );
     for c in &response.candles {
         println!(
             "  bar @ ts={} close={} per-bar seq={}",
@@ -186,23 +217,28 @@ fn history_propagation() -> Result<()> {
         );
     }
 
-    // The provider payload `M` is serde-flattened — its keys appear at the
-    // top level of the JSON, side-by-side with `meta` (the HistoryMeta object).
+    // Each provider payload is serde-flattened into the object that owns it:
+    // request metadata at the response level and feed metadata per candle.
     let json = serde_json::to_string(&response).unwrap();
     assert!(
         json.contains(r#""meta":{"timezone""#),
         "HistoryMeta should serialize under the JSON key \"meta\"",
     );
     assert!(
+        json.contains(r#""request_id""#),
+        "response provider keys should be flattened to the response object"
+    );
+    assert!(
         json.contains(r#""rx_ns""#),
-        "provider keys should be flattened to top level"
+        "candle provider keys should be flattened to candle objects"
     );
     Ok(())
 }
 
-/// Each contract in the chain propagates the same `M`.
+/// The chain can carry request metadata while each contract carries feed flags
+/// and sequence metadata.
 fn option_chain_propagation() -> Result<()> {
-    let chain: GenericOptionChain<FeedMeta> = GenericOptionChain {
+    let chain: GenericOptionChain<RequestMeta, FeedMeta> = GenericOptionChain {
         contracts: vec![
             option_contract(
                 "AAPL241220C00150000",
@@ -219,9 +255,9 @@ fn option_chain_propagation() -> Result<()> {
                 feed_meta(202, "OPT_AAPL"),
             ),
         ],
-        provider: feed_meta(200, "OPT_AAPL_CHAIN"),
+        provider: request_meta("options-AAPL-001", 200),
     };
-    println!("Chain meta seq: {}", chain.provider.seq);
+    println!("Chain request: {}", chain.provider.request_id);
     let first_call = chain.calls().next().expect("example chain has a call");
     let first_put = chain.puts().next().expect("example chain has a put");
     println!(
@@ -235,42 +271,45 @@ fn option_chain_propagation() -> Result<()> {
     Ok(())
 }
 
-/// Two levels of nesting: download → entry → history → candle, all carrying
-/// the same `M`. The existing `iter_by_symbol` zero-copy helper still works
-/// — it now just returns `&GenericHistoryResponse<M>` instead of `&HistoryResponse`.
+/// Four layers of nesting: download → entry → history → candle, each with its
+/// own metadata type. The existing `iter_by_symbol` zero-copy helper still
+/// works and returns the nested history response with its precise metadata
+/// parameters.
 fn download_propagation() -> Result<()> {
-    let download: GenericDownloadResponse<FeedMeta> = GenericDownloadResponse {
-        entries: vec![
-            download_entry("AAPL", AssetKind::Equity, feed_meta(301, "BATCH_AAPL")),
-            download_entry("MSFT", AssetKind::Equity, feed_meta(302, "BATCH_MSFT")),
-        ],
-        provider: feed_meta(300, "BATCH"),
-    };
+    let download: GenericDownloadResponse<RequestMeta, EntryMeta, RequestMeta, FeedMeta> =
+        GenericDownloadResponse {
+            entries: vec![
+                download_entry("AAPL", AssetKind::Equity, 301),
+                download_entry("MSFT", AssetKind::Equity, 302),
+            ],
+            provider: request_meta("download-001", 300),
+        };
 
     for (symbol, history) in download.iter_by_symbol() {
         println!(
-            "{}: {} candle(s), batch seq={}",
+            "{}: {} candle(s), request_id={}",
             symbol,
             history.candles.len(),
-            history.provider.seq,
+            history.provider.request_id,
         );
     }
 
     // Make sure deserialise round-trips the deepest leaf.
     let json = serde_json::to_string(&download).unwrap();
-    let parsed: GenericDownloadResponse<FeedMeta> = serde_json::from_str(&json).unwrap();
+    let parsed: GenericDownloadResponse<RequestMeta, EntryMeta, RequestMeta, FeedMeta> =
+        serde_json::from_str(&json).unwrap();
     assert_eq!(
         parsed.entries[0].history.candles[0].provider.channel,
         "BATCH_AAPL"
     );
-    println!("Per-candle metadata preserved across two nesting levels ✓");
+    println!("Per-candle metadata preserved across four metadata layers ✓");
     Ok(())
 }
 
-/// `GenericCandleUpdate<M>` is a streaming event that wraps a single
-/// `GenericCandle<M>`. Both the event and the contained candle carry `M`.
+/// `GenericCandleUpdate<RequestMeta, FeedMeta>` is a streaming event that
+/// wraps a single `GenericCandle<FeedMeta>`.
 fn candle_update_propagation() -> Result<()> {
-    let update: GenericCandleUpdate<FeedMeta> = GenericCandleUpdate {
+    let update: GenericCandleUpdate<RequestMeta, FeedMeta> = GenericCandleUpdate {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity)?,
         interval: Interval::I1m,
         candle: candle(
@@ -282,12 +321,12 @@ fn candle_update_propagation() -> Result<()> {
             feed_meta(401, "STREAM_AAPL_BAR"),
         ),
         is_final: false,
-        provider: feed_meta(400, "STREAM_AAPL"),
+        provider: request_meta("stream-AAPL-001", 400),
     };
 
     println!(
-        "Update meta seq={}, contained-candle meta seq={}, final={}",
-        update.provider.seq, update.candle.provider.seq, update.is_final,
+        "Update request={}, contained-candle meta seq={}, final={}",
+        update.provider.request_id, update.candle.provider.seq, update.is_final,
     );
 
     // The standard alias is also still streamable — same shape, just with `()`.
@@ -376,18 +415,28 @@ fn option_contract(
 fn download_entry(
     symbol: &str,
     kind: AssetKind,
-    provider: FeedMeta,
-) -> GenericDownloadEntry<FeedMeta> {
+    seq: u64,
+) -> GenericDownloadEntry<EntryMeta, RequestMeta, FeedMeta> {
+    let channel = format!("BATCH_{symbol}");
+    let history_request_id = format!("history-{symbol}-{seq}");
+
     GenericDownloadEntry {
         instrument: Instrument::from_symbol(symbol, kind).unwrap(),
         history: GenericHistoryResponse {
-            candles: vec![candle(1_700_000_000, 100, 102, 99, 101, provider.clone())],
+            candles: vec![candle(
+                1_700_000_000,
+                100,
+                102,
+                99,
+                101,
+                feed_meta(seq, &channel),
+            )],
             actions: vec![],
             price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
             meta: None,
-            provider: provider.clone(),
+            provider: request_meta(&history_request_id, seq),
         },
-        provider,
+        provider: entry_meta(symbol, seq),
     }
 }
 

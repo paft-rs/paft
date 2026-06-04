@@ -14,14 +14,15 @@ use crate::market::orderbook::GenericBookLevel;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// Snapshot quote data for an instrument at a single point in time.
 ///
-/// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation. Use the [`Quote`] alias for the standard
-/// shape (no extra metadata).
+/// Generic over a quote-level provider metadata payload `Q`, which is
+/// flattened into the serialized representation, and a top-of-book level
+/// metadata payload `L`. Use the [`Quote`] alias for the standard shape
+/// (no extra metadata).
 ///
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-pub struct GenericQuote<M = ()> {
+pub struct GenericQuote<Q = (), L = ()> {
     /// Instrument identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
@@ -33,9 +34,9 @@ pub struct GenericQuote<M = ()> {
     /// Market price (most recent trade).
     pub price: Option<PriceAmount>,
     /// Best bid: top-of-book quoted price on the buy side, with optional size.
-    pub bid: Option<GenericBookLevel<M>>,
+    pub bid: Option<GenericBookLevel<L>>,
     /// Best ask: top-of-book quoted price on the sell side, with optional size.
-    pub ask: Option<GenericBookLevel<M>>,
+    pub ask: Option<GenericBookLevel<L>>,
     /// Previous close price.
     pub previous_close: Option<PriceAmount>,
     /// Day volume in the provider's stated quantity unit.
@@ -48,12 +49,12 @@ pub struct GenericQuote<M = ()> {
     pub as_of: Option<DateTime<Utc>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
-    pub provider: M,
+    pub provider: Q,
 }
 
-impl<M: Default> GenericQuote<M> {
+impl<Q: Default, L> GenericQuote<Q, L> {
     /// Build a quote with the given instrument and all optional fields unset.
-    /// `provider` is initialised via `M::default()`.
+    /// `provider` is initialised via `Q::default()`.
     #[must_use]
     pub fn new(instrument: Instrument, currency: Currency) -> Self {
         Self {
@@ -67,13 +68,13 @@ impl<M: Default> GenericQuote<M> {
             day_volume: None,
             market_state: None,
             as_of: None,
-            provider: M::default(),
+            provider: Q::default(),
         }
     }
 }
 
 /// Standard `Quote` with no extra provider metadata.
-pub type Quote = GenericQuote<()>;
+pub type Quote = GenericQuote<(), ()>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]

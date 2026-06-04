@@ -47,7 +47,7 @@ use serde::{Deserialize, Serialize};
 /// Minimal HFT metadata struct that itself derives `ToDataFrame`. Each field
 /// becomes its own column in the resulting `DataFrame` (under a `provider.`
 /// prefix when nested inside a bigger payload — `provider` is the field name
-/// used by the parent `GenericQuote<M>` / `GenericCandle<M>` etc.).
+/// used by the parent `GenericQuote<Q, L>` / `GenericCandle<M>` etc.).
 ///
 /// Custom payload structs should derive dataframe support through
 /// `df-derive` directly and target paft's runtime traits.
@@ -158,10 +158,11 @@ fn enriched_quote_dataframe() -> Result<()> {
     Ok(())
 }
 
-/// `M` flows down into `Vec<GenericCandle<M>>` too. Every candle row gets
+/// History responses can choose metadata independently at the response and
+/// candle levels. Here the response uses `()` while every candle row gets
 /// its own `provider.*` columns automatically.
 fn history_dataframe() -> Result<()> {
-    let response: GenericHistoryResponse<HftMeta> = GenericHistoryResponse {
+    let response: GenericHistoryResponse<(), HftMeta> = GenericHistoryResponse {
         candles: vec![
             mk_candle(1_700_000_000, 150, 152, 149, 151, 1),
             mk_candle(1_700_000_060, 151, 153, 150, 152, 2),
@@ -170,11 +171,7 @@ fn history_dataframe() -> Result<()> {
         actions: vec![],
         price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
         meta: None,
-        provider: HftMeta {
-            rx_ns: 1_700_000_000_000_000_000,
-            seq: 0,
-            venue: "AAPL_BARS".into(),
-        },
+        provider: (),
     };
 
     let df = response.candles.as_slice().to_dataframe().unwrap();

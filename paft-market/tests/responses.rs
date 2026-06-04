@@ -5,10 +5,11 @@ use paft_domain::{AssetKind, Instrument};
 use paft_market::market::action::Action;
 use paft_market::{
     AdjustmentAnchor, AdjustmentMethod, Candle, CandleUpdate, CorporateActionAdjustmentCause,
-    CorporateActionAdjustmentCauses, HistoryMeta, HistoryResponse, Interval, Ohlc, OhlcPriceBasis,
-    PriceBasis,
+    CorporateActionAdjustmentCauses, GenericCandle, GenericHistoryResponse, HistoryMeta,
+    HistoryResponse, Interval, Ohlc, OhlcPriceBasis, PriceBasis,
 };
 use paft_money::{Currency, IsoCurrency, Price, PriceAmount, QuantityAmount};
+use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 use std::str::FromStr;
 
@@ -314,6 +315,44 @@ fn complex_nested_serialization() {
     let json = serde_json::to_string(&response).unwrap();
     let deserialized: HistoryResponse = serde_json::from_str(&json).unwrap();
     assert_eq!(response, deserialized);
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+struct ResponseMeta {
+    request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+struct CandleMeta {
+    sequence: u64,
+}
+
+#[test]
+fn history_response_metadata_layers_can_use_different_types() {
+    let response: GenericHistoryResponse<ResponseMeta, CandleMeta> = GenericHistoryResponse {
+        meta: None,
+        candles: vec![GenericCandle {
+            ts: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+            currency: usd(),
+            ohlc: ohlc("100.0", "110.0", "95.0", "105.0"),
+            close_unadj: None,
+            volume: Some(quantity("1000000")),
+            provider: CandleMeta { sequence: 42 },
+        }],
+        actions: vec![],
+        price_basis: OhlcPriceBasis::raw(),
+        provider: ResponseMeta {
+            request_id: "req-123".to_string(),
+        },
+    };
+
+    let value = serde_json::to_value(&response).unwrap();
+    assert_eq!(value["request_id"], serde_json::json!("req-123"));
+    assert_eq!(value["candles"][0]["sequence"], serde_json::json!(42));
+
+    let roundtrip: GenericHistoryResponse<ResponseMeta, CandleMeta> =
+        serde_json::from_value(value).unwrap();
+    assert_eq!(response, roundtrip);
 }
 
 #[test]

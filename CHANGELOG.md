@@ -68,6 +68,9 @@ All notable changes to this project will be documented in this file.
   so standard no-metadata aliases such as `Quote`, `HistoryResponse`, and
   `Snapshot` implement `Eq` while metadata payloads that only implement
   `PartialEq` remain usable.
+- Market: nested generic metadata containers now use separate type parameters
+  for container-level and child-level provider payloads, so response metadata,
+  row metadata, and leaf metadata no longer have to share one Rust type.
 - Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
@@ -170,6 +173,14 @@ All notable changes to this project will be documented in this file.
   `HistoryRequest::auto_adjust` to `HistoryFlags::PREFER_ADJUSTED_PRICES`,
   `HistoryRequestBuilder::prefer_adjusted_prices`, and
   `HistoryRequest::prefer_adjusted_prices`.
+- Market/facade: nested metadata containers gained independent child metadata
+  type parameters. `GenericHistoryResponse<M>`, `GenericOptionChain<M>`,
+  `GenericDownloadEntry<M>`, `GenericDownloadResponse<M>`,
+  `GenericCandleUpdate<M>`, `GenericOrderBook<M>`, `GenericQuote<M>`, and
+  `GenericSearchResponse<M>` now apply `M` to the outer/container provider
+  payload while nested rows or leaves default to `()`. Use the additional type
+  parameters when child metadata is needed, such as
+  `GenericHistoryResponse<ResponseMeta, CandleMeta>`.
 - Market/fundamentals: `Action` and `Profile` JSON moved from externally tagged
   enum objects to flat tagged payloads with `kind`; fund profiles now put the
   fund type in `fund_kind` so it does not collide with the discriminator.

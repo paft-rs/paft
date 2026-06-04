@@ -35,20 +35,21 @@ pub type SearchResult = GenericSearchResult<()>;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Response containing the merged search results.
 ///
-/// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation and propagated into each result. Use the
-/// [`SearchResponse`] alias for the standard shape (no extra metadata).
+/// Generic over a response-level provider metadata payload `R`, which is
+/// flattened into the serialized representation, and a result-level metadata
+/// payload `S`. Use the [`SearchResponse`] alias for the standard shape
+/// (no extra metadata).
 ///
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-pub struct GenericSearchResponse<M = ()> {
+pub struct GenericSearchResponse<R = (), S = ()> {
     /// De-duplicated search results.
-    pub results: Vec<GenericSearchResult<M>>,
+    pub results: Vec<GenericSearchResult<S>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
-    pub provider: M,
+    pub provider: R,
 }
 
 /// Standard `SearchResponse` with no extra provider metadata.
-pub type SearchResponse = GenericSearchResponse<()>;
+pub type SearchResponse = GenericSearchResponse<(), ()>;
