@@ -33,6 +33,14 @@ fn ohlc(open: &str, high: &str, low: &str, close: &str) -> Ohlc {
     Ohlc::new(amount(open), amount(high), amount(low), amount(close))
 }
 
+fn candle_at(unix_seconds: i64) -> Candle {
+    Candle::new(
+        DateTime::from_timestamp(unix_seconds, 0).unwrap(),
+        usd(),
+        ohlc("100.0", "110.0", "95.0", "105.0"),
+    )
+}
+
 #[test]
 fn candle_serialization() {
     let candle = Candle {
@@ -294,6 +302,21 @@ fn responses_smoke() {
     };
 
     assert_eq!(response.candles.len(), 1);
+}
+
+#[test]
+fn history_response_chronological_order_validation_allows_duplicate_timestamps() {
+    let response = |candles| HistoryResponse {
+        candles,
+        actions: vec![],
+        price_basis: OhlcPriceBasis::raw(),
+        meta: None,
+        provider: (),
+    };
+
+    assert!(response(vec![]).is_chronologically_ordered());
+    assert!(response(vec![candle_at(1), candle_at(1), candle_at(2)]).is_chronologically_ordered());
+    assert!(!response(vec![candle_at(2), candle_at(1)]).is_chronologically_ordered());
 }
 
 #[test]

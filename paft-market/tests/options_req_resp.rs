@@ -69,6 +69,23 @@ fn option_expirations_response_roundtrip() {
 }
 
 #[test]
+fn option_expirations_new_sorted_canonicalizes_dates() {
+    let resp = OptionExpirationsResponse::new_sorted(vec![
+        NaiveDate::from_ymd_opt(2025, 2, 21).unwrap(),
+        NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
+        NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
+    ]);
+
+    assert_eq!(
+        resp.dates,
+        vec![
+            NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 2, 21).unwrap(),
+        ],
+    );
+}
+
+#[test]
 fn option_contract_in_the_money_distinguishes_unknown_from_false() {
     let unknown: OptionContract = OptionContract::new(option_key(), usd_currency());
     assert_eq!(unknown.in_the_money, None);

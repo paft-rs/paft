@@ -27,6 +27,9 @@ All notable changes to this project will be documented in this file.
 - Market/facade: added `Ohlc` plus OHLC price-basis modeling types
   `OhlcPriceBasis`, `PriceBasis`, `AdjustmentAnchor`, `AdjustmentMethod`,
   `CorporateActionAdjustmentCause`, and `CorporateActionAdjustmentCauses`.
+- Market: added `OptionExpirationsResponse::new_sorted` and
+  `GenericHistoryResponse::is_chronologically_ordered` helpers for callers that
+  need explicit date/order normalization or validation.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
   constrained decimal constructors to compose with `paft::prelude::Result`.
 - Docs/examples: added a no-metadata v0.9 ergonomics example and refreshed

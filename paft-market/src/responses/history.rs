@@ -562,7 +562,12 @@ pub struct HistoryMeta {
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericHistoryResponse<R = (), C = ()> {
-    /// Ordered candles.
+    /// Candles as supplied by a provider.
+    ///
+    /// Providers are expected to order these by non-decreasing timestamp, but
+    /// direct struct construction and deserialization do not enforce that. Use
+    /// [`Self::is_chronologically_ordered`] when consumers need to validate
+    /// ordering.
     pub candles: Vec<GenericCandle<C>>,
     /// Corporate actions aligned to candles.
     pub actions: Vec<crate::market::action::Action>,
@@ -573,6 +578,17 @@ pub struct GenericHistoryResponse<R = (), C = ()> {
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: R,
+}
+
+impl<R, C> GenericHistoryResponse<R, C> {
+    /// Return `true` when candle timestamps are non-decreasing.
+    ///
+    /// Duplicate timestamps are considered ordered so callers can preserve the
+    /// provider's tie ordering.
+    #[must_use]
+    pub fn is_chronologically_ordered(&self) -> bool {
+        self.candles.windows(2).all(|pair| pair[0].ts <= pair[1].ts)
+    }
 }
 
 /// Standard `HistoryResponse` with no extra provider metadata.
