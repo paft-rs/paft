@@ -224,6 +224,8 @@ All notable changes to this project will be documented in this file.
 - Money: `Currency` parsing and metadata registration now require valid token
   boundaries for every code, so malformed metadata-known open currencies such
   as `$DOGE` no longer normalize to `DOGE`.
+- Fundamentals: `Profile` JSON deserialization no longer rejects unknown
+  payload fields, matching the workspace's open data-model serde policy.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
   payloads can no longer use tokens already modeled by the owning enum,
   preserving serde identity for values created through public constructors.

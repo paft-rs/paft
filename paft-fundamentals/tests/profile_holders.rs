@@ -89,7 +89,7 @@ fn profile_fund_uses_tagged_serde_shape() {
 }
 
 #[test]
-fn profile_rejects_unknown_fields() {
+fn profile_ignores_unknown_fields() {
     let value = json!({
         "kind": "fund",
         "name": "Index",
@@ -99,8 +99,16 @@ fn profile_rejects_unknown_fields() {
         "provider_field": true,
     });
 
-    let err = serde_json::from_value::<Profile>(value).unwrap_err();
-    assert!(err.to_string().contains("unknown field"));
+    let profile = serde_json::from_value::<Profile>(value).unwrap();
+    assert_eq!(
+        profile,
+        Profile::Fund(FundProfile {
+            name: "Index".into(),
+            family: None,
+            kind: FundKind::Etf,
+            isin: None,
+        })
+    );
 }
 
 #[test]

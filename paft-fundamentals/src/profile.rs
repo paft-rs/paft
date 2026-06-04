@@ -177,7 +177,7 @@ pub enum Profile {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+#[serde(tag = "kind", rename_all = "snake_case")]
 enum ProfileWire {
     Company {
         name: String,
