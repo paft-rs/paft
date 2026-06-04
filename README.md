@@ -123,6 +123,19 @@ fn analyze_data(quote: Quote, history: HistoryResponse) {
   absolutely sure all arithmetic uses matching currencies. For external or
   untrusted data, keep this feature disabled and use the `try_*` APIs.
 
+## Wire Compatibility Policy
+
+paft uses strict serde boundaries for requests, configuration, and invariant-bearing
+tagged shapes where silently dropping fields could change meaning. Examples
+include validated request shadows, history flags, `TimeSpec`, money scale
+payloads, and price-basis metadata.
+
+Provider/data payload models are forward-compatible by default: unknown JSON
+fields are ignored unless a flattened metadata field would collide with a paft
+field or validation requires rejection. This keeps older paft versions usable
+with provider payloads that add fields over time while preserving strictness at
+API and semantic-invariant boundaries.
+
 ## Observability (tracing)
 
 paft ships with optional, feature-gated instrumentation using the `tracing` crate. This adds spans around selected fallible constructors and validators in `paft-domain`, `paft-money`, `paft-market`, and `paft-fundamentals`. The feature is off by default and no subscriber is bundled.

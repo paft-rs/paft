@@ -158,6 +158,10 @@ pub type CandleUpdate = GenericCandleUpdate<(), ()>;
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 #[non_exhaustive]
 /// Price basis of the primary OHLC fields in a history response.
+///
+/// Serde rejects unknown fields for this semantic metadata shape: extra fields
+/// could change the interpretation of whether prices are raw, provider
+/// adjusted, corporate-action adjusted, or contract-roll adjusted.
 pub enum OhlcPriceBasis {
     /// The same basis applies to open, high, low, and close.
     Uniform {
@@ -233,6 +237,10 @@ impl Default for OhlcPriceBasis {
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 #[non_exhaustive]
 /// Basis of a returned price value.
+///
+/// Serde rejects unknown fields for this semantic metadata shape: dropping an
+/// unrecognized adjustment parameter could make a price basis look less
+/// specific than the provider intended.
 pub enum PriceBasis {
     /// Raw provider value.
     #[default]

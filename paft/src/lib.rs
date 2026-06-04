@@ -26,6 +26,14 @@
 //! ```
 //!
 //! See the crate README for installation instructions and feature details.
+//!
+//! # Wire compatibility policy
+//!
+//! Serde boundaries are strict for requests, configuration, and
+//! invariant-bearing tagged shapes where silently dropping fields could change
+//! meaning. Provider/data payload models are forward-compatible by default:
+//! unknown JSON fields are ignored unless a flattened metadata field would
+//! collide with a paft field or validation requires rejection.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 

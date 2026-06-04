@@ -226,6 +226,10 @@ All notable changes to this project will be documented in this file.
   as `$DOGE` no longer normalize to `DOGE`.
 - Fundamentals: `Profile` JSON deserialization no longer rejects unknown
   payload fields, matching the workspace's open data-model serde policy.
+- Docs/market: documented the wire compatibility policy: requests,
+  configuration, and semantic invariant-bearing tagged shapes are strict,
+  while provider/data payloads are forward-compatible by default. `Action`
+  JSON now follows that policy by ignoring unknown payload fields.
 - Prediction/money docs: public `OutcomeID` and `from_scaled_units`
   messages/docs now match trimming and decimal-backend behavior.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`

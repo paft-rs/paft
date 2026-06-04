@@ -139,7 +139,7 @@ fn action_split_rejects_zero_ratios() {
 }
 
 #[test]
-fn action_rejects_unknown_fields() {
+fn action_ignores_unknown_fields() {
     let value = serde_json::json!({
         "kind": "dividend",
         "date": "2022-01-01",
@@ -150,8 +150,13 @@ fn action_rejects_unknown_fields() {
         "provider_field": true,
     });
 
-    let err = serde_json::from_value::<Action>(value).unwrap_err();
-    assert!(err.to_string().contains("unknown field"));
+    assert_eq!(
+        serde_json::from_value::<Action>(value).unwrap(),
+        Action::Dividend {
+            date: date(2022, 1, 1),
+            amount: Price::new(Decimal::from_str("0.5").unwrap(), usd()),
+        }
+    );
 }
 
 #[test]
@@ -274,6 +279,29 @@ fn ohlc_price_basis_helpers_and_serialization() {
     let json = serde_json::to_string(&per_field).unwrap();
     let roundtrip: OhlcPriceBasis = serde_json::from_str(&json).unwrap();
     assert_eq!(per_field, roundtrip);
+}
+
+#[test]
+fn price_basis_rejects_unknown_semantic_fields() {
+    let price_basis = serde_json::json!({
+        "kind": "provider_adjusted",
+        "anchor": {
+            "kind": "provider_latest_basis"
+        },
+        "adjustment_factor": "0.95",
+    });
+    let err = serde_json::from_value::<PriceBasis>(price_basis).unwrap_err();
+    assert!(err.to_string().contains("unknown field"));
+
+    let ohlc_basis = serde_json::json!({
+        "kind": "uniform",
+        "basis": {
+            "kind": "raw"
+        },
+        "provider_basis": "close",
+    });
+    let err = serde_json::from_value::<OhlcPriceBasis>(ohlc_basis).unwrap_err();
+    assert!(err.to_string().contains("unknown field"));
 }
 
 #[test]

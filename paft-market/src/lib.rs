@@ -29,6 +29,11 @@
 //! # Serde
 //! All models serialize with stable, human-readable representations suitable for
 //! storage and transport. Dataframe support emits string codes for enums.
+//!
+//! Request and semantic metadata wire shapes deserialize strictly when silently
+//! dropping fields could change meaning. Provider/data payload models are
+//! forward-compatible by default and ignore unknown JSON fields unless
+//! validation or flattened metadata collision rules require rejection.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
