@@ -201,8 +201,11 @@ mod backend {
         Some(lhs * rhs)
     }
 
-    #[allow(clippy::unnecessary_wraps)]
     pub fn checked_div(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+        if rhs.is_zero() {
+            return None;
+        }
+
         Some(lhs / rhs)
     }
 
@@ -274,6 +277,7 @@ pub fn max_decimal_precision() -> u8 {
 
 /// Clones a decimal value using the active backend's cheapest owned-value path.
 #[must_use]
+#[allow(clippy::missing_const_for_fn)]
 pub fn clone_decimal(value: &Decimal) -> Decimal {
     backend::clone_decimal(value)
 }
@@ -347,29 +351,66 @@ impl Decimal128Mantissa for Ratio {
     }
 }
 
-/// Parses a decimal string using the active backend.
+/// Parses a plain decimal string using the active backend.
 ///
-/// Whitespace is ignored, an optional leading `+` is accepted, and scientific
-/// notation is rejected so both decimal backends share identical parsing
-/// semantics.
+/// Surrounding whitespace is ignored, an optional leading sign is accepted, and
+/// scientific notation, digit separators, and internal whitespace are rejected
+/// so both decimal backends share identical parsing semantics.
 #[must_use]
 pub fn parse_decimal(value: &str) -> Option<Decimal> {
+    let normalized = normalize_decimal_literal(value)?;
+    backend::parse_decimal(&normalized)
+}
+
+fn normalize_decimal_literal(value: &str) -> Option<Cow<'_, str>> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
         return None;
     }
-    if trimmed.contains(['e', 'E']) {
+
+    let (sign, unsigned) = match trimmed.as_bytes().first() {
+        Some(b'+') => ("", &trimmed[1..]),
+        Some(b'-') => ("-", &trimmed[1..]),
+        Some(_) => ("", trimmed),
+        None => return None,
+    };
+
+    if unsigned.is_empty() {
         return None;
     }
-    let normalized = if let Some(rest) = trimmed.strip_prefix('+') {
-        if rest.is_empty() || rest.starts_with(['+', '-']) {
-            return None;
+
+    let mut seen_dot = false;
+    let mut seen_digit = false;
+    for byte in unsigned.bytes() {
+        match byte {
+            b'0'..=b'9' => seen_digit = true,
+            b'.' if !seen_dot => seen_dot = true,
+            _ => return None,
         }
-        rest
+    }
+
+    if !seen_digit {
+        return None;
+    }
+
+    let needs_leading_zero = unsigned.starts_with('.');
+    let needs_trailing_zero = unsigned.ends_with('.');
+    if needs_leading_zero || needs_trailing_zero {
+        let mut normalized = String::with_capacity(trimmed.len() + 2);
+        normalized.push_str(sign);
+        if needs_leading_zero {
+            normalized.push('0');
+        }
+        normalized.push_str(unsigned);
+        if needs_trailing_zero {
+            normalized.push('0');
+        }
+        Some(Cow::Owned(normalized))
+    } else if sign == "-" {
+        Some(Cow::Borrowed(trimmed))
     } else {
-        trimmed
-    };
-    backend::parse_decimal(normalized)
+        Some(Cow::Borrowed(unsigned))
+    }
 }
 
 /// Returns the zero value for the active decimal backend.
@@ -499,6 +540,11 @@ pub mod serde {
 /// without gratuitous trailing zeros.
 #[must_use]
 pub fn to_canonical_string(value: &Decimal) -> String {
+    let zero = zero();
+    if value == &zero {
+        return "0".to_owned();
+    }
+
     let mut repr = backend::to_plain_string(value);
     if let Some(dot) = repr.find('.') {
         let mut end = repr.len();
@@ -517,7 +563,10 @@ pub fn to_canonical_string(value: &Decimal) -> String {
 mod tests {
     use std::str::FromStr;
 
-    use super::{Decimal, parse_decimal, to_canonical_string, try_from_scaled_units};
+    use super::{
+        Decimal, RoundingStrategy, checked_div, parse_decimal, round_dp_with_strategy,
+        to_canonical_string, try_from_scaled_units,
+    };
 
     #[test]
     fn parse_rejects_scientific_notation() {
@@ -538,6 +587,31 @@ mod tests {
     }
 
     #[test]
+    fn parse_uses_backend_stable_plain_decimal_grammar() {
+        for (literal, canonical) in [
+            (".5", "0.5"),
+            ("1.", "1"),
+            ("+1", "1"),
+            ("-0.00", "0"),
+            ("001.2300", "1.23"),
+            (" \t\n+001.2300\r", "1.23"),
+        ] {
+            let parsed = parse_decimal(literal).unwrap_or_else(|| panic!("{literal} should parse"));
+            assert_eq!(to_canonical_string(&parsed), canonical);
+        }
+    }
+
+    #[test]
+    fn parse_rejects_non_plain_decimal_grammar() {
+        for literal in [
+            "", " ", "+", "-", ".", "+.", "-.", "+-1", "++1", "--1", "1_000", "1e3", "2E-3", "1 2",
+            "1.2.3",
+        ] {
+            assert!(parse_decimal(literal).is_none(), "{literal} should fail");
+        }
+    }
+
+    #[test]
     fn parse_rejects_duplicate_explicit_signs() {
         assert!(parse_decimal("+-1").is_none());
         assert!(parse_decimal("++1").is_none());
@@ -552,6 +626,30 @@ mod tests {
         assert_eq!(to_canonical_string(&value), "123.45");
         let integer = parse_decimal("1000").unwrap();
         assert_eq!(to_canonical_string(&integer), "1000");
+    }
+
+    #[test]
+    fn canonical_string_normalizes_zero_sign() {
+        let negative_zero = parse_decimal("-0.00").unwrap();
+        assert_eq!(to_canonical_string(&negative_zero), "0");
+
+        let rounded_negative_zero = round_dp_with_strategy(
+            &parse_decimal("-0.0049").unwrap(),
+            2,
+            RoundingStrategy::ToZero,
+        );
+        assert_eq!(to_canonical_string(&rounded_negative_zero), "0");
+    }
+
+    #[test]
+    fn checked_div_returns_none_for_zero_divisor() {
+        let lhs = parse_decimal("10").unwrap();
+        let zero = parse_decimal("0.00").unwrap();
+        assert!(checked_div(&lhs, &zero).is_none());
+
+        let two = parse_decimal("2").unwrap();
+        let quotient = checked_div(&lhs, &two).unwrap();
+        assert_eq!(to_canonical_string(&quotient), "5");
     }
 
     #[test]

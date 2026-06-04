@@ -144,6 +144,9 @@ All notable changes to this project will be documented in this file.
 - Feature matrix: `paft-aggregates/dataframe` now explicitly enables
   Polars datetime support for `Snapshot::as_of`, and the `v09_ergonomics`
   example declares the facade features it imports.
+- Decimal: `checked_div` now rejects zero divisors under the `bigdecimal`
+  backend, `parse_decimal` validates a backend-stable plain decimal grammar,
+  and canonical decimal rendering normalizes signed zero to `0`.
 - Decimal: `parse_decimal` now rejects duplicate explicit sign prefixes such as
   `+-1` and `++1` instead of accepting them after leading-plus normalization.
 - Dataframe: `Decimal128Encode` now rejects target scales above Polars decimal
