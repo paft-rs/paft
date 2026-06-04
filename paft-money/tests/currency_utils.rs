@@ -91,6 +91,23 @@ fn test_builtin_currency_metadata() {
 }
 
 #[test]
+fn test_currency_metadata_registration_rejects_invalid_token_boundaries() {
+    for code in ["$USD", "$DOGE", "CUSTOM!"] {
+        let err = call_set_metadata(code, "Invalid", 2).unwrap_err();
+        assert!(matches!(
+            err,
+            MinorUnitError::InvalidCurrencyCode { code: invalid } if invalid == code
+        ));
+
+        let err = call_override_metadata(code, "Invalid", 2).unwrap_err();
+        assert!(matches!(
+            err,
+            MinorUnitError::InvalidCurrencyCode { code: invalid } if invalid == code
+        ));
+    }
+}
+
+#[test]
 fn test_non_iso_full_name_routes_through_registry() {
     clear_currency_metadata("XMR");
 

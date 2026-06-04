@@ -93,6 +93,21 @@ fn currency_rejects_malformed_modeled_codes() {
 }
 
 #[test]
+fn currency_rejects_malformed_metadata_known_other_codes() {
+    for input in ["$DOGE", "SOL!", "---BNB"] {
+        let err = Currency::try_from_str(input).unwrap_err();
+        assert!(matches!(
+            err,
+            paft_money::MoneyParseError::InvalidEnumValue { enum_name, value }
+                if enum_name == "Currency" && value == input
+        ));
+    }
+
+    let result: Result<Currency, _> = serde_json::from_str("\"$DOGE\"");
+    assert!(result.is_err());
+}
+
+#[test]
 fn currency_decimal_place_expectations() {
     assert_eq!(Currency::Iso(IsoCurrency::JPY).decimal_places().unwrap(), 0);
     assert_eq!(Currency::Iso(IsoCurrency::KRW).decimal_places().unwrap(), 0);

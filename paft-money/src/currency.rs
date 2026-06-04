@@ -21,8 +21,8 @@ impl OtherCurrency {
     /// # Errors
     ///
     /// Returns an error if `input` is empty, cannot be canonicalized, exceeds
-    /// the canonical token length cap, or parses to a modeled [`Currency`]
-    /// variant.
+    /// the canonical token length cap, has invalid token boundaries, or parses
+    /// to a modeled [`Currency`] variant.
     pub fn new(input: &str) -> Result<Self, MoneyParseError> {
         match Currency::try_from_str(input)? {
             Currency::Other(code) => Ok(code),
@@ -108,7 +108,8 @@ impl Currency {
     /// Attempts to parse a currency from the provided string, enforcing canonical aliases.
     ///
     /// # Errors
-    /// Returns `MoneyParseError::InvalidEnumValue` when the input is empty or cannot be canonicalized.
+    /// Returns `MoneyParseError::InvalidEnumValue` when the input is empty,
+    /// cannot be canonicalized, or has invalid token boundaries.
     pub fn try_from_str(input: &str) -> Result<Self, MoneyParseError> {
         Self::from_str(input)
     }
@@ -117,8 +118,8 @@ impl Currency {
     ///
     /// # Errors
     ///
-    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
-    /// to a modeled [`Currency`] variant.
+    /// Returns an error if `input` is empty, cannot be canonicalized, has
+    /// invalid token boundaries, or parses to a modeled [`Currency`] variant.
     pub fn other(input: &str) -> Result<Self, MoneyParseError> {
         OtherCurrency::new(input).map(Self::Other)
     }
@@ -295,6 +296,12 @@ impl FromStr for Currency {
                 value: input.to_string(),
             });
         }
+        if !has_canonical_token_boundaries(trimmed) {
+            return Err(MoneyParseError::InvalidEnumValue {
+                enum_name: "Currency",
+                value: input.to_string(),
+            });
+        }
         let canonical =
             Canonical::try_new(trimmed).map_err(|_| MoneyParseError::InvalidEnumValue {
                 enum_name: "Currency",
@@ -317,13 +324,7 @@ impl FromStr for Currency {
         };
 
         if let Some(currency) = known {
-            if has_canonical_token_boundaries(trimmed) {
-                return Ok(currency);
-            }
-            return Err(MoneyParseError::InvalidEnumValue {
-                enum_name: "Currency",
-                value: input.to_string(),
-            });
+            return Ok(currency);
         }
 
         Ok(Self::Other(OtherCurrency::from_canonical_unchecked(

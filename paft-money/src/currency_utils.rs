@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use paft_utils::{Canonical, canonicalize};
+use paft_utils::canonicalize;
 
 use crate::currency::Currency;
 use crate::error::MoneyParseError;
@@ -266,13 +266,14 @@ fn insert_currency_metadata(
     default_locale: Locale,
     allow_scale_override: bool,
 ) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
-    let canonical = Canonical::try_new(code).map_err(|_| MinorUnitError::InvalidCurrencyCode {
-        code: code.to_string(),
-    })?;
+    let canonical = Currency::try_from_str(code)
+        .map(|currency| currency.code().to_string())
+        .map_err(|_| MinorUnitError::InvalidCurrencyCode {
+            code: code.to_string(),
+        })?;
     validate_minor_units(minor_units)?;
 
     let metadata = make_metadata(full_name, minor_units, symbol, symbol_first, default_locale);
-    let canonical = canonical.into_inner();
     let mut custom = write_custom_metadata();
 
     if let Some(existing) = iso_minor_units(canonical.as_ref())
@@ -307,9 +308,10 @@ fn insert_currency_metadata(
 /// scale change is intentional.
 ///
 /// # Errors
-/// Returns a `MinorUnitError` when the currency code cannot be canonicalized
-/// to a non-empty token, when the requested precision exceeds supported
-/// limits, or when `minor_units` attempts to change a registered scale.
+/// Returns a `MinorUnitError` when the currency code cannot be parsed as a
+/// currency token with valid boundaries, when the requested precision exceeds
+/// supported limits, or when `minor_units` attempts to change a registered
+/// scale.
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(full_name, symbol), err)
@@ -344,9 +346,9 @@ pub fn set_currency_metadata(
 /// ISO scale.
 ///
 /// # Errors
-/// Returns a `MinorUnitError` when the currency code cannot be canonicalized
-/// to a non-empty token, when the requested precision exceeds supported
-/// limits, or when `minor_units` conflicts with an ISO-defined scale.
+/// Returns a `MinorUnitError` when the currency code cannot be parsed as a
+/// currency token with valid boundaries, when the requested precision exceeds
+/// supported limits, or when `minor_units` conflicts with an ISO-defined scale.
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(full_name, symbol), err)

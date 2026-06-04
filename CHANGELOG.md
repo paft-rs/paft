@@ -221,6 +221,9 @@ All notable changes to this project will be documented in this file.
 - Domain/money/fundamentals: string enum parsers now reject malformed inputs
   whose canonicalized form would resolve to a modeled value, such as `$USD`,
   `---NYSE`, or `CLOSED!`.
+- Money: `Currency` parsing and metadata registration now require valid token
+  boundaries for every code, so malformed metadata-known open currencies such
+  as `$DOGE` no longer normalize to `DOGE`.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
   payloads can no longer use tokens already modeled by the owning enum,
   preserving serde identity for values created through public constructors.
