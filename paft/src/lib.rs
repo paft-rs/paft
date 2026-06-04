@@ -81,8 +81,8 @@ pub mod money {
         Currency, CurrencyMetadata, ExchangeRate, IsoCurrency, Locale, MAX_DECIMAL_PRECISION,
         MAX_MINOR_UNIT_DECIMALS, MinorUnitError, MonetaryAmount, Money, MoneyError,
         MoneyParseError, OtherCurrency, Price, PriceAmount, QuantityAmount,
-        clear_currency_metadata, currency_metadata, set_currency_metadata,
-        try_normalize_currency_code,
+        clear_currency_metadata, currency_metadata, override_currency_metadata,
+        set_currency_metadata, try_normalize_currency_code,
     };
 }
 

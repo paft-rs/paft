@@ -24,6 +24,10 @@
 //! set_currency_metadata("XDR", "SDR", 6, "XDR", true, Locale::EnUs).unwrap();
 //! # }
 //! ```
+//! Once a scale is known for a code, [`set_currency_metadata`] refuses to
+//! change `minor_units`; use [`override_currency_metadata`] when a scale change
+//! is intentional. `Money` captures the resolved scale at construction, so
+//! existing values are not reinterpreted by later registry changes.
 //!
 //! Using metals/funds (recommended defaults):
 //! - Gold `XAU`: 3 or 6 decimal places are common; choose per domain needs.
@@ -166,6 +170,10 @@
 //! set_currency_metadata("XDR", "SDR", 6, "XDR", true, Locale::EnUs).unwrap();
 //! # }
 //! ```
+//! Existing `Money` values retain the scale resolved at construction. Updating
+//! or clearing the process-local registry can affect future construction and
+//! formatting metadata, but not minor-unit conversion for values that already
+//! exist.
 //!
 //! # Feature flags
 //!
@@ -226,7 +234,8 @@ pub use amount::MonetaryAmount;
 pub use currency::{Currency, OtherCurrency};
 pub use currency_utils::{
     CurrencyMetadata, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS, MinorUnitError,
-    clear_currency_metadata, currency_metadata, set_currency_metadata, try_normalize_currency_code,
+    clear_currency_metadata, currency_metadata, override_currency_metadata, set_currency_metadata,
+    try_normalize_currency_code,
 };
 pub use error::{MoneyError, MoneyParseError};
 pub use locale::Locale;

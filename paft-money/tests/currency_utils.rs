@@ -2,7 +2,8 @@
 use paft_money::Money;
 use paft_money::currency_utils::CurrencyMetadata;
 use paft_money::{
-    Currency, MinorUnitError, clear_currency_metadata, currency_metadata, set_currency_metadata,
+    Currency, MinorUnitError, clear_currency_metadata, currency_metadata,
+    override_currency_metadata, set_currency_metadata,
 };
 
 use paft_money::Locale;
@@ -12,6 +13,21 @@ fn call_set_metadata(
     units: u8,
 ) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
     set_currency_metadata(
+        code,
+        name.to_string(),
+        units,
+        code.to_string(),
+        true,
+        Locale::EnUs,
+    )
+}
+
+fn call_override_metadata(
+    code: &str,
+    name: &str,
+    units: u8,
+) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
+    override_currency_metadata(
         code,
         name.to_string(),
         units,
@@ -75,7 +91,7 @@ fn test_builtin_currency_metadata() {
 }
 
 #[test]
-fn test_custom_currency_metadata_updates() {
+fn test_custom_currency_metadata_preserves_registered_scale() {
     let code = "custom_token";
 
     // Ensure no prior override
@@ -88,14 +104,43 @@ fn test_custom_currency_metadata_updates() {
     assert_eq!(currency.decimal_places().unwrap(), 9);
     assert_eq!(currency_metadata(code).unwrap().minor_units, 9);
 
-    // Updating metadata should override the precision
-    call_set_metadata(code, "Custom Token", 4).expect("update override");
+    // Updating presentation metadata with the same scale is still accepted.
+    call_set_metadata(code, "Renamed Token", 9).expect("same-scale update");
+    let currency = Currency::try_from_str(code).unwrap();
+    assert_eq!(currency.decimal_places().unwrap(), 9);
+    assert_eq!(
+        currency_metadata(code).unwrap().full_name.as_ref(),
+        "Renamed Token"
+    );
+
+    let err = call_set_metadata(code, "Custom Token", 4).unwrap_err();
+    assert!(matches!(
+        err,
+        MinorUnitError::MinorUnitsAlreadyRegistered {
+            existing: 9,
+            requested: 4,
+            ..
+        }
+    ));
+
+    clear_currency_metadata(code);
+    assert!(currency_metadata(code).is_none());
+}
+
+#[test]
+fn test_custom_currency_metadata_override_is_explicit() {
+    let code = "custom_token_override";
+    clear_currency_metadata(code);
+
+    call_set_metadata(code, "Custom Token", 9).expect("valid registration");
+    let previous = call_override_metadata(code, "Custom Token", 4).expect("explicit override");
+
+    assert_eq!(previous.unwrap().minor_units, 9);
     let currency = Currency::try_from_str(code).unwrap();
     assert_eq!(currency.decimal_places().unwrap(), 4);
     assert_eq!(currency_metadata(code).unwrap().minor_units, 4);
 
     clear_currency_metadata(code);
-    assert!(currency_metadata(code).is_none());
 }
 
 #[test]
@@ -178,11 +223,11 @@ fn test_custom_currency_metadata_required() {
     assert_eq!(currency.full_name().as_ref(), "Custom Token");
     assert_eq!(currency.decimal_places().unwrap(), 4);
 
-    // Updating metadata should preserve the name.
-    call_set_metadata(code, "Custom Token", 5).expect("override precision");
+    // Updating metadata with the same scale should preserve the name.
+    call_set_metadata(code, "Custom Token", 4).expect("same-scale update");
     let metadata = currency_metadata(code).expect("metadata present");
     assert_eq!(metadata.full_name.as_ref(), "Custom Token");
-    assert_eq!(metadata.minor_units, 5);
+    assert_eq!(metadata.minor_units, 4);
 
     clear_currency_metadata(code);
 }

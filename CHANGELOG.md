@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
   amount for values whose currency is supplied by an enclosing market record.
 - Money/facade: added `QuantityAmount`, a transparent non-negative decimal
   quantity amount for provider-agnostic market sizes and volumes.
+- Money: added `override_currency_metadata` for explicitly replacing a
+  registered currency scale.
 - Domain/facade: added `CalendarPeriod` for calendar year/quarter/date
   boundary helpers such as `start_date`, `end_date`, `overlaps`, `contains`,
   and `is_same_exact_bucket_as`.
@@ -44,6 +46,9 @@ All notable changes to this project will be documented in this file.
 - Money: scalar arithmetic helpers now borrow decimal operands:
   `Money::{try_mul, try_div}`, `MonetaryAmount::{try_mul, try_div}`, and
   `Price::{try_mul, try_div, try_total}`.
+- Money: `set_currency_metadata` now preserves an already registered
+  minor-unit scale; callers must use `override_currency_metadata` for
+  intentional scale changes.
 - Decimal/money/market/fundamentals: decimal-backed serde fields now serialize
   through canonical strings from `paft-decimal`, independent of the active
   decimal backend.
@@ -121,6 +126,11 @@ All notable changes to this project will be documented in this file.
   active decimal backend precision instead of attempting unbounded zero padding.
 - Money: localized parsing now delegates to `Money::new_exact`, encoding its
   no-implicit-rounding contract at construction.
+- Money: existing `Money` values now capture their resolved minor-unit scale,
+  so later custom metadata changes or clears cannot reinterpret
+  `as_minor_units()` or same-currency arithmetic.
+- Money: `as_minor_units()` now rejects non-integral scaled decimals before
+  converting to `i128`.
 - Decimal/money: constrained decimal and contextual amount `Display`
   implementations now emit canonical decimal strings without gratuitous
   trailing zeroes, matching serde and hash behavior.
@@ -158,6 +168,9 @@ All notable changes to this project will be documented in this file.
   handle `url: Option<String>` instead of `url: String`.
 - Money/facade: callers of non-panicking scalar arithmetic helpers must pass
   `&Decimal` instead of `Decimal`.
+- Money/facade: `set_currency_metadata` no longer changes `minor_units` for a
+  code with a known scale; use `override_currency_metadata` for explicit
+  replacement.
 - Decimal/money/market/fundamentals: decimal-backed JSON fields now emit
   canonical strings without gratuitous trailing zeroes, so values such as
   `"12.340"` serialize as `"12.34"` regardless of backend.

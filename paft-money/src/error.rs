@@ -31,6 +31,19 @@ pub enum MoneyError {
         /// The actual currency found.
         found: Currency,
     },
+    /// Occurs when two `Money` values carry the same currency code but were
+    /// constructed against different minor-unit scales.
+    #[error(
+        "minor-unit scale mismatch for {currency}: expected {expected_scale}, found {found_scale}"
+    )]
+    MinorUnitMismatch {
+        /// The currency whose scale differs.
+        currency: Currency,
+        /// The scale carried by the left-hand value.
+        expected_scale: u8,
+        /// The scale carried by the right-hand value.
+        found_scale: u8,
+    },
     /// Occurs when converting a Money amount to cents fails due to overflow or precision issues.
     #[error("could not convert amount to minor units")]
     ConversionError,

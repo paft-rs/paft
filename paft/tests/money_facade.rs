@@ -1,13 +1,14 @@
 use paft::money::{
     Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
     MoneyParseError, PriceAmount, QuantityAmount, clear_currency_metadata, currency_metadata,
-    set_currency_metadata,
+    override_currency_metadata, set_currency_metadata,
 };
 use paft::prelude::{
     CurrencyMetadata as PreludeCurrencyMetadata, Locale as PreludeLocale,
     MAX_DECIMAL_PRECISION as PRELUDE_MAX_DECIMAL_PRECISION,
     MAX_MINOR_UNIT_DECIMALS as PRELUDE_MAX_MINOR_UNIT_DECIMALS, PriceAmount as PreludePriceAmount,
     QuantityAmount as PreludeQuantityAmount,
+    override_currency_metadata as prelude_override_currency_metadata,
     set_currency_metadata as prelude_set_currency_metadata,
 };
 
@@ -25,15 +26,38 @@ fn facade_reexports_metadata_types_without_formatting() {
     assert_eq!(metadata.minor_units, 4);
     assert_eq!(metadata.default_locale, Locale::EnUs);
 
-    let previous: Option<PreludeCurrencyMetadata> =
+    let err =
         prelude_set_currency_metadata(code, "Facade Token", 5, "FT", true, PreludeLocale::EnUs)
-            .expect("metadata update should succeed");
+            .expect_err("scale update through set should fail");
+    assert!(matches!(
+        err,
+        paft::money::MinorUnitError::MinorUnitsAlreadyRegistered {
+            existing: 4,
+            requested: 5,
+            ..
+        }
+    ));
+
+    let previous: Option<PreludeCurrencyMetadata> = prelude_override_currency_metadata(
+        code,
+        "Facade Token",
+        5,
+        "FT",
+        true,
+        PreludeLocale::EnUs,
+    )
+    .expect("explicit metadata override should succeed");
     assert_eq!(
         previous
             .expect("previous metadata should be returned")
             .minor_units,
         4
     );
+    assert_eq!(currency_metadata(code).unwrap().minor_units, 5);
+
+    let previous = override_currency_metadata(code, "Facade Token", 4, "FT", true, Locale::EnUs)
+        .expect("namespaced explicit metadata override should succeed");
+    assert_eq!(previous.unwrap().minor_units, 5);
 
     clear_currency_metadata(code);
 }

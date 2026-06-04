@@ -113,11 +113,6 @@ pub fn checked_sub_amounts<T: CurrencyAmount>(lhs: &T, rhs: &T) -> Result<Decima
     checked_sub_decimal(lhs.raw_amount(), rhs.raw_amount())
 }
 
-pub fn checked_div_amounts<T: CurrencyAmount>(lhs: &T, rhs: &T) -> Result<Decimal, MoneyError> {
-    ensure_same_currency(lhs.raw_currency(), rhs.raw_currency())?;
-    checked_div_decimal(lhs.raw_amount(), rhs.raw_amount())
-}
-
 pub fn parse_canonical_decimal(amount: &str) -> Result<Decimal, MoneyError> {
     decimal::parse_decimal(amount).ok_or(MoneyError::InvalidDecimal)
 }

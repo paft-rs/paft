@@ -1,6 +1,9 @@
 use iso_currency::Currency as IsoCurrency;
 use paft_decimal::{Decimal, RoundingStrategy};
-use paft_money::{Currency, ExchangeRate, Money};
+use paft_money::{
+    Currency, ExchangeRate, Locale, Money, clear_currency_metadata, override_currency_metadata,
+    set_currency_metadata,
+};
 use std::str::FromStr;
 
 #[cfg(feature = "dataframe")]
@@ -198,6 +201,58 @@ fn test_as_minor_units_basic() {
     )
     .unwrap();
     assert_eq!(usd_123_45.as_minor_units().unwrap(), 12345i128);
+}
+
+fn set_test_metadata(code: &str, minor_units: u8) {
+    set_currency_metadata(code, code, minor_units, code, true, Locale::EnUs).unwrap();
+}
+
+fn override_test_metadata(code: &str, minor_units: u8) {
+    override_currency_metadata(code, code, minor_units, code, true, Locale::EnUs).unwrap();
+}
+
+#[test]
+fn money_as_minor_units_uses_captured_scale_after_metadata_override_and_clear() {
+    let code = "money_scale_freeze";
+    clear_currency_metadata(code);
+    set_test_metadata(code, 3);
+
+    let currency = Currency::other(code).unwrap();
+    let money = Money::from_canonical_str("1.234", currency.clone()).unwrap();
+    assert_eq!(money.minor_units(), 3);
+
+    override_test_metadata(code, 2);
+    assert_eq!(currency.decimal_places().unwrap(), 2);
+    assert_eq!(money.as_minor_units().unwrap(), 1234);
+
+    clear_currency_metadata(code);
+    assert!(currency.decimal_places().is_err());
+    assert_eq!(money.as_minor_units().unwrap(), 1234);
+}
+
+#[test]
+fn money_arithmetic_rejects_same_currency_with_different_captured_scales() {
+    let code = "money_scale_mismatch";
+    clear_currency_metadata(code);
+    set_test_metadata(code, 3);
+
+    let currency = Currency::other(code).unwrap();
+    let old_scale = Money::from_canonical_str("1.234", currency.clone()).unwrap();
+
+    override_test_metadata(code, 2);
+    let new_scale = Money::from_canonical_str("1.23", currency).unwrap();
+
+    let err = old_scale.try_add(&new_scale).unwrap_err();
+    assert!(matches!(
+        err,
+        paft_money::MoneyError::MinorUnitMismatch {
+            expected_scale: 3,
+            found_scale: 2,
+            ..
+        }
+    ));
+
+    clear_currency_metadata(code);
 }
 
 #[test]

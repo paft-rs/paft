@@ -21,9 +21,9 @@ use crate::currency::Currency;
 use crate::currency_utils::MAX_DECIMAL_PRECISION;
 use crate::currency_utils::MAX_MINOR_UNIT_DECIMALS;
 use crate::exact::{
-    CurrencyAmount, canonical_amount_format, checked_add_amounts, checked_div_amounts,
-    checked_div_decimal, checked_mul_decimal, checked_sub_amounts, copy_decimal,
-    decimal_from_scaled_units, decimal_scale, parse_canonical_decimal,
+    CurrencyAmount, canonical_amount_format, checked_add_decimal, checked_div_decimal,
+    checked_mul_decimal, checked_sub_decimal, copy_decimal, decimal_from_scaled_units,
+    decimal_scale, parse_canonical_decimal,
 };
 #[cfg(feature = "money-formatting")]
 use crate::format::{FormatItem, Formatter, Params};
@@ -176,9 +176,15 @@ impl<'de> Deserialize<'de> for ExchangeRate {
 /// Deserialization also funnels through `new_exact`, so untrusted JSON cannot
 /// produce a `Money` with a scale beyond the currency's `decimal_places()`.
 ///
+/// The resolved minor-unit scale is captured at construction. This keeps an
+/// existing `Money` value's arithmetic and minor-unit conversion stable even
+/// if the process-local metadata registry is later changed or cleared.
+///
 /// `Hash` and `PartialEq` use a canonical string representation of the
-/// numeric value, so two `Money` values that differ only in trailing
-/// zero-scale digits compare equal and hash to the same bucket.
+/// numeric value plus the captured minor-unit scale, so two `Money` values
+/// that differ only in trailing zero-scale digits compare equal and hash to
+/// the same bucket, while values created under incompatible scale metadata do
+/// not collapse into one identity.
 ///
 /// ```
 /// # use paft_money::IsoCurrency;
@@ -196,12 +202,18 @@ pub struct Money {
     /// The currency.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     currency: Currency,
+    /// Minor-unit scale resolved when the value was created.
+    #[serde(skip)]
+    #[cfg_attr(feature = "dataframe", df_derive(skip))]
+    minor_units: u8,
 }
 
 impl Hash for Money {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // Hash currency directly
         self.currency.hash(state);
+        // Scale is part of the captured settlement semantics for this value.
+        self.minor_units.hash(state);
         // Hash a canonical numeric representation so equivalent scales collide
         decimal::to_canonical_string(&self.amount).hash(state);
     }
@@ -221,10 +233,12 @@ impl Money {
     /// Returns `MoneyError::MetadataNotFound` when metadata is not registered for a custom currency.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn new(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
-        let rounded = Self::round_amount(amount, &currency)?;
+        let (minor_units, scale) = Self::scale_for_currency(&currency)?;
+        let rounded = Self::round_amount_to_scale(&amount, scale);
         Ok(Self {
             amount: rounded,
             currency,
+            minor_units,
         })
     }
 
@@ -255,8 +269,7 @@ impl Money {
     // suppressed to keep the signatures consistent across backends.
     #[cfg_attr(feature = "bigdecimal", allow(clippy::needless_pass_by_value))]
     pub fn new_exact(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
-        let decimals = Self::decimals_for_currency(&currency)?;
-        let scale = Self::ensure_scale_within_limits(decimals)?;
+        let (minor_units, scale) = Self::scale_for_currency(&currency)?;
         // Round toward zero so any rounding "decision" turns into a pure
         // truncation: if even one fractional digit would have been dropped,
         // the truncated value differs from the original.
@@ -272,6 +285,7 @@ impl Money {
         Ok(Self {
             amount: canonical,
             currency,
+            minor_units,
         })
     }
 
@@ -308,6 +322,12 @@ impl Money {
         &self.currency
     }
 
+    /// Returns the minor-unit scale captured when this value was constructed.
+    #[must_use]
+    pub const fn minor_units(&self) -> u8 {
+        self.minor_units
+    }
+
     /// Returns the amount as the smallest currency unit (minor units).
     ///
     /// Uses checked multiplication so a value that would overflow the
@@ -315,15 +335,18 @@ impl Money {
     /// `MoneyError::ConversionError` instead of panicking.
     ///
     /// # Errors
-    /// Returns `MoneyError::ConversionError` or `MoneyError::MetadataNotFound` when conversion cannot be performed.
+    /// Returns `MoneyError::ConversionError` when conversion cannot be performed.
     pub fn as_minor_units(&self) -> Result<i128, MoneyError> {
-        let decimals = Self::decimals_for_currency(&self.currency)?;
-        let scale = Self::ensure_scale_within_limits(decimals)?;
+        let scale = Self::ensure_scale_within_limits(self.minor_units)?;
 
         // The cap on `scale` is enforced by `ensure_scale_within_limits`
         // (currently 18 dp) so `10^scale` always fits inside `i64`.
         let multiplier = Decimal::from(10_i64.pow(scale));
         let scaled = checked_mul_decimal(&self.amount, &multiplier)?;
+        let integral = decimal::round_dp_with_strategy(&scaled, 0, RoundingStrategy::ToZero);
+        if integral != scaled {
+            return Err(MoneyError::ConversionError);
+        }
         scaled.to_i128().ok_or(MoneyError::ConversionError)
     }
 
@@ -357,10 +380,13 @@ impl Money {
     /// be represented by the active decimal backend.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_minor_units(minor_units: i128, currency: Currency) -> Result<Self, MoneyError> {
-        let decimals = Self::decimals_for_currency(&currency)?;
-        let scale = Self::ensure_scale_within_limits(decimals)?;
+        let (currency_minor_units, scale) = Self::scale_for_currency(&currency)?;
         let amount = decimal_from_scaled_units(minor_units, scale)?;
-        Self::new(amount, currency)
+        Ok(Self {
+            amount,
+            currency,
+            minor_units: currency_minor_units,
+        })
     }
 
     /// Returns the amount as a canonical string with currency code (`"<amount> <CODE>"`).
@@ -447,6 +473,8 @@ impl Money {
     /// # Errors
     /// - Returns `MoneyError::CurrencyMismatch` when the operands use
     ///   different currencies.
+    /// - Returns `MoneyError::MinorUnitMismatch` when the operands use the
+    ///   same currency code but carry different captured minor-unit scales.
     /// - Returns `MoneyError::ConversionError` when the sum overflows the
     ///   active decimal backend (only possible under `rust_decimal`).
     #[cfg_attr(
@@ -454,8 +482,13 @@ impl Money {
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_add(&self, rhs: &Self) -> Result<Self, MoneyError> {
-        let sum = checked_add_amounts(self, rhs)?;
-        Self::new(sum, self.currency.clone())
+        self.ensure_compatible_money(rhs)?;
+        let sum = checked_add_decimal(&self.amount, &rhs.amount)?;
+        Ok(Self::from_rounded_parts(
+            &sum,
+            self.currency.clone(),
+            self.minor_units,
+        ))
     }
 
     /// Subtraction that returns an error for currency mismatch.
@@ -463,6 +496,8 @@ impl Money {
     /// # Errors
     /// - Returns `MoneyError::CurrencyMismatch` when the operands use
     ///   different currencies.
+    /// - Returns `MoneyError::MinorUnitMismatch` when the operands use the
+    ///   same currency code but carry different captured minor-unit scales.
     /// - Returns `MoneyError::ConversionError` when the difference overflows
     ///   the active decimal backend (only possible under `rust_decimal`).
     #[cfg_attr(
@@ -470,15 +505,19 @@ impl Money {
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_sub(&self, rhs: &Self) -> Result<Self, MoneyError> {
-        let diff = checked_sub_amounts(self, rhs)?;
-        Self::new(diff, self.currency.clone())
+        self.ensure_compatible_money(rhs)?;
+        let diff = checked_sub_decimal(&self.amount, &rhs.amount)?;
+        Ok(Self::from_rounded_parts(
+            &diff,
+            self.currency.clone(),
+            self.minor_units,
+        ))
     }
 
     /// Multiplication that preserves the currency.
     ///
     /// # Errors
-    /// - Returns `MoneyError::MetadataNotFound` when metadata is missing for the currency.
-    /// - Returns `MoneyError::ConversionError` when the product overflows the
+    /// Returns `MoneyError::ConversionError` when the product overflows the
     ///   active decimal backend (only possible under `rust_decimal`).
     #[cfg_attr(
         feature = "tracing",
@@ -486,7 +525,11 @@ impl Money {
     )]
     pub fn try_mul(&self, rhs: &Decimal) -> Result<Self, MoneyError> {
         let product = checked_mul_decimal(&self.amount, rhs)?;
-        Self::new(product, self.currency.clone())
+        Ok(Self::from_rounded_parts(
+            &product,
+            self.currency.clone(),
+            self.minor_units,
+        ))
     }
 
     /// Division that returns an error for division by zero.
@@ -501,7 +544,11 @@ impl Money {
     )]
     pub fn try_div(&self, rhs: &Decimal) -> Result<Self, MoneyError> {
         let quotient = checked_div_decimal(&self.amount, rhs)?;
-        Self::new(quotient, self.currency.clone())
+        Ok(Self::from_rounded_parts(
+            &quotient,
+            self.currency.clone(),
+            self.minor_units,
+        ))
     }
 
     /// Divides two `Money` values of the same currency, returning the unitless ratio.
@@ -512,6 +559,8 @@ impl Money {
     ///
     /// # Errors
     /// - [`MoneyError::CurrencyMismatch`] when the operands use different currencies.
+    /// - [`MoneyError::MinorUnitMismatch`] when the operands use the same
+    ///   currency code but carry different captured minor-unit scales.
     /// - [`MoneyError::DivisionByZero`] when `rhs` has a zero amount.
     /// - [`MoneyError::ConversionError`] when the quotient overflows the
     ///   active decimal backend (only possible under `rust_decimal`).
@@ -520,7 +569,8 @@ impl Money {
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_div_money(&self, rhs: &Self) -> Result<Decimal, MoneyError> {
-        checked_div_amounts(self, rhs)
+        self.ensure_compatible_money(rhs)?;
+        checked_div_decimal(&self.amount, &rhs.amount)
     }
 
     /// Converts this money to another currency using the provided exchange rate and rounding strategy.
@@ -559,11 +609,14 @@ impl Money {
             return Ok(self.clone());
         }
 
-        let decimals = rate.to.decimal_places()?;
-        let scale = Self::ensure_scale_within_limits(decimals)?;
+        let (minor_units, scale) = Self::scale_for_currency(&rate.to)?;
         let product = checked_mul_decimal(&self.amount, &rate.rate)?;
         let converted_amount = decimal::round_dp_with_strategy(&product, scale, rounding);
-        Self::new(converted_amount, rate.to.clone())
+        Ok(Self {
+            amount: converted_amount,
+            currency: rate.to.clone(),
+            minor_units,
+        })
     }
 
     /// Converts this money to another currency using the provided exchange rate.
@@ -591,6 +644,50 @@ impl Money {
 
     fn decimals_for_currency(currency: &Currency) -> Result<u8, MoneyError> {
         currency.decimal_places()
+    }
+
+    fn scale_for_currency(currency: &Currency) -> Result<(u8, u32), MoneyError> {
+        let minor_units = Self::decimals_for_currency(currency)?;
+        let scale = Self::ensure_scale_within_limits(minor_units)?;
+        Ok((minor_units, scale))
+    }
+
+    fn round_amount_to_scale(amount: &Decimal, scale: u32) -> Decimal {
+        decimal::round_dp_with_strategy(amount, scale, RoundingStrategy::MidpointAwayFromZero)
+    }
+
+    fn from_rounded_parts(amount: &Decimal, currency: Currency, minor_units: u8) -> Self {
+        let scale = Self::ensure_scale_within_limits(minor_units)
+            .expect("stored minor-unit scale was validated at construction");
+        Self {
+            amount: Self::round_amount_to_scale(amount, scale),
+            currency,
+            minor_units,
+        }
+    }
+
+    fn ensure_compatible_money(&self, rhs: &Self) -> Result<(), MoneyError> {
+        if self.currency != rhs.currency {
+            return Err(MoneyError::CurrencyMismatch {
+                expected: self.currency.clone(),
+                found: rhs.currency.clone(),
+            });
+        }
+        if self.minor_units != rhs.minor_units {
+            return Err(MoneyError::MinorUnitMismatch {
+                currency: self.currency.clone(),
+                expected_scale: self.minor_units,
+                found_scale: rhs.minor_units,
+            });
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "panicking-money-ops")]
+    fn assert_compatible_money(&self, rhs: &Self) {
+        if let Err(err) = self.ensure_compatible_money(rhs) {
+            panic!("{err}");
+        }
     }
 
     #[cfg(feature = "money-formatting")]
@@ -671,14 +768,6 @@ impl Money {
         let amount = copy_decimal(&self.amount);
 
         Formatter::new(amount, locale, params).format()
-    }
-
-    fn round_amount(mut amount: Decimal, currency: &Currency) -> Result<Decimal, MoneyError> {
-        let decimals = Self::decimals_for_currency(currency)?;
-        let scale = Self::ensure_scale_within_limits(decimals)?;
-        amount =
-            decimal::round_dp_with_strategy(&amount, scale, RoundingStrategy::MidpointAwayFromZero);
-        Ok(amount)
     }
 }
 
@@ -785,10 +874,9 @@ impl<'a> LocalizedMoney<'a> {
     }
 
     fn format_internal(&self) -> Result<String, MoneyError> {
-        let digits = match self.fraction_digits {
-            Some(d) => d,
-            None => u32::from(self.money.currency().decimal_places()?),
-        };
+        let digits = self
+            .fraction_digits
+            .unwrap_or_else(|| u32::from(self.money.minor_units()));
 
         self.money.render_with_locale(
             self.locale,
@@ -821,22 +909,9 @@ impl Add for Money {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let Self {
-            amount: lhs_amount,
-            currency: lhs_currency,
-        } = self;
-        let Self {
-            amount: rhs_amount,
-            currency: rhs_currency,
-        } = rhs;
-
-        assert!(
-            lhs_currency == rhs_currency,
-            "currency mismatch: expected {lhs_currency}, found {rhs_currency}"
-        );
-
-        Self::new(lhs_amount + rhs_amount, lhs_currency)
-            .expect("matching currencies share metadata")
+        self.assert_compatible_money(&rhs);
+        let sum = checked_add_decimal(&self.amount, &rhs.amount).expect("money addition overflow");
+        Self::from_rounded_parts(&sum, self.currency, self.minor_units)
     }
 }
 
@@ -845,18 +920,9 @@ impl<'b> Add<&'b Money> for &Money {
     type Output = Money;
 
     fn add(self, rhs: &'b Money) -> Self::Output {
-        assert!(
-            self.currency == rhs.currency,
-            "currency mismatch: expected {expected}, found {found}",
-            expected = self.currency,
-            found = rhs.currency
-        );
-
-        Money::new(
-            copy_decimal(&self.amount) + copy_decimal(&rhs.amount),
-            self.currency.clone(),
-        )
-        .expect("matching currencies share metadata")
+        self.assert_compatible_money(rhs);
+        let sum = checked_add_decimal(&self.amount, &rhs.amount).expect("money addition overflow");
+        Money::from_rounded_parts(&sum, self.currency.clone(), self.minor_units)
     }
 }
 
@@ -865,22 +931,10 @@ impl Sub for Money {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        let Self {
-            amount: lhs_amount,
-            currency: lhs_currency,
-        } = self;
-        let Self {
-            amount: rhs_amount,
-            currency: rhs_currency,
-        } = rhs;
-
-        assert!(
-            lhs_currency == rhs_currency,
-            "currency mismatch: expected {lhs_currency}, found {rhs_currency}"
-        );
-
-        Self::new(lhs_amount - rhs_amount, lhs_currency)
-            .expect("matching currencies share metadata")
+        self.assert_compatible_money(&rhs);
+        let diff =
+            checked_sub_decimal(&self.amount, &rhs.amount).expect("money subtraction overflow");
+        Self::from_rounded_parts(&diff, self.currency, self.minor_units)
     }
 }
 
@@ -889,18 +943,10 @@ impl<'b> Sub<&'b Money> for &Money {
     type Output = Money;
 
     fn sub(self, rhs: &'b Money) -> Self::Output {
-        assert!(
-            self.currency == rhs.currency,
-            "currency mismatch: expected {expected}, found {found}",
-            expected = self.currency,
-            found = rhs.currency
-        );
-
-        Money::new(
-            copy_decimal(&self.amount) - copy_decimal(&rhs.amount),
-            self.currency.clone(),
-        )
-        .expect("matching currencies share metadata")
+        self.assert_compatible_money(rhs);
+        let diff =
+            checked_sub_decimal(&self.amount, &rhs.amount).expect("money subtraction overflow");
+        Money::from_rounded_parts(&diff, self.currency.clone(), self.minor_units)
     }
 }
 
@@ -909,7 +955,9 @@ impl Mul<Decimal> for Money {
     type Output = Self;
 
     fn mul(self, rhs: Decimal) -> Self::Output {
-        Self::new(self.amount * rhs, self.currency).expect("currency metadata available")
+        let product =
+            checked_mul_decimal(&self.amount, &rhs).expect("money multiplication overflow");
+        Self::from_rounded_parts(&product, self.currency, self.minor_units)
     }
 }
 
@@ -919,7 +967,8 @@ impl Div<Decimal> for Money {
 
     fn div(self, rhs: Decimal) -> Self::Output {
         assert!(rhs != decimal::zero(), "division by zero");
-        Self::new(self.amount / rhs, self.currency).expect("currency metadata available")
+        let quotient = checked_div_decimal(&self.amount, &rhs).expect("money division overflow");
+        Self::from_rounded_parts(&quotient, self.currency, self.minor_units)
     }
 }
 
@@ -929,8 +978,8 @@ impl Div<Decimal> for &Money {
 
     fn div(self, rhs: Decimal) -> Self::Output {
         assert!(rhs != decimal::zero(), "division by zero");
-        Money::new(copy_decimal(&self.amount) / rhs, self.currency.clone())
-            .expect("currency metadata available")
+        let quotient = checked_div_decimal(&self.amount, &rhs).expect("money division overflow");
+        Money::from_rounded_parts(&quotient, self.currency.clone(), self.minor_units)
     }
 }
 
@@ -939,22 +988,10 @@ impl Div for Money {
     type Output = Decimal;
 
     fn div(self, rhs: Self) -> Self::Output {
-        let Self {
-            amount: lhs_amount,
-            currency: lhs_currency,
-        } = self;
-        let Self {
-            amount: rhs_amount,
-            currency: rhs_currency,
-        } = rhs;
+        self.assert_compatible_money(&rhs);
+        assert!(rhs.amount != decimal::zero(), "division by zero");
 
-        assert!(
-            lhs_currency == rhs_currency,
-            "currency mismatch: expected {lhs_currency}, found {rhs_currency}"
-        );
-        assert!(rhs_amount != decimal::zero(), "division by zero");
-
-        lhs_amount / rhs_amount
+        checked_div_decimal(&self.amount, &rhs.amount).expect("money division overflow")
     }
 }
 
@@ -963,14 +1000,9 @@ impl<'b> Div<&'b Money> for &Money {
     type Output = Decimal;
 
     fn div(self, rhs: &'b Money) -> Self::Output {
-        assert!(
-            self.currency == rhs.currency,
-            "currency mismatch: expected {expected}, found {found}",
-            expected = self.currency,
-            found = rhs.currency
-        );
+        self.assert_compatible_money(rhs);
         assert!(rhs.amount != decimal::zero(), "division by zero");
 
-        copy_decimal(&self.amount) / copy_decimal(&rhs.amount)
+        checked_div_decimal(&self.amount, &rhs.amount).expect("money division overflow")
     }
 }
