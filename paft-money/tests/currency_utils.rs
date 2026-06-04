@@ -156,6 +156,34 @@ fn test_custom_currency_metadata_override_is_explicit() {
 }
 
 #[test]
+fn test_iso_currency_metadata_override_cannot_change_iso_scale() {
+    use iso_currency::Currency as IsoCurrency;
+
+    clear_currency_metadata("USD");
+
+    let err = call_override_metadata("USD", "Display USD", 4).unwrap_err();
+    assert!(matches!(
+        err,
+        MinorUnitError::MinorUnitsAlreadyRegistered {
+            code,
+            existing: 2,
+            requested: 4,
+        } if code == "USD"
+    ));
+
+    assert_eq!(currency_metadata("USD").unwrap().minor_units, 2);
+    assert_eq!(Currency::Iso(IsoCurrency::USD).decimal_places().unwrap(), 2);
+
+    call_override_metadata("USD", "Display USD", 2).expect("same-scale display override");
+    let metadata = currency_metadata("USD").expect("metadata present");
+    assert_eq!(metadata.full_name.as_ref(), "Display USD");
+    assert_eq!(metadata.minor_units, 2);
+    assert_eq!(Currency::Iso(IsoCurrency::USD).decimal_places().unwrap(), 2);
+
+    clear_currency_metadata("USD");
+}
+
+#[test]
 fn test_currency_metadata_rejects_overflowing_precision() {
     let err = call_set_metadata("overflow_minor", "Token", 19).unwrap_err();
     assert!(matches!(

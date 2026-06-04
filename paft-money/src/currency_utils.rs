@@ -280,6 +280,16 @@ fn insert_currency_metadata(
     let canonical = canonical.into_inner();
     let mut custom = write_custom_metadata();
 
+    if let Some(existing) = iso_minor_units(canonical.as_ref())
+        && existing != minor_units
+    {
+        return Err(MinorUnitError::MinorUnitsAlreadyRegistered {
+            code: canonical.clone(),
+            existing,
+            requested: minor_units,
+        });
+    }
+
     if !allow_scale_override
         && let Some(existing) = registered_minor_units(canonical.as_ref(), &custom)
         && existing != minor_units
@@ -328,16 +338,20 @@ pub fn set_currency_metadata(
     )
 }
 
-/// Replaces metadata for a currency, including its minor-unit scale.
+/// Replaces metadata for a currency, including its minor-unit scale when ISO
+/// 4217 does not already define one.
 ///
 /// Prefer [`set_currency_metadata`] for normal registration. This function is
 /// deliberately named as an override because changing a scale can make new
 /// `Money` values for the same currency code use a different settlement
-/// exponent than existing values.
+/// exponent than existing values. For ISO currencies with a registered
+/// exponent, display metadata can be replaced but `minor_units` must match the
+/// ISO scale.
 ///
 /// # Errors
 /// Returns a `MinorUnitError` when the currency code cannot be canonicalized
-/// to a non-empty token or when the requested precision exceeds supported limits.
+/// to a non-empty token, when the requested precision exceeds supported
+/// limits, or when `minor_units` conflicts with an ISO-defined scale.
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(full_name, symbol), err)

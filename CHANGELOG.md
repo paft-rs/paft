@@ -54,6 +54,9 @@ All notable changes to this project will be documented in this file.
 - Money: `set_currency_metadata` now preserves an already registered
   minor-unit scale; callers must use `override_currency_metadata` for
   intentional scale changes.
+- Money: `override_currency_metadata` now rejects `minor_units` values that
+  conflict with an ISO-defined exponent, keeping public metadata aligned with
+  `Currency::decimal_places()`.
 - Money: `Currency::full_name()` now uses registered metadata for all non-ISO
   currencies, including modeled variants such as `BTC`, `ETH`, and `XMR`; ISO
   currency names remain sourced from ISO 4217.
