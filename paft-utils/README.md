@@ -6,7 +6,7 @@ Shared utilities for the paft workspace: canonical string helpers and optional D
 [![Crates.io](https://img.shields.io/crates/v/paft-utils)](https://crates.io/crates/paft-utils)
 [![Docs.rs](https://docs.rs/paft-utils/badge.svg)](https://docs.rs/paft-utils)
 
-- Canonical string utilities: `Canonical`, `CanonicalError`, `canonicalize`, `StringCode`
+- Canonical string utilities: `Canonical`, `CanonicalError`, `MAX_CANONICAL_TOKEN_LEN`, `canonicalize`, `StringCode`
 - Optional Polars helpers: `Columnar`, `Decimal128Encode`, `ToDataFrame`, `ToDataFrameVec`
 
 Install
@@ -56,7 +56,8 @@ Canonical codes
 
 `Canonical` is the storage invariant behind typed unknown enum wrappers such as
 `OtherCurrency` and `OtherExchange`: values are non-empty, trimmed, uppercase
-ASCII, and use single underscores between words.
+ASCII, no longer than `MAX_CANONICAL_TOKEN_LEN`, and use single underscores
+between words.
 
 ```rust
 use paft_utils::{Canonical, canonicalize};

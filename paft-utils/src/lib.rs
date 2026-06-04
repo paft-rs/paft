@@ -5,6 +5,7 @@
 //!
 //! This crate provides:
 //! - Canonical string utilities (`Canonical`, `canonicalize`) for enum `Other` variants
+//!   with a bounded stored-token length (`MAX_CANONICAL_TOKEN_LEN`)
 //! - Optional dataframe helpers for converting domain structs to `polars` frames
 //!
 //! # Quickstart
@@ -29,5 +30,6 @@ pub mod string_canonical;
 #[cfg(feature = "dataframe")]
 pub use dataframe::{Columnar, Decimal128Encode, ToDataFrame, ToDataFrameVec};
 pub use string_canonical::{
-    Canonical, CanonicalError, StringCode, canonicalize, has_canonical_token_boundaries,
+    Canonical, CanonicalError, MAX_CANONICAL_TOKEN_LEN, StringCode, canonicalize,
+    has_canonical_token_boundaries,
 };

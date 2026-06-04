@@ -59,7 +59,8 @@ Open enums with typed `Other`
 
 Use the open enum macros for provider-facing concepts where upstreams can
 invent new tokens. The typed `OtherX` wrapper preserves unknown values while
-rejecting tokens the enum already models.
+rejecting tokens the enum already models. Unknown tokens are stored as bounded
+canonical strings, capped by `MAX_CANONICAL_TOKEN_LEN`.
 
 ```rust
 use paft_core::{PaftError, impl_display_via_code, other_string_code_type, string_enum_with_code};

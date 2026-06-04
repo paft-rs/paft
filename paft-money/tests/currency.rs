@@ -2,7 +2,7 @@
 
 use iso_currency::Currency as IsoCurrency;
 use paft_money::{Currency, OtherCurrency};
-use paft_utils::StringCode;
+use paft_utils::{MAX_CANONICAL_TOKEN_LEN, StringCode};
 use std::str::FromStr;
 
 struct Case {
@@ -41,6 +41,17 @@ fn other_currency_serde_uses_checked_constructor() {
 
     assert!(serde_json::from_str::<OtherCurrency>("\"USD\"").is_err());
     assert!(serde_json::from_str::<OtherCurrency>("\"BTC\"").is_err());
+}
+
+#[test]
+fn currency_other_rejects_overlong_tokens() {
+    let input = "x".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+    assert!(OtherCurrency::new(&input).is_err());
+    assert!(Currency::from_str(&input).is_err());
+
+    let json = serde_json::to_string(&input).unwrap();
+    assert!(serde_json::from_str::<OtherCurrency>(&json).is_err());
+    assert!(serde_json::from_str::<Currency>(&json).is_err());
 }
 
 #[test]

@@ -20,8 +20,8 @@ pub use crate::money::{
 };
 pub use crate::money::{ExchangeRate, Money};
 pub use crate::{
-    Decimal, DecimalConstraintError, Error, NonNegativeDecimal, PositiveDecimal, Ratio, Result,
-    RoundingStrategy,
+    Decimal, DecimalConstraintError, Error, MAX_CANONICAL_TOKEN_LEN, NonNegativeDecimal,
+    PositiveDecimal, Ratio, Result, RoundingStrategy,
 };
 
 // Re-export dataframe traits

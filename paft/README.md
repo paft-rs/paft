@@ -311,7 +311,8 @@ Rules to keep in mind:
 - `OtherX::new(..)` rejects tokens that the owning enum parser maps to a known
   variant or alias.
 - Unknown inputs normalize through paft's canonical string rules: trimmed,
-  uppercase ASCII, with separators collapsed.
+  uppercase ASCII, with separators collapsed. Stored `Other` tokens are capped
+  at `MAX_CANONICAL_TOKEN_LEN` bytes.
 - Prefer canonical variants in your own code; reserve `Other` for values the
   provider sent and paft does not model.
 - Match `Other` explicitly, and keep a fallback arm for future canonical

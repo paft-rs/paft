@@ -2,7 +2,7 @@
 
 use std::{borrow::Cow, str::FromStr};
 
-use paft_utils::{Canonical, StringCode, canonicalize, has_canonical_token_boundaries};
+use paft_utils::{Canonical, StringCode, has_canonical_token_boundaries};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::IsoCurrency;
@@ -20,8 +20,9 @@ impl OtherCurrency {
     ///
     /// # Errors
     ///
-    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
-    /// to a modeled [`Currency`] variant.
+    /// Returns an error if `input` is empty, cannot be canonicalized, exceeds
+    /// the canonical token length cap, or parses to a modeled [`Currency`]
+    /// variant.
     pub fn new(input: &str) -> Result<Self, MoneyParseError> {
         match Currency::try_from_str(input)? {
             Currency::Other(code) => Ok(code),
@@ -294,8 +295,12 @@ impl FromStr for Currency {
                 value: input.to_string(),
             });
         }
-        let token = canonicalize(trimmed);
-        let canon = token.as_ref();
+        let canonical =
+            Canonical::try_new(trimmed).map_err(|_| MoneyParseError::InvalidEnumValue {
+                enum_name: "Currency",
+                value: input.to_string(),
+            })?;
+        let canon = canonical.as_ref();
 
         let known = if canon == "BTC" {
             Some(Self::BTC)
@@ -321,11 +326,9 @@ impl FromStr for Currency {
             });
         }
 
-        let other = Canonical::try_new(trimmed).map_err(|_| MoneyParseError::InvalidEnumValue {
-            enum_name: "Currency",
-            value: input.to_string(),
-        })?;
-        Ok(Self::Other(OtherCurrency::from_canonical_unchecked(other)))
+        Ok(Self::Other(OtherCurrency::from_canonical_unchecked(
+            canonical,
+        )))
     }
 }
 

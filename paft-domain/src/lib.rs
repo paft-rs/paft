@@ -67,6 +67,8 @@ pub use period::{
 #[cfg(feature = "dataframe")]
 pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
 
-pub use paft_utils::{Canonical, CanonicalError, StringCode, canonicalize};
+pub use paft_utils::{
+    Canonical, CanonicalError, MAX_CANONICAL_TOKEN_LEN, StringCode, canonicalize,
+};
 
 pub use paft_core::{impl_display_via_code, string_enum_closed_with_code, string_enum_with_code};

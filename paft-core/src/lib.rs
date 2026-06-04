@@ -218,26 +218,18 @@ macro_rules! __string_enum_base {
                         $invalid
                     });
                 }
-                let token = $crate::__utils::canonicalize(trimmed);
+                let canon = $crate::__utils::Canonical::try_new(trimmed)
+                    .map_err(|_| {
+                        let $invalid_input = input;
+                        $invalid
+                    })?;
                 if $crate::__utils::has_canonical_token_boundaries(trimmed) {
-                    let parsed = match token.as_ref() {
-                        $( $alias => $variant, )*
-                        _ => {
-                            let canon = $crate::__utils::Canonical::try_new(trimmed)
-                                .map_err(|_| {
-                                    let $invalid_input = input;
-                                    $invalid
-                                })?;
-                            return Ok($OtherVariant(canon));
-                        }
-                    };
-                    Ok(parsed)
+                    match canon.as_ref() {
+                        $( $alias => return Ok($variant), )*
+                        _ => {}
+                    }
+                    Ok($OtherVariant(canon))
                 } else {
-                    let canon = $crate::__utils::Canonical::try_new(trimmed)
-                        .map_err(|_| {
-                            let $invalid_input = input;
-                            $invalid
-                        })?;
                     if matches!(canon.as_ref(), $( $alias )|*) {
                         return Err({
                             let $invalid_input = input;
@@ -343,26 +335,18 @@ macro_rules! __string_enum_base {
                         $invalid
                     });
                 }
-                let token = $crate::__utils::canonicalize(trimmed);
+                let canon = $crate::__utils::Canonical::try_new(trimmed)
+                    .map_err(|_| {
+                        let $invalid_input = input;
+                        $invalid
+                    })?;
                 if $crate::__utils::has_canonical_token_boundaries(trimmed) {
-                    let parsed = match token.as_ref() {
-                        $( $alias => $variant, )*
-                        _ => {
-                            let canon = $crate::__utils::Canonical::try_new(trimmed)
-                                .map_err(|_| {
-                                    let $invalid_input = input;
-                                    $invalid
-                                })?;
-                            return Ok($OtherVariant(<$OtherCode>::from_canonical_unchecked(canon)));
-                        }
-                    };
-                    Ok(parsed)
+                    match canon.as_ref() {
+                        $( $alias => return Ok($variant), )*
+                        _ => {}
+                    }
+                    Ok($OtherVariant(<$OtherCode>::from_canonical_unchecked(canon)))
                 } else {
-                    let canon = $crate::__utils::Canonical::try_new(trimmed)
-                        .map_err(|_| {
-                            let $invalid_input = input;
-                            $invalid
-                        })?;
                     if matches!(canon.as_ref(), $( $alias )|*) {
                         return Err({
                             let $invalid_input = input;
@@ -429,7 +413,8 @@ macro_rules! other_string_code_type {
             /// # Errors
             ///
             /// Returns an error if the input is empty, cannot be canonicalized,
-            /// or parses to a modeled enum variant.
+            /// exceeds the canonical token length cap, or parses to a modeled
+            /// enum variant.
             pub fn new(input: &str) -> ::std::result::Result<Self, $Error> {
                 match {
                     let $parse_input = input;

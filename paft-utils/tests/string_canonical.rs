@@ -1,5 +1,6 @@
 use paft_utils::{
-    Canonical, CanonicalError, StringCode, canonicalize, has_canonical_token_boundaries,
+    Canonical, CanonicalError, MAX_CANONICAL_TOKEN_LEN, StringCode, canonicalize,
+    has_canonical_token_boundaries,
 };
 use std::borrow::Cow;
 
@@ -113,9 +114,45 @@ fn canonical_try_new_accepts_valid_tokens() {
 }
 
 #[test]
+fn canonical_try_new_rejects_overlong_tokens() {
+    let max = "A".repeat(MAX_CANONICAL_TOKEN_LEN);
+    let canonical = Canonical::try_new(&max).expect("max-length token is accepted");
+    assert_eq!(canonical.as_str(), max);
+
+    let too_long = "A".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+    assert!(matches!(
+        Canonical::try_new(&too_long),
+        Err(CanonicalError::CanonicalTokenTooLong {
+            max_len: MAX_CANONICAL_TOKEN_LEN
+        })
+    ));
+
+    let too_long_after_canonicalization = "a-".repeat(MAX_CANONICAL_TOKEN_LEN);
+    assert!(matches!(
+        Canonical::try_new(&too_long_after_canonicalization),
+        Err(CanonicalError::CanonicalTokenTooLong {
+            max_len: MAX_CANONICAL_TOKEN_LEN
+        })
+    ));
+
+    let trailing_separator_at_limit = format!("{max}-");
+    let canonical =
+        Canonical::try_new(&trailing_separator_at_limit).expect("trailing separator is trimmed");
+    assert_eq!(canonical.as_str(), max);
+
+    let separator_then_token_at_limit = format!("{max}-B");
+    assert!(matches!(
+        Canonical::try_new(&separator_then_token_at_limit),
+        Err(CanonicalError::CanonicalTokenTooLong {
+            max_len: MAX_CANONICAL_TOKEN_LEN
+        })
+    ));
+}
+
+#[test]
 fn canonical_roundtrip_property() {
-    // Test round-trip property: Canonical::try_new(s).map(|c| c.as_str().to_string()) == canonicalize(s)
-    // for all valid inputs that produce non-empty canonical forms
+    // Test round-trip property for inputs that produce non-empty canonical forms
+    // within the stored-token cap.
     let test_cases = vec![
         "USD",
         "usd",
@@ -149,12 +186,14 @@ fn canonical_roundtrip_property() {
                 "Round-trip failed for input: {input:?}"
             );
         }
-        // If Canonical creation fails, canonicalize should produce empty string
+        // If Canonical creation fails, canonicalize should produce an empty or
+        // over-cap token.
         else {
             let canonicalize_result = canonicalize(input);
             assert!(
-                canonicalize_result.as_ref().is_empty(),
-                "Canonical creation failed but canonicalize produced non-empty result for input: {input:?}"
+                canonicalize_result.as_ref().is_empty()
+                    || canonicalize_result.as_ref().len() > MAX_CANONICAL_TOKEN_LEN,
+                "Canonical creation failed but canonicalize produced storable result for input: {input:?}"
             );
         }
     }
@@ -265,8 +304,11 @@ fn canonicalize_separator_collapse_edge_cases() {
 
 #[test]
 fn canonicalize_and_canonical_try_new_are_consistent() {
-    // Test that canonicalize and Canonical::try_new are consistent
-    // Canonical::try_new(s) succeeds iff canonicalize(s) is non-empty
+    // Test that canonicalize and Canonical::try_new are consistent:
+    // Canonical::try_new(s) succeeds iff canonicalize(s) is non-empty and
+    // within the stored-token cap.
+    let max_len_token = "A".repeat(MAX_CANONICAL_TOKEN_LEN);
+    let overlong_token = "A".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
     let test_cases = vec![
         "",         // empty
         "USD",      // valid ASCII
@@ -284,6 +326,8 @@ fn canonicalize_and_canonical_try_new_are_consistent() {
         "FOO__BAR", // double underscore
         "a1B2c3",   // mixed case
         "TEST123",  // mixed alphanumeric
+        &max_len_token,
+        &overlong_token,
     ];
 
     for input in test_cases {
@@ -294,14 +338,16 @@ fn canonicalize_and_canonical_try_new_are_consistent() {
         match canonical_result {
             Ok(_) => {
                 assert!(
-                    !canonicalize_is_empty,
-                    "Canonical::try_new succeeded but canonicalize produced empty for: {input:?}"
+                    !canonicalize_is_empty
+                        && canonicalize_result.as_ref().len() <= MAX_CANONICAL_TOKEN_LEN,
+                    "Canonical::try_new succeeded but canonicalize produced invalid token for: {input:?}"
                 );
             }
             Err(_) => {
                 assert!(
-                    canonicalize_is_empty,
-                    "Canonical::try_new failed but canonicalize produced non-empty for: {input:?}"
+                    canonicalize_is_empty
+                        || canonicalize_result.as_ref().len() > MAX_CANONICAL_TOKEN_LEN,
+                    "Canonical::try_new failed but canonicalize produced storable token for: {input:?}"
                 );
             }
         }
@@ -575,15 +621,16 @@ fn canonicalize_sanity_properties() {
             }
         }
 
-        // Round-trip Canonical: Canonical::try_new(x) succeeds iff !canonicalize(x).is_empty()
+        // Round-trip Canonical: Canonical::try_new(x) succeeds iff
+        // canonicalize(x) produces a non-empty token within the stored-token cap.
         match Canonical::try_new(input) {
             Ok(_) => assert!(
-                !result.as_ref().is_empty(),
-                "Canonical::try_new succeeded but canonicalize produced empty for: {input:?}"
+                !result.as_ref().is_empty() && result.as_ref().len() <= MAX_CANONICAL_TOKEN_LEN,
+                "Canonical::try_new succeeded but canonicalize produced invalid token for: {input:?}"
             ),
             Err(_) => assert!(
-                result.as_ref().is_empty(),
-                "Canonical::try_new failed but canonicalize produced non-empty for: {input:?}"
+                result.as_ref().is_empty() || result.as_ref().len() > MAX_CANONICAL_TOKEN_LEN,
+                "Canonical::try_new failed but canonicalize produced storable token for: {input:?}"
             ),
         }
     }

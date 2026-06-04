@@ -13,10 +13,15 @@ use std::{
 
 /// Canonical string wrapper used for `Other` variants.
 ///
+/// Canonical tokens are capped at [`MAX_CANONICAL_TOKEN_LEN`] bytes. The cap is
+/// intentionally generous for provider enum codes while preventing unbounded
+/// unknown-token storage from untrusted inputs.
+///
 /// Invariants:
 /// - Trimmed
 /// - ASCII uppercased
-/// - Whitespace collapsed to single underscores
+/// - Separator runs collapsed to single underscores
+/// - Non-empty and no longer than [`MAX_CANONICAL_TOKEN_LEN`] bytes
 ///
 /// Backed by [`SmolStr`] so canonical tokens that fit inline (≤ 23 bytes on
 /// 64-bit targets) avoid heap allocation entirely, and longer tokens use an
@@ -26,20 +31,28 @@ use std::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Canonical(SmolStr);
 
+/// Maximum byte length of a canonical `Other` enum token.
+///
+/// Canonical tokens only contain ASCII uppercase letters, digits, and
+/// underscores, so byte length and character count are equivalent.
+pub const MAX_CANONICAL_TOKEN_LEN: usize = 256;
+
 impl Canonical {
     /// Attempts to create a new canonical string from arbitrary input, rejecting
     /// values that would canonicalize to an empty token (e.g., strings composed
-    /// solely of separators or non-alphanumeric characters).
+    /// solely of separators or non-alphanumeric characters), or whose
+    /// canonical form exceeds [`MAX_CANONICAL_TOKEN_LEN`] bytes.
     ///
     /// This should be used by all enum `Other` variants to ensure the emitted
     /// string is always non-empty and round-trips via serde and `Display`.
     ///
     /// # Errors
     ///
-    /// Returns `CanonicalError::InvalidCanonicalToken` when the canonicalized token would
-    /// be empty.
+    /// Returns [`CanonicalError::InvalidCanonicalToken`] when the canonicalized
+    /// token would be empty, or [`CanonicalError::CanonicalTokenTooLong`] when
+    /// it would exceed [`MAX_CANONICAL_TOKEN_LEN`] bytes.
     pub fn try_new(input: &str) -> Result<Self, CanonicalError> {
-        let token = canonicalize(input);
+        let token = canonicalize_bounded(input)?;
         if token.is_empty() {
             return Err(CanonicalError::InvalidCanonicalToken {
                 value: input.to_string(),
@@ -61,6 +74,41 @@ impl Canonical {
     pub fn into_inner(self) -> String {
         self.0.to_string()
     }
+}
+
+fn canonicalize_bounded(input: &str) -> Result<Cow<'_, str>, CanonicalError> {
+    if is_canonical(input) {
+        if input.len() > MAX_CANONICAL_TOKEN_LEN {
+            return Err(CanonicalError::CanonicalTokenTooLong {
+                max_len: MAX_CANONICAL_TOKEN_LEN,
+            });
+        }
+        return Ok(Cow::Borrowed(input));
+    }
+
+    let mut out = String::with_capacity(input.len().min(MAX_CANONICAL_TOKEN_LEN));
+    let mut pending_sep = false;
+
+    for ch in input.chars() {
+        let c = ch.to_ascii_uppercase();
+        if c.is_ascii_alphanumeric() {
+            let sep_len = usize::from(pending_sep);
+            if out.len() + sep_len + 1 > MAX_CANONICAL_TOKEN_LEN {
+                return Err(CanonicalError::CanonicalTokenTooLong {
+                    max_len: MAX_CANONICAL_TOKEN_LEN,
+                });
+            }
+            if pending_sep {
+                out.push('_');
+            }
+            out.push(c);
+            pending_sep = false;
+        } else if !out.is_empty() {
+            pending_sep = true;
+        }
+    }
+
+    Ok(Cow::Owned(out))
 }
 
 impl fmt::Display for Canonical {
@@ -202,5 +250,11 @@ pub enum CanonicalError {
     InvalidCanonicalToken {
         /// The original input that failed to produce a canonical token.
         value: String,
+    },
+    /// Canonical token exceeded the configured maximum length.
+    #[error("canonical token exceeds maximum length of {max_len} bytes")]
+    CanonicalTokenTooLong {
+        /// Maximum accepted canonical token length in bytes.
+        max_len: usize,
     },
 }

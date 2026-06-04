@@ -1,6 +1,6 @@
 use paft_domain::{
-    AssetKind, DomainError, Exchange, Horizon, MarketState, OtherAssetKind, OtherExchange,
-    OtherHorizon, OtherMarketState, OtherPeriod, ReportingPeriod,
+    AssetKind, DomainError, Exchange, Horizon, MAX_CANONICAL_TOKEN_LEN, MarketState,
+    OtherAssetKind, OtherExchange, OtherHorizon, OtherMarketState, OtherPeriod, ReportingPeriod,
 };
 use paft_money::{Currency, OtherCurrency};
 use std::str::FromStr;
@@ -233,6 +233,33 @@ fn other_wrappers_reject_modeled_core_tokens() {
         OtherMarketState::new("pre-pre").unwrap().as_ref(),
         "PRE_PRE"
     );
+}
+
+#[test]
+fn other_wrappers_reject_overlong_core_tokens() {
+    let input = "x".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+
+    assert!(OtherCurrency::new(&input).is_err());
+    assert!(Currency::from_str(&input).is_err());
+
+    assert!(OtherExchange::new(&input).is_err());
+    assert!(Exchange::from_str(&input).is_err());
+
+    assert!(OtherAssetKind::new(&input).is_err());
+    assert!(AssetKind::from_str(&input).is_err());
+
+    assert!(OtherPeriod::new(&input).is_err());
+    assert!(ReportingPeriod::from_str(&input).is_err());
+
+    assert!(OtherHorizon::new(&input).is_err());
+    assert!(Horizon::from_str(&input).is_err());
+
+    assert!(OtherMarketState::new(&input).is_err());
+    assert!(MarketState::from_str(&input).is_err());
+
+    let json = serde_json::to_string(&input).unwrap();
+    assert!(serde_json::from_str::<OtherExchange>(&json).is_err());
+    assert!(serde_json::from_str::<Exchange>(&json).is_err());
 }
 
 #[test]

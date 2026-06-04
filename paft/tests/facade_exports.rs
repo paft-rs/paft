@@ -74,6 +74,14 @@ fn period_date_is_available_from_facade_and_prelude() {
     assert_export::<paft::prelude::ReportingPeriod>();
     assert_export::<paft::domain::PeriodDate>();
     assert_export::<paft::prelude::PeriodDate>();
+    assert_eq!(
+        paft::domain::MAX_CANONICAL_TOKEN_LEN,
+        paft::prelude::MAX_CANONICAL_TOKEN_LEN
+    );
+    assert_eq!(
+        paft::MAX_CANONICAL_TOKEN_LEN,
+        paft::money::MAX_CANONICAL_TOKEN_LEN
+    );
 }
 
 #[cfg(feature = "market")]

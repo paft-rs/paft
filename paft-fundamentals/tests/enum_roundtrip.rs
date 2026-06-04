@@ -6,6 +6,7 @@ use paft_fundamentals::holders::{
     InsiderPosition, OtherInsiderPosition, OtherTransactionType, TransactionType,
 };
 use paft_fundamentals::profile::{FundKind, OtherFundKind};
+use paft_utils::MAX_CANONICAL_TOKEN_LEN;
 use std::str::FromStr;
 
 fn assert_display_parse_display_idempotent<T>(token: &str)
@@ -146,6 +147,30 @@ fn other_wrappers_reject_modeled_fundamentals_tokens() {
         OtherFundKind::new("interval fund").unwrap().as_ref(),
         "INTERVAL_FUND"
     );
+}
+
+#[test]
+fn other_wrappers_reject_overlong_fundamentals_tokens() {
+    let input = "x".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+
+    assert!(OtherRecommendationGrade::new(&input).is_err());
+    assert!(RecommendationGrade::from_str(&input).is_err());
+
+    assert!(OtherRecommendationAction::new(&input).is_err());
+    assert!(RecommendationAction::from_str(&input).is_err());
+
+    assert!(OtherTransactionType::new(&input).is_err());
+    assert!(TransactionType::from_str(&input).is_err());
+
+    assert!(OtherInsiderPosition::new(&input).is_err());
+    assert!(InsiderPosition::from_str(&input).is_err());
+
+    assert!(OtherFundKind::new(&input).is_err());
+    assert!(FundKind::from_str(&input).is_err());
+
+    let json = serde_json::to_string(&input).unwrap();
+    assert!(serde_json::from_str::<OtherRecommendationGrade>(&json).is_err());
+    assert!(serde_json::from_str::<RecommendationGrade>(&json).is_err());
 }
 
 #[test]

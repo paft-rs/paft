@@ -31,6 +31,7 @@
 
 pub mod error;
 pub use error::{Error, Result};
+pub use paft_utils::MAX_CANONICAL_TOKEN_LEN;
 
 /// Namespaced access to `paft-core`.
 pub mod core {
@@ -44,9 +45,9 @@ pub mod core {
 pub mod domain {
     pub use paft_domain::{
         AssetKind, CalendarPeriod, Canonical, CanonicalError, DomainError, Exchange, Figi, Horizon,
-        Instrument, Isin, MarketState, OtherAssetKind, OtherExchange, OtherHorizon,
-        OtherMarketState, OtherPeriod, PeriodDate, PeriodYear, QuarterOfYear, ReportingPeriod,
-        StringCode, Symbol, canonicalize,
+        Instrument, Isin, MAX_CANONICAL_TOKEN_LEN, MarketState, OtherAssetKind, OtherExchange,
+        OtherHorizon, OtherMarketState, OtherPeriod, PeriodDate, PeriodYear, QuarterOfYear,
+        ReportingPeriod, StringCode, Symbol, canonicalize,
     };
     #[cfg(feature = "dataframe")]
     pub use paft_domain::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
@@ -86,6 +87,7 @@ pub mod money {
         clear_currency_metadata, currency_metadata, override_currency_metadata,
         set_currency_metadata, try_normalize_currency_code,
     };
+    pub use paft_utils::MAX_CANONICAL_TOKEN_LEN;
 }
 
 /// Direct access to decimal types.

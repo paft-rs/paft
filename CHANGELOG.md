@@ -216,6 +216,9 @@ All notable changes to this project will be documented in this file.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
   payloads can no longer use tokens already modeled by the owning enum,
   preserving serde identity for values created through public constructors.
+- Utils/core/domain/money/fundamentals: canonical `Other` enum tokens now reject
+  canonical forms longer than `MAX_CANONICAL_TOKEN_LEN` (256 bytes), preventing
+  unbounded unknown-token storage and round-tripping from untrusted inputs.
 
 ### Breaking Changes
 
@@ -247,6 +250,8 @@ All notable changes to this project will be documented in this file.
 - Money/facade: `set_currency_metadata` no longer changes `minor_units` for a
   code with a known scale; use `override_currency_metadata` for explicit
   replacement.
+- Domain/money/fundamentals/facade: extensible enum constructors, parsers, and
+  serde now reject unknown `Other` tokens whose canonical form exceeds 256 bytes.
 - Decimal/money/market/fundamentals: decimal-backed JSON fields now emit
   canonical strings without gratuitous trailing zeroes, so values such as
   `"12.340"` serialize as `"12.34"` regardless of backend.

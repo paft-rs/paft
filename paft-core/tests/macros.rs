@@ -12,7 +12,7 @@
 
 #![allow(clippy::items_after_statements)]
 
-use paft_core::__utils::{Canonical, StringCode};
+use paft_core::__utils::{Canonical, MAX_CANONICAL_TOKEN_LEN, StringCode};
 use paft_core::PaftError;
 
 // ---------- Closed enum ----------
@@ -252,6 +252,19 @@ fn open_input_canonicalising_to_empty_is_rejected_not_other() {
 }
 
 #[test]
+fn open_unknown_input_over_token_cap_is_rejected_not_other() {
+    let input = "x".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+    let err = input.parse::<Venue>().unwrap_err();
+    assert!(matches!(
+        err,
+        PaftError::InvalidEnumValue { enum_name, value }
+            if enum_name == "Venue" && value == input
+    ));
+
+    assert!(serde_json::from_str::<Venue>(&format!("\"{input}\"")).is_err());
+}
+
+#[test]
 fn open_try_from_string_and_into_string() {
     let v = Venue::try_from(String::from("nasdaq")).unwrap();
     assert_eq!(v, Venue::Nasdaq);
@@ -310,6 +323,13 @@ fn other_string_code_wrapper_serde_uses_checked_constructor() {
 
     assert!(serde_json::from_str::<OtherListingVenue>("\"PRIMARY\"").is_err());
     assert!(serde_json::from_str::<OtherListingVenue>("\"main\"").is_err());
+}
+
+#[test]
+fn other_string_code_wrapper_rejects_over_token_cap() {
+    let input = "x".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+    assert!(OtherListingVenue::new(&input).is_err());
+    assert!(serde_json::from_str::<OtherListingVenue>(&format!("\"{input}\"")).is_err());
 }
 
 // ---------- Macro hygiene smoke test ----------
