@@ -140,6 +140,8 @@ All notable changes to this project will be documented in this file.
   active decimal backend precision instead of attempting unbounded zero padding.
 - Money: localized parsing now delegates to `Money::new_exact`, encoding its
   no-implicit-rounding contract at construction.
+- Money: `Money` and `ExchangeRate` JSON deserialization now rejects unknown
+  top-level fields instead of silently ignoring stale wire payloads.
 - Money: existing `Money` values now capture their resolved minor-unit scale,
   so later custom metadata changes or clears cannot reinterpret
   `as_minor_units()` or same-currency arithmetic.

@@ -151,6 +151,7 @@ impl ExchangeRate {
 /// [`ExchangeRate::new`] so validation cannot be skipped. Any field added to
 /// `ExchangeRate` must be reflected here too.
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ExchangeRateShadow {
     from: Currency,
     to: Currency,
@@ -791,6 +792,7 @@ impl CurrencyAmount for Money {
 /// breaking `Hash`/`Eq` consistency under `bigdecimal` and silently
 /// admitting over-precise values.
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct MoneyShadow {
     #[serde(with = "paft_decimal::serde::canonical_str")]
     amount: Decimal,

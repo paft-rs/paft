@@ -565,6 +565,16 @@ fn money_serde_accepts_trailing_zero_amount() {
 }
 
 #[test]
+fn money_serde_rejects_unknown_fields() {
+    let raw = "{\"amount\":\"12.34\",\"currency\":\"USD\",\"minor_units\":999}";
+    let err = serde_json::from_str::<Money>(raw).unwrap_err();
+    assert!(
+        err.to_string().contains("unknown field `minor_units`"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
 fn exchange_rate_new_accepts_identity_with_one() {
     let rate = ExchangeRate::new(
         Currency::Iso(IsoCurrency::USD),
@@ -630,6 +640,16 @@ fn exchange_rate_serde_rejects_invalid_payload() {
     // Zero rate is rejected.
     let raw_zero = "{\"from\":\"USD\",\"to\":\"EUR\",\"rate\":\"0\"}";
     assert!(serde_json::from_str::<ExchangeRate>(raw_zero).is_err());
+}
+
+#[test]
+fn exchange_rate_serde_rejects_unknown_fields() {
+    let raw = "{\"from\":\"USD\",\"to\":\"EUR\",\"rate\":\"0.9\",\"source\":\"provider\"}";
+    let err = serde_json::from_str::<ExchangeRate>(raw).unwrap_err();
+    assert!(
+        err.to_string().contains("unknown field `source`"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]
