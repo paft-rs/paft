@@ -165,8 +165,9 @@ impl<'de> Deserialize<'de> for ExchangeRate {
 /// Construct via [`Money::new`] (rounds to the currency's exponent),
 /// [`Money::new_exact`] (rejects over-precise input), or
 /// [`Money::from_canonical_str`] (which delegates to `new_exact`).
-/// Deserialization also funnels through `new_exact`, so untrusted JSON cannot
-/// produce a `Money` with a scale beyond the currency's `decimal_places()`.
+/// Deserialization carries and validates the captured `minor_units` scale, so
+/// JSON cannot silently reinterpret the settlement scale through whatever
+/// metadata registry happens to exist in the receiving process.
 ///
 /// The resolved minor-unit scale is captured at construction. This keeps an
 /// existing `Money` value's arithmetic and minor-unit conversion stable even
@@ -183,7 +184,7 @@ impl<'de> Deserialize<'de> for ExchangeRate {
 /// # use paft_money::{Currency, Money};
 /// let usd = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD)).unwrap();
 /// let json = serde_json::to_string(&usd).unwrap();
-/// assert_eq!(json, "{\"amount\":\"12.34\",\"currency\":\"USD\"}");
+/// assert_eq!(json, "{\"amount\":\"12.34\",\"currency\":\"USD\",\"minor_units\":2}");
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
@@ -195,7 +196,6 @@ pub struct Money {
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     currency: Currency,
     /// Minor-unit scale resolved when the value was created.
-    #[serde(skip)]
     #[cfg_attr(feature = "dataframe", df_derive(skip))]
     minor_units: u8,
 }
@@ -245,9 +245,9 @@ impl Money {
     /// arriving over the wire — share the same internal representation
     /// regardless of how their string form was written.
     ///
-    /// This is the constructor used by [`Money::from_canonical_str`] and by
-    /// `serde::Deserialize`, so untrusted JSON cannot smuggle in an over-
-    /// precise amount.
+    /// This is the constructor used by [`Money::from_canonical_str`]. Serde
+    /// deserialization applies the same exact-scale validation to the
+    /// serialized `minor_units` field.
     ///
     /// # Errors
     /// - Returns `MoneyError::MetadataNotFound` when metadata is not registered.
@@ -261,18 +261,7 @@ impl Money {
     #[allow(clippy::needless_pass_by_value)]
     pub fn new_exact(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
         let (minor_units, scale) = Self::scale_for_currency(&currency)?;
-        // Round toward zero so any rounding "decision" turns into a pure
-        // truncation: if even one fractional digit would have been dropped,
-        // the truncated value differs from the original.
-        let canonical = decimal::round_dp_with_strategy(&amount, scale, RoundingStrategy::ToZero);
-        if canonical != amount {
-            let actual_scale = u32::try_from(decimal_scale(&amount)).unwrap_or(u32::MAX);
-            return Err(MoneyError::PrecisionExceeded {
-                currency_code: currency.code().to_string(),
-                max_scale: scale,
-                actual_scale,
-            });
-        }
+        let canonical = Self::canonicalize_exact_amount(&amount, &currency, scale)?;
         Ok(Self {
             amount: canonical,
             currency,
@@ -638,6 +627,26 @@ impl Money {
         decimal::round_dp_with_strategy(amount, scale, RoundingStrategy::MidpointAwayFromZero)
     }
 
+    fn canonicalize_exact_amount(
+        amount: &Decimal,
+        currency: &Currency,
+        scale: u32,
+    ) -> Result<Decimal, MoneyError> {
+        // Round toward zero so any rounding "decision" turns into a pure
+        // truncation: if even one fractional digit would have been dropped,
+        // the truncated value differs from the original.
+        let canonical = decimal::round_dp_with_strategy(amount, scale, RoundingStrategy::ToZero);
+        if canonical != *amount {
+            let actual_scale = u32::try_from(decimal_scale(amount)).unwrap_or(u32::MAX);
+            return Err(MoneyError::PrecisionExceeded {
+                currency_code: currency.code().to_string(),
+                max_scale: scale,
+                actual_scale,
+            });
+        }
+        Ok(canonical)
+    }
+
     fn from_rounded_parts(amount: &Decimal, currency: Currency, minor_units: u8) -> Self {
         let scale = Self::ensure_scale_within_limits(minor_units)
             .expect("stored minor-unit scale was validated at construction");
@@ -663,6 +672,37 @@ impl Money {
             });
         }
         Ok(())
+    }
+
+    fn from_serialized_parts(
+        amount: &Decimal,
+        currency: Currency,
+        minor_units: u8,
+    ) -> Result<Self, MoneyError> {
+        let scale = Self::ensure_scale_within_limits(minor_units)?;
+        let amount = Self::canonicalize_exact_amount(amount, &currency, scale)?;
+        Self::ensure_serialized_scale_matches_metadata(&currency, minor_units)?;
+
+        Ok(Self {
+            amount,
+            currency,
+            minor_units,
+        })
+    }
+
+    fn ensure_serialized_scale_matches_metadata(
+        currency: &Currency,
+        minor_units: u8,
+    ) -> Result<(), MoneyError> {
+        match Self::decimals_for_currency(currency) {
+            Ok(expected) if expected != minor_units => Err(MoneyError::MinorUnitMismatch {
+                currency: currency.clone(),
+                expected_scale: expected,
+                found_scale: minor_units,
+            }),
+            Ok(_) | Err(MoneyError::MetadataNotFound { .. }) => Ok(()),
+            Err(err) => Err(err),
+        }
     }
 
     #[cfg(feature = "panicking-money-ops")]
@@ -766,18 +806,19 @@ impl CurrencyAmount for Money {
 /// Shadow type used for deserializing [`Money`].
 ///
 /// Matches the on-the-wire shape produced by the `Serialize` derive but
-/// routes the deserialised values through [`Money::new_exact`] so that
-/// validation, scale canonicalization, and metadata lookup happen on the
-/// deserialised path. Without this, `#[derive(Deserialize)]` would build a
-/// `Money` whose `amount` retained whatever scale was in the JSON,
-/// breaking `Hash`/`Eq` consistency under `bigdecimal` and silently
-/// admitting over-precise values.
+/// routes the deserialised values through `Money::from_serialized_parts` so
+/// amount validation and scale compatibility cannot be skipped. The serialized
+/// `minor_units` field is part of the value identity: if current metadata is
+/// missing, it is enough to reconstruct the captured scale; if current metadata
+/// exists but disagrees, deserialization rejects the payload instead of
+/// silently reinterpreting it.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct MoneyShadow {
     #[serde(with = "paft_decimal::serde::canonical_str")]
     amount: Decimal,
     currency: Currency,
+    minor_units: u8,
 }
 
 impl<'de> Deserialize<'de> for Money {
@@ -786,7 +827,8 @@ impl<'de> Deserialize<'de> for Money {
         D: Deserializer<'de>,
     {
         let shadow = MoneyShadow::deserialize(deserializer)?;
-        Self::new_exact(shadow.amount, shadow.currency).map_err(serde::de::Error::custom)
+        Self::from_serialized_parts(&shadow.amount, shadow.currency, shadow.minor_units)
+            .map_err(serde::de::Error::custom)
     }
 }
 

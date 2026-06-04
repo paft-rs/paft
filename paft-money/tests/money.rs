@@ -545,10 +545,10 @@ fn money_hash_eq_consistency_across_scales() {
 #[test]
 fn money_serde_rejects_overprecise_amount() {
     // Bypass the Money struct's own constructors and feed serde a value
-    // whose scale exceeds USD's exponent. Without the custom Deserialize
-    // impl this would silently produce a malformed Money; with it, serde
-    // returns an error.
-    let raw = "{\"amount\":\"1.234\",\"currency\":\"USD\"}";
+    // whose scale exceeds the captured minor-unit scale. Without the custom
+    // Deserialize impl this would silently produce a malformed Money; with it,
+    // serde returns an error.
+    let raw = "{\"amount\":\"1.234\",\"currency\":\"USD\",\"minor_units\":2}";
     let err = serde_json::from_str::<Money>(raw).unwrap_err();
     assert!(
         err.to_string().contains("precision exceeded"),
@@ -558,18 +558,63 @@ fn money_serde_rejects_overprecise_amount() {
 
 #[test]
 fn money_serde_accepts_trailing_zero_amount() {
-    let raw = "{\"amount\":\"1.230\",\"currency\":\"USD\"}";
+    let raw = "{\"amount\":\"1.230\",\"currency\":\"USD\",\"minor_units\":2}";
     let money: Money = serde_json::from_str(raw).unwrap();
     let expected = Money::from_canonical_str("1.23", Currency::Iso(IsoCurrency::USD)).unwrap();
     assert_eq!(money, expected);
 }
 
 #[test]
-fn money_serde_rejects_unknown_fields() {
-    let raw = "{\"amount\":\"12.34\",\"currency\":\"USD\",\"minor_units\":999}";
+fn money_serde_preserves_captured_scale_without_current_metadata() {
+    let code = "money_serde_freeze";
+    clear_currency_metadata(code);
+    set_test_metadata(code, 3);
+
+    let currency = Currency::other(code).unwrap();
+    let original = Money::from_canonical_str("1.234", currency.clone()).unwrap();
+    let json = serde_json::to_string(&original).unwrap();
+
+    clear_currency_metadata(code);
+    assert!(currency.decimal_places().is_err());
+
+    let decoded: Money = serde_json::from_str(&json).unwrap();
+    assert_eq!(decoded, original);
+    assert_eq!(decoded.minor_units(), 3);
+    assert_eq!(decoded.as_minor_units().unwrap(), 1234);
+}
+
+#[test]
+fn money_serde_rejects_current_metadata_scale_conflict() {
+    let code = "money_serde_conflict";
+    clear_currency_metadata(code);
+    set_test_metadata(code, 2);
+
+    let raw = "{\"amount\":\"1.23\",\"currency\":\"MONEY_SERDE_CONFLICT\",\"minor_units\":3}";
     let err = serde_json::from_str::<Money>(raw).unwrap_err();
     assert!(
-        err.to_string().contains("unknown field `minor_units`"),
+        err.to_string().contains("minor-unit scale mismatch"),
+        "unexpected error: {err}"
+    );
+
+    clear_currency_metadata(code);
+}
+
+#[test]
+fn money_serde_rejects_missing_minor_units() {
+    let raw = "{\"amount\":\"12.34\",\"currency\":\"USD\"}";
+    let err = serde_json::from_str::<Money>(raw).unwrap_err();
+    assert!(
+        err.to_string().contains("missing field `minor_units`"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn money_serde_rejects_unknown_fields() {
+    let raw = "{\"amount\":\"12.34\",\"currency\":\"USD\",\"minor_units\":2,\"extra\":true}";
+    let err = serde_json::from_str::<Money>(raw).unwrap_err();
+    assert!(
+        err.to_string().contains("unknown field `extra`"),
         "unexpected error: {err}"
     );
 }

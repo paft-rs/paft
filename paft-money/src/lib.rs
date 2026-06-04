@@ -28,6 +28,11 @@
 //! change `minor_units`; use [`override_currency_metadata`] when a scale change
 //! is intentional. `Money` captures the resolved scale at construction, so
 //! existing values are not reinterpreted by later registry changes.
+//! Serialized `Money` values also carry this captured `minor_units` scale. On
+//! deserialization, the serialized scale is validated against the amount and is
+//! enough to reconstruct values whose custom metadata is currently absent. If
+//! metadata is present but resolves to a different scale, deserialization fails
+//! rather than silently changing equality, hashing, or arithmetic compatibility.
 //! Metadata display fields are the source of truth for non-ISO currency names
 //! and for localized formatting metadata. ISO currencies keep their ISO 4217
 //! name and, when ISO defines an exponent, their ISO minor-unit scale.
@@ -52,14 +57,15 @@
 //! precision backed by big integers.
 //!
 //! The public API, serde representation (amounts encoded as strings, currencies
-//! as ISO codes), and `DataFrame` integration remain stable across backends. The
-//! primary trade-offs are performance (the `bigdecimal` backend may allocate
-//! more often) and precision (see [`MAX_DECIMAL_PRECISION`]). Minor-unit scaling
-//! always uses 64-bit integers (`10_i64.pow(scale)`) and is therefore capped
-//! at 18 decimal places — see [`MAX_MINOR_UNIT_DECIMALS`]. Beyond that, the
-//! cap-line shift would push `10^scale` outside `i64`. The minor-unit
-//! integer itself is widened to `i128` before/after scaling, while each
-//! backend still enforces its own decimal representation limits.
+//! as ISO codes, and `Money` carrying its captured `minor_units`), and
+//! `DataFrame` integration remain stable across backends. The primary trade-offs
+//! are performance (the `bigdecimal` backend may allocate more often) and
+//! precision (see [`MAX_DECIMAL_PRECISION`]). Minor-unit scaling always uses
+//! 64-bit integers (`10_i64.pow(scale)`) and is therefore capped at 18 decimal
+//! places — see [`MAX_MINOR_UNIT_DECIMALS`]. Beyond that, the cap-line shift
+//! would push `10^scale` outside `i64`. The minor-unit integer itself is widened
+//! to `i128` before/after scaling, while each backend still enforces its own
+//! decimal representation limits.
 //!
 //! # Currency value types
 //!
@@ -142,16 +148,23 @@
 //!
 //! # Serde
 //!
-//! Amounts serialize as strings (to avoid exponent notation); currencies serialize
-//! as their codes. Example:
+//! Amounts serialize as strings (to avoid exponent notation), currencies
+//! serialize as their codes, and `Money` serializes the captured `minor_units`
+//! scale that participates in equality, hashing, and arithmetic compatibility.
+//! Example:
 //!
 //! ```rust
 //! # use paft_money::IsoCurrency;
 //! # use paft_money::{Currency, Money};
 //! let usd = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD)).unwrap();
 //! let json = serde_json::to_string(&usd).unwrap();
-//! assert_eq!(json, "{\"amount\":\"12.34\",\"currency\":\"USD\"}");
+//! assert_eq!(json, "{\"amount\":\"12.34\",\"currency\":\"USD\",\"minor_units\":2}");
 //! ```
+//!
+//! Deserialization validates the amount against serialized `minor_units`. If
+//! metadata for the currency is currently registered and resolves to a different
+//! scale, the payload is rejected; if metadata is absent for a custom/ISO-None
+//! currency, the serialized scale preserves the captured settlement semantics.
 //!
 //! # Currency metadata overlays
 //!
@@ -176,7 +189,9 @@
 //! Existing `Money` values retain the scale resolved at construction. Updating
 //! or clearing the process-local registry can affect future construction and
 //! formatting metadata, but not minor-unit conversion for values that already
-//! exist.
+//! exist. Serialized `Money` values carry that retained scale as `minor_units`;
+//! conflicting current metadata is rejected at deserialization instead of
+//! silently changing the value's identity.
 //! For modeled non-ISO currencies such as `BTC`, `ETH`, and `XMR`, metadata is
 //! also the source of truth for `Currency::full_name()`. ISO currency names are
 //! resolved from ISO 4217 even if metadata is registered for formatting.

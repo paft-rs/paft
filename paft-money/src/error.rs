@@ -31,17 +31,18 @@ pub enum MoneyError {
         /// The actual currency found.
         found: Currency,
     },
-    /// Occurs when two `Money` values carry the same currency code but were
-    /// constructed against different minor-unit scales.
+    /// Occurs when two `Money` values, or a serialized `Money` payload and
+    /// current metadata, carry the same currency code with different
+    /// minor-unit scales.
     #[error(
         "minor-unit scale mismatch for {currency}: expected {expected_scale}, found {found_scale}"
     )]
     MinorUnitMismatch {
         /// The currency whose scale differs.
         currency: Currency,
-        /// The scale carried by the left-hand value.
+        /// The scale carried by the left-hand value or current metadata.
         expected_scale: u8,
-        /// The scale carried by the right-hand value.
+        /// The scale carried by the right-hand value or serialized payload.
         found_scale: u8,
     },
     /// Occurs when converting a Money amount to cents fails due to overflow or precision issues.
@@ -77,11 +78,11 @@ pub enum MoneyError {
     /// Occurs when parsing a decimal amount fails.
     #[error("invalid decimal")]
     InvalidDecimal,
-    /// Occurs when an amount cannot be represented exactly at the currency's
-    /// scale. Returned by [`crate::Money::new_exact`] (and therefore by
-    /// [`crate::Money::from_canonical_str`] and serde deserialization) when
-    /// the supplied value carries more fractional precision than the
-    /// currency's `decimal_places()`.
+    /// Occurs when an amount cannot be represented exactly at the applicable
+    /// minor-unit scale. Returned by [`crate::Money::new_exact`] (and therefore
+    /// by [`crate::Money::from_canonical_str`]) when the supplied value carries
+    /// more fractional precision than the currency's `decimal_places()`, and
+    /// by serde deserialization when it exceeds the serialized `minor_units`.
     #[error(
         "precision exceeded for {currency_code}: max scale {max_scale}, actual scale {actual_scale}"
     )]

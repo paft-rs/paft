@@ -66,6 +66,10 @@ All notable changes to this project will be documented in this file.
 - Decimal/money/market/fundamentals: decimal-backed serde fields now serialize
   through canonical strings from `paft-decimal`, independent of the active
   decimal backend.
+- Money: JSON now includes the captured `minor_units` scale, and deserialization
+  requires it so `Money` wire values are self-contained with respect to
+  equality, hashing, minor-unit conversion, and same-currency arithmetic
+  compatibility.
 - Decimal/money/utils: backend-specific decimal cloning, checked arithmetic,
   precision limits, and decimal128 mantissa encoding now live behind
   `paft-decimal` APIs so downstream crates do not infer the active decimal
@@ -172,6 +176,10 @@ All notable changes to this project will be documented in this file.
 - Money: existing `Money` values now capture their resolved minor-unit scale,
   so later custom metadata changes or clears cannot reinterpret
   `as_minor_units()` or same-currency arithmetic.
+- Money: deserialization now validates the serialized `minor_units` scale and
+  rejects payloads when currently registered currency metadata conflicts,
+  instead of recomputing the scale from process-local metadata and silently
+  changing the value identity.
 - Money: `as_minor_units()` now rejects non-integral scaled decimals before
   converting to `i128`.
 - Decimal/money: constrained decimal and contextual amount `Display`

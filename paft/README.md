@@ -70,6 +70,10 @@ All features are optional—disable the defaults (`default-features = false`) an
 - Extensible enum `Other` variants now carry enum-specific wrappers such as
   `OtherCurrency`, `OtherExchange`, and `OtherPeriod`; construct unknown
   values with `Type::other(..)` or `OtherType::new(..)`.
+- `Money` JSON now includes `minor_units`, the settlement scale captured at
+  construction. Deserialization requires this field, validates the amount
+  against it, and rejects payloads when current currency metadata is present
+  with a conflicting scale.
 - `Instrument` is a flat struct (`symbol`, `exchange`, `figi`, `isin`, `kind`); `IdentifierScheme`, `SecurityId`, and `PredictionID` are gone. Construct with the `from_*` helpers or a struct literal; access identifier fields directly (e.g. `inst.figi.as_ref()`). Prediction-market outcomes now live in `paft-prediction` as `PredictionInstrument`.
 - `Instrument::figi` and `Instrument::isin` are typed `Option<Figi>` / `Option<Isin>`. Construct with `Figi::new("...")` and `Isin::new("...")`. When you need `&str`, use helpers like `inst.figi.as_ref().map(AsRef::as_ref)`.
 - `CompanyProfile::isin` and `FundProfile::isin` now store `Option<Isin>`; update struct literals to pass `Isin::new(..)?` and adjust deserialization expectations accordingly.

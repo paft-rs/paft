@@ -119,6 +119,23 @@ assert_eq!(total.format(), "13.57 USD");
 # Ok::<(), paft_money::MoneyError>(())
 ```
 
+Serde and captured scales
+-------------------------
+
+`Money` JSON is self-contained with respect to settlement scale:
+
+```json
+{"amount":"12.34","currency":"USD","minor_units":2}
+```
+
+The `minor_units` field is the scale captured when the value was constructed,
+and it participates in equality, hashing, `as_minor_units()`, and same-currency
+arithmetic compatibility. Deserialization validates the amount against this
+serialized scale. If current metadata exists for the currency and disagrees
+with the serialized scale, the payload is rejected; if metadata is absent for a
+custom/ISO-None currency, the serialized scale is enough to restore the value's
+captured settlement semantics.
+
 Locale-aware formatting
 -----------------------
 

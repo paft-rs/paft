@@ -163,7 +163,10 @@ fn exchange_rate_conversion_handles_boundary_scales() {
 fn serde_roundtrips_money_and_exchange_rate() {
     let money = Money::from_canonical_str("123.45", usd()).unwrap();
     let value = to_value(&money).unwrap();
-    assert_eq!(value, json!({"amount": "123.45", "currency": "USD"}));
+    assert_eq!(
+        value,
+        json!({"amount": "123.45", "currency": "USD", "minor_units": 2})
+    );
     let parsed: Money = from_value(value).unwrap();
     assert_eq!(parsed, money);
 
