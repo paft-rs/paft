@@ -1,5 +1,5 @@
 #![cfg(feature = "dataframe")]
-use chrono::{TimeZone, Utc};
+use chrono::{NaiveDate, TimeZone, Utc};
 use paft_decimal::{Decimal, Ratio};
 use paft_domain::{Horizon, Isin, PeriodYear, ReportingPeriod};
 use paft_fundamentals::{
@@ -39,6 +39,10 @@ fn ratio(value: &str) -> Ratio {
 }
 fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
     Utc.timestamp_opt(secs, 0).unwrap()
+}
+
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, day).unwrap()
 }
 
 #[test]
@@ -338,8 +342,8 @@ fn cashflow_row_to_dataframe() {
 fn calendar_to_dataframe() {
     let calendar = Calendar {
         earnings_dates: vec![sample_ts(1_700_000_000)],
-        ex_dividend_date: Some(sample_ts(1_700_086_400)),
-        dividend_payment_date: Some(sample_ts(1_700_172_800)),
+        ex_dividend_date: Some(date(2023, 11, 15)),
+        dividend_payment_date: Some(date(2023, 11, 16)),
     };
 
     let df = calendar.to_dataframe().unwrap();
@@ -357,7 +361,7 @@ fn key_statistics_to_dataframe() {
         dividend_per_share_forward: Some(usd_price(1)),
         dividend_yield_trailing: Some(dec("0.0050")),
         dividend_yield_forward: Some(dec("0.0055")),
-        ex_dividend_date: Some(sample_ts(1_700_086_400)),
+        ex_dividend_date: Some(date(2023, 11, 15)),
         fifty_two_week_high: Some(usd_price(200)),
         fifty_two_week_low: Some(usd_price(120)),
         average_daily_volume_3m: Some(55_000_000),
@@ -390,7 +394,7 @@ fn institutional_holder_to_dataframe() {
     let holder = InstitutionalHolder {
         holder: "Example Fund".to_string(),
         shares: Some(10_000),
-        date_reported: sample_ts(1_600_000_000),
+        date_reported: date(2020, 9, 13),
         pct_held: Some(ratio("0.12")),
         value: Some(usd(1_200)),
     };
@@ -407,7 +411,7 @@ fn insider_transaction_to_dataframe() {
         transaction_type: TransactionType::Buy,
         shares: Some(1_500),
         value: Some(usd(200)),
-        transaction_date: sample_ts(1_650_000_000),
+        transaction_date: date(2022, 4, 15),
         url: Some("https://example.com/filing".to_string()),
     };
 
@@ -421,9 +425,9 @@ fn insider_roster_holder_to_dataframe() {
         name: "John Smith".to_string(),
         position: InsiderPosition::Officer,
         most_recent_transaction: TransactionType::Sell,
-        latest_transaction_date: sample_ts(1_660_000_000),
+        latest_transaction_date: date(2022, 8, 8),
         shares_owned_directly: Some(5_000),
-        position_direct_date: sample_ts(1_659_000_000),
+        position_direct_date: date(2022, 7, 27),
     };
 
     let df = holder.to_dataframe().unwrap();
@@ -495,7 +499,7 @@ fn fund_profile_to_dataframe() {
 #[test]
 fn share_count_to_dataframe() {
     let shares = ShareCount {
-        date: sample_ts(1_600_000_000),
+        date: date(2020, 9, 13),
         shares: 1_000_000,
     };
 

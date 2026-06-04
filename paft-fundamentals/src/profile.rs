@@ -3,7 +3,7 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_domain::Isin;
@@ -359,9 +359,8 @@ impl Columnar for Profile {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct ShareCount {
-    /// The timestamp for the data point.
-    #[serde(with = "chrono::serde::ts_milliseconds")]
-    pub date: DateTime<Utc>,
+    /// The calendar date for the data point.
+    pub date: NaiveDate,
     /// The number of shares outstanding.
     pub shares: u64,
 }

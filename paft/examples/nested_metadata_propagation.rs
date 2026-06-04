@@ -30,7 +30,7 @@
 //!    `iter_by_symbol` helper still works without modification.
 //! 5. `GenericCandleUpdate<U, C>` keeps update metadata separate from the embedded candle.
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use paft::market::options::{
     GenericOptionChain, GenericOptionContract, OptionContractKey, OptionGreeks, OptionSide,
 };
@@ -193,7 +193,7 @@ fn history_propagation() -> Result<()> {
             ),
         ],
         actions: vec![Action::Dividend {
-            ts: ts(1_699_900_000),
+            date: date(2023, 11, 13),
             amount: price(0),
         }],
         price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
@@ -458,4 +458,8 @@ const fn usd() -> Currency {
 
 const fn ts(secs: i64) -> DateTime<Utc> {
     DateTime::from_timestamp(secs, 0).unwrap()
+}
+
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, day).unwrap()
 }

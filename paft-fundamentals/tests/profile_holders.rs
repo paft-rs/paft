@@ -1,9 +1,14 @@
+use chrono::NaiveDate;
 use paft_decimal::Decimal;
 use paft_domain::Isin;
 use paft_fundamentals::profile::{Address, CompanyProfile, FundKind, FundProfile, Profile};
 use paft_money::{Currency, IsoCurrency, Money};
 use serde_json::{from_str, json, to_string, to_value};
 use std::str::FromStr;
+
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, day).unwrap()
+}
 
 #[test]
 fn profile_isin_accessor() {
@@ -114,7 +119,7 @@ fn address_serde_roundtrip() {
 }
 
 #[test]
-fn insider_transaction_serde_with_enums_and_timestamps() {
+fn insider_transaction_serde_with_enums_and_calendar_date() {
     let tx = paft_fundamentals::holders::InsiderTransaction {
         insider: "John Doe".to_string(),
         position: paft_fundamentals::holders::InsiderPosition::Officer,
@@ -127,11 +132,13 @@ fn insider_transaction_serde_with_enums_and_timestamps() {
             )
             .unwrap(),
         ),
-        transaction_date: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        transaction_date: date(2022, 1, 1),
         url: Some("https://example.com".into()),
     };
 
     let json = serde_json::to_string(&tx).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(value["transaction_date"], serde_json::json!("2022-01-01"));
     let back: paft_fundamentals::holders::InsiderTransaction = serde_json::from_str(&json).unwrap();
     assert_eq!(tx, back);
 }
@@ -144,7 +151,7 @@ fn insider_transaction_url_can_be_missing() {
         "transaction_type": "Buy",
         "shares": 1000,
         "value": null,
-        "transaction_date": 1640995200000
+        "transaction_date": "2022-01-01"
     }"#;
 
     let transaction: paft_fundamentals::holders::InsiderTransaction =

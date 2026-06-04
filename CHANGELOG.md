@@ -41,6 +41,11 @@ All notable changes to this project will be documented in this file.
   holder fractions use `Ratio`, and news request counts use `NonZeroU32`.
 - Market: documented `Action::Split` ratio direction as new shares per old
   shares, so a 4-for-1 split is `numerator = 4`, `denominator = 1`.
+- Market/fundamentals: date-only financial concepts now use `NaiveDate` and
+  serialize as `YYYY-MM-DD` instead of Unix milliseconds. This includes
+  corporate action dates (`Action` now uses `date` instead of `ts`), dividend
+  calendar dates, holder/reporting dates, insider transaction dates, and
+  `ShareCount::date`.
 - Fundamentals: `InsiderTransaction::url` is now `Option<String>` so missing
   filing URLs can be represented without sentinel strings.
 - Money: scalar arithmetic helpers now borrow decimal operands:

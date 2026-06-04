@@ -1,4 +1,4 @@
-use chrono::{TimeZone, Utc};
+use chrono::{NaiveDate, TimeZone, Utc};
 use paft_decimal::Decimal;
 use paft_fundamentals::statistics::KeyStatistics;
 use paft_money::{Currency, IsoCurrency, Money, Price};
@@ -15,6 +15,10 @@ fn usd_price(amount: i64) -> Price {
 
 fn dec(value: &str) -> Decimal {
     Decimal::from_str(value).unwrap()
+}
+
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, day).unwrap()
 }
 
 #[test]
@@ -46,7 +50,7 @@ fn key_statistics_serde_roundtrip_populated() {
         dividend_per_share_forward: Some(usd_price(1)),
         dividend_yield_trailing: Some(dec("0.0050")),
         dividend_yield_forward: Some(dec("0.0055")),
-        ex_dividend_date: Some(Utc.timestamp_opt(1_700_086_400, 0).unwrap()),
+        ex_dividend_date: Some(date(2023, 11, 15)),
         fifty_two_week_high: Some(usd_price(200)),
         fifty_two_week_low: Some(usd_price(120)),
         average_daily_volume_3m: Some(55_000_000),
@@ -57,6 +61,7 @@ fn key_statistics_serde_roundtrip_populated() {
     let value: serde_json::Value = from_str(&encoded).unwrap();
     assert_eq!(value["dividend_yield_trailing"], json!("0.005"));
     assert_eq!(value["dividend_yield_forward"], json!("0.0055"));
+    assert_eq!(value["ex_dividend_date"], json!("2023-11-15"));
     let decoded: KeyStatistics = from_str(&encoded).unwrap();
     assert_eq!(s, decoded);
 }

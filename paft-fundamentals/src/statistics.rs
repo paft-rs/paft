@@ -9,7 +9,7 @@
 //! either, because they aggregate across periods. They live here, alongside
 //! the other instrument-attached fundamentals types.
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_decimal::Decimal;
@@ -53,9 +53,9 @@ pub struct KeyStatistics {
     /// Forward dividend yield expressed as a fraction.
     #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub dividend_yield_forward: Option<Decimal>,
-    /// Next or most recent ex-dividend date.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
-    pub ex_dividend_date: Option<DateTime<Utc>>,
+    /// Next or most recent ex-dividend calendar date.
+    #[serde(default)]
+    pub ex_dividend_date: Option<NaiveDate>,
 
     // ---- 52-week range ----
     /// 52-week high price.

@@ -4,7 +4,7 @@ use std::num::NonZeroU32;
 
 use serde::{Deserialize, Serialize};
 
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
 use paft_money::Price;
@@ -18,9 +18,8 @@ use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 pub enum Action {
     /// Cash dividend.
     Dividend {
-        /// Timestamp.
-        #[serde(with = "chrono::serde::ts_milliseconds")]
-        ts: DateTime<Utc>,
+        /// Corporate-action calendar date.
+        date: NaiveDate,
         /// Amount paid per share.
         amount: Price,
     },
@@ -30,9 +29,8 @@ pub enum Action {
     /// `denominator = 1`. A 1-for-4 reverse split is represented as
     /// `numerator = 1`, `denominator = 4`.
     Split {
-        /// Timestamp.
-        #[serde(with = "chrono::serde::ts_milliseconds")]
-        ts: DateTime<Utc>,
+        /// Corporate-action calendar date.
+        date: NaiveDate,
         /// Non-zero new-share count in the split ratio.
         numerator: NonZeroU32,
         /// Non-zero old-share count in the split ratio.
@@ -40,9 +38,8 @@ pub enum Action {
     },
     /// Capital gain distribution.
     CapitalGain {
-        /// Timestamp.
-        #[serde(with = "chrono::serde::ts_milliseconds")]
-        ts: DateTime<Utc>,
+        /// Corporate-action calendar date.
+        date: NaiveDate,
         /// Distribution amount.
         gain: Price,
     },
@@ -53,7 +50,7 @@ pub enum Action {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 struct ActionRow {
     pub action_type: String,
-    pub ts: DateTime<Utc>,
+    pub date: NaiveDate,
     pub amount: Option<Price>,
     pub numerator: Option<u32>,
     pub denominator: Option<u32>,
@@ -64,29 +61,29 @@ struct ActionRow {
 impl From<&Action> for ActionRow {
     fn from(action: &Action) -> Self {
         match action {
-            Action::Dividend { ts, amount } => Self {
+            Action::Dividend { date, amount } => Self {
                 action_type: "Dividend".to_string(),
-                ts: *ts,
+                date: *date,
                 amount: Some(amount.clone()),
                 numerator: None,
                 denominator: None,
                 gain: None,
             },
             Action::Split {
-                ts,
+                date,
                 numerator,
                 denominator,
             } => Self {
                 action_type: "Split".to_string(),
-                ts: *ts,
+                date: *date,
                 amount: None,
                 numerator: Some(numerator.get()),
                 denominator: Some(denominator.get()),
                 gain: None,
             },
-            Action::CapitalGain { ts, gain } => Self {
+            Action::CapitalGain { date, gain } => Self {
                 action_type: "CapitalGain".to_string(),
-                ts: *ts,
+                date: *date,
                 amount: None,
                 numerator: None,
                 denominator: None,

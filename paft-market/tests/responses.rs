@@ -1,4 +1,4 @@
-use chrono::DateTime;
+use chrono::{DateTime, NaiveDate};
 use chrono_tz::Tz;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Instrument};
@@ -23,6 +23,10 @@ fn amount(value: &str) -> PriceAmount {
 
 fn quantity(value: &str) -> QuantityAmount {
     QuantityAmount::from_decimal(Decimal::from_str(value).unwrap()).unwrap()
+}
+
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, day).unwrap()
 }
 
 fn ohlc(open: &str, high: &str, low: &str, close: &str) -> Ohlc {
@@ -72,14 +76,14 @@ fn candle_with_none_volume() {
 #[test]
 fn action_dividend_serialization() {
     let action = Action::Dividend {
-        ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        date: date(2022, 1, 1),
         amount: Price::new(Decimal::from_str("0.5").unwrap(), usd()),
     };
 
     let json = serde_json::to_string(&action).unwrap();
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(value["kind"], serde_json::json!("dividend"));
-    assert_eq!(value["ts"], serde_json::json!(1_640_995_200_000_i64));
+    assert_eq!(value["date"], serde_json::json!("2022-01-01"));
     assert_eq!(value["amount"]["amount"], serde_json::json!("0.5"));
     assert_eq!(value["amount"]["currency"], serde_json::json!("USD"));
 
@@ -90,7 +94,7 @@ fn action_dividend_serialization() {
 #[test]
 fn action_split_serialization_uses_new_shares_over_old_shares() {
     let action = Action::Split {
-        ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        date: date(2022, 1, 1),
         numerator: NonZeroU32::new(2).unwrap(),
         denominator: NonZeroU32::new(1).unwrap(),
     };
@@ -101,7 +105,7 @@ fn action_split_serialization_uses_new_shares_over_old_shares() {
         value,
         serde_json::json!({
             "kind": "split",
-            "ts": 1_640_995_200_000_i64,
+            "date": "2022-01-01",
             "numerator": 2,
             "denominator": 1,
         })
@@ -116,7 +120,7 @@ fn action_split_rejects_zero_ratios() {
     for (numerator, denominator) in [(0, 1), (2, 0)] {
         let value = serde_json::json!({
             "kind": "split",
-            "ts": 1_640_995_200_000_i64,
+            "date": "2022-01-01",
             "numerator": numerator,
             "denominator": denominator,
         });
@@ -130,7 +134,7 @@ fn action_split_rejects_zero_ratios() {
 fn action_rejects_unknown_fields() {
     let value = serde_json::json!({
         "kind": "dividend",
-        "ts": 1_640_995_200_000_i64,
+        "date": "2022-01-01",
         "amount": {
             "amount": "0.5",
             "currency": "USD",
@@ -145,14 +149,14 @@ fn action_rejects_unknown_fields() {
 #[test]
 fn action_capital_gain_serialization() {
     let action = Action::CapitalGain {
-        ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        date: date(2022, 1, 1),
         gain: Price::new(Decimal::from_str("1.0").unwrap(), usd()),
     };
 
     let json = serde_json::to_string(&action).unwrap();
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(value["kind"], serde_json::json!("capital_gain"));
-    assert_eq!(value["ts"], serde_json::json!(1_640_995_200_000_i64));
+    assert_eq!(value["date"], serde_json::json!("2022-01-01"));
     assert_eq!(value["gain"]["amount"], serde_json::json!("1"));
     assert_eq!(value["gain"]["currency"], serde_json::json!("USD"));
 

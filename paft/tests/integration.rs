@@ -1,7 +1,7 @@
 // This test requires both domain and market features
 #![cfg(all(feature = "domain", feature = "market"))]
 
-use chrono::DateTime;
+use chrono::{DateTime, NaiveDate};
 use chrono_tz::Tz;
 use iso_currency::Currency as IsoCurrency;
 use paft::market::MarketError;
@@ -24,6 +24,10 @@ fn amount(value: impl Into<Decimal>) -> PriceAmount {
 
 fn quantity(value: impl Into<Decimal>) -> QuantityAmount {
     QuantityAmount::from_decimal(value.into()).unwrap()
+}
+
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, day).unwrap()
 }
 
 fn ohlc(open: &str, high: &str, low: &str, close: &str) -> Ohlc {
@@ -76,7 +80,7 @@ fn end_to_end_workflow() {
     };
 
     let action = Action::Dividend {
-        ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+        date: date(2022, 1, 1),
         amount: Price::new(Decimal::from_str("0.5").unwrap(), usd()),
     };
 
@@ -332,16 +336,16 @@ fn action_types_workflow() {
 
     let actions = [
         Action::Dividend {
-            ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+            date: date(2022, 1, 1),
             amount: Price::new(Decimal::from_str("0.5").unwrap(), usd()),
         },
         Action::Split {
-            ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+            date: date(2022, 1, 1),
             numerator: NonZeroU32::new(2).unwrap(),
             denominator: NonZeroU32::new(1).unwrap(),
         },
         Action::CapitalGain {
-            ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+            date: date(2022, 1, 1),
             gain: Price::new(Decimal::from_str("1.0").unwrap(), usd()),
         },
     ];

@@ -65,6 +65,10 @@ fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
     Utc.timestamp_opt(secs, 0).unwrap()
 }
 
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, day).unwrap()
+}
+
 #[test]
 fn book_level_to_dataframe_with_size() {
     let level = BookLevel {
@@ -344,16 +348,16 @@ fn history_meta_to_dataframe() {
 fn actions_to_dataframe() {
     let actions = [
         Action::Dividend {
-            ts: sample_ts(1_700_000_000),
+            date: date(2023, 11, 14),
             amount: usd_price(1),
         },
         Action::Split {
-            ts: sample_ts(1_600_000_000),
+            date: date(2020, 9, 13),
             numerator: NonZeroU32::new(2).unwrap(),
             denominator: NonZeroU32::new(1).unwrap(),
         },
         Action::CapitalGain {
-            ts: sample_ts(1_650_000_000),
+            date: date(2022, 4, 15),
             gain: usd_price(3),
         },
     ];
