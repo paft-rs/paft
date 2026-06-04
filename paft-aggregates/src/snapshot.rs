@@ -16,8 +16,8 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Strictly instant-in-time snapshot for an instrument.
 ///
-/// All fields except `instrument` are optional to accommodate partially
-/// populated data from upstream sources.
+/// All fields except `instrument` and `currency` are optional to accommodate
+/// partially populated data from upstream sources.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`Snapshot`] alias for the

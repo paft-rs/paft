@@ -721,7 +721,8 @@ impl HistoryRequest {
         Self::builder().range(range).interval(interval).build()
     }
 
-    /// Build a request using an explicit `[start, end)` epoch-second period and `interval`.
+    /// Build a request using explicit UTC `DateTime` bounds (`[start, end)`)
+    /// and `interval`.
     ///
     /// This is a convenience method that uses the builder pattern internally.
     ///

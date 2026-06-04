@@ -136,6 +136,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Docs: corrected snapshot, history-period, and search-response comments to
+  avoid overstating guarantees.
 - Core/domain/money/fundamentals: public enum-specific `Other*` wrappers now
   implement serde directly and validate deserialized strings through their
   checked constructors, so modeled codes remain rejected.

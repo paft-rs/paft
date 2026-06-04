@@ -44,7 +44,7 @@ pub type SearchResult = GenericSearchResult<()>;
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericSearchResponse<R = (), S = ()> {
-    /// De-duplicated search results.
+    /// Search results, typically de-duplicated by providers or adapters.
     pub results: Vec<GenericSearchResult<S>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
