@@ -114,9 +114,13 @@ All notable changes to this project will be documented in this file.
   `Horizon` for lookback windows instead of overloading `ReportingPeriod`.
 - Domain/money/fundamentals/facade: extensible enum `Other` variants now use
   enum-specific unknown-code wrappers (`OtherCurrency`, `OtherExchange`,
-  `OtherAssetKind`, `OtherPeriod`, `OtherRecommendationGrade`,
-  `OtherRecommendationAction`, `OtherTransactionType`, `OtherInsiderPosition`,
-  and `OtherFundKind`) instead of raw `Canonical` payloads.
+  `OtherAssetKind`, `OtherMarketState`, `OtherPeriod`,
+  `OtherRecommendationGrade`, `OtherRecommendationAction`,
+  `OtherTransactionType`, `OtherInsiderPosition`, and `OtherFundKind`) instead
+  of raw `Canonical` payloads.
+- Domain/facade: `MarketState` is now extensible via
+  `MarketState::Other(OtherMarketState)`, so provider-specific session states
+  round-trip instead of failing as invalid enum values.
 - Domain/fundamentals/facade: enum parsing APIs now expose crate-level domain
   errors instead of `paft_core::PaftError`; domain enums use `DomainError`, and
   fundamentals enums use the new `FundamentalsError` surfaced by `paft::Error`.
@@ -185,6 +189,10 @@ All notable changes to this project will be documented in this file.
   domain enum APIs return `DomainError`, fundamentals enum APIs return
   `FundamentalsError`, and facade callers can compose fundamentals parse
   failures through `paft::Error`.
+- Domain/facade: `MarketState` no longer implements `Copy`, unknown
+  `MarketState` tokens now parse as `MarketState::Other(OtherMarketState)`, and
+  `MarketState::code()` is no longer `const`. `MarketState::full_name()` now
+  returns `Cow<'static, str>` to display unknown provider states.
 - Market/facade: `BookLevel::size` now uses `Option<QuantityAmount>`;
   `OptionContract::implied_volatility` and `OptionUpdate::implied_volatility`
   now use `Option<NonNegativeDecimal>`. `NewsRequest::count` now uses

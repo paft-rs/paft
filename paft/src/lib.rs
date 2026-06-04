@@ -44,8 +44,9 @@ pub mod core {
 pub mod domain {
     pub use paft_domain::{
         AssetKind, CalendarPeriod, Canonical, CanonicalError, DomainError, Exchange, Figi, Horizon,
-        Instrument, Isin, MarketState, OtherAssetKind, OtherExchange, OtherHorizon, OtherPeriod,
-        PeriodDate, PeriodYear, QuarterOfYear, ReportingPeriod, StringCode, Symbol, canonicalize,
+        Instrument, Isin, MarketState, OtherAssetKind, OtherExchange, OtherHorizon,
+        OtherMarketState, OtherPeriod, PeriodDate, PeriodYear, QuarterOfYear, ReportingPeriod,
+        StringCode, Symbol, canonicalize,
     };
     #[cfg(feature = "dataframe")]
     pub use paft_domain::{Decimal128Encode, ToDataFrame, ToDataFrameVec};

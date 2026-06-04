@@ -62,11 +62,15 @@ fn period_date_is_available_from_facade_and_prelude() {
 
     assert_export::<paft::domain::CalendarPeriod>();
     assert_export::<paft::domain::Horizon>();
+    assert_export::<paft::domain::MarketState>();
     assert_export::<paft::domain::OtherHorizon>();
+    assert_export::<paft::domain::OtherMarketState>();
     assert_export::<paft::domain::ReportingPeriod>();
     assert_export::<paft::prelude::CalendarPeriod>();
     assert_export::<paft::prelude::Horizon>();
+    assert_export::<paft::prelude::MarketState>();
     assert_export::<paft::prelude::OtherHorizon>();
+    assert_export::<paft::prelude::OtherMarketState>();
     assert_export::<paft::prelude::ReportingPeriod>();
     assert_export::<paft::domain::PeriodDate>();
     assert_export::<paft::prelude::PeriodDate>();

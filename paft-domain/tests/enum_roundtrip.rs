@@ -1,6 +1,6 @@
 use paft_domain::{
     AssetKind, DomainError, Exchange, Horizon, MarketState, OtherAssetKind, OtherExchange,
-    OtherHorizon, OtherPeriod, ReportingPeriod,
+    OtherHorizon, OtherMarketState, OtherPeriod, ReportingPeriod,
 };
 use paft_money::{Currency, OtherCurrency};
 use std::str::FromStr;
@@ -48,6 +48,11 @@ fn other_roundtrip_is_stable_for_core_enums() {
     assert_display_parse_display_idempotent::<Horizon, _>("1y");
     let other_horizon = Horizon::from_str("provider range").unwrap();
     assert_eq!(other_horizon.to_string(), "PROVIDER_RANGE");
+
+    // MarketState
+    assert_display_parse_display_idempotent::<MarketState, _>("REGULAR");
+    let other_market_state = MarketState::from_str("pre-pre").unwrap();
+    assert_eq!(other_market_state.to_string(), "PRE_PRE");
 }
 
 #[test]
@@ -103,14 +108,6 @@ fn display_matches_wire_codes_for_core_enums() {
 
     let state = MarketState::Regular;
     assert_eq!(state.to_string(), state.code());
-}
-
-#[test]
-fn closed_enums_reject_unknown_tokens() {
-    assert!(matches!(
-        MarketState::from_str("UNKNOWN_STATE").unwrap_err(),
-        DomainError::InvalidMarketStateValue { value } if value == "UNKNOWN_STATE"
-    ));
 }
 
 #[test]
@@ -181,6 +178,18 @@ fn extensible_enums_preserve_other_canonical_tokens() {
         AssetKind::Other(ref canon) => assert_eq!(canon.as_ref(), "STRUCTURED_NOTE"),
         other => panic!("expected Other variant, got {other:?}"),
     }
+
+    let market_state = MarketState::from_str("pre-pre").unwrap();
+    match market_state {
+        MarketState::Other(ref canon) => assert_eq!(canon.as_ref(), "PRE_PRE"),
+        other => panic!("expected Other variant, got {other:?}"),
+    }
+
+    let market_state: MarketState = serde_json::from_str("\"post-post\"").unwrap();
+    match market_state {
+        MarketState::Other(ref canon) => assert_eq!(canon.as_ref(), "POST_POST"),
+        other => panic!("expected Other variant, got {other:?}"),
+    }
 }
 
 #[test]
@@ -216,6 +225,13 @@ fn other_wrappers_reject_modeled_core_tokens() {
     assert_eq!(
         OtherHorizon::new("provider range").unwrap().as_ref(),
         "PROVIDER_RANGE"
+    );
+
+    assert!(OtherMarketState::new("REGULAR").is_err());
+    assert!(OtherMarketState::new("PRE_MARKET").is_err());
+    assert_eq!(
+        OtherMarketState::new("pre-pre").unwrap().as_ref(),
+        "PRE_PRE"
     );
 }
 
@@ -261,4 +277,11 @@ fn other_wrappers_serde_uses_checked_constructors_for_core_tokens() {
     assert_eq!(horizon.as_ref(), "PROVIDER_RANGE");
     assert!(serde_json::from_str::<OtherHorizon>("\"7d\"").is_err());
     assert!(serde_json::from_str::<OtherHorizon>("\"1mo\"").is_err());
+
+    let market_state = OtherMarketState::new("pre-pre").unwrap();
+    assert_eq!(serde_json::to_string(&market_state).unwrap(), "\"PRE_PRE\"");
+    let market_state: OtherMarketState = serde_json::from_str("\"post-post\"").unwrap();
+    assert_eq!(market_state.as_ref(), "POST_POST");
+    assert!(serde_json::from_str::<OtherMarketState>("\"REGULAR\"").is_err());
+    assert!(serde_json::from_str::<OtherMarketState>("\"PRE_MARKET\"").is_err());
 }

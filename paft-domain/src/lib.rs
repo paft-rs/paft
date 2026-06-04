@@ -59,7 +59,7 @@ pub use exchange::{Exchange, OtherExchange};
 pub use horizon::{Horizon, OtherHorizon};
 pub use identifiers::{Figi, Isin, Symbol};
 pub use instrument::{AssetKind, Instrument, OtherAssetKind};
-pub use market_state::MarketState;
+pub use market_state::{MarketState, OtherMarketState};
 pub use period::{
     CalendarPeriod, OtherPeriod, PeriodDate, PeriodYear, QuarterOfYear, ReportingPeriod,
 };
