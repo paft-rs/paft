@@ -149,10 +149,6 @@ fn market_exports_are_available_from_facade_and_prelude() {
     let quantity = QuantityAmount::from_decimal(Decimal::from(150)).unwrap();
     assert_eq!(quantity.as_decimal(), &Decimal::from(150));
 
-    #[cfg(not(feature = "bigdecimal"))]
-    let _: PreludeOhlc = PreludeOhlc::new(amount, amount, amount, amount);
-
-    #[cfg(feature = "bigdecimal")]
     let _: PreludeOhlc = PreludeOhlc::new(amount.clone(), amount.clone(), amount.clone(), amount);
 }
 
@@ -212,6 +208,53 @@ fn generic_market_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prelude::PriceBasis>();
     assert_export::<paft::prelude::SearchRequestBuilder>();
     assert_export::<paft::prelude::DownloadEntry>();
+}
+
+#[cfg(feature = "market")]
+#[test]
+fn history_validation_errors_convert_into_facade_result() {
+    use chrono::DateTime;
+    use paft::Decimal;
+    use paft::market::{Candle, HistoryResponse, HistoryValidationError, Ohlc, OhlcPriceBasis};
+    use paft::money::{Currency, IsoCurrency};
+    use paft::prelude::{Error, PriceAmount, Result};
+
+    fn amount(value: i64) -> PriceAmount {
+        PriceAmount::new(Decimal::from(value))
+    }
+
+    fn candle_at(unix_seconds: i64) -> Candle {
+        Candle::new(
+            DateTime::from_timestamp(unix_seconds, 0).unwrap(),
+            Currency::Iso(IsoCurrency::USD),
+            Ohlc::new(amount(100), amount(110), amount(95), amount(105)),
+        )
+    }
+
+    fn validate(history: &HistoryResponse) -> Result<()> {
+        history.validate()?;
+        Ok(())
+    }
+
+    let history = HistoryResponse {
+        candles: vec![candle_at(2), candle_at(1)],
+        actions: vec![],
+        price_basis: OhlcPriceBasis::raw(),
+        meta: None,
+        provider: (),
+    };
+
+    assert!(matches!(
+        validate(&history),
+        Err(Error::HistoryValidation(
+            HistoryValidationError::CandlesNotChronological {
+                previous_index: 0,
+                previous_ts_millis: 2_000,
+                current_index: 1,
+                current_ts_millis: 1_000,
+            }
+        ))
+    ));
 }
 
 #[cfg(feature = "aggregates")]

@@ -25,6 +25,11 @@ pub enum Error {
     #[error(transparent)]
     Market(#[from] paft_market::MarketError),
 
+    /// Error originating from `paft-market` history response validation.
+    #[cfg(feature = "market")]
+    #[error(transparent)]
+    HistoryValidation(#[from] paft_market::HistoryValidationError),
+
     /// Error originating from `paft-fundamentals`.
     #[cfg(feature = "fundamentals")]
     #[error(transparent)]

@@ -60,6 +60,14 @@ impl PriceAmount {
 
     /// Returns the wrapped decimal.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn into_inner(self) -> Decimal {
+        self.amount
+    }
+
+    /// Returns the wrapped decimal.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn into_inner(self) -> Decimal {
         self.amount
     }

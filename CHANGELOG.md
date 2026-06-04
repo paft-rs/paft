@@ -175,6 +175,8 @@ All notable changes to this project will be documented in this file.
 - Market/facade: `SearchRequest` now stores result limits as
   `Option<std::num::NonZeroU32>` and validates builder/deserialized limits from
   `u32`, avoiding platform-dependent `usize` in serialized request models.
+- Market/facade: `HistoryValidationError` now converts into `paft::Error`, so
+  `HistoryResponse::validate()?` composes with `paft::Result`.
 - Market requests: `HistoryFlags` now serializes as an explicit `u8` bitset,
   and deserialization rejects unknown flag bits instead of retaining unmodeled
   request behavior.
@@ -182,6 +184,9 @@ All notable changes to this project will be documented in this file.
   active decimal backend precision instead of attempting unbounded zero padding.
 - Money: localized parsing now delegates to `Money::new_exact`, encoding its
   no-implicit-rounding contract at construction.
+- Money: `PriceAmount::into_inner` and `QuantityAmount::into_inner` are now
+  `const fn` under the default decimal backend, matching constrained decimal
+  accessor behavior.
 - Money: `Money` and `ExchangeRate` JSON deserialization now rejects unknown
   top-level fields instead of silently ignoring stale wire payloads.
 - Money: existing `Money` values now capture their resolved minor-unit scale,

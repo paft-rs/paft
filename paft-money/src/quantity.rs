@@ -53,6 +53,14 @@ impl QuantityAmount {
 
     /// Returns the wrapped non-negative decimal.
     #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn into_inner(self) -> NonNegativeDecimal {
+        self.amount
+    }
+
+    /// Returns the wrapped non-negative decimal.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
     pub fn into_inner(self) -> NonNegativeDecimal {
         self.amount
     }
