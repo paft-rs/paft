@@ -328,8 +328,18 @@ fn price_arithmetic_checks_currency() {
 #[test]
 fn price_total_returns_monetary_amount() {
     let price = Price::from_canonical_str("182.345678", usd()).unwrap();
-    let total = price.try_total(&parse_decimal("4.91")).unwrap();
+    let quantity = QuantityAmount::from_decimal(parse_decimal("4.91")).unwrap();
+    let total = price.try_total(&quantity).unwrap();
 
     assert_eq!(total.currency(), &usd());
     assert_eq!(total.amount(), parse_decimal("895.31727898"));
+}
+
+#[test]
+fn price_total_decimal_is_signed_escape_hatch() {
+    let price = Price::from_canonical_str("182.345678", usd()).unwrap();
+    let total = price.try_total_decimal(&parse_decimal("-4.91")).unwrap();
+
+    assert_eq!(total.currency(), &usd());
+    assert_eq!(total.amount(), parse_decimal("-895.31727898"));
 }

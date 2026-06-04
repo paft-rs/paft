@@ -91,7 +91,7 @@ fn run() -> Result<(), MoneyError> {
     assert_eq!(contextual_quote.with_currency(usd.clone()), quote);
 
     let quantity = QuantityAmount::from_decimal(decimal::from_minor_units(250, 2)).unwrap();
-    let exact_total = quote.try_total(quantity.as_decimal())?;
+    let exact_total = quote.try_total(&quantity)?;
     assert_eq!(quantity.to_string(), "2.5");
     let adjustment = MonetaryAmount::from_canonical_str("0.0049", usd)?;
     let subtotal = exact_total.try_add(&adjustment)?;

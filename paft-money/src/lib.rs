@@ -85,13 +85,14 @@
 //! ```rust
 //! # use paft_money::IsoCurrency;
 //! # use paft_decimal::{self as decimal, RoundingStrategy};
-//! # use paft_money::{Currency, MonetaryAmount, MoneyError, Price};
+//! # use paft_money::{Currency, MonetaryAmount, MoneyError, Price, QuantityAmount};
 //! # fn run() -> Result<(), MoneyError> {
 //! let usd = Currency::Iso(IsoCurrency::USD);
 //!
 //! // Quotes preserve provider precision beyond settlement minor units.
 //! let quote = Price::from_canonical_str("1.3578", usd.clone())?;
-//! let exact_total = quote.try_total(&decimal::from_minor_units(250, 2))?;
+//! let quantity = QuantityAmount::from_decimal(decimal::from_minor_units(250, 2)).unwrap();
+//! let exact_total = quote.try_total(&quantity)?;
 //!
 //! // Intermediate totals stay exact until settlement.
 //! let adjustment = MonetaryAmount::from_canonical_str("0.0049", usd)?;

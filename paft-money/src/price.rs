@@ -10,6 +10,7 @@ use crate::exact::{
     parse_canonical_decimal, round_to_money,
 };
 use crate::money::Money;
+use crate::quantity::QuantityAmount;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -184,12 +185,28 @@ impl Price {
         Ok(Self::new(amount, self.currency.clone()))
     }
 
-    /// Multiplies this price by a quantity and returns an exact monetary total.
+    /// Multiplies this price by a non-negative quantity and returns an exact
+    /// monetary total.
     ///
     /// # Errors
     ///
     /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
-    pub fn try_total(&self, quantity: &Decimal) -> Result<MonetaryAmount, MoneyError> {
+    pub fn try_total(&self, quantity: &QuantityAmount) -> Result<MonetaryAmount, MoneyError> {
+        self.try_total_decimal(quantity.as_decimal())
+    }
+
+    /// Multiplies this price by a raw decimal quantity and returns an exact
+    /// monetary total.
+    ///
+    /// Prefer [`Price::try_total`] for normal market sizes and volumes. This
+    /// escape hatch intentionally accepts signed decimals for flows such as
+    /// corrections, refunds, or short-exposure calculations where the caller
+    /// needs signed quantity semantics.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
+    pub fn try_total_decimal(&self, quantity: &Decimal) -> Result<MonetaryAmount, MoneyError> {
         let amount = checked_mul_decimal(&self.amount, quantity)?;
         Ok(MonetaryAmount::new(amount, self.currency.clone()))
     }

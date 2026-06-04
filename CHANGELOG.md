@@ -56,8 +56,11 @@ All notable changes to this project will be documented in this file.
 - Fundamentals: `InsiderTransaction::url` is now `Option<String>` so missing
   filing URLs can be represented without sentinel strings.
 - Money: scalar arithmetic helpers now borrow decimal operands:
-  `Money::{try_mul, try_div}`, `MonetaryAmount::{try_mul, try_div}`, and
-  `Price::{try_mul, try_div, try_total}`.
+  `Money::{try_mul, try_div}`, `MonetaryAmount::{try_mul, try_div}`,
+  `Price::{try_mul, try_div}`, and `Price::try_total_decimal`.
+- Money: `Price::try_total` now accepts `&QuantityAmount`, keeping normal
+  price-times-quantity totals on the non-negative quantity path. Use
+  `Price::try_total_decimal` for signed/raw decimal quantity semantics.
 - Money: `set_currency_metadata` now preserves an already registered
   minor-unit scale; callers must use `override_currency_metadata` for
   intentional scale changes.
@@ -234,6 +237,9 @@ All notable changes to this project will be documented in this file.
   handle `url: Option<String>` instead of `url: String`.
 - Money/facade: callers of non-panicking scalar arithmetic helpers must pass
   `&Decimal` instead of `Decimal`.
+- Money/facade: callers of `Price::try_total` must pass `&QuantityAmount`
+  instead of `&Decimal`; use `Price::try_total_decimal` for signed/raw decimal
+  quantities.
 - Money/facade: `set_currency_metadata` no longer changes `minor_units` for a
   code with a known scale; use `override_currency_metadata` for explicit
   replacement.
