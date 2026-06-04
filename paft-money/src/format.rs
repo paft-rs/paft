@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::num::NonZeroUsize;
 
 use crate::decimal::{self, Decimal, RoundingStrategy};
 use crate::error::MoneyError;
@@ -149,15 +150,14 @@ impl<'a> Formatter<'a> {
     }
 }
 
-fn apply_grouping(value: &str, grouping: &[usize], separator: char) -> String {
-    if grouping.is_empty() {
+fn apply_grouping(value: &str, grouping: &[NonZeroUsize], separator: char) -> String {
+    let Some(&repeat) = grouping.last() else {
         return value.to_string();
-    }
+    };
 
     let mut chunks = Vec::new();
     let mut remaining = value.len();
     let mut index = 0_usize;
-    let repeat = *grouping.last().unwrap_or(&3);
 
     while remaining > 0 {
         let size = if index < grouping.len() {
@@ -166,7 +166,7 @@ fn apply_grouping(value: &str, grouping: &[usize], separator: char) -> String {
             repeat
         };
 
-        let start = remaining.saturating_sub(size);
+        let start = remaining.saturating_sub(size.get());
         chunks.push(&value[start..remaining]);
         if start == 0 {
             break;

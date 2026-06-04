@@ -79,6 +79,9 @@ All notable changes to this project will be documented in this file.
 - Money: `Currency::full_name()` now uses registered metadata for all non-ISO
   currencies, including modeled variants such as `BTC`, `ETH`, and `XMR`; ISO
   currency names remain sourced from ISO 4217.
+- Money: locale grouping specifications now use non-zero chunk sizes
+  internally, making invalid zero-width grouping patterns unrepresentable in
+  formatter/parser state.
 - Decimal/money/market/fundamentals: decimal-backed serde fields now serialize
   through canonical strings from `paft-decimal`, independent of the active
   decimal backend.

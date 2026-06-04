@@ -3,6 +3,9 @@
 //! Grouping patterns are applied from the rightmost digit moving left. For
 //! example, the Indian pattern `[3, 2, 2]` renders `12345678` as
 //! `1,23,45,678`.
+#[cfg(feature = "money-formatting")]
+use std::num::NonZeroUsize;
+
 /// Supported locales for money formatting/parsing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -26,8 +29,13 @@ pub struct LocalFormat {
     /// Character separating integer and fractional parts.
     pub decimal_separator: char,
     /// Grouping pattern expressed as chunk sizes from right to left.
-    pub grouping: Vec<usize>,
+    pub grouping: Vec<NonZeroUsize>,
 }
+
+#[cfg(feature = "money-formatting")]
+const GROUP_SIZE_2: NonZeroUsize = grouping_size(2);
+#[cfg(feature = "money-formatting")]
+const GROUP_SIZE_3: NonZeroUsize = grouping_size(3);
 
 #[cfg(feature = "money-formatting")]
 impl Locale {
@@ -37,23 +45,31 @@ impl Locale {
             Self::EnUs => LocalFormat {
                 group_separator: ',',
                 decimal_separator: '.',
-                grouping: vec![3, 3, 3],
+                grouping: vec![GROUP_SIZE_3; 3],
             },
             Self::EnIn => LocalFormat {
                 group_separator: ',',
                 decimal_separator: '.',
-                grouping: vec![3, 2, 2],
+                grouping: vec![GROUP_SIZE_3, GROUP_SIZE_2, GROUP_SIZE_2],
             },
             Self::EnEu => LocalFormat {
                 group_separator: '.',
                 decimal_separator: ',',
-                grouping: vec![3, 3, 3],
+                grouping: vec![GROUP_SIZE_3; 3],
             },
             Self::EnBy => LocalFormat {
                 group_separator: ' ',
                 decimal_separator: ',',
-                grouping: vec![3, 3, 3],
+                grouping: vec![GROUP_SIZE_3; 3],
             },
         }
+    }
+}
+
+#[cfg(feature = "money-formatting")]
+const fn grouping_size(size: usize) -> NonZeroUsize {
+    match NonZeroUsize::new(size) {
+        Some(size) => size,
+        None => panic!("locale grouping size must be non-zero"),
     }
 }
