@@ -228,8 +228,8 @@ fn sample_contract() -> OptionContract {
             OptionSide::Call,
             usd_price(150),
             NaiveDate::from_ymd_opt(2024, 6, 21).unwrap(),
-        ),
-        contract_instrument: Some(
+        )
+        .with_contract_instrument(
             Instrument::from_symbol("AAPL240621C00150000", AssetKind::Option).unwrap(),
         ),
         currency: usd(),
@@ -259,6 +259,7 @@ fn option_contract_to_dataframe() {
 
     let df = contract.to_dataframe().unwrap();
     let cols = df.get_column_names();
+    assert!(cols.iter().any(|c| c.as_str() == "contract_instrument"));
     assert!(cols.iter().any(|c| c.as_str() == "underlying"));
     assert!(cols.iter().any(|c| c.as_str() == "side"));
     assert!(cols.iter().any(|c| c.as_str() == "strike.amount"));
@@ -276,11 +277,11 @@ fn option_chain_to_dataframe() {
             OptionContract {
                 key: OptionContractKey {
                     side: OptionSide::Put,
+                    contract_instrument: Some(
+                        Instrument::from_symbol("AAPL240621P00150000", AssetKind::Option).unwrap(),
+                    ),
                     ..contract.key.clone()
                 },
-                contract_instrument: Some(
-                    Instrument::from_symbol("AAPL240621P00150000", AssetKind::Option).unwrap(),
-                ),
                 currency: usd(),
                 in_the_money: Some(false),
                 ..contract
@@ -294,6 +295,10 @@ fn option_chain_to_dataframe() {
 
     let df = chain.to_dataframe().unwrap();
     let cols = df.get_column_names();
+    assert!(
+        cols.iter()
+            .any(|c| c.as_str() == "contracts.contract_instrument")
+    );
     assert!(cols.iter().any(|c| c.as_str() == "contracts.side"));
     assert!(
         !cols

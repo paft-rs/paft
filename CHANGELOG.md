@@ -57,6 +57,9 @@ All notable changes to this project will be documented in this file.
   candles, order-book levels, quotes, quote updates, snapshots, and option
   quote fields. Option contracts/updates carry an explicit premium `currency`
   so quote fields do not inherit the strike currency implicitly.
+- Market/facade: `OptionContractKey` now stores optional
+  `contract_instrument` identity as part of equality and hashing so known
+  listed contracts with the same economic terms can remain distinct.
 - Market/aggregates: book-level sizes and provider-agnostic volume fields now
   use contextual `QuantityAmount` values so fractional crypto, FX,
   commodities, and base/quote-volume feeds can be represented without rounding
@@ -197,6 +200,11 @@ All notable changes to this project will be documented in this file.
   and `last_price`) now use `PriceAmount`, and option contracts/updates now
   require `currency: Currency` for those premium amounts.
   `OptionContractKey::strike` remains a standalone `Price`.
+- Market/facade: `contract_instrument` moved from `OptionContract` and
+  `OptionUpdate` into `OptionContractKey`; JSON remains flattened at the
+  contract/update object level, but Rust callers should use
+  `contract.key.contract_instrument` and
+  `OptionContractKey::with_contract_instrument(...)`.
 - Domain/facade: `Instrument::unique_key()` no longer returns bare FIGI, ISIN,
   `SYMBOL@EXCHANGE`, or `SYMBOL` strings. It now includes asset kind and
   identifier source, e.g. `EQUITY|SYMBOL|4:AAPL` or

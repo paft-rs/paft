@@ -356,8 +356,8 @@ fn option_contract(
             side,
             price(strike),
             chrono::NaiveDate::from_ymd_opt(2024, 12, 20).unwrap(),
-        ),
-        contract_instrument: Some(Instrument::from_symbol(symbol, AssetKind::Option).unwrap()),
+        )
+        .with_contract_instrument(Instrument::from_symbol(symbol, AssetKind::Option).unwrap()),
         currency: usd(),
         price: Some(amount(5)),
         bid: Some(amount(4)),

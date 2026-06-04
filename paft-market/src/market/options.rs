@@ -64,10 +64,20 @@ impl fmt::Display for OptionSide {
     }
 }
 
-/// Economic identity of an option contract.
+/// Identity of an option contract.
+///
+/// The required fields form the option's economic key. When
+/// `contract_instrument` is present, it participates in equality and hashing so
+/// adjusted contracts, venue-specific listings, and other distinct listed
+/// contracts with the same economic terms do not collapse to the same key.
+/// Without a contract instrument this remains an economic key, not a guaranteed
+/// unique listed-contract identity.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct OptionContractKey {
+    /// Provider or venue instrument identifier for the option contract, when known.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub contract_instrument: Option<Instrument>,
     /// Underlying instrument the option is written on.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub underlying: Instrument,
@@ -82,7 +92,7 @@ pub struct OptionContractKey {
 }
 
 impl OptionContractKey {
-    /// Build an option contract identity from its required economic fields.
+    /// Build an option contract key from its required economic fields.
     #[must_use]
     pub const fn new(
         underlying: Instrument,
@@ -91,11 +101,19 @@ impl OptionContractKey {
         expiration_date: NaiveDate,
     ) -> Self {
         Self {
+            contract_instrument: None,
             underlying,
             side,
             strike,
             expiration_date,
         }
+    }
+
+    /// Add the listed contract instrument identifier to this key.
+    #[must_use]
+    pub fn with_contract_instrument(mut self, contract_instrument: Instrument) -> Self {
+        self.contract_instrument = Some(contract_instrument);
+        self
     }
 }
 
@@ -111,13 +129,10 @@ impl OptionContractKey {
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericOptionContract<M = ()> {
-    /// Contract identity fields.
+    /// Contract key fields.
     #[serde(flatten)]
     #[cfg_attr(feature = "dataframe", df_derive(flatten))]
     pub key: OptionContractKey,
-    /// Provider or venue instrument identifier for the option contract, when known.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub contract_instrument: Option<Instrument>,
     /// Premium currency for `price`, `bid`, and `ask`.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub currency: Currency,
@@ -161,7 +176,6 @@ impl<M: Default> GenericOptionContract<M> {
     pub fn new(key: OptionContractKey, currency: Currency) -> Self {
         Self {
             key,
-            contract_instrument: None,
             currency,
             price: None,
             bid: None,
@@ -229,7 +243,7 @@ pub type OptionChain = GenericOptionChain<()>;
 ///
 /// This represents incremental changes to market data commonly used for options,
 /// such as bid/ask, last price, and implied volatility, keyed by the option
-/// contract identity.
+/// contract key.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`OptionUpdate`] alias for the
@@ -241,13 +255,10 @@ pub type OptionChain = GenericOptionChain<()>;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOptionUpdate<M = ()> {
-    /// Contract identity fields.
+    /// Contract key fields.
     #[serde(flatten)]
     #[cfg_attr(feature = "dataframe", df_derive(flatten))]
     pub key: OptionContractKey,
-    /// Provider or venue instrument identifier for the option contract, when known.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub contract_instrument: Option<Instrument>,
     /// Timestamp of the update as Unix milliseconds.
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
@@ -276,7 +287,6 @@ impl<M: Default> GenericOptionUpdate<M> {
     pub fn new(key: OptionContractKey, currency: Currency, ts: DateTime<Utc>) -> Self {
         Self {
             key,
-            contract_instrument: None,
             ts,
             currency,
             bid: None,

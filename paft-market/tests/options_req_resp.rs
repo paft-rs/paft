@@ -107,6 +107,32 @@ fn option_quote_currency_is_independent_from_strike_currency() {
 }
 
 #[test]
+fn option_contract_key_distinguishes_listed_contract_instrument() {
+    let base = option_key();
+    let standard = base.clone().with_contract_instrument(
+        Instrument::from_symbol("AAPL250117C00150000", AssetKind::Option).unwrap(),
+    );
+    let adjusted = base.with_contract_instrument(
+        Instrument::from_symbol("AAPL1250117C00150000", AssetKind::Option).unwrap(),
+    );
+
+    assert_ne!(standard, adjusted);
+
+    let contract = OptionContract::new(standard.clone(), usd_currency());
+    let value = serde_json::to_value(&contract).unwrap();
+    assert_eq!(
+        value["contract_instrument"]["symbol"],
+        serde_json::json!("AAPL250117C00150000")
+    );
+
+    let decoded: OptionContract = serde_json::from_value(value).unwrap();
+    assert_eq!(
+        decoded.key.contract_instrument,
+        standard.contract_instrument
+    );
+}
+
+#[test]
 fn option_greeks_decimal_serde_uses_canonical_strings() {
     let greeks = OptionGreeks {
         delta: Some(dec("0.5000")),
