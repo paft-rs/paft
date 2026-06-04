@@ -78,7 +78,9 @@ All features are optional—disable the defaults (`default-features = false`) an
 - `Instrument::figi` and `Instrument::isin` are typed `Option<Figi>` / `Option<Isin>`. Construct with `Figi::new("...")` and `Isin::new("...")`. When you need `&str`, use helpers like `inst.figi.as_ref().map(AsRef::as_ref)`.
 - `CompanyProfile::isin` and `FundProfile::isin` now store `Option<Isin>`; update struct literals to pass `Isin::new(..)?` and adjust deserialization expectations accordingly.
 - `Isin::new` and `Figi::new` now always enforce checksum validation. If you previously relied on lenient mode, strip placeholders or keep them in `Symbol` fields instead.
-- The new identifier newtypes are `#[serde(transparent)]`, so existing JSON payloads continue to operate with plain strings while now enforcing checksum validation at the boundary.
+- The new identifier newtypes serialize and deserialize as plain strings through
+  manual serde implementations, so existing JSON payloads continue to operate
+  unchanged while now enforcing checksum validation at the boundary.
 - `paft-aggregates` no longer ships `FastInfo`/`Info`. Use `Snapshot` for strictly instant-in-time market data — fundamentals/analyst/ESG fields that lived on `Info` belong in the `paft-fundamentals` types.
 
 ## What's Included

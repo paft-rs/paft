@@ -154,6 +154,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Docs: corrected the facade README identifier serde wording to describe the
+  manual plain-string implementations instead of `#[serde(transparent)]`.
 - Docs: corrected snapshot, history-period, and search-response comments to
   avoid overstating guarantees.
 - Core/domain/money/fundamentals: public enum-specific `Other*` wrappers now
