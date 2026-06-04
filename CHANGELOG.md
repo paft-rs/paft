@@ -22,6 +22,9 @@ All notable changes to this project will be documented in this file.
 - Domain/facade: added `CalendarPeriod` for calendar year/quarter/date
   boundary helpers such as `start_date`, `end_date`, `overlaps`, `contains`,
   and `is_same_exact_bucket_as`.
+- Domain/facade: added standalone serde support for `PeriodDate` and
+  `QuarterOfYear`, matching `PeriodYear` as validated public period
+  components.
 - Domain/facade: added `Horizon` and `OtherHorizon` for relative lookback
   windows such as `7d`, `1mo`, and `1y`.
 - Market/facade: added `Ohlc` plus OHLC price-basis modeling types

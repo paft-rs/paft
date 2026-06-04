@@ -184,10 +184,68 @@ fn period_year_from_u64(value: u64) -> Result<PeriodYear, DomainError> {
     PeriodYear::new(year)
 }
 
+fn parse_period_date_code(value: &str) -> Result<PeriodDate, DomainError> {
+    let invalid = || DomainError::InvalidPeriodFormat {
+        format: value.to_string(),
+    };
+
+    let bytes = value.as_bytes();
+    if bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {
+        return Err(invalid());
+    }
+
+    let Some(year) = read_4_digits(bytes, 0) else {
+        return Err(invalid());
+    };
+
+    if !bytes[5..7].iter().all(u8::is_ascii_digit) || !bytes[8..10].iter().all(u8::is_ascii_digit) {
+        return Err(invalid());
+    }
+
+    let month = u32::from(bytes[5] - b'0') * 10 + u32::from(bytes[6] - b'0');
+    let day = u32::from(bytes[8] - b'0') * 10 + u32::from(bytes[9] - b'0');
+    let date = NaiveDate::from_ymd_opt(year, month, day).ok_or_else(invalid)?;
+    PeriodDate::new(date)
+}
+
+fn parse_quarter_of_year_code(value: &str) -> Result<QuarterOfYear, DomainError> {
+    let bytes = value.as_bytes();
+    if bytes.len() != 1 || !bytes[0].is_ascii_digit() {
+        return Err(DomainError::InvalidPeriodFormat {
+            format: value.to_string(),
+        });
+    }
+
+    QuarterOfYear::new(bytes[0] - b'0')
+}
+
+fn quarter_of_year_from_i64(value: i64) -> Result<QuarterOfYear, DomainError> {
+    let Ok(quarter) = u8::try_from(value) else {
+        return Err(DomainError::InvalidPeriodFormat {
+            format: value.to_string(),
+        });
+    };
+
+    QuarterOfYear::new(quarter)
+}
+
+fn quarter_of_year_from_u64(value: u64) -> Result<QuarterOfYear, DomainError> {
+    let Ok(quarter) = u8::try_from(value) else {
+        return Err(DomainError::InvalidPeriodFormat {
+            format: value.to_string(),
+        });
+    };
+
+    QuarterOfYear::new(quarter)
+}
+
 /// Valid date component for structured financial periods.
 ///
 /// The wrapped [`NaiveDate`] always has a year in `0..=9999`, matching
 /// [`PeriodYear`] and the four-digit canonical `YYYY-MM-DD` period format.
+///
+/// Standalone serde emits the same canonical `YYYY-MM-DD` string as
+/// [`std::fmt::Display`] and deserializes that canonical form.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PeriodDate(NaiveDate);
 
@@ -229,7 +287,30 @@ impl fmt::Display for PeriodDate {
     }
 }
 
+impl Serialize for PeriodDate {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for PeriodDate {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        parse_period_date_code(&raw).map_err(DeError::custom)
+    }
+}
+
 /// Valid quarter-of-year component for structured financial periods.
+///
+/// Standalone serde emits the same canonical string as [`std::fmt::Display`].
+/// Deserialization also accepts integer quarters for compatibility and
+/// normalizes them on the next serialization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct QuarterOfYear(u8);
 
@@ -289,6 +370,55 @@ impl From<QuarterOfYear> for u8 {
 impl fmt::Display for QuarterOfYear {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+impl Serialize for QuarterOfYear {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for QuarterOfYear {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(QuarterOfYearVisitor)
+    }
+}
+
+struct QuarterOfYearVisitor;
+
+impl Visitor<'_> for QuarterOfYearVisitor {
+    type Value = QuarterOfYear;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("a canonical quarter string or integer in 1..=4")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: DeError,
+    {
+        parse_quarter_of_year_code(value).map_err(DeError::custom)
+    }
+
+    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+    where
+        E: DeError,
+    {
+        quarter_of_year_from_i64(value).map_err(DeError::custom)
+    }
+
+    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+    where
+        E: DeError,
+    {
+        quarter_of_year_from_u64(value).map_err(DeError::custom)
     }
 }
 

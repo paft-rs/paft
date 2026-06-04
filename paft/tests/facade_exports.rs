@@ -57,7 +57,9 @@ fn fundamentals_errors_convert_into_facade_result() {
 
 #[cfg(feature = "domain")]
 #[test]
-fn period_date_is_available_from_facade_and_prelude() {
+fn period_components_are_available_from_facade_and_prelude() {
+    use chrono::NaiveDate;
+
     fn assert_export<T>() {}
 
     assert_export::<paft::domain::CalendarPeriod>();
@@ -73,7 +75,18 @@ fn period_date_is_available_from_facade_and_prelude() {
     assert_export::<paft::prelude::OtherMarketState>();
     assert_export::<paft::prelude::ReportingPeriod>();
     assert_export::<paft::domain::PeriodDate>();
+    assert_export::<paft::domain::PeriodYear>();
+    assert_export::<paft::domain::QuarterOfYear>();
     assert_export::<paft::prelude::PeriodDate>();
+    assert_export::<paft::prelude::PeriodYear>();
+    assert_export::<paft::prelude::QuarterOfYear>();
+
+    let date = paft::domain::PeriodDate::new(NaiveDate::from_ymd_opt(2024, 1, 2).unwrap()).unwrap();
+    assert_eq!(serde_json::to_string(&date).unwrap(), "\"2024-01-02\"");
+
+    let quarter = paft::prelude::QuarterOfYear::Q2;
+    assert_eq!(serde_json::to_string(&quarter).unwrap(), "\"2\"");
+
     assert_eq!(
         paft::domain::MAX_CANONICAL_TOKEN_LEN,
         paft::prelude::MAX_CANONICAL_TOKEN_LEN

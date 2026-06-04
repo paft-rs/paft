@@ -277,6 +277,52 @@ fn period_year_serde_emits_canonical_strings_and_validates() {
 }
 
 #[test]
+fn period_date_serde_emits_canonical_strings_and_validates() {
+    let date = PeriodDate::new(NaiveDate::from_ymd_opt(2024, 1, 2).unwrap()).unwrap();
+    let json = serde_json::to_string(&date).unwrap();
+    assert_eq!(json, "\"2024-01-02\"");
+
+    let round_trip: PeriodDate = serde_json::from_str(&json).unwrap();
+    assert_eq!(round_trip, date);
+
+    let low_year = PeriodDate::new(NaiveDate::from_ymd_opt(7, 1, 2).unwrap()).unwrap();
+    assert_eq!(serde_json::to_string(&low_year).unwrap(), "\"0007-01-02\"");
+    assert_eq!(
+        serde_json::from_str::<PeriodDate>("\"0007-01-02\"").unwrap(),
+        low_year
+    );
+
+    assert!(serde_json::from_str::<PeriodDate>("\"7-01-02\"").is_err());
+    assert!(serde_json::from_str::<PeriodDate>("\"2024-1-2\"").is_err());
+    assert!(serde_json::from_str::<PeriodDate>("\"2024/01/02\"").is_err());
+    assert!(serde_json::from_str::<PeriodDate>("\"2024-02-30\"").is_err());
+    assert!(serde_json::from_str::<PeriodDate>("20240102").is_err());
+}
+
+#[test]
+fn quarter_of_year_serde_emits_canonical_strings_and_validates() {
+    let quarter = QuarterOfYear::Q4;
+    let json = serde_json::to_string(&quarter).unwrap();
+    assert_eq!(json, "\"4\"");
+
+    let round_trip: QuarterOfYear = serde_json::from_str(&json).unwrap();
+    assert_eq!(round_trip, quarter);
+
+    assert_eq!(serde_json::from_str::<QuarterOfYear>("4").unwrap(), quarter);
+    assert_eq!(
+        serde_json::from_str::<QuarterOfYear>("\"1\"").unwrap(),
+        QuarterOfYear::Q1
+    );
+
+    assert!(serde_json::from_str::<QuarterOfYear>("0").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("5").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("\"0\"").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("\"5\"").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("\"04\"").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("\"Q4\"").is_err());
+}
+
+#[test]
 fn period_byte_parser_iso_does_not_swallow_us_or_dayfirst() {
     // A 4-digit-leading + '/'/'-' prefix that fails ISO must NOT cascade to US
     // or day-first (those start with 1-2 digits). Verify by checking inputs
