@@ -102,6 +102,9 @@ All notable changes to this project will be documented in this file.
   `is_same_exact_bucket_as`.
 - Fundamentals/facade: `EarningsYear::year` now uses the validated
   `PeriodYear` newtype instead of raw `i32`.
+- Domain/fundamentals/facade: `PeriodYear` serde now emits canonical
+  four-digit strings, including nested uses such as `EarningsYear::year`, while
+  deserialization still accepts integer years and normalizes them on output.
 - Fundamentals/facade: EPS trend and revision historical points now use
   `Horizon` for lookback windows instead of overloading `ReportingPeriod`.
 - Domain/money/fundamentals/facade: extensible enum `Other` variants now use

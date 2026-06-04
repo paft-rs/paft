@@ -2,7 +2,10 @@
 //!
 //! Provides separate reporting/fiscal period labels and calendar period buckets.
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as DeError};
+use serde::{
+    Deserialize, Deserializer, Serialize, Serializer,
+    de::{Error as DeError, Visitor},
+};
 use std::borrow::Cow;
 use std::fmt;
 
@@ -16,6 +19,11 @@ use paft_utils::Canonical;
 /// bound preserves the crate's existing parser behavior for tokens like
 /// `0000`; the upper bound keeps structured period display/serde canonical as
 /// exactly four year digits.
+///
+/// Standalone serde emits the same four-digit canonical string as
+/// [`std::fmt::Display`].
+/// Deserialization also accepts integer years for compatibility and normalizes
+/// them on the next serialization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PeriodYear(u16);
 
@@ -96,7 +104,7 @@ impl Serialize for PeriodYear {
     where
         S: Serializer,
     {
-        serializer.serialize_i32(self.get())
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -105,9 +113,75 @@ impl<'de> Deserialize<'de> for PeriodYear {
     where
         D: Deserializer<'de>,
     {
-        let year = i32::deserialize(deserializer)?;
-        Self::new(year).map_err(DeError::custom)
+        deserializer.deserialize_any(PeriodYearVisitor)
     }
+}
+
+struct PeriodYearVisitor;
+
+impl Visitor<'_> for PeriodYearVisitor {
+    type Value = PeriodYear;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("a canonical four-digit period year string or integer in 0..=9999")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: DeError,
+    {
+        parse_period_year_code(value).map_err(DeError::custom)
+    }
+
+    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+    where
+        E: DeError,
+    {
+        period_year_from_i64(value).map_err(DeError::custom)
+    }
+
+    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+    where
+        E: DeError,
+    {
+        period_year_from_u64(value).map_err(DeError::custom)
+    }
+}
+
+fn parse_period_year_code(value: &str) -> Result<PeriodYear, DomainError> {
+    let bytes = value.as_bytes();
+    if bytes.len() != 4 || !bytes.iter().all(u8::is_ascii_digit) {
+        return Err(DomainError::InvalidPeriodFormat {
+            format: value.to_string(),
+        });
+    }
+
+    let year = i32::from(bytes[0] - b'0') * 1_000
+        + i32::from(bytes[1] - b'0') * 100
+        + i32::from(bytes[2] - b'0') * 10
+        + i32::from(bytes[3] - b'0');
+
+    PeriodYear::new(year)
+}
+
+fn period_year_from_i64(value: i64) -> Result<PeriodYear, DomainError> {
+    let Ok(year) = i32::try_from(value) else {
+        return Err(DomainError::InvalidPeriodFormat {
+            format: value.to_string(),
+        });
+    };
+
+    PeriodYear::new(year)
+}
+
+fn period_year_from_u64(value: u64) -> Result<PeriodYear, DomainError> {
+    let Ok(year) = i32::try_from(value) else {
+        return Err(DomainError::InvalidPeriodFormat {
+            format: value.to_string(),
+        });
+    };
+
+    PeriodYear::new(year)
 }
 
 /// Valid date component for structured financial periods.

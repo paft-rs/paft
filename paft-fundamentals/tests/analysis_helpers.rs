@@ -98,7 +98,15 @@ fn earnings_year_uses_validated_period_year() {
     assert_eq!(row.year.get(), 2024);
 
     let value = serde_json::to_value(&row).unwrap();
-    assert_eq!(value["year"], serde_json::json!(2024));
+    assert_eq!(value["year"], serde_json::json!("2024"));
+
+    let from_numeric: EarningsYear = serde_json::from_value(serde_json::json!({
+        "year": 2024,
+        "revenue": null,
+        "earnings": null
+    }))
+    .unwrap();
+    assert_eq!(from_numeric.year, row.year);
 
     assert!(EarningsYear::new(10_000).is_err());
     assert!(

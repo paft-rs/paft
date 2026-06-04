@@ -254,14 +254,24 @@ fn period_low_years_emit_four_digit_canonical_codes() {
 }
 
 #[test]
-fn period_year_serde_uses_numeric_wire_shape_and_validates() {
+fn period_year_serde_emits_canonical_strings_and_validates() {
     let year = PeriodYear::new(2024).unwrap();
     let json = serde_json::to_string(&year).unwrap();
-    assert_eq!(json, "2024");
+    assert_eq!(json, "\"2024\"");
 
     let round_trip: PeriodYear = serde_json::from_str(&json).unwrap();
     assert_eq!(round_trip, year);
 
+    let low_year = PeriodYear::new(7).unwrap();
+    assert_eq!(serde_json::to_string(&low_year).unwrap(), "\"0007\"");
+    assert_eq!(
+        serde_json::from_str::<PeriodYear>("\"0007\"").unwrap(),
+        low_year
+    );
+
+    assert_eq!(serde_json::from_str::<PeriodYear>("7").unwrap(), low_year);
+    assert!(serde_json::from_str::<PeriodYear>("\"7\"").is_err());
+    assert!(serde_json::from_str::<PeriodYear>("\"10000\"").is_err());
     assert!(serde_json::from_str::<PeriodYear>("10000").is_err());
     assert!(serde_json::from_str::<PeriodYear>("-1").is_err());
 }
