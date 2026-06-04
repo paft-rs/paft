@@ -601,43 +601,32 @@ impl CalendarPeriod {
         }
     }
 
-    /// Returns true if both values describe the same calendar bucket.
+    /// Returns true if this calendar period overlaps `other`.
     ///
-    /// Cross-variant rules:
-    /// - Year vs Date: true if `date.year == year`.
-    /// - Year vs Quarter: true if `quarter.year == year`.
-    /// - Quarter vs Date: true if the date falls within that calendar quarter.
-    /// - Otherwise, same-variant exact equality.
+    /// Calendar periods are closed ranges over dates, so adjacent quarters do
+    /// not overlap, while a year overlaps every quarter and date inside that
+    /// calendar year.
     #[must_use]
-    pub fn is_same_bucket_as(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Year { year: ay }, Self::Year { year: by }) => ay == by,
-            (Self::Year { year }, Self::Date(d)) | (Self::Date(d), Self::Year { year }) => {
-                d.get().year() == year.get()
-            }
-            (Self::Year { year }, Self::Quarter { year: qy, .. })
-            | (Self::Quarter { year: qy, .. }, Self::Year { year }) => qy == year,
+    pub fn overlaps(&self, other: &Self) -> bool {
+        self.start_date() <= other.end_date() && other.start_date() <= self.end_date()
+    }
 
-            (
-                Self::Quarter {
-                    year: ay,
-                    quarter: aq,
-                },
-                Self::Quarter {
-                    year: by,
-                    quarter: bq,
-                },
-            ) => ay == by && aq == bq,
-            (Self::Quarter { year, quarter }, Self::Date(d))
-            | (Self::Date(d), Self::Quarter { year, quarter }) => {
-                let Some((dy, dq)) = quarter_for_date(d.get()) else {
-                    return false;
-                };
-                dy == *year && dq == *quarter
-            }
+    /// Returns true if this calendar period fully contains `other`.
+    ///
+    /// Containment is directional: a year contains its quarters and dates, but
+    /// a quarter or date does not contain the year.
+    #[must_use]
+    pub fn contains(&self, other: &Self) -> bool {
+        self.start_date() <= other.start_date() && self.end_date() >= other.end_date()
+    }
 
-            (Self::Date(a), Self::Date(b)) => a.get() == b.get(),
-        }
+    /// Returns true if both values are the same exact calendar bucket.
+    ///
+    /// Cross-granularity containment is not an exact match: a calendar year
+    /// and one of its quarters overlap, but they are not the same bucket.
+    #[must_use]
+    pub fn is_same_exact_bucket_as(&self, other: &Self) -> bool {
+        self == other
     }
 }
 

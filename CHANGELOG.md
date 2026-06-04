@@ -18,7 +18,8 @@ All notable changes to this project will be documented in this file.
 - Money/facade: added `QuantityAmount`, a transparent non-negative decimal
   quantity amount for provider-agnostic market sizes and volumes.
 - Domain/facade: added `CalendarPeriod` for calendar year/quarter/date
-  boundary helpers such as `start_date`, `end_date`, and bucket comparison.
+  boundary helpers such as `start_date`, `end_date`, `overlaps`, `contains`,
+  and `is_same_exact_bucket_as`.
 - Domain/facade: added `Horizon` and `OtherHorizon` for relative lookback
   windows such as `7d`, `1mo`, and `1y`.
 - Market/facade: added `Ohlc` plus OHLC price-basis modeling types
@@ -71,6 +72,9 @@ All notable changes to this project will be documented in this file.
   labels and `CalendarPeriod` for date-boundary logic. Structured period
   variants now store validated `PeriodYear`, `QuarterOfYear`, and
   `PeriodDate` components.
+- Domain/facade: split the ambiguous `CalendarPeriod::is_same_bucket_as`
+  relationship helper into `overlaps`, `contains`, and
+  `is_same_exact_bucket_as`.
 - Fundamentals/facade: `EarningsYear::year` now uses the validated
   `PeriodYear` newtype instead of raw `i32`.
 - Fundamentals/facade: EPS trend and revision historical points now use

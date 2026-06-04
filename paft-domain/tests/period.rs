@@ -480,30 +480,39 @@ fn period_helper_year_end() {
 }
 
 #[test]
-fn period_helper_is_same_bucket_as() {
-    // Year bucket
-    let y = CalendarPeriod::annual(2023).unwrap();
-    let d = calendar_date_period(2023, 1, 1);
-    let q = CalendarPeriod::quarterly(2023, 2).unwrap();
-    assert!(y.is_same_bucket_as(&CalendarPeriod::annual(2023).unwrap()));
-    assert!(y.is_same_bucket_as(&d));
-    assert!(y.is_same_bucket_as(&q));
-    assert!(!y.is_same_bucket_as(&CalendarPeriod::annual(2022).unwrap()));
-
-    // Quarter bucket
-    let d_q2 = calendar_date_period(2023, 4, 1);
+fn calendar_period_relationship_helpers() {
+    let year = CalendarPeriod::annual(2023).unwrap();
+    let same_year = CalendarPeriod::annual(2023).unwrap();
+    let next_year = CalendarPeriod::annual(2024).unwrap();
+    let q1 = CalendarPeriod::quarterly(2023, 1).unwrap();
     let q2 = CalendarPeriod::quarterly(2023, 2).unwrap();
-    assert!(q2.is_same_bucket_as(&d_q2));
-    assert!(q2.is_same_bucket_as(&CalendarPeriod::quarterly(2023, 2).unwrap()));
-    assert!(!q2.is_same_bucket_as(&CalendarPeriod::quarterly(2023, 3).unwrap()));
+    let q4 = CalendarPeriod::quarterly(2023, 4).unwrap();
+    let jan_1 = calendar_date_period(2023, 1, 1);
+    let mar_31 = calendar_date_period(2023, 3, 31);
+    let apr_1 = calendar_date_period(2023, 4, 1);
 
-    // Date exact
-    let d1 = calendar_date_period(2023, 7, 4);
-    let d2 = calendar_date_period(2023, 7, 4);
-    let d3 = calendar_date_period(2023, 7, 5);
-    assert!(d1.is_same_bucket_as(&d2));
-    assert!(!d1.is_same_bucket_as(&d3));
+    assert!(year.overlaps(&q1));
+    assert!(q1.overlaps(&year));
+    assert!(year.overlaps(&apr_1));
+    assert!(q1.overlaps(&mar_31));
+    assert!(!q1.overlaps(&q2));
+    assert!(!q1.overlaps(&apr_1));
+    assert!(!year.overlaps(&next_year));
+
+    assert!(year.contains(&q4));
+    assert!(year.contains(&jan_1));
+    assert!(q1.contains(&mar_31));
+    assert!(jan_1.contains(&jan_1));
+    assert!(!q1.contains(&year));
+    assert!(!jan_1.contains(&q1));
+
+    assert!(year.is_same_exact_bucket_as(&same_year));
+    assert!(jan_1.is_same_exact_bucket_as(&calendar_date_period(2023, 1, 1)));
+    assert!(!year.is_same_exact_bucket_as(&q1));
+    assert!(!year.is_same_exact_bucket_as(&jan_1));
+    assert!(!q1.is_same_exact_bucket_as(&jan_1));
 }
+
 #[test]
 fn period_other_values_uppercase() {
     let parsed = ReportingPeriod::try_from("custom range".to_string()).unwrap();
