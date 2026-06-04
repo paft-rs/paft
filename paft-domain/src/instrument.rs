@@ -238,28 +238,32 @@ impl Instrument {
     /// `BTC`) do not collapse to the same key. Symbol payloads include their
     /// byte length to avoid delimiter collisions with symbols that contain
     /// characters such as `@`.
+    ///
+    /// This is a synthetic composite key and is always returned as an owned
+    /// [`String`]. Use [`Self::display_key`] when a compact display identifier
+    /// is needed.
     #[must_use]
-    pub fn unique_key(&self) -> Cow<'_, str> {
+    pub fn unique_key(&self) -> String {
         let kind = self.kind.code();
 
         if let Some(figi) = &self.figi {
-            return Cow::Owned(format!("{kind}|FIGI|{}", figi.as_ref()));
+            return format!("{kind}|FIGI|{}", figi.as_ref());
         }
         if let Some(isin) = &self.isin {
-            return Cow::Owned(format!("{kind}|ISIN|{}", isin.as_ref()));
+            return format!("{kind}|ISIN|{}", isin.as_ref());
         }
 
         let symbol = self.symbol.as_str();
         let symbol_len = symbol.len();
 
         if let Some(exchange) = &self.exchange {
-            return Cow::Owned(format!(
+            return format!(
                 "{kind}|SYMBOL|{symbol_len}:{symbol}|EXCHANGE|{}",
                 exchange.code()
-            ));
+            );
         }
 
-        Cow::Owned(format!("{kind}|SYMBOL|{symbol_len}:{symbol}"))
+        format!("{kind}|SYMBOL|{symbol_len}:{symbol}")
     }
 
     /// Returns the best available compact identifier for display

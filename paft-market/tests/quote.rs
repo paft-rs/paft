@@ -43,7 +43,7 @@ fn quote_construction() {
     };
 
     assert_eq!(
-        quote.instrument.unique_key().as_ref(),
+        quote.instrument.unique_key(),
         "EQUITY|SYMBOL|4:AAPL|EXCHANGE|NASDAQ"
     );
     assert_eq!(quote.name, Some("Apple Inc.".to_string()));
@@ -77,10 +77,7 @@ fn quote_minimal_construction_still_requires_currency() {
         ask: None,
         provider: (),
     };
-    assert_eq!(
-        quote.instrument.unique_key().as_ref(),
-        "EQUITY|SYMBOL|4:AAPL"
-    );
+    assert_eq!(quote.instrument.unique_key(), "EQUITY|SYMBOL|4:AAPL");
     assert_eq!(quote.currency, usd());
     assert!(quote.name.is_none());
     assert!(quote.price.is_none());
@@ -234,10 +231,7 @@ fn quote_update_construction() {
         provider: (),
     };
 
-    assert_eq!(
-        update.instrument.unique_key().as_ref(),
-        "EQUITY|SYMBOL|4:AAPL"
-    );
+    assert_eq!(update.instrument.unique_key(), "EQUITY|SYMBOL|4:AAPL");
     assert_eq!(update.currency, usd());
     assert_eq!(update.price, Some(amount(150)));
     assert_eq!(
@@ -259,10 +253,7 @@ fn quote_update_partial_fields() {
         provider: (),
     };
 
-    assert_eq!(
-        update.instrument.unique_key().as_ref(),
-        "EQUITY|SYMBOL|4:AAPL"
-    );
+    assert_eq!(update.instrument.unique_key(), "EQUITY|SYMBOL|4:AAPL");
     assert_eq!(update.price, Some(amount(150)));
     assert_eq!(update.previous_close, None);
     assert_eq!(update.ts.timestamp(), 1_640_995_200);
@@ -476,10 +467,7 @@ fn deserialization_handles_missing_optional_fields() {
 
     let deserialized: Quote = serde_json::from_str(json).unwrap();
 
-    assert_eq!(
-        deserialized.instrument.unique_key().as_ref(),
-        "EQUITY|SYMBOL|4:AAPL"
-    );
+    assert_eq!(deserialized.instrument.unique_key(), "EQUITY|SYMBOL|4:AAPL");
     assert_eq!(deserialized.currency, usd());
     assert!(deserialized.as_of.is_none());
     assert!(deserialized.price.is_none());

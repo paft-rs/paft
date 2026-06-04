@@ -93,6 +93,9 @@ All notable changes to this project will be documented in this file.
 - Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
   source-namespaced identity key; new `Instrument::display_key()` preserves the
   compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
+- Domain/facade: `Instrument::unique_key()` now returns `String` instead of
+  `Cow<'_, str>` because the namespaced identity key is always a synthetic
+  composite.
 - Domain/facade: `Period` was split into `ReportingPeriod` for fiscal/provider
   labels and `CalendarPeriod` for date-boundary logic. Structured period
   variants now store validated `PeriodYear`, `QuarterOfYear`, and
