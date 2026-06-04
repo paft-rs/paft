@@ -18,7 +18,7 @@ pub enum PredictionError {
 
     /// Invalid outcome ID encountered while parsing or validating.
     #[error(
-        "Invalid outcome ID: '{0}' - expected 1-78 ASCII digits with no leading +, -, or whitespace"
+        "Invalid outcome ID: '{0}' - expected 1-78 ASCII digits after trimming surrounding whitespace, with no leading + or -"
     )]
     InvalidOutcomeId(String),
 }

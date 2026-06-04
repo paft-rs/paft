@@ -112,7 +112,11 @@ impl Price {
     ///
     /// # Errors
     ///
-    /// Returns [`MoneyError::ConversionError`] when the scale exceeds the active backend precision.
+    /// Returns [`MoneyError::ConversionError`] when the active decimal backend
+    /// cannot represent the integer coefficient and scale. With the default
+    /// backend this can happen when the coefficient exceeds `rust_decimal`'s
+    /// mantissa or the scale exceeds its supported range; the `bigdecimal`
+    /// backend accepts every `i128` coefficient and `u32` scale.
     pub fn from_scaled_units(
         units: i128,
         scale: u32,

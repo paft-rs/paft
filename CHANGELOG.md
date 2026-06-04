@@ -226,6 +226,8 @@ All notable changes to this project will be documented in this file.
   as `$DOGE` no longer normalize to `DOGE`.
 - Fundamentals: `Profile` JSON deserialization no longer rejects unknown
   payload fields, matching the workspace's open data-model serde policy.
+- Prediction/money docs: public `OutcomeID` and `from_scaled_units`
+  messages/docs now match trimming and decimal-backend behavior.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
   payloads can no longer use tokens already modeled by the owning enum,
   preserving serde identity for values created through public constructors.

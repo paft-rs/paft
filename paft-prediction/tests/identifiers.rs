@@ -237,6 +237,15 @@ fn outcome_id_rejects_leading_plus() {
 }
 
 #[test]
+fn outcome_id_error_message_matches_trim_behavior() {
+    let err = OutcomeID::new("+123").unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "Invalid outcome ID: '+123' - expected 1-78 ASCII digits after trimming surrounding whitespace, with no leading + or -"
+    );
+}
+
+#[test]
 fn outcome_id_rejects_leading_minus() {
     let result = OutcomeID::new("-123");
     assert!(
