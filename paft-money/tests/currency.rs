@@ -1,7 +1,7 @@
 //! Tests covering canonical/alias behavior for currencies.
 
 use iso_currency::Currency as IsoCurrency;
-use paft_money::Currency;
+use paft_money::{Currency, OtherCurrency};
 use paft_utils::StringCode;
 use std::str::FromStr;
 
@@ -29,6 +29,18 @@ fn currency_other_values_uppercase_and_round_trip() {
     assert_eq!(json, "\"USD_LITE\"");
     let back: Currency = serde_json::from_str(&json).unwrap();
     assert_eq!(back, parsed);
+}
+
+#[test]
+fn other_currency_serde_uses_checked_constructor() {
+    let other = OtherCurrency::new("my token").unwrap();
+    assert_eq!(serde_json::to_string(&other).unwrap(), "\"MY_TOKEN\"");
+
+    let back: OtherCurrency = serde_json::from_str("\"my token\"").unwrap();
+    assert_eq!(back, other);
+
+    assert!(serde_json::from_str::<OtherCurrency>("\"USD\"").is_err());
+    assert!(serde_json::from_str::<OtherCurrency>("\"BTC\"").is_err());
 }
 
 #[test]

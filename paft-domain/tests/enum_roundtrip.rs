@@ -218,3 +218,47 @@ fn other_wrappers_reject_modeled_core_tokens() {
         "PROVIDER_RANGE"
     );
 }
+
+#[test]
+fn other_wrappers_serde_uses_checked_constructors_for_core_tokens() {
+    let currency = OtherCurrency::new("my token").unwrap();
+    assert_eq!(serde_json::to_string(&currency).unwrap(), "\"MY_TOKEN\"");
+    let currency: OtherCurrency = serde_json::from_str("\"my token\"").unwrap();
+    assert_eq!(currency.as_ref(), "MY_TOKEN");
+    assert!(serde_json::from_str::<OtherCurrency>("\"USD\"").is_err());
+    assert!(serde_json::from_str::<OtherCurrency>("\"BTC\"").is_err());
+
+    let exchange = OtherExchange::new("my exchange").unwrap();
+    assert_eq!(serde_json::to_string(&exchange).unwrap(), "\"MY_EXCHANGE\"");
+    let exchange: OtherExchange = serde_json::from_str("\"my exchange\"").unwrap();
+    assert_eq!(exchange.as_ref(), "MY_EXCHANGE");
+    assert!(serde_json::from_str::<OtherExchange>("\"NASDAQ\"").is_err());
+    assert!(serde_json::from_str::<OtherExchange>("\"bombay\"").is_err());
+
+    let asset = OtherAssetKind::new("structured note").unwrap();
+    assert_eq!(
+        serde_json::to_string(&asset).unwrap(),
+        "\"STRUCTURED_NOTE\""
+    );
+    let asset: OtherAssetKind = serde_json::from_str("\"structured note\"").unwrap();
+    assert_eq!(asset.as_ref(), "STRUCTURED_NOTE");
+    assert!(serde_json::from_str::<OtherAssetKind>("\"EQUITY\"").is_err());
+    assert!(serde_json::from_str::<OtherAssetKind>("\"stock\"").is_err());
+
+    let period = OtherPeriod::new("custom range").unwrap();
+    assert_eq!(serde_json::to_string(&period).unwrap(), "\"CUSTOM_RANGE\"");
+    let period: OtherPeriod = serde_json::from_str("\"custom range\"").unwrap();
+    assert_eq!(period.as_ref(), "CUSTOM_RANGE");
+    assert!(serde_json::from_str::<OtherPeriod>("\"2023Q4\"").is_err());
+    assert!(serde_json::from_str::<OtherPeriod>("\"FY2023\"").is_err());
+
+    let horizon = OtherHorizon::new("provider range").unwrap();
+    assert_eq!(
+        serde_json::to_string(&horizon).unwrap(),
+        "\"PROVIDER_RANGE\""
+    );
+    let horizon: OtherHorizon = serde_json::from_str("\"provider range\"").unwrap();
+    assert_eq!(horizon.as_ref(), "PROVIDER_RANGE");
+    assert!(serde_json::from_str::<OtherHorizon>("\"7d\"").is_err());
+    assert!(serde_json::from_str::<OtherHorizon>("\"1mo\"").is_err());
+}

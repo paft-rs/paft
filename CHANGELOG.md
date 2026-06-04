@@ -114,6 +114,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Core/domain/money/fundamentals: public enum-specific `Other*` wrappers now
+  implement serde directly and validate deserialized strings through their
+  checked constructors, so modeled codes remain rejected.
 - Feature matrix: `paft-aggregates/dataframe` now explicitly enables
   Polars datetime support for `Snapshot::as_of`, and the `v09_ergonomics`
   example declares the facade features it imports.

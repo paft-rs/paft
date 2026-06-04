@@ -147,3 +147,51 @@ fn other_wrappers_reject_modeled_fundamentals_tokens() {
         "INTERVAL_FUND"
     );
 }
+
+#[test]
+fn other_wrappers_serde_uses_checked_constructors_for_fundamentals_tokens() {
+    let grade = OtherRecommendationGrade::new("custom grade").unwrap();
+    assert_eq!(serde_json::to_string(&grade).unwrap(), "\"CUSTOM_GRADE\"");
+    let grade: OtherRecommendationGrade = serde_json::from_str("\"custom grade\"").unwrap();
+    assert_eq!(grade.as_ref(), "CUSTOM_GRADE");
+    assert!(serde_json::from_str::<OtherRecommendationGrade>("\"BUY\"").is_err());
+    assert!(serde_json::from_str::<OtherRecommendationGrade>("\"market perform\"").is_err());
+
+    let action = OtherRecommendationAction::new("affirm").unwrap();
+    assert_eq!(serde_json::to_string(&action).unwrap(), "\"AFFIRM\"");
+    let action: OtherRecommendationAction = serde_json::from_str("\"affirm\"").unwrap();
+    assert_eq!(action.as_ref(), "AFFIRM");
+    assert!(serde_json::from_str::<OtherRecommendationAction>("\"UPGRADE\"").is_err());
+    assert!(serde_json::from_str::<OtherRecommendationAction>("\"up\"").is_err());
+
+    let transaction_type = OtherTransactionType::new("vesting").unwrap();
+    assert_eq!(
+        serde_json::to_string(&transaction_type).unwrap(),
+        "\"VESTING\""
+    );
+    let transaction_type: OtherTransactionType = serde_json::from_str("\"vesting\"").unwrap();
+    assert_eq!(transaction_type.as_ref(), "VESTING");
+    assert!(serde_json::from_str::<OtherTransactionType>("\"BUY\"").is_err());
+    assert!(serde_json::from_str::<OtherTransactionType>("\"purchase\"").is_err());
+
+    let position = OtherInsiderPosition::new("chief strategy officer").unwrap();
+    assert_eq!(
+        serde_json::to_string(&position).unwrap(),
+        "\"CHIEF_STRATEGY_OFFICER\""
+    );
+    let position: OtherInsiderPosition =
+        serde_json::from_str("\"chief strategy officer\"").unwrap();
+    assert_eq!(position.as_ref(), "CHIEF_STRATEGY_OFFICER");
+    assert!(serde_json::from_str::<OtherInsiderPosition>("\"CEO\"").is_err());
+    assert!(serde_json::from_str::<OtherInsiderPosition>("\"chief executive officer\"").is_err());
+
+    let fund_kind = OtherFundKind::new("interval fund").unwrap();
+    assert_eq!(
+        serde_json::to_string(&fund_kind).unwrap(),
+        "\"INTERVAL_FUND\""
+    );
+    let fund_kind: OtherFundKind = serde_json::from_str("\"interval fund\"").unwrap();
+    assert_eq!(fund_kind.as_ref(), "INTERVAL_FUND");
+    assert!(serde_json::from_str::<OtherFundKind>("\"ETF\"").is_err());
+    assert!(serde_json::from_str::<OtherFundKind>("\"exchange traded fund\"").is_err());
+}

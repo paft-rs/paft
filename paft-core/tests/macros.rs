@@ -274,6 +274,44 @@ fn open_string_code_trait_reports_canonical_correctly() {
     assert!(!is_canon(&other));
 }
 
+// ---------- Enum-specific Other wrapper ----------
+
+paft_core::other_string_code_type!(
+    /// Provider-specific venue code that is not modeled by [`ListingVenue`].
+    struct OtherListingVenue for ListingVenue;
+    type Error = PaftError;
+    parse(input) => input.parse::<ListingVenue>();
+    invalid(input) => PaftError::InvalidEnumValue {
+        enum_name: "ListingVenue",
+        value: input.to_string(),
+    };
+);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum ListingVenue {
+    Primary,
+    Other(OtherListingVenue),
+}
+
+paft_core::string_enum_with_code!(
+    ListingVenue, Other(OtherListingVenue), "ListingVenue",
+    { "PRIMARY" => ListingVenue::Primary },
+    { "MAIN" => ListingVenue::Primary }
+);
+paft_core::impl_display_via_code!(ListingVenue);
+
+#[test]
+fn other_string_code_wrapper_serde_uses_checked_constructor() {
+    let other = OtherListingVenue::new("dark pool").unwrap();
+    assert_eq!(serde_json::to_string(&other).unwrap(), "\"DARK_POOL\"");
+
+    let back: OtherListingVenue = serde_json::from_str("\"dark pool\"").unwrap();
+    assert_eq!(back, other);
+
+    assert!(serde_json::from_str::<OtherListingVenue>("\"PRIMARY\"").is_err());
+    assert!(serde_json::from_str::<OtherListingVenue>("\"main\"").is_err());
+}
+
 // ---------- Macro hygiene smoke test ----------
 //
 // This module deliberately does NOT bring `paft_utils` into scope — neither

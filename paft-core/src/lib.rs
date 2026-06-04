@@ -476,6 +476,25 @@ macro_rules! other_string_code_type {
                 f.write_str(self.as_str())
             }
         }
+
+        impl $crate::__serde::Serialize for $OtherCode {
+            fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
+            where
+                S: $crate::__serde::Serializer,
+            {
+                serializer.serialize_str(self.as_str())
+            }
+        }
+
+        impl<'de> $crate::__serde::Deserialize<'de> for $OtherCode {
+            fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+            where
+                D: $crate::__serde::Deserializer<'de>,
+            {
+                let raw = <String as $crate::__serde::Deserialize>::deserialize(deserializer)?;
+                Self::new(&raw).map_err($crate::__serde::de::Error::custom)
+            }
+        }
     };
 }
 
