@@ -39,7 +39,7 @@ pub enum RoundingStrategy {
 
 #[cfg(not(feature = "bigdecimal"))]
 mod backend {
-    use super::{FromStr, RoundingStrategy};
+    use super::{FromStr, RoundingStrategy, rust_decimal_to_i128_mantissa};
 
     pub use rust_decimal::Decimal;
     use rust_decimal::RoundingStrategy as RustRoundingStrategy;
@@ -47,6 +47,16 @@ mod backend {
 
     pub fn parse_decimal(value: &str) -> Option<Decimal> {
         Decimal::from_str(value).ok()
+    }
+
+    pub const MAX_DECIMAL_PRECISION: u8 = 28;
+
+    pub const fn clone_decimal(value: &Decimal) -> Decimal {
+        *value
+    }
+
+    pub fn fractional_digit_count(value: &Decimal) -> i64 {
+        i64::from(value.scale())
     }
 
     pub const fn zero() -> Decimal {
@@ -78,6 +88,26 @@ mod backend {
         value.to_string()
     }
 
+    pub fn checked_add(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+        lhs.checked_add(*rhs)
+    }
+
+    pub fn checked_sub(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+        lhs.checked_sub(*rhs)
+    }
+
+    pub fn checked_mul(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+        lhs.checked_mul(*rhs)
+    }
+
+    pub fn checked_div(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+        lhs.checked_div(*rhs)
+    }
+
+    pub fn try_to_i128_mantissa(value: &Decimal, target_scale: u32) -> Option<i128> {
+        rust_decimal_to_i128_mantissa(value, target_scale)
+    }
+
     impl From<RoundingStrategy> for RustRoundingStrategy {
         fn from(value: RoundingStrategy) -> Self {
             match value {
@@ -95,7 +125,7 @@ mod backend {
 
 #[cfg(feature = "bigdecimal")]
 mod backend {
-    use super::{FromStr, RoundingStrategy};
+    use super::{DECIMAL128_PRECISION, FromStr, RoundingStrategy};
 
     pub use bigdecimal::BigDecimal as Decimal;
     use bigdecimal::RoundingMode;
@@ -105,6 +135,16 @@ mod backend {
 
     pub fn parse_decimal(value: &str) -> Option<Decimal> {
         Decimal::from_str(value).ok()
+    }
+
+    pub const MAX_DECIMAL_PRECISION: u8 = u8::MAX;
+
+    pub fn clone_decimal(value: &Decimal) -> Decimal {
+        value.clone()
+    }
+
+    pub fn fractional_digit_count(value: &Decimal) -> i64 {
+        value.fractional_digit_count()
     }
 
     pub fn zero() -> Decimal {
@@ -145,9 +185,167 @@ mod backend {
     pub fn to_plain_string(value: &Decimal) -> String {
         value.to_plain_string()
     }
+
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn checked_add(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+        Some(lhs + rhs)
+    }
+
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn checked_sub(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+        Some(lhs - rhs)
+    }
+
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn checked_mul(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+        Some(lhs * rhs)
+    }
+
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn checked_div(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+        Some(lhs / rhs)
+    }
+
+    pub fn try_to_i128_mantissa(value: &Decimal, target_scale: u32) -> Option<i128> {
+        if target_scale > DECIMAL128_PRECISION {
+            return None;
+        }
+
+        let target = i64::from(target_scale);
+        let rescaled = value.with_scale_round(target, bigdecimal::RoundingMode::HalfEven);
+        if rescaled.digits() > 38 {
+            return None;
+        }
+        let (bigint, _) = rescaled.into_bigint_and_exponent();
+        i128::try_from(bigint).ok()
+    }
 }
 
 pub use backend::{Decimal, ToPrimitive};
+
+const DECIMAL128_PRECISION: u32 = 38;
+const MAX_I128_MANTISSA: i128 = 10_i128.pow(DECIMAL128_PRECISION);
+
+fn rust_decimal_to_i128_mantissa(value: &rust_decimal::Decimal, target_scale: u32) -> Option<i128> {
+    if target_scale > DECIMAL128_PRECISION {
+        return None;
+    }
+
+    let source_scale = value.scale();
+    let mantissa: i128 = value.mantissa();
+    let rescaled = match source_scale.cmp(&target_scale) {
+        std::cmp::Ordering::Equal => mantissa,
+        std::cmp::Ordering::Less => {
+            let diff = target_scale - source_scale;
+            let pow = 10_i128.checked_pow(diff)?;
+            mantissa.checked_mul(pow)?
+        }
+        std::cmp::Ordering::Greater => {
+            let diff = source_scale - target_scale;
+            let pow = 10_i128.checked_pow(diff)?.cast_unsigned();
+            let neg = mantissa < 0;
+            let abs = mantissa.unsigned_abs();
+            let q = (abs / pow).cast_signed();
+            let r = abs % pow;
+            let half = pow / 2;
+            let rounded = match r.cmp(&half) {
+                std::cmp::Ordering::Greater => q + 1,
+                std::cmp::Ordering::Less => q,
+                std::cmp::Ordering::Equal => q + (q & 1),
+            };
+            if neg { -rounded } else { rounded }
+        }
+    };
+    if rescaled.unsigned_abs() >= MAX_I128_MANTISSA.cast_unsigned() {
+        return None;
+    }
+    Some(rescaled)
+}
+
+/// Maximum fractional precision supported by the active decimal backend.
+pub const MAX_DECIMAL_PRECISION: u8 = backend::MAX_DECIMAL_PRECISION;
+
+/// Returns the maximum fractional precision supported by the active decimal backend.
+#[must_use]
+#[allow(clippy::missing_const_for_fn)]
+pub fn max_decimal_precision() -> u8 {
+    backend::MAX_DECIMAL_PRECISION
+}
+
+/// Clones a decimal value using the active backend's cheapest owned-value path.
+#[must_use]
+pub fn clone_decimal(value: &Decimal) -> Decimal {
+    backend::clone_decimal(value)
+}
+
+/// Returns the number of fractional digits represented by the active backend.
+#[must_use]
+pub fn fractional_digit_count(value: &Decimal) -> i64 {
+    backend::fractional_digit_count(value)
+}
+
+/// Adds two decimals if the active backend can represent the result.
+#[must_use]
+pub fn checked_add(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    backend::checked_add(lhs, rhs)
+}
+
+/// Subtracts two decimals if the active backend can represent the result.
+#[must_use]
+pub fn checked_sub(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    backend::checked_sub(lhs, rhs)
+}
+
+/// Multiplies two decimals if the active backend can represent the result.
+#[must_use]
+pub fn checked_mul(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    backend::checked_mul(lhs, rhs)
+}
+
+/// Divides two decimals if the active backend can represent the result.
+#[must_use]
+pub fn checked_div(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    backend::checked_div(lhs, rhs)
+}
+
+/// Encodes decimal-like values into Polars-compatible decimal128 mantissas.
+pub trait Decimal128Mantissa {
+    /// Returns the mantissa after rescaling to `target_scale`, or `None` when
+    /// the result exceeds decimal128 precision or the active backend cannot
+    /// represent the conversion.
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128>;
+}
+
+impl Decimal128Mantissa for Decimal {
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        backend::try_to_i128_mantissa(self, target_scale)
+    }
+}
+
+#[cfg(feature = "bigdecimal")]
+impl Decimal128Mantissa for rust_decimal::Decimal {
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        rust_decimal_to_i128_mantissa(self, target_scale)
+    }
+}
+
+impl Decimal128Mantissa for NonNegativeDecimal {
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        self.as_decimal().try_to_i128_mantissa(target_scale)
+    }
+}
+
+impl Decimal128Mantissa for PositiveDecimal {
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        self.as_decimal().try_to_i128_mantissa(target_scale)
+    }
+}
+
+impl Decimal128Mantissa for Ratio {
+    fn try_to_i128_mantissa(&self, target_scale: u32) -> Option<i128> {
+        self.as_decimal().try_to_i128_mantissa(target_scale)
+    }
+}
 
 /// Parses a decimal string using the active backend.
 ///

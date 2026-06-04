@@ -22,11 +22,7 @@ use crate::locale::Locale;
 ///
 /// * With the default `rust_decimal` backend this reflects the 28 fractional digits that
 ///   `rust_decimal::Decimal` can represent safely.
-#[cfg(not(feature = "bigdecimal"))]
-pub const MAX_DECIMAL_PRECISION: u8 = 28;
-/// Maximum precision supported by the active decimal backend for safe scaling operations.
-#[cfg(feature = "bigdecimal")]
-pub const MAX_DECIMAL_PRECISION: u8 = u8::MAX;
+pub const MAX_DECIMAL_PRECISION: u8 = paft_decimal::MAX_DECIMAL_PRECISION;
 /// Maximum precision that can be converted into an `i64` minor-unit scale (10^18).
 ///
 /// This is bounded by `10_i64.pow(scale)` fitting into an `i64`, ensuring minor-unit
@@ -212,9 +208,8 @@ pub fn try_normalize_currency_code(code: &str) -> Result<Currency, MoneyParseErr
     Currency::try_from_str(code)
 }
 
-const fn validate_minor_units(minor_units: u8) -> Result<(), MinorUnitError> {
-    #[cfg(not(feature = "bigdecimal"))]
-    if minor_units > MAX_DECIMAL_PRECISION {
+fn validate_minor_units(minor_units: u8) -> Result<(), MinorUnitError> {
+    if minor_units > paft_decimal::max_decimal_precision() {
         return Err(MinorUnitError::ExceedsDecimalPrecision {
             decimals: minor_units,
         });

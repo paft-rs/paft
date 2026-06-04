@@ -18,7 +18,6 @@ use df_derive_macros::ToDataFrame;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-#[cfg_attr(not(feature = "bigdecimal"), derive(Copy))]
 pub struct QuantityAmount {
     #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
     amount: NonNegativeDecimal,
@@ -54,14 +53,6 @@ impl QuantityAmount {
 
     /// Returns the wrapped non-negative decimal.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
-    pub const fn into_inner(self) -> NonNegativeDecimal {
-        self.amount
-    }
-
-    /// Returns the wrapped non-negative decimal.
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
     pub fn into_inner(self) -> NonNegativeDecimal {
         self.amount
     }

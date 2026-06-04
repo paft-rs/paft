@@ -66,6 +66,13 @@ All notable changes to this project will be documented in this file.
 - Decimal/money/market/fundamentals: decimal-backed serde fields now serialize
   through canonical strings from `paft-decimal`, independent of the active
   decimal backend.
+- Decimal/money/utils: backend-specific decimal cloning, checked arithmetic,
+  precision limits, and decimal128 mantissa encoding now live behind
+  `paft-decimal` APIs so downstream crates do not infer the active decimal
+  backend from their own local feature flags.
+- Money/facade: `PriceAmount` and `QuantityAmount` no longer implement `Copy`
+  under the default local feature set. They remain `Clone`, matching the
+  backend-agnostic ownership contract of `paft_decimal::Decimal`.
 - Market history: `HistoryResponse` now exposes `price_basis:
   OhlcPriceBasis`, describing the returned OHLC price basis as either uniform
   `PriceBasis` metadata or per-field open/high/low/close bases.
@@ -165,6 +172,10 @@ All notable changes to this project will be documented in this file.
 - Decimal/money: constrained decimal and contextual amount `Display`
   implementations now emit canonical decimal strings without gratuitous
   trailing zeroes, matching serde and hash behavior.
+- Decimal feature matrix: crates that import `paft_decimal::Decimal` now compile
+  correctly when another package in the dependency graph enables
+  `paft-decimal/bigdecimal` without enabling each downstream crate's local
+  `bigdecimal` feature.
 - Domain: structured `ReportingPeriod` values can no longer expose invalid public
   states such as quarter 5 or date/period years outside `0..=9999`, and low
   years now emit four-digit canonical codes so display/serde round trips

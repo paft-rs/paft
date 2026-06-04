@@ -17,7 +17,7 @@ use std::borrow::Cow;
 use df_derive_macros::ToDataFrame;
 
 use crate::currency::Currency;
-#[cfg(any(not(feature = "bigdecimal"), feature = "money-formatting"))]
+#[cfg(feature = "money-formatting")]
 use crate::currency_utils::MAX_DECIMAL_PRECISION;
 use crate::currency_utils::MAX_MINOR_UNIT_DECIMALS;
 use crate::exact::{
@@ -88,17 +88,8 @@ impl ExchangeRate {
 
     /// Returns the exchange rate.
     ///
-    /// `const`-qualified under `rust_decimal` (which is `Copy`); under
-    /// `bigdecimal` the underlying clone must run at runtime.
+    /// The value is cloned from the active decimal backend.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
-    pub const fn rate(&self) -> Decimal {
-        copy_decimal(&self.rate)
-    }
-
-    /// Returns the exchange rate.
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
     pub fn rate(&self) -> Decimal {
         copy_decimal(&self.rate)
     }
@@ -265,10 +256,9 @@ impl Money {
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     // We take `amount` by value to mirror `Money::new` and avoid forcing
     // callers (notably the deserialize path) to clone before construction.
-    // Under `bigdecimal` the body uses `&amount` for the round and
-    // comparison, and only consumes the canonical value; the lint is
-    // suppressed to keep the signatures consistent across backends.
-    #[cfg_attr(feature = "bigdecimal", allow(clippy::needless_pass_by_value))]
+    // The body uses `&amount` for validation and only consumes the canonical
+    // value; keep the signature consistent across backends and deserialize paths.
+    #[allow(clippy::needless_pass_by_value)]
     pub fn new_exact(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
         let (minor_units, scale) = Self::scale_for_currency(&currency)?;
         // Round toward zero so any rounding "decision" turns into a pure
@@ -305,14 +295,6 @@ impl Money {
     /// allocation proportional to the number of digits when the `bigdecimal`
     /// feature is enabled.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
-    pub const fn amount(&self) -> Decimal {
-        copy_decimal(&self.amount)
-    }
-
-    /// Returns the amount as a [`Decimal`].
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
     pub fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }
@@ -633,8 +615,7 @@ impl Money {
     }
 
     fn ensure_scale_within_limits(decimals: u8) -> Result<u32, MoneyError> {
-        #[cfg(not(feature = "bigdecimal"))]
-        if decimals > MAX_DECIMAL_PRECISION {
+        if decimals > decimal::max_decimal_precision() {
             return Err(MoneyError::ConversionError);
         }
         if decimals > MAX_MINOR_UNIT_DECIMALS {

@@ -71,14 +71,6 @@ impl MonetaryAmount {
 
     /// Returns the underlying [`Decimal`], cloning when required by the backend.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
-    pub const fn amount(&self) -> Decimal {
-        copy_decimal(&self.amount)
-    }
-
-    /// Returns the underlying [`Decimal`], cloning when required by the backend.
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
     pub fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }

@@ -39,7 +39,6 @@ pub struct Price {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-#[cfg_attr(not(feature = "bigdecimal"), derive(Copy))]
 pub struct PriceAmount {
     #[serde(with = "paft_decimal::serde::canonical_str")]
     amount: Decimal,
@@ -60,28 +59,12 @@ impl PriceAmount {
 
     /// Returns the wrapped decimal.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
-    pub const fn into_inner(self) -> Decimal {
-        self.amount
-    }
-
-    /// Returns the wrapped decimal.
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
     pub fn into_inner(self) -> Decimal {
         self.amount
     }
 
     /// Attaches a currency and returns a standalone [`Price`].
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
-    pub const fn with_currency(&self, currency: Currency) -> Price {
-        Price::new(copy_decimal(&self.amount), currency)
-    }
-
-    /// Attaches a currency and returns a standalone [`Price`].
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
     pub fn with_currency(&self, currency: Currency) -> Price {
         Price::new(copy_decimal(&self.amount), currency)
     }
@@ -140,14 +123,6 @@ impl Price {
 
     /// Returns the underlying decimal amount.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
-    pub const fn amount(&self) -> Decimal {
-        copy_decimal(&self.amount)
-    }
-
-    /// Returns the underlying decimal amount.
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
     pub fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }

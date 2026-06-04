@@ -9,79 +9,30 @@ pub trait CurrencyAmount {
     fn raw_currency(&self) -> &Currency;
 }
 
-// `Decimal` is `Copy` under `rust_decimal` but not under `bigdecimal`. The two
-// definitions below let call sites say `copy_decimal(&value)` without
-// sprinkling backend cfgs through the money types.
-#[cfg(not(feature = "bigdecimal"))]
-#[inline]
-pub const fn copy_decimal(value: &Decimal) -> Decimal {
-    *value
-}
-
-#[cfg(feature = "bigdecimal")]
 #[inline]
 pub fn copy_decimal(value: &Decimal) -> Decimal {
-    value.clone()
+    decimal::clone_decimal(value)
 }
 
 /// Number of fractional digits represented by the active decimal backend.
 pub fn decimal_scale(value: &Decimal) -> i64 {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        i64::from(value.scale())
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        value.fractional_digit_count()
-    }
+    decimal::fractional_digit_count(value)
 }
 
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
 fn checked_add_decimal_inner(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_add(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs + rhs)
-    }
+    decimal::checked_add(lhs, rhs)
 }
 
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
 fn checked_sub_decimal_inner(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_sub(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs - rhs)
-    }
+    decimal::checked_sub(lhs, rhs)
 }
 
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
 fn checked_mul_decimal_inner(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_mul(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs * rhs)
-    }
+    decimal::checked_mul(lhs, rhs)
 }
 
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
 fn checked_div_decimal_inner(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_div(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs / rhs)
-    }
+    decimal::checked_div(lhs, rhs)
 }
 
 pub fn checked_add_decimal(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {
