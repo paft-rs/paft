@@ -6,7 +6,7 @@ use paft_market::market::action::Action;
 use paft_market::{
     AdjustmentAnchor, AdjustmentMethod, Candle, CandleUpdate, CorporateActionAdjustmentCause,
     CorporateActionAdjustmentCauses, GenericCandle, GenericHistoryResponse, HistoryMeta,
-    HistoryResponse, Interval, Ohlc, OhlcPriceBasis, PriceBasis,
+    HistoryResponse, HistoryValidationError, Interval, Ohlc, OhlcPriceBasis, PriceBasis,
 };
 use paft_money::{Currency, IsoCurrency, Price, PriceAmount, QuantityAmount};
 use serde::{Deserialize, Serialize};
@@ -316,7 +316,29 @@ fn history_response_chronological_order_validation_allows_duplicate_timestamps()
 
     assert!(response(vec![]).is_chronologically_ordered());
     assert!(response(vec![candle_at(1), candle_at(1), candle_at(2)]).is_chronologically_ordered());
-    assert!(!response(vec![candle_at(2), candle_at(1)]).is_chronologically_ordered());
+
+    let out_of_order = response(vec![candle_at(2), candle_at(1)]);
+    assert!(!out_of_order.is_chronologically_ordered());
+    assert_eq!(
+        out_of_order.validate(),
+        Err(HistoryValidationError::CandlesNotChronological {
+            previous_index: 0,
+            previous_ts_millis: 2_000,
+            current_index: 1,
+            current_ts_millis: 1_000,
+        })
+    );
+
+    let chronological = out_of_order.into_chronological();
+    assert!(chronological.is_chronologically_ordered());
+    assert_eq!(
+        chronological
+            .candles
+            .iter()
+            .map(|candle| candle.ts.timestamp())
+            .collect::<Vec<_>>(),
+        vec![1, 2]
+    );
 }
 
 #[test]

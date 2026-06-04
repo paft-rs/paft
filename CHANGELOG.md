@@ -30,6 +30,10 @@ All notable changes to this project will be documented in this file.
 - Market: added `OptionExpirationsResponse::new_sorted` and
   `GenericHistoryResponse::is_chronologically_ordered` helpers for callers that
   need explicit date/order normalization or validation.
+- Market: added advisory-invariant helpers for response boundaries:
+  `GenericHistoryResponse::{validate, into_chronological}`,
+  `GenericOrderBook::{is_sorted, sort_levels}`, and
+  `OptionExpirationsResponse::is_sorted_unique`.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
   constrained decimal constructors to compose with `paft::prelude::Result`.
 - Docs/examples: added a no-metadata v0.9 ergonomics example and refreshed

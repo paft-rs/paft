@@ -83,6 +83,39 @@ fn option_expirations_new_sorted_canonicalizes_dates() {
             NaiveDate::from_ymd_opt(2025, 2, 21).unwrap(),
         ],
     );
+    assert!(resp.is_sorted_unique());
+}
+
+#[test]
+fn option_expirations_sorted_unique_validation_is_strict() {
+    assert!(OptionExpirationsResponse { dates: vec![] }.is_sorted_unique());
+    assert!(
+        OptionExpirationsResponse {
+            dates: vec![
+                NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
+                NaiveDate::from_ymd_opt(2025, 2, 21).unwrap(),
+            ],
+        }
+        .is_sorted_unique()
+    );
+    assert!(
+        !OptionExpirationsResponse {
+            dates: vec![
+                NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
+                NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
+            ],
+        }
+        .is_sorted_unique()
+    );
+    assert!(
+        !OptionExpirationsResponse {
+            dates: vec![
+                NaiveDate::from_ymd_opt(2025, 2, 21).unwrap(),
+                NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
+            ],
+        }
+        .is_sorted_unique()
+    );
 }
 
 #[test]

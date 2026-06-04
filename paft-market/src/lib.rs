@@ -61,7 +61,7 @@ pub use responses::download::{
 pub use responses::history::{
     AdjustmentAnchor, AdjustmentMethod, Candle, CandleUpdate, CorporateActionAdjustmentCause,
     CorporateActionAdjustmentCauses, GenericCandle, GenericCandleUpdate, GenericHistoryResponse,
-    HistoryMeta, HistoryResponse, Ohlc, OhlcPriceBasis, PriceBasis,
+    HistoryMeta, HistoryResponse, HistoryValidationError, Ohlc, OhlcPriceBasis, PriceBasis,
 };
 pub use responses::options::OptionExpirationsResponse;
 pub use responses::search::{

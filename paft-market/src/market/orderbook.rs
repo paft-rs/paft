@@ -83,9 +83,15 @@ pub struct GenericOrderBook<B = (), L = ()> {
     pub currency: Currency,
 
     /// A vector of ask (sell) levels, typically sorted by price ascending.
+    /// Direct construction and deserialization preserve provider order; use
+    /// [`Self::is_sorted`] to check the advisory ordering or
+    /// [`Self::sort_levels`] to canonicalize caller-owned data.
     pub asks: Vec<GenericBookLevel<L>>,
 
     /// A vector of bid (buy) levels, typically sorted by price descending.
+    /// Direct construction and deserialization preserve provider order; use
+    /// [`Self::is_sorted`] to check the advisory ordering or
+    /// [`Self::sort_levels`] to canonicalize caller-owned data.
     pub bids: Vec<GenericBookLevel<L>>,
 
     /// Provider-specific payload, flattened into the serialized form.
@@ -106,6 +112,38 @@ impl<B: Default, L> GenericOrderBook<B, L> {
             bids: Vec::new(),
             provider: B::default(),
         }
+    }
+}
+
+impl<B, L> GenericOrderBook<B, L> {
+    /// Return `true` when ask levels are sorted by non-decreasing price and
+    /// bid levels are sorted by non-increasing price.
+    ///
+    /// Duplicate prices are considered sorted; this method validates ordering
+    /// only and does not enforce level uniqueness.
+    #[must_use]
+    pub fn is_sorted(&self) -> bool {
+        let asks_sorted = self
+            .asks
+            .windows(2)
+            .all(|pair| pair[0].price.as_decimal() <= pair[1].price.as_decimal());
+        let bids_sorted = self
+            .bids
+            .windows(2)
+            .all(|pair| pair[0].price.as_decimal() >= pair[1].price.as_decimal());
+
+        asks_sorted && bids_sorted
+    }
+
+    /// Sort ask levels by ascending price and bid levels by descending price.
+    ///
+    /// Sorting is stable, so levels with equal prices keep their existing
+    /// relative order. This method does not deduplicate levels.
+    pub fn sort_levels(&mut self) {
+        self.asks
+            .sort_by(|lhs, rhs| lhs.price.as_decimal().cmp(rhs.price.as_decimal()));
+        self.bids
+            .sort_by(|lhs, rhs| rhs.price.as_decimal().cmp(lhs.price.as_decimal()));
     }
 }
 

@@ -10,7 +10,7 @@ pub use download::{
 pub use history::{
     AdjustmentAnchor, AdjustmentMethod, Candle, CandleUpdate, CorporateActionAdjustmentCause,
     CorporateActionAdjustmentCauses, GenericCandle, GenericCandleUpdate, GenericHistoryResponse,
-    HistoryMeta, HistoryResponse, Ohlc, OhlcPriceBasis, PriceBasis,
+    HistoryMeta, HistoryResponse, HistoryValidationError, Ohlc, OhlcPriceBasis, PriceBasis,
 };
 pub use options::OptionExpirationsResponse;
 pub use search::{GenericSearchResponse, GenericSearchResult, SearchResponse, SearchResult};

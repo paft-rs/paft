@@ -11,7 +11,8 @@ pub struct OptionExpirationsResponse {
     /// Providers are expected to return these sorted ascending and without
     /// duplicates, but direct struct construction and deserialization do not
     /// enforce that. Use [`Self::new_sorted`] to canonicalize caller-provided
-    /// dates.
+    /// dates and [`Self::is_sorted_unique`] when consumers need to validate
+    /// the advisory invariant.
     pub dates: Vec<NaiveDate>,
 }
 
@@ -22,5 +23,12 @@ impl OptionExpirationsResponse {
         dates.sort_unstable();
         dates.dedup();
         Self { dates }
+    }
+
+    /// Return `true` when expiration dates are sorted ascending and contain no
+    /// duplicates.
+    #[must_use]
+    pub fn is_sorted_unique(&self) -> bool {
+        self.dates.windows(2).all(|pair| pair[0] < pair[1])
     }
 }

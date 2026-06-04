@@ -103,6 +103,66 @@ fn order_book_with_mixed_size_availability() {
 }
 
 #[test]
+fn order_book_sortedness_checks_asks_ascending_and_bids_descending() {
+    let mut book = OrderBook {
+        instrument: aapl(),
+        as_of: None,
+        currency: usd(),
+        asks: vec![
+            BookLevel::new(amount(103), None),
+            BookLevel::new(amount(101), None),
+            BookLevel::new(amount(102), None),
+        ],
+        bids: vec![
+            BookLevel::new(amount(98), None),
+            BookLevel::new(amount(100), None),
+            BookLevel::new(amount(99), None),
+        ],
+        provider: (),
+    };
+
+    assert!(!book.is_sorted());
+
+    book.sort_levels();
+
+    assert!(book.is_sorted());
+    assert_eq!(
+        book.asks
+            .iter()
+            .map(|level| level.price.clone())
+            .collect::<Vec<_>>(),
+        vec![amount(101), amount(102), amount(103)]
+    );
+    assert_eq!(
+        book.bids
+            .iter()
+            .map(|level| level.price.clone())
+            .collect::<Vec<_>>(),
+        vec![amount(100), amount(99), amount(98)]
+    );
+}
+
+#[test]
+fn order_book_sortedness_allows_duplicate_prices() {
+    let book = OrderBook {
+        instrument: aapl(),
+        as_of: None,
+        currency: usd(),
+        asks: vec![
+            BookLevel::new(amount(101), Some(size(1))),
+            BookLevel::new(amount(101), Some(size(2))),
+        ],
+        bids: vec![
+            BookLevel::new(amount(99), Some(size(1))),
+            BookLevel::new(amount(99), Some(size(2))),
+        ],
+        provider: (),
+    };
+
+    assert!(book.is_sorted());
+}
+
+#[test]
 fn order_book_constructor_sets_required_context() {
     let book = OrderBook::new(aapl(), usd());
 

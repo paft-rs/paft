@@ -5,6 +5,7 @@ use std::num::NonZeroU16;
 use paft_money::{Currency, PriceAmount, QuantityAmount};
 use serde::ser::SerializeSeq;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use thiserror::Error;
 
 use crate::requests::history::Interval;
 use chrono::{DateTime, NaiveDate, Utc};
@@ -550,6 +551,26 @@ pub struct HistoryMeta {
     pub utc_offset_seconds: Option<i64>,
 }
 
+/// Errors returned by [`GenericHistoryResponse::validate`].
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[non_exhaustive]
+pub enum HistoryValidationError {
+    /// A candle timestamp is earlier than the previous candle timestamp.
+    #[error(
+        "history candles are not ordered by non-decreasing timestamp: candles[{previous_index}] ({previous_ts_millis}) is after candles[{current_index}] ({current_ts_millis})"
+    )]
+    CandlesNotChronological {
+        /// Index of the previous candle in the first out-of-order pair.
+        previous_index: usize,
+        /// Previous candle timestamp in Unix milliseconds.
+        previous_ts_millis: i64,
+        /// Index of the current candle in the first out-of-order pair.
+        current_index: usize,
+        /// Current candle timestamp in Unix milliseconds.
+        current_ts_millis: i64,
+    },
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// A complete history response including candles, actions, and metadata.
 ///
@@ -566,8 +587,9 @@ pub struct GenericHistoryResponse<R = (), C = ()> {
     ///
     /// Providers are expected to order these by non-decreasing timestamp, but
     /// direct struct construction and deserialization do not enforce that. Use
-    /// [`Self::is_chronologically_ordered`] when consumers need to validate
-    /// ordering.
+    /// [`Self::is_chronologically_ordered`] or [`Self::validate`] when
+    /// consumers need to check ordering, and [`Self::into_chronological`] when
+    /// caller-owned data should be canonicalized.
     pub candles: Vec<GenericCandle<C>>,
     /// Corporate actions aligned to candles.
     pub actions: Vec<crate::market::action::Action>,
@@ -587,7 +609,42 @@ impl<R, C> GenericHistoryResponse<R, C> {
     /// provider's tie ordering.
     #[must_use]
     pub fn is_chronologically_ordered(&self) -> bool {
-        self.candles.windows(2).all(|pair| pair[0].ts <= pair[1].ts)
+        self.validate().is_ok()
+    }
+
+    /// Validate response invariants that paft documents but does not enforce
+    /// during direct construction or deserialization.
+    ///
+    /// Today this checks that candle timestamps are non-decreasing. Duplicate
+    /// timestamps are accepted so callers can preserve provider tie ordering.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`HistoryValidationError::CandlesNotChronological`] for the
+    /// first adjacent candle pair whose timestamps are decreasing.
+    pub fn validate(&self) -> Result<(), HistoryValidationError> {
+        for (previous_index, pair) in self.candles.windows(2).enumerate() {
+            if pair[0].ts > pair[1].ts {
+                return Err(HistoryValidationError::CandlesNotChronological {
+                    previous_index,
+                    previous_ts_millis: pair[0].ts.timestamp_millis(),
+                    current_index: previous_index + 1,
+                    current_ts_millis: pair[1].ts.timestamp_millis(),
+                });
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Return this response with candles sorted by non-decreasing timestamp.
+    ///
+    /// Sorting is stable, so candles with equal timestamps keep their existing
+    /// relative order. Corporate actions and metadata are preserved as-is.
+    #[must_use]
+    pub fn into_chronological(mut self) -> Self {
+        self.candles.sort_by_key(|candle| candle.ts);
+        self
     }
 }
 

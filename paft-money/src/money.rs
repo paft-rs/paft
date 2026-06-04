@@ -224,6 +224,7 @@ impl Money {
     /// # Errors
     /// Returns `MoneyError::MetadataNotFound` when metadata is not registered for a custom currency.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
+    #[allow(clippy::needless_pass_by_value)]
     pub fn new(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
         let (minor_units, scale) = Self::scale_for_currency(&currency)?;
         let rounded = Self::round_amount_to_scale(&amount, scale);
