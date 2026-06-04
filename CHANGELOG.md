@@ -188,10 +188,11 @@ All notable changes to this project will be documented in this file.
 - Market/facade: `OrderBook`, `Quote`, `QuoteUpdate`, and aggregate `Snapshot`
   now require a record-level `currency`; their contained price fields use
   `PriceAmount`.
-- Market/facade: `Candle::volume`, `Quote::day_volume`, and
-  `Snapshot::volume` now use `Option<QuantityAmount>` instead of `Option<u64>`;
-  `QuoteUpdate::volume` was renamed to `volume_delta` and now also uses
-  `Option<QuantityAmount>`.
+- Market/facade: `Candle::volume`, `Quote::day_volume`,
+  `QuoteUpdate::volume`, and `Snapshot::volume` now use
+  `Option<QuantityAmount>` instead of `Option<u64>`. `QuoteUpdate::volume` is
+  a cumulative provider-defined session/window snapshot, not a per-update
+  delta.
 - Market/facade: option contract/update quote fields (`price`, `bid`, `ask`,
   and `last_price`) now use `PriceAmount`, and option contracts/updates now
   require `currency: Currency` for those premium amounts.

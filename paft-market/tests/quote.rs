@@ -229,7 +229,7 @@ fn quote_update_construction() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume_delta: None,
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -254,7 +254,7 @@ fn quote_update_partial_fields() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: None,
-        volume_delta: None,
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -275,7 +275,7 @@ fn quote_update_clone() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume_delta: None,
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -291,7 +291,7 @@ fn quote_update_debug_formatting() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume_delta: None,
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -368,7 +368,7 @@ fn quote_update_serialization() {
         currency: usd(),
         price: Some(amount(150)),
         previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume_delta: None,
+        volume: Some(quantity(Decimal::from_str("12345.678").unwrap())),
         ts: DateTime::from_timestamp(1_640_995_200, 654_000_000).unwrap(),
         provider: (),
     };
@@ -377,6 +377,7 @@ fn quote_update_serialization() {
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(value["ts"], serde_json::json!(1_640_995_200_654_i64));
     assert_eq!(value["currency"], serde_json::json!("USD"));
+    assert_eq!(value["volume"], serde_json::json!("12345.678"));
 
     let deserialized: QuoteUpdate = serde_json::from_str(&json).unwrap();
     assert_eq!(update, deserialized);
@@ -389,7 +390,7 @@ fn quote_update_with_none_fields() {
         currency: usd(),
         price: None,
         previous_close: None,
-        volume_delta: None,
+        volume: None,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };

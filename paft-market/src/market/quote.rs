@@ -77,7 +77,7 @@ pub type Quote = GenericQuote<()>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
-/// Incremental update for an instrument during streaming sessions.
+/// Streaming quote update payload for an instrument.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`QuoteUpdate`] alias for the
@@ -97,8 +97,14 @@ pub struct GenericQuoteUpdate<M = ()> {
     pub price: Option<PriceAmount>,
     /// Previous close price.
     pub previous_close: Option<PriceAmount>,
-    /// Volume traded since the previous update in the provider's stated quantity unit.
-    pub volume_delta: Option<QuantityAmount>,
+    /// Latest known cumulative traded volume for this instrument in the
+    /// provider's stated quantity unit.
+    ///
+    /// For equity feeds this is usually current session/day volume. For crypto
+    /// and some derivatives feeds this may be a provider-defined rolling or
+    /// trading-day window. This field is a snapshot value, not a per-update
+    /// delta.
+    pub volume: Option<QuantityAmount>,
     /// Event timestamp as Unix milliseconds.
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
@@ -117,7 +123,7 @@ impl<M: Default> GenericQuoteUpdate<M> {
             currency,
             price: None,
             previous_close: None,
-            volume_delta: None,
+            volume: None,
             ts,
             provider: M::default(),
         }

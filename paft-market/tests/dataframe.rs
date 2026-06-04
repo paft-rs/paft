@@ -180,7 +180,7 @@ fn quote_update_to_dataframe_smoke() {
         currency: usd(),
         price: Some(usd_amount(150)),
         previous_close: Some(usd_amount(147)),
-        volume_delta: None,
+        volume: None,
         ts: chrono::DateTime::from_timestamp(0, 0).unwrap(),
 
         provider: (),

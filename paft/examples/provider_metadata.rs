@@ -27,7 +27,7 @@
 //! 3. `#[serde(flatten)]` means the extra fields land at the **top level** of
 //!    the JSON, side-by-side with the canonical fields.
 //!    Choose metadata field names that do not collide with paft fields
-//!    (`instrument`, `price`, `provider`, `day_volume`, `market_state`, etc.); use
+//!    (`instrument`, `price`, `provider`, `day_volume`, `volume`, `market_state`, etc.); use
 //!    provider-specific prefixes when in doubt.
 //! 4. Inbound provider JSON with extra keys deserializes losslessly into
 //!    `GenericQuote<HftMeta>` — no manual extraction step.
@@ -252,7 +252,7 @@ fn different_meta_per_stream() -> Result<()> {
         currency: usd(),
         price: Some(price(421)),
         previous_close: Some(price(418)),
-        volume_delta: Some(quantity(100)),
+        volume: Some(quantity(78_900_100)),
         ts: ts(1_700_000_000),
         provider: BrokerMeta {
             account_id: "ACC-7".into(),
@@ -273,7 +273,7 @@ fn different_meta_per_stream() -> Result<()> {
         currency: usd(),
         price: Some(price(421)),
         previous_close: Some(price(418)),
-        volume_delta: Some(quantity(100)),
+        volume: Some(quantity(78_900_100)),
         ts: ts(1_700_000_000),
         provider: (),
     };
