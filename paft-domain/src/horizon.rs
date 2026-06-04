@@ -75,6 +75,10 @@ impl Horizon {
     ///
     /// Returns an error if `input` is empty, cannot be canonicalized, or parses
     /// to a modeled [`Horizon`] variant.
+    ///
+    /// Partial modeled-looking provider labels that do not match a supported
+    /// horizon parser, such as `7 d`, may still be accepted as
+    /// [`Horizon::Other`].
     pub fn other(input: &str) -> Result<Self, DomainError> {
         OtherHorizon::new(input).map(Self::Other)
     }

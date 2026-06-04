@@ -64,6 +64,10 @@ fn horizon_other_roundtrips_without_colliding_with_modeled_values() {
     let minute_like = Horizon::from_str("1m").unwrap();
     assert_eq!(minute_like.to_string(), "1M");
     assert!(matches!(minute_like, Horizon::Other(_)));
+
+    let spaced_day_like = Horizon::from_str("7 d").unwrap();
+    assert_eq!(spaced_day_like.to_string(), "7_D");
+    assert!(matches!(spaced_day_like, Horizon::Other(_)));
 }
 
 #[test]

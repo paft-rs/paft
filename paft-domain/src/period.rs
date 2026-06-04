@@ -317,9 +317,13 @@ impl ReportingPeriod {
     ///
     /// # Errors
     ///
-    /// Returns an error if `input` is empty, cannot be canonicalized, has an
-    /// invalid structured period shape, or parses to a modeled [`ReportingPeriod`]
-    /// variant.
+    /// Returns an error if `input` is empty, cannot be canonicalized, parses to
+    /// a modeled [`ReportingPeriod`] variant, or matches a supported structured
+    /// period shape with invalid components.
+    ///
+    /// Partial modeled-looking provider labels that do not match a supported
+    /// structured parser, such as `FY`, may still be accepted as
+    /// [`ReportingPeriod::Other`].
     pub fn other(input: &str) -> Result<Self, DomainError> {
         OtherPeriod::new(input).map(Self::Other)
     }

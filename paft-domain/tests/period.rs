@@ -343,6 +343,20 @@ fn period_other_round_trip_for_genuine_other_inputs() {
 }
 
 #[test]
+fn period_partial_modeled_looking_provider_labels_remain_other() {
+    let cases = [("2023-Q", "2023_Q"), ("FY", "FY")];
+
+    for (input, canonical) in cases {
+        let p = assert_period_roundtrips(input);
+        assert_eq!(p.to_string(), canonical, "input: {input:?}");
+        assert!(
+            matches!(p, ReportingPeriod::Other(_)),
+            "expected Other for {input:?}, got {p:?}"
+        );
+    }
+}
+
+#[test]
 fn period_byte_parser_too_long_inputs_fall_through() {
     // Length > 10 cannot match any date format. They must fall through to Other.
     let parsed = "2023-12-31x".parse::<ReportingPeriod>().unwrap();

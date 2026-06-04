@@ -157,6 +157,9 @@ All notable changes to this project will be documented in this file.
 - Domain: `Horizon` and `ReportingPeriod` parsing now rejects malformed inputs whose
   canonical fallback would become a modeled token, such as `-1d` or
   `-2023Q4`, instead of accepting them as valid structured values.
+- Domain docs/tests: clarified that partial modeled-looking provider labels
+  such as `FY`, `2023-Q`, and `7 d` remain extensible `Other` values unless
+  they match a supported parser shape or would canonicalize to a modeled token.
 - Domain/money/fundamentals: string enum parsers now reject malformed inputs
   whose canonicalized form would resolve to a modeled value, such as `$USD`,
   `---NYSE`, or `CLOSED!`.
