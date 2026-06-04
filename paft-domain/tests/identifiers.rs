@@ -18,6 +18,18 @@ fn isin_serde_roundtrip() {
 }
 
 #[test]
+fn isin_codes_avoid_heap_allocation() {
+    use smol_str::SmolStr;
+
+    let isin = Isin::new("US0378331005").expect("valid ISIN");
+    let proxy = SmolStr::new(isin.as_ref());
+    assert!(
+        !proxy.is_heap_allocated(),
+        "12-byte ISIN codes should be stored inline, not on the heap"
+    );
+}
+
+#[test]
 fn isin_rejects_bad_checksum() {
     let err = Isin::new("US0378331006").expect_err("checksum should fail");
     assert!(matches!(err, DomainError::InvalidIsin { .. }));
@@ -67,6 +79,18 @@ fn figi_serde_roundtrip() {
     assert_eq!(json, "\"BBG000B9XRY4\"");
     let back: Figi = from_str(&json).expect("deserialize");
     assert_eq!(back, figi);
+}
+
+#[test]
+fn figi_codes_avoid_heap_allocation() {
+    use smol_str::SmolStr;
+
+    let figi = Figi::new("BBG000B9XRY4").expect("valid FIGI");
+    let proxy = SmolStr::new(figi.as_ref());
+    assert!(
+        !proxy.is_heap_allocated(),
+        "12-byte FIGI codes should be stored inline, not on the heap"
+    );
 }
 
 #[test]

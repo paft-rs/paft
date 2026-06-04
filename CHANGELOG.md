@@ -96,6 +96,8 @@ All notable changes to this project will be documented in this file.
 - Domain/facade: `Instrument::unique_key()` now returns `String` instead of
   `Cow<'_, str>` because the namespaced identity key is always a synthetic
   composite.
+- Domain: `Isin` and `Figi` now use inline `SmolStr` storage instead of heap
+  `String` storage for their fixed 12-byte identifier codes.
 - Domain/facade: `Period` was split into `ReportingPeriod` for fiscal/provider
   labels and `CalendarPeriod` for date-boundary logic. Structured period
   variants now store validated `PeriodYear`, `QuarterOfYear`, and

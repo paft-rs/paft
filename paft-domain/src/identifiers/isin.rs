@@ -1,7 +1,8 @@
 //! ISIN newtype for instrument codes.
 
 use crate::DomainError;
-use serde::{Deserialize, Deserializer, Serialize, de};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+use smol_str::SmolStr;
 use std::{convert::TryFrom, fmt, str::FromStr};
 
 #[inline]
@@ -11,18 +12,41 @@ fn invalid_isin(value: &str) -> DomainError {
     }
 }
 
-fn normalize_isin(input: &str) -> Result<String, DomainError> {
-    let normalized = input.trim().to_ascii_uppercase();
-    match ::isin::parse(&normalized) {
+fn normalize_isin(input: &str) -> Result<SmolStr, DomainError> {
+    let Some(normalized) = normalized_12_byte_code(input) else {
+        return Err(invalid_isin(input));
+    };
+
+    match ::isin::parse(normalized.as_str()) {
         Ok(_) => Ok(normalized),
         Err(_) => Err(invalid_isin(input)),
     }
 }
 
+fn normalized_12_byte_code(input: &str) -> Option<SmolStr> {
+    let trimmed = input.trim();
+    if trimmed.len() != 12 {
+        return None;
+    }
+
+    let mut bytes = [0; 12];
+    for (dest, byte) in bytes.iter_mut().zip(trimmed.bytes()) {
+        if !byte.is_ascii_alphanumeric() {
+            return None;
+        }
+        *dest = byte.to_ascii_uppercase();
+    }
+
+    let normalized = std::str::from_utf8(&bytes).expect("ASCII bytes are valid UTF-8");
+    Some(SmolStr::new(normalized))
+}
+
 /// Opaque wrapper for validated ISIN values.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
-#[serde(transparent)]
-pub struct Isin(String);
+///
+/// Backed by [`SmolStr`], so standard 12-byte ISIN codes live inline without
+/// heap allocation and clones stay cheap.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Isin(SmolStr);
 
 impl Isin {
     /// Construct a new validated ISIN.
@@ -67,7 +91,16 @@ impl TryFrom<String> for Isin {
 
 impl From<Isin> for String {
     fn from(value: Isin) -> Self {
-        value.0
+        value.0.into()
+    }
+}
+
+impl Serialize for Isin {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_ref())
     }
 }
 
