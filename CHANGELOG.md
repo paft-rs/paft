@@ -34,6 +34,8 @@ All notable changes to this project will be documented in this file.
   `GenericHistoryResponse::{validate, into_chronological}`,
   `GenericOrderBook::{is_sorted, sort_levels}`, and
   `OptionExpirationsResponse::is_sorted_unique`.
+- Market: added `TimeSpec::{range, period, validate}` so standalone time
+  specifications have an explicit period-validation boundary.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
   constrained decimal constructors to compose with `paft::prelude::Result`.
 - Docs/examples: added a no-metadata v0.9 ergonomics example and refreshed
@@ -89,6 +91,8 @@ All notable changes to this project will be documented in this file.
   `PriceBasis` metadata or per-field open/high/low/close bases.
 - Market/fundamentals: `Action` and `Profile` now use flat tagged serde shapes
   with a `kind` discriminator instead of externally tagged enum objects.
+- Market: standalone `TimeSpec` deserialization now rejects `Period` values
+  whose `start >= end`, matching `HistoryRequest` validation.
 - Market/aggregates: high-cardinality price records now carry denomination once
   at the containing record and store contextual `PriceAmount` values for
   candles, order-book levels, quotes, quote updates, snapshots, and option

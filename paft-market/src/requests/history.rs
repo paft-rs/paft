@@ -475,7 +475,12 @@ impl<'de> Deserialize<'de> for HistoryFlags {
 /// Time specification for historical data requests.
 ///
 /// This enum ensures that only one time specification method is used at a time,
-/// making invalid states unrepresentable at compile time.
+/// making range-vs-period exclusivity unrepresentable at compile time.
+///
+/// Direct enum construction can still build a `Period` whose `start >= end`.
+/// Use [`TimeSpec::period`] or [`TimeSpec::validate`] when constructing or
+/// accepting a standalone `TimeSpec`. [`HistoryRequestBuilder::build`] and
+/// `TimeSpec` deserialization also perform this validation.
 ///
 /// Serializes as explicitly tagged JSON:
 /// `{ "kind": "range", "range": "6mo" }` or
@@ -493,6 +498,46 @@ pub enum TimeSpec {
         /// End timestamp for the period.
         end: DateTime<Utc>,
     },
+}
+
+impl TimeSpec {
+    /// Build a logical range time specification.
+    #[must_use]
+    pub const fn range(range: Range) -> Self {
+        Self::Range(range)
+    }
+
+    /// Build a validated explicit period time specification.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MarketError::InvalidPeriod`] when `start >= end`.
+    pub fn period(start: DateTime<Utc>, end: DateTime<Utc>) -> Result<Self, MarketError> {
+        let time_spec = Self::Period { start, end };
+        time_spec.validate()?;
+        Ok(time_spec)
+    }
+
+    /// Validate standalone `TimeSpec` invariants.
+    ///
+    /// `TimeSpec::Range` is always valid. `TimeSpec::Period` must have
+    /// `start < end`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MarketError::InvalidPeriod`] when a period has `start >= end`.
+    pub fn validate(&self) -> Result<(), MarketError> {
+        if let Self::Period { start, end } = self
+            && start >= end
+        {
+            return Err(MarketError::InvalidPeriod {
+                start: start.timestamp_millis(),
+                end: end.timestamp_millis(),
+            });
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -531,10 +576,12 @@ impl<'de> Deserialize<'de> for TimeSpec {
     where
         D: Deserializer<'de>,
     {
-        Ok(match TimeSpecWire::deserialize(deserializer)? {
-            TimeSpecWire::Range { range } => Self::Range(range),
-            TimeSpecWire::Period { start, end } => Self::Period { start, end },
-        })
+        match TimeSpecWire::deserialize(deserializer)? {
+            TimeSpecWire::Range { range } => Ok(Self::Range(range)),
+            TimeSpecWire::Period { start, end } => {
+                Self::period(start, end).map_err(serde::de::Error::custom)
+            }
+        }
     }
 }
 
@@ -614,6 +661,9 @@ impl HistoryRequestBuilder {
     }
 
     /// Set the explicit period with start and end timestamps.
+    ///
+    /// Validation is deferred until [`Self::build`]. Use [`TimeSpec::period`]
+    /// when constructing a standalone validated time specification.
     #[must_use]
     pub const fn period(mut self, start: DateTime<Utc>, end: DateTime<Utc>) -> Self {
         self.time_spec = TimeSpec::Period { start, end };
@@ -680,15 +730,7 @@ impl HistoryRequestBuilder {
     /// Returns `MarketError::InvalidPeriod` when a `Period { start, end }` has `start >= end`.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn build(self) -> Result<HistoryRequest, MarketError> {
-        // Validate period constraints
-        if let TimeSpec::Period { start, end } = &self.time_spec
-            && start >= end
-        {
-            return Err(MarketError::InvalidPeriod {
-                start: start.timestamp_millis(),
-                end: end.timestamp_millis(),
-            });
-        }
+        self.time_spec.validate()?;
 
         Ok(HistoryRequest {
             time_spec: self.time_spec,

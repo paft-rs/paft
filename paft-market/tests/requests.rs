@@ -104,7 +104,7 @@ fn history_request_serialization() {
 
 #[test]
 fn time_spec_range_uses_explicit_kind_wire_shape() {
-    let time_spec = TimeSpec::Range(Range::M6);
+    let time_spec = TimeSpec::range(Range::M6);
 
     let value = serde_json::to_value(&time_spec).unwrap();
 
@@ -155,10 +155,11 @@ fn history_request_with_period() {
 fn time_spec_period_uses_epoch_millisecond_wire_shape() {
     use chrono::DateTime;
 
-    let time_spec = TimeSpec::Period {
-        start: DateTime::from_timestamp(1_716_595_200, 123_000_000).unwrap(),
-        end: DateTime::from_timestamp(1_719_187_200, 456_000_000).unwrap(),
-    };
+    let time_spec = TimeSpec::period(
+        DateTime::from_timestamp(1_716_595_200, 123_000_000).unwrap(),
+        DateTime::from_timestamp(1_719_187_200, 456_000_000).unwrap(),
+    )
+    .unwrap();
 
     let value = serde_json::to_value(&time_spec).unwrap();
 
@@ -173,6 +174,46 @@ fn time_spec_period_uses_epoch_millisecond_wire_shape() {
 
     let deserialized: TimeSpec = serde_json::from_value(value).unwrap();
     assert_eq!(time_spec, deserialized);
+}
+
+#[test]
+fn time_spec_period_constructor_rejects_invalid_bounds() {
+    use chrono::DateTime;
+
+    let start = DateTime::from_timestamp(2_000, 0).unwrap();
+    let end = DateTime::from_timestamp(1_000, 0).unwrap();
+
+    let err = TimeSpec::period(start, end).unwrap_err();
+    assert!(matches!(
+        err,
+        paft_market::MarketError::InvalidPeriod {
+            start: 2_000_000,
+            end: 1_000_000,
+        }
+    ));
+}
+
+#[test]
+fn time_spec_validate_detects_directly_constructed_invalid_period() {
+    use chrono::DateTime;
+
+    let time_spec = TimeSpec::Period {
+        start: DateTime::from_timestamp(1_000, 0).unwrap(),
+        end: DateTime::from_timestamp(1_000, 0).unwrap(),
+    };
+
+    assert!(time_spec.validate().is_err());
+}
+
+#[test]
+fn time_spec_deserialization_rejects_invalid_period() {
+    let value = serde_json::json!({
+        "kind": "period",
+        "start": 2_000_000,
+        "end": 1_000_000
+    });
+
+    assert!(serde_json::from_value::<TimeSpec>(value).is_err());
 }
 
 #[test]
