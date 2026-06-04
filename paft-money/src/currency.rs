@@ -150,19 +150,20 @@ impl Currency {
     }
 
     /// Returns the human-readable name for this currency.
+    ///
+    /// ISO currencies use the canonical ISO 4217 name. Non-ISO currencies use
+    /// the metadata registry, so display-name overlays affect modeled non-ISO
+    /// variants and `Other` codes consistently.
     #[must_use]
     pub fn full_name(&self) -> Cow<'static, str> {
         match self {
             Self::Iso(iso) => Cow::Owned(iso.name().to_string()),
-            Self::BTC => Cow::Borrowed("Bitcoin"),
-            Self::ETH => Cow::Borrowed("Ethereum"),
-            Self::XMR => Cow::Borrowed("Monero"),
-            Self::USDC => Cow::Borrowed("USDC"),
-            Self::USDT => Cow::Borrowed("USDT"),
-            Self::Other(code) => currency_metadata(code.as_ref()).map_or_else(
-                || Cow::Owned(code.as_ref().to_string()),
-                |meta| meta.full_name,
-            ),
+            Self::BTC | Self::ETH | Self::XMR | Self::USDC | Self::USDT | Self::Other(_) => {
+                currency_metadata(self.code()).map_or_else(
+                    || Cow::Owned(self.code().to_string()),
+                    |meta| meta.full_name,
+                )
+            }
         }
     }
 

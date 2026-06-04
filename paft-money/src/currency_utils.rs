@@ -1,11 +1,11 @@
 //! Utilities and helpers for working with `Currency` values.
 //!
-//! This module also provides the metadata overlay registry used when ISO 4217 is
-//! silent about a currency's minor-unit exponent (e.g., metals like `XAU`, funds
-//! like `XDR`). Use [`set_currency_metadata`] to register a name and decimal
-//! places for such currencies so that [`Currency::decimal_places`](crate::currency::Currency::decimal_places)
-//! can resolve a scale. If no overlay exists, money operations that require a
-//! scale will return `MoneyError::MetadataNotFound`.
+//! This module also provides the metadata overlay registry used by non-ISO
+//! currency display fields and by currencies whose scale is not fully described
+//! by ISO 4217. If ISO defines a minor-unit exponent, that exponent remains the
+//! scale source of truth; otherwise `Currency::decimal_places`
+//! consults metadata. If no metadata exists for a currency that needs it, money
+//! operations that require a scale return `MoneyError::MetadataNotFound`.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -33,7 +33,7 @@ pub const MAX_DECIMAL_PRECISION: u8 = u8::MAX;
 /// conversions remain safe regardless of backend precision.
 pub const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
 
-/// Metadata describing additional information for custom currencies.
+/// Metadata describing display and scale information for currency codes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CurrencyMetadata {
     /// Human-readable name for the currency.

@@ -28,6 +28,9 @@
 //! change `minor_units`; use [`override_currency_metadata`] when a scale change
 //! is intentional. `Money` captures the resolved scale at construction, so
 //! existing values are not reinterpreted by later registry changes.
+//! Metadata display fields are the source of truth for non-ISO currency names
+//! and for localized formatting metadata. ISO currencies keep their ISO 4217
+//! name and, when ISO defines an exponent, their ISO minor-unit scale.
 //!
 //! Using metals/funds (recommended defaults):
 //! - Gold `XAU`: 3 or 6 decimal places are common; choose per domain needs.
@@ -174,6 +177,9 @@
 //! or clearing the process-local registry can affect future construction and
 //! formatting metadata, but not minor-unit conversion for values that already
 //! exist.
+//! For modeled non-ISO currencies such as `BTC`, `ETH`, and `XMR`, metadata is
+//! also the source of truth for `Currency::full_name()`. ISO currency names are
+//! resolved from ISO 4217 even if metadata is registered for formatting.
 //!
 //! # Feature flags
 //!

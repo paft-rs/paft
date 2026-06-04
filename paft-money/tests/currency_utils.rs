@@ -91,6 +91,18 @@ fn test_builtin_currency_metadata() {
 }
 
 #[test]
+fn test_non_iso_full_name_routes_through_registry() {
+    clear_currency_metadata("XMR");
+
+    call_set_metadata("XMR", "Monero Overlay", 12).expect("same-scale display update");
+
+    assert_eq!(Currency::XMR.full_name().as_ref(), "Monero Overlay");
+    assert_eq!(Currency::XMR.decimal_places().unwrap(), 12);
+
+    clear_currency_metadata("XMR");
+}
+
+#[test]
 fn test_custom_currency_metadata_preserves_registered_scale() {
     let code = "custom_token";
 

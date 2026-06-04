@@ -49,6 +49,9 @@ All notable changes to this project will be documented in this file.
 - Money: `set_currency_metadata` now preserves an already registered
   minor-unit scale; callers must use `override_currency_metadata` for
   intentional scale changes.
+- Money: `Currency::full_name()` now uses registered metadata for all non-ISO
+  currencies, including modeled variants such as `BTC`, `ETH`, and `XMR`; ISO
+  currency names remain sourced from ISO 4217.
 - Decimal/money/market/fundamentals: decimal-backed serde fields now serialize
   through canonical strings from `paft-decimal`, independent of the active
   decimal backend.
