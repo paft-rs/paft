@@ -2,9 +2,9 @@ use paft_money::{Currency, IsoCurrency};
 use paft_prediction::{
     BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor, EventStructure,
     NonZeroContractQuantity, OutcomeInstrument, OutcomePayout, PredictionEventKey,
-    PredictionMarketStatus,
+    PredictionMarketStatus, PredictionSeriesKey,
 };
-use paft_prediction::{NumericBound, NumericRange};
+use paft_prediction::{NumericBound, NumericRange, PredictionEvent};
 
 #[test]
 fn binary_market_carries_required_polymarket_outcome_instruments() {
@@ -126,6 +126,23 @@ fn binary_market_uses_full_event_key_reference() {
     assert!(value.get("event_id").is_none());
     assert_eq!(value["event_key"]["venue"], "KALSHI");
     assert_eq!(value["event_key"]["event_id"], "KXHIGHNY-24JAN01");
+}
+
+#[test]
+fn prediction_event_uses_full_series_key_reference() {
+    let key = PredictionEventKey::new("KALSHI", "KXHIGHNY-24JAN01").unwrap();
+    let mut event = PredictionEvent::new(
+        key,
+        "High temperature in NYC on Jan 1, 2024".to_string(),
+        EventStructure::OrderedBuckets { exhaustive: true },
+    );
+    event.series_key = Some(PredictionSeriesKey::new("KALSHI", "KXHIGHNY").unwrap());
+
+    let value = serde_json::to_value(&event).unwrap();
+
+    assert!(value.get("series_id").is_none());
+    assert_eq!(value["series_key"]["venue"], "KALSHI");
+    assert_eq!(value["series_key"]["series_id"], "KXHIGHNY");
 }
 
 #[test]

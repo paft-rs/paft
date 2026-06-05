@@ -2,10 +2,54 @@
 
 use crate::error::PredictionError;
 use crate::identifiers::{
-    PredictionEventId, PredictionMarketId, PredictionOutcomeId, PredictionVenue,
+    PredictionEventId, PredictionMarketId, PredictionOutcomeId, PredictionSeriesId, PredictionVenue,
 };
 use serde::{Deserialize, Deserializer, Serialize, de};
 use std::fmt;
+
+/// Venue-namespaced key for a recurring prediction series/group.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(df_derive_macros::ToDataFrame))]
+pub struct PredictionSeriesKey {
+    /// Prediction venue that issued the series identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub venue: PredictionVenue,
+    /// Provider-native recurring series/group identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub series_id: PredictionSeriesId,
+}
+
+impl PredictionSeriesKey {
+    /// Construct a key from already-validated venue and series id values.
+    #[must_use]
+    pub const fn from_parts(venue: PredictionVenue, series_id: PredictionSeriesId) -> Self {
+        Self { venue, series_id }
+    }
+
+    /// Construct a key from string inputs.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] if either input fails validation.
+    pub fn new(venue: &str, series_id: &str) -> Result<Self, PredictionError> {
+        Ok(Self {
+            venue: venue.parse()?,
+            series_id: PredictionSeriesId::new(series_id)?,
+        })
+    }
+
+    /// Returns a collision-resistant, venue-namespaced identity key.
+    #[must_use]
+    pub fn unique_key(&self) -> String {
+        component_key(self.venue.as_str(), "series", self.series_id.as_str())
+    }
+}
+
+impl fmt::Display for PredictionSeriesKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.venue, self.series_id)
+    }
+}
 
 /// Venue-namespaced key for a prediction event/grouping container.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

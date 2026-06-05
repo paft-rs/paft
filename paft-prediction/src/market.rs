@@ -1,10 +1,10 @@
 //! Prediction event and market metadata models.
 
 use crate::error::PredictionError;
-use crate::identifiers::{PredictionOutcomeId, PredictionSeriesId, validate_opaque_identifier};
+use crate::identifiers::{PredictionOutcomeId, validate_opaque_identifier};
 use crate::instrument::{
     BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
-    PredictionMarketKey,
+    PredictionMarketKey, PredictionSeriesKey,
 };
 use crate::price::{NonZeroContractQuantity, OutcomePayout, PriceGrid};
 use chrono::{DateTime, Utc};
@@ -498,8 +498,8 @@ pub struct GenericPredictionEvent<E = (), M = ()> {
     pub subtitle: Option<String>,
     /// Optional provider/category topic.
     pub category: Option<String>,
-    /// Optional recurring-series/group identifier.
-    pub series_id: Option<PredictionSeriesId>,
+    /// Optional venue-namespaced recurring-series/group key.
+    pub series_key: Option<PredictionSeriesKey>,
     /// Relationship among the event's markets.
     pub structure: EventStructure,
     /// Markets grouped under this event.
@@ -518,7 +518,7 @@ impl<E: Default, M> GenericPredictionEvent<E, M> {
             title,
             subtitle: None,
             category: None,
-            series_id: None,
+            series_key: None,
             structure,
             markets: Vec::new(),
             provider: E::default(),

@@ -72,6 +72,8 @@ All notable changes to this project will be documented in this file.
   `ContractQuantity`, and `OutcomePayout`.
 - Prediction/facade: added `NonZeroContractQuantity` for quantity surfaces
   where zero is not semantically valid.
+- Prediction/facade: added `PredictionSeriesKey` for venue-namespaced recurring
+  series identity.
 
 ### Changed
 
@@ -85,6 +87,9 @@ All notable changes to this project will be documented in this file.
   binary market payload instead of provider metadata.
 - Prediction: standalone market shapes now carry `event_key:
   Option<PredictionEventKey>` instead of a bare event id so event references
+  are fully venue-namespaced.
+- Prediction: `PredictionEvent` now carries `series_key:
+  Option<PredictionSeriesKey>` instead of a bare series id so series references
   are fully venue-namespaced.
 - Prediction: `LinkedBinaryRelation`, `PredictionMarketStatus`, and
   `BinaryResolution` now use paft-style open string parsing/serde, so unknown

@@ -283,6 +283,7 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     fn assert_export<T>() {}
 
     assert_export::<paft::prediction::PredictionVenue>();
+    assert_export::<paft::prediction::PredictionSeriesKey>();
     assert_export::<paft::prediction::PredictionEventId>();
     assert_export::<paft::prediction::PredictionMarketId>();
     assert_export::<paft::prediction::PredictionOutcomeId>();
@@ -300,6 +301,7 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prediction::PredictionTrade>();
 
     assert_export::<paft::prelude::PredictionVenue>();
+    assert_export::<paft::prelude::PredictionSeriesKey>();
     assert_export::<paft::prelude::PredictionEventId>();
     assert_export::<paft::prelude::PredictionMarketId>();
     assert_export::<paft::prelude::PredictionOutcomeId>();

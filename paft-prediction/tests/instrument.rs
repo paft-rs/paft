@@ -1,6 +1,6 @@
 use paft_prediction::{
     BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionError,
-    PredictionEventKey, PredictionMarketKey,
+    PredictionEventKey, PredictionMarketKey, PredictionSeriesKey,
 };
 
 #[test]
@@ -31,9 +31,12 @@ fn outcome_instrument_accepts_yes_no_and_clob_token_ids() {
 
 #[test]
 fn event_and_market_keys_have_distinct_unique_key_roles() {
+    let series = PredictionSeriesKey::new("POLYMARKET", "btc-price").unwrap();
     let event = PredictionEventKey::new("POLYMARKET", "btc-price").unwrap();
     let market = PredictionMarketKey::new("POLYMARKET", "btc-price").unwrap();
 
+    assert_ne!(series.unique_key(), event.unique_key());
+    assert_ne!(series.unique_key(), market.unique_key());
     assert_ne!(event.unique_key(), market.unique_key());
 }
 
@@ -48,6 +51,20 @@ fn unique_keys_length_prefix_every_dynamic_component() {
     let second_event = PredictionEventKey::new("A", "B|event:1:C").unwrap();
 
     assert_ne!(first_event.unique_key(), second_event.unique_key());
+
+    let first_series = PredictionSeriesKey::new("A|series:1:B", "C").unwrap();
+    let second_series = PredictionSeriesKey::new("A", "B|series:1:C").unwrap();
+
+    assert_ne!(first_series.unique_key(), second_series.unique_key());
+}
+
+#[test]
+fn prediction_series_key_is_venue_namespaced() {
+    let kalshi = PredictionSeriesKey::new("KALSHI", "KXHIGHNY").unwrap();
+    let other_venue = PredictionSeriesKey::new("OTHER-VENUE", "KXHIGHNY").unwrap();
+
+    assert_ne!(kalshi.unique_key(), other_venue.unique_key());
+    assert_eq!(kalshi.to_string(), "KALSHI:KXHIGHNY");
 }
 
 #[test]

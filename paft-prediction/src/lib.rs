@@ -33,7 +33,7 @@ pub use identifiers::{
 };
 pub use instrument::{
     BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
-    PredictionMarketKey,
+    PredictionMarketKey, PredictionSeriesKey,
 };
 pub use market::{
     BinaryMarket, BinaryResolution, ClaimDescriptor, EventStructure, GenericBinaryMarket,

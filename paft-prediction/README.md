@@ -41,9 +41,10 @@ What's inside
   `PredictionOutcomeId`. Provider ids preserve case and punctuation, trim only
   surrounding whitespace, reject whitespace/control characters, and cap at 256
   bytes.
-- `PredictionEventKey`, `PredictionMarketKey`, `BinaryMarketKey`, and
-  `OutcomeInstrument`: venue-namespaced identities for event containers,
-  atomic markets, and tradable outcome shares/tokens/contracts.
+- `PredictionSeriesKey`, `PredictionEventKey`, `PredictionMarketKey`,
+  `BinaryMarketKey`, and `OutcomeInstrument`: venue-namespaced identities for
+  recurring series, event containers, atomic markets, and tradable outcome
+  shares/tokens/contracts.
 - `PredictionEvent`, `PredictionMarket`, `BinaryMarket`, `MultiOutcomeMarket`,
   `ScalarMarket`, `EventStructure`, and `ClaimDescriptor`: metadata models that
   separate event/group context from atomic yes/no claims. `BinaryMarket`

@@ -85,5 +85,5 @@ pub use crate::prediction::{
     OutcomePrice, PredictionBookLevel, PredictionError, PredictionEvent, PredictionEventId,
     PredictionEventKey, PredictionMarket, PredictionMarketId, PredictionMarketKey,
     PredictionMarketStatus, PredictionOutcomeId, PredictionQuoteLevel, PredictionSeriesId,
-    PredictionTrade, PredictionVenue, PriceGrid, PriceTick, TradeAction,
+    PredictionSeriesKey, PredictionTrade, PredictionVenue, PriceGrid, PriceTick, TradeAction,
 };
