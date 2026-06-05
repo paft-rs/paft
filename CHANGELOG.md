@@ -164,6 +164,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Facade docs: gated the feature-dependent quickstart doctest so
+  `cargo test -p paft --no-default-features --doc` does not compile imports that
+  require `domain` and `market`.
 - Docs: corrected the facade README identifier serde wording to describe the
   manual plain-string implementations instead of `#[serde(transparent)]`.
 - Docs: corrected snapshot, history-period, and search-response comments to

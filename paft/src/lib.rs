@@ -14,6 +14,8 @@
 //!
 //! # Quickstart
 //! ```rust
+//! # #[cfg(all(feature = "domain", feature = "market"))]
+//! # {
 //! use paft::prelude::*;
 //!
 //! // Construct an instrument with identifiers
@@ -23,6 +25,7 @@
 //! // Build a validated history request
 //! let req = HistoryRequest::try_from_range(Range::M1, Interval::D1).unwrap();
 //! assert_eq!(req.interval(), Interval::D1);
+//! # }
 //! ```
 //!
 //! See the crate README for installation instructions and feature details.
@@ -35,7 +38,7 @@
 //! Provider/data payload models are forward-compatible by default: unmodeled
 //! JSON fields are ignored unless validation requires rejection. Generic
 //! provider metadata is serde-flattened into the owning JSON object, so
-//! colliding JSON field names are unsupported. DataFrame export is separately
+//! colliding JSON field names are unsupported. `DataFrame` export is separately
 //! namespaced under `provider.*` columns.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
