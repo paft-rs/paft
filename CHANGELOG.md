@@ -75,6 +75,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `GenericBinaryMarket` now requires `BinaryOutcomeInstruments`,
   keeping Polymarket-style CLOB token/asset ids in the provider-agnostic
   binary market payload instead of provider metadata.
+- Prediction: `LinkedBinaryRelation`, `PredictionMarketStatus`, and
+  `BinaryResolution` now use paft-style open string parsing/serde, so unknown
+  strings deserialize into `Other(...)` and serialize back as strings.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.
@@ -248,6 +251,8 @@ All notable changes to this project will be documented in this file.
 - Decimal/money: constrained decimal and contextual amount `Display`
   implementations now emit canonical decimal strings without gratuitous
   trailing zeroes, matching serde and hash behavior.
+- Prediction: `Other*` metadata-code constructors now reject codes already
+  modeled by their owning enum instead of allowing ambiguous `Other` values.
 - Decimal feature matrix: crates that import `paft_decimal::Decimal` now compile
   correctly when another package in the dependency graph enables
   `paft-decimal/bigdecimal` without enabling each downstream crate's local

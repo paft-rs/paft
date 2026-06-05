@@ -21,6 +21,7 @@ macro_rules! opaque_metadata_code {
         $(#[$meta:meta])*
         pub struct $name:ident;
         kind = $kind:literal;
+        modeled_by = $modeled_by:path;
     ) => {
         $(#[$meta])*
         #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -33,8 +34,15 @@ macro_rules! opaque_metadata_code {
             ///
             /// Returns [`PredictionError::InvalidIdentifier`] when the trimmed
             /// code is empty, too long, or contains whitespace/control characters.
+            /// Returns [`PredictionError::ModeledMetadataCode`] when the code
+            /// already names a modeled value for the owning enum.
             pub fn new(input: &str) -> Result<Self, PredictionError> {
-                validate_opaque_identifier($kind, input).map(Self)
+                let value = validate_opaque_identifier($kind, input)?;
+                if $modeled_by(value.as_str()) {
+                    return Err(PredictionError::modeled_metadata_code($kind, input.to_string()));
+                }
+
+                Ok(Self(value))
             }
 
             /// Returns the preserved provider metadata code.
@@ -89,31 +97,154 @@ opaque_metadata_code!(
     /// Event-structure code not modeled by [`EventStructure`].
     pub struct OtherEventStructure;
     kind = "event structure code";
+    modeled_by = is_modeled_event_structure_code;
 );
 
 opaque_metadata_code!(
     /// Linked-binary relation code not modeled by [`LinkedBinaryRelation`].
     pub struct OtherLinkedBinaryRelation;
     kind = "linked binary relation code";
+    modeled_by = is_modeled_linked_binary_relation_code;
 );
 
 opaque_metadata_code!(
     /// Claim descriptor code not modeled by [`ClaimDescriptor`].
     pub struct OtherClaimDescriptor;
     kind = "claim descriptor code";
+    modeled_by = is_modeled_claim_descriptor_code;
 );
 
 opaque_metadata_code!(
     /// Market-status code not modeled by [`PredictionMarketStatus`].
     pub struct OtherPredictionMarketStatus;
     kind = "prediction market status code";
+    modeled_by = is_modeled_prediction_market_status_code;
 );
 
 opaque_metadata_code!(
     /// Binary-resolution code not modeled by [`BinaryResolution`].
     pub struct OtherBinaryResolution;
     kind = "binary resolution code";
+    modeled_by = is_modeled_binary_resolution_code;
 );
+
+fn is_modeled_code(input: &str, modeled: &[&str]) -> bool {
+    modeled.iter().any(|code| input.eq_ignore_ascii_case(code))
+}
+
+fn is_modeled_event_structure_code(input: &str) -> bool {
+    is_modeled_code(
+        input,
+        &[
+            "single_market",
+            "independent_claims",
+            "mutually_exclusive",
+            "ordered_buckets",
+            "linked_binary_claims",
+            "composite",
+        ],
+    )
+}
+
+fn is_modeled_linked_binary_relation_code(input: &str) -> bool {
+    is_modeled_code(
+        input,
+        &["sum_to_one", "negative_risk_conversion", "composite_legs"],
+    )
+}
+
+fn is_modeled_claim_descriptor_code(input: &str) -> bool {
+    is_modeled_code(
+        input,
+        &["text", "categorical", "numeric_range", "composite"],
+    )
+}
+
+fn is_modeled_prediction_market_status_code(input: &str) -> bool {
+    is_modeled_code(
+        input,
+        &[
+            "upcoming",
+            "open",
+            "paused",
+            "closed",
+            "resolved",
+            "cancelled",
+        ],
+    )
+}
+
+fn is_modeled_binary_resolution_code(input: &str) -> bool {
+    is_modeled_code(input, &["yes", "no", "void"])
+}
+
+macro_rules! open_string_metadata_enum {
+    (
+        $name:ident, $other:ident, $kind:literal;
+        {
+            $($code:literal => $variant:ident),+ $(,)?
+        }
+    ) => {
+        impl $name {
+            /// Returns the stable string code for this enum value.
+            #[must_use]
+            pub fn code(&self) -> &str {
+                match self {
+                    $(Self::$variant => $code,)+
+                    Self::Other(value) => value.as_str(),
+                }
+            }
+
+            /// Parses a string code, preserving unknown values in `Other`.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`PredictionError::InvalidIdentifier`] when the code is
+            /// empty, too long, or contains whitespace/control characters.
+            pub fn try_from_str(input: &str) -> Result<Self, PredictionError> {
+                let value = validate_opaque_identifier($kind, input)?;
+                $(if value.as_str().eq_ignore_ascii_case($code) {
+                    return Ok(Self::$variant);
+                })+
+
+                $other::new(value.as_str()).map(Self::Other)
+            }
+        }
+
+        impl FromStr for $name {
+            type Err = PredictionError;
+
+            fn from_str(input: &str) -> Result<Self, Self::Err> {
+                Self::try_from_str(input)
+            }
+        }
+
+        impl fmt::Display for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str(self.code())
+            }
+        }
+
+        impl Serialize for $name {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                serializer.serialize_str(self.code())
+            }
+        }
+
+        impl<'de> Deserialize<'de> for $name {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                let raw = String::deserialize(deserializer)?;
+                Self::try_from_str(&raw).map_err(de::Error::custom)
+            }
+        }
+    };
+}
 
 /// High-level relationship among markets inside an event.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -149,8 +280,7 @@ pub enum EventStructure {
 }
 
 /// Relationship among linked binary claims.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum LinkedBinaryRelation {
     /// Linked outcomes sum to one unit of payout/probability.
@@ -163,9 +293,17 @@ pub enum LinkedBinaryRelation {
     Other(OtherLinkedBinaryRelation),
 }
 
+open_string_metadata_enum!(
+    LinkedBinaryRelation, OtherLinkedBinaryRelation, "linked binary relation code";
+    {
+        "sum_to_one" => SumToOne,
+        "negative_risk_conversion" => NegativeRiskConversion,
+        "composite_legs" => CompositeLegs,
+    }
+);
+
 /// Provider-agnostic status of a prediction market.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum PredictionMarketStatus {
     /// Market is listed but not yet open.
@@ -184,9 +322,20 @@ pub enum PredictionMarketStatus {
     Other(OtherPredictionMarketStatus),
 }
 
+open_string_metadata_enum!(
+    PredictionMarketStatus, OtherPredictionMarketStatus, "prediction market status code";
+    {
+        "upcoming" => Upcoming,
+        "open" => Open,
+        "paused" => Paused,
+        "closed" => Closed,
+        "resolved" => Resolved,
+        "cancelled" => Cancelled,
+    }
+);
+
 /// Final binary market resolution.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum BinaryResolution {
     /// YES won.
@@ -198,6 +347,15 @@ pub enum BinaryResolution {
     /// Provider-specific binary resolution.
     Other(OtherBinaryResolution),
 }
+
+open_string_metadata_enum!(
+    BinaryResolution, OtherBinaryResolution, "binary resolution code";
+    {
+        "yes" => Yes,
+        "no" => No,
+        "void" => Void,
+    }
+);
 
 /// Description of the claim represented by a prediction market.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

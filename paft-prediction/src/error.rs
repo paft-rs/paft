@@ -26,6 +26,15 @@ pub enum PredictionError {
         value: String,
     },
 
+    /// Metadata code supplied to an `Other*` wrapper is already modeled.
+    #[error("Invalid {kind}: '{value}' - value is already modeled")]
+    ModeledMetadataCode {
+        /// Human-readable metadata-code role.
+        kind: &'static str,
+        /// Original value supplied by the caller.
+        value: String,
+    },
+
     /// Invalid fixed-point outcome price.
     #[error("Invalid outcome price micros: {micros} - expected 0..=1_000_000")]
     InvalidOutcomePrice {
@@ -76,5 +85,9 @@ pub enum PredictionError {
 impl PredictionError {
     pub(crate) const fn invalid_identifier(kind: &'static str, value: String) -> Self {
         Self::InvalidIdentifier { kind, value }
+    }
+
+    pub(crate) const fn modeled_metadata_code(kind: &'static str, value: String) -> Self {
+        Self::ModeledMetadataCode { kind, value }
     }
 }
