@@ -41,6 +41,8 @@ All notable changes to this project will be documented in this file.
   specifications have an explicit period-validation boundary.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
   constrained decimal constructors to compose with `paft::prelude::Result`.
+- Facade: `paft::prelude` now re-exports `IsoCurrency` for common
+  `Currency::Iso(IsoCurrency::...)` construction.
 - Docs/examples: added a no-metadata v0.9 ergonomics example and refreshed
   crate READMEs for contextual amounts, price basis, horizons, and constrained
   decimals.

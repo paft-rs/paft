@@ -40,10 +40,9 @@ use paft::market::responses::download::{GenericDownloadEntry, GenericDownloadRes
 use paft::market::responses::history::{
     GenericCandle, GenericCandleUpdate, GenericHistoryResponse, Ohlc, OhlcPriceBasis, PriceBasis,
 };
-use paft::money::IsoCurrency;
 use paft::prelude::{
-    Action, AssetKind, Currency, Exchange, HistoryMeta, Instrument, Interval, MarketState, Price,
-    PriceAmount, QuantityAmount,
+    Action, AssetKind, Currency, Exchange, HistoryMeta, Instrument, Interval, IsoCurrency,
+    MarketState, Price, PriceAmount, QuantityAmount,
 };
 use paft::{Decimal, NonNegativeDecimal, Result};
 use serde::{Deserialize, Serialize};

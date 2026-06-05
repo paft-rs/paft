@@ -36,10 +36,9 @@ use paft::market::quote::{GenericQuote, Quote};
 use paft::market::responses::history::{
     GenericCandle, GenericHistoryResponse, Ohlc, OhlcPriceBasis, PriceBasis,
 };
-use paft::money::IsoCurrency;
 use paft::prelude::{
-    AssetKind, Currency, Exchange, Instrument, MarketState, PriceAmount, QuantityAmount,
-    ToDataFrame, ToDataFrameVec,
+    AssetKind, Currency, Exchange, Instrument, IsoCurrency, MarketState, PriceAmount,
+    QuantityAmount, ToDataFrame, ToDataFrameVec,
 };
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};

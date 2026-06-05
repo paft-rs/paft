@@ -36,9 +36,9 @@
 
 use chrono::{DateTime, Utc};
 use paft::market::quote::{GenericQuote, GenericQuoteUpdate, Quote, QuoteUpdate};
-use paft::money::IsoCurrency;
 use paft::prelude::{
-    AssetKind, Currency, Exchange, Instrument, MarketState, PriceAmount, QuantityAmount,
+    AssetKind, Currency, Exchange, Instrument, IsoCurrency, MarketState, PriceAmount,
+    QuantityAmount,
 };
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};

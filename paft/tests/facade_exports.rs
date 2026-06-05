@@ -110,9 +110,8 @@ fn market_exports_are_available_from_facade_and_prelude() {
         OptionUpdate as FacadeOptionUpdate, SearchRequestBuilder as FacadeSearchRequestBuilder,
         TimeSpec as FacadeTimeSpec,
     };
-    use paft::money::IsoCurrency;
     use paft::prelude::{
-        AssetKind, Currency, Instrument, NewsRequest as PreludeNewsRequest,
+        AssetKind, Currency, Instrument, IsoCurrency, NewsRequest as PreludeNewsRequest,
         NewsTab as PreludeNewsTab, Ohlc as PreludeOhlc,
         OptionContractKey as PreludeOptionContractKey,
         OptionExpirationsResponse as PreludeOptionExpirationsResponse,
@@ -229,8 +228,7 @@ fn history_validation_errors_convert_into_facade_result() {
     use chrono::DateTime;
     use paft::Decimal;
     use paft::market::{Candle, HistoryResponse, HistoryValidationError, Ohlc, OhlcPriceBasis};
-    use paft::money::{Currency, IsoCurrency};
-    use paft::prelude::{Error, PriceAmount, Result};
+    use paft::prelude::{Currency, Error, IsoCurrency, PriceAmount, Result};
 
     fn amount(value: i64) -> PriceAmount {
         PriceAmount::new(Decimal::from(value))
@@ -287,11 +285,11 @@ fn analysis_helpers_are_available_from_facade_and_prelude() {
         EpsTrend as FacadeEpsTrend, RevenueEstimate as FacadeRevenueEstimate,
         RevisionPoint as FacadeRevisionPoint, TrendPoint as FacadeTrendPoint,
     };
-    use paft::money::IsoCurrency;
     use paft::prelude::{
         Currency, EarningsEstimate as PreludeEarningsEstimate, EpsRevisions as PreludeEpsRevisions,
-        EpsTrend as PreludeEpsTrend, Horizon, Price, RevenueEstimate as PreludeRevenueEstimate,
-        RevisionPoint as PreludeRevisionPoint, TrendPoint as PreludeTrendPoint,
+        EpsTrend as PreludeEpsTrend, Horizon, IsoCurrency, Price,
+        RevenueEstimate as PreludeRevenueEstimate, RevisionPoint as PreludeRevisionPoint,
+        TrendPoint as PreludeTrendPoint,
     };
 
     let earnings_estimate: FacadeEarningsEstimate = PreludeEarningsEstimate::default();

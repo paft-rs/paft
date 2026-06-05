@@ -1,11 +1,11 @@
 use paft::money::{
-    Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
-    MoneyParseError, PriceAmount, QuantityAmount, clear_currency_metadata, currency_metadata,
-    override_currency_metadata, set_currency_metadata,
+    Currency, CurrencyMetadata, IsoCurrency, Locale, MAX_DECIMAL_PRECISION,
+    MAX_MINOR_UNIT_DECIMALS, MoneyParseError, PriceAmount, QuantityAmount, clear_currency_metadata,
+    currency_metadata, override_currency_metadata, set_currency_metadata,
 };
 use paft::prelude::{
-    CurrencyMetadata as PreludeCurrencyMetadata, Locale as PreludeLocale,
-    MAX_DECIMAL_PRECISION as PRELUDE_MAX_DECIMAL_PRECISION,
+    CurrencyMetadata as PreludeCurrencyMetadata, IsoCurrency as PreludeIsoCurrency,
+    Locale as PreludeLocale, MAX_DECIMAL_PRECISION as PRELUDE_MAX_DECIMAL_PRECISION,
     MAX_MINOR_UNIT_DECIMALS as PRELUDE_MAX_MINOR_UNIT_DECIMALS, PriceAmount as PreludePriceAmount,
     QuantityAmount as PreludeQuantityAmount,
     override_currency_metadata as prelude_override_currency_metadata,
@@ -66,6 +66,13 @@ fn facade_reexports_metadata_types_without_formatting() {
 fn facade_reexports_money_precision_limits() {
     assert_eq!(MAX_DECIMAL_PRECISION, PRELUDE_MAX_DECIMAL_PRECISION);
     assert_eq!(MAX_MINOR_UNIT_DECIMALS, PRELUDE_MAX_MINOR_UNIT_DECIMALS);
+}
+
+#[test]
+fn facade_prelude_reexports_iso_currency() {
+    let currency = Currency::Iso(PreludeIsoCurrency::USD);
+
+    assert_eq!(currency, Currency::Iso(IsoCurrency::USD));
 }
 
 #[test]

@@ -13,9 +13,9 @@ pub use crate::domain::{
 #[cfg(feature = "money-formatting")]
 pub use crate::money::LocalizedMoney;
 pub use crate::money::{
-    Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
-    MonetaryAmount, OtherCurrency, Price, PriceAmount, QuantityAmount, clear_currency_metadata,
-    currency_metadata, override_currency_metadata, set_currency_metadata,
+    Currency, CurrencyMetadata, IsoCurrency, Locale, MAX_DECIMAL_PRECISION,
+    MAX_MINOR_UNIT_DECIMALS, MonetaryAmount, OtherCurrency, Price, PriceAmount, QuantityAmount,
+    clear_currency_metadata, currency_metadata, override_currency_metadata, set_currency_metadata,
     try_normalize_currency_code,
 };
 pub use crate::money::{ExchangeRate, Money};

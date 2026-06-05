@@ -3,12 +3,11 @@
 
 use chrono::{DateTime, NaiveDate};
 use chrono_tz::Tz;
-use iso_currency::Currency as IsoCurrency;
 use paft::market::MarketError;
 use paft::prelude::{
     Action, AssetKind, Candle, Currency, Exchange, HistoryMeta, HistoryRequest, HistoryResponse,
-    Instrument, Interval, MarketState, Ohlc, OhlcPriceBasis, Price, PriceAmount, PriceBasis,
-    QuantityAmount, Quote, QuoteUpdate, Range, SearchRequest,
+    Instrument, Interval, IsoCurrency, MarketState, Ohlc, OhlcPriceBasis, Price, PriceAmount,
+    PriceBasis, QuantityAmount, Quote, QuoteUpdate, Range, SearchRequest,
 };
 use paft_decimal::Decimal;
 use std::num::NonZeroU32;

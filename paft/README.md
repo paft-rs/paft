@@ -76,7 +76,6 @@ Quickstart
 ----------
 
 ```rust
-use paft::money::IsoCurrency;
 use paft::prelude::*;
 
 fn run() -> Result<()> {
@@ -158,7 +157,7 @@ paft = { version = "0.9.0", features = ["money-formatting"] }
 ```
 
 ```rust
-use paft::money::{Currency, IsoCurrency, Locale, Money};
+use paft::prelude::{Currency, IsoCurrency, Locale, Money};
 
 let usd = Currency::Iso(IsoCurrency::USD);
 let money = Money::from_canonical_str("1234.56", usd.clone())?;

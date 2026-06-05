@@ -11,11 +11,11 @@
 //! basis, validated periods, and horizon-based fundamentals helpers.
 
 use chrono::{DateTime, Utc};
-use paft::money::IsoCurrency;
 use paft::prelude::{
     AssetKind, CalendarPeriod, Candle, Currency, EpsRevisions, EpsTrend, Exchange, HistoryRequest,
-    HistoryResponse, Instrument, Interval, MajorHolder, MarketState, Ohlc, OhlcPriceBasis, Price,
-    PriceAmount, PriceBasis, QuantityAmount, Quote, Range, Ratio, RevisionPoint, TrendPoint,
+    HistoryResponse, Instrument, Interval, IsoCurrency, MajorHolder, MarketState, Ohlc,
+    OhlcPriceBasis, Price, PriceAmount, PriceBasis, QuantityAmount, Quote, Range, Ratio,
+    RevisionPoint, TrendPoint,
 };
 use paft::{Decimal, Result};
 

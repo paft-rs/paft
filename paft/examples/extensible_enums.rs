@@ -31,8 +31,7 @@
 
 #[cfg(feature = "fundamentals")]
 use paft::fundamentals::analysis::RecommendationGrade;
-use paft::money::IsoCurrency;
-use paft::prelude::Currency;
+use paft::prelude::{Currency, IsoCurrency};
 
 fn main() {
     println!("=== paft Extensible Enum Pattern Examples ===\n");
