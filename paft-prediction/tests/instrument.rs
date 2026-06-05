@@ -54,8 +54,8 @@ fn unique_keys_length_prefix_every_dynamic_component() {
 fn binary_market_key_builds_synthetic_yes_no_instruments() {
     let key = BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60").unwrap();
 
-    let yes = key.yes_instrument();
-    let no = key.no_instrument();
+    let yes = key.synthetic_yes_instrument();
+    let no = key.synthetic_no_instrument();
 
     assert_eq!(yes.to_string(), "KALSHI:KXHIGHNY-24JAN01-T60/YES");
     assert_eq!(no.to_string(), "KALSHI:KXHIGHNY-24JAN01-T60/NO");

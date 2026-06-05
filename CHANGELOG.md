@@ -61,9 +61,10 @@ All notable changes to this project will be documented in this file.
   `ContractQuantity`, `PriceGrid`, and canonical YES-view
   `BinaryOrderBook`.
 - Prediction/facade: added `BinaryOutcomeInstruments` and
-  `BinaryMarketKey::{yes_instrument, no_instrument}` so binary markets expose
-  tradable YES/NO outcome instruments directly while still supporting
-  synthetic `YES`/`NO` ids for venues that do not issue separate instrument ids.
+  `BinaryMarketKey::{synthetic_yes_instrument, synthetic_no_instrument}` so
+  binary markets expose tradable YES/NO outcome instruments directly while
+  still supporting synthetic `YES`/`NO` ids for venues that do not issue
+  separate instrument ids.
 - Prediction/facade: added `PredictionQuoteLevel` for top-of-book quote levels
   whose displayed quantity may be unavailable.
 - Prediction: added exact decimal/string conversion helpers for

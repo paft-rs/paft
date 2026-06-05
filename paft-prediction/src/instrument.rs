@@ -135,25 +135,25 @@ impl BinaryMarketKey {
         }
     }
 
-    /// Returns the synthetic YES outcome instrument for this binary market.
+    /// Returns a synthetic YES outcome instrument for this binary market.
     ///
     /// This is intended for venues whose provider-native binary instruments are
     /// naturally identified as `YES`/`NO`, such as Kalshi-style adapters. Venues
     /// with provider-issued outcome ids, such as Polymarket CLOB token ids,
     /// should carry those concrete ids in [`BinaryOutcomeInstruments`].
     #[must_use]
-    pub fn yes_instrument(&self) -> OutcomeInstrument {
+    pub fn synthetic_yes_instrument(&self) -> OutcomeInstrument {
         self.synthetic_outcome_instrument("YES")
     }
 
-    /// Returns the synthetic NO outcome instrument for this binary market.
+    /// Returns a synthetic NO outcome instrument for this binary market.
     ///
     /// This is intended for venues whose provider-native binary instruments are
     /// naturally identified as `YES`/`NO`, such as Kalshi-style adapters. Venues
     /// with provider-issued outcome ids, such as Polymarket CLOB token ids,
     /// should carry those concrete ids in [`BinaryOutcomeInstruments`].
     #[must_use]
-    pub fn no_instrument(&self) -> OutcomeInstrument {
+    pub fn synthetic_no_instrument(&self) -> OutcomeInstrument {
         self.synthetic_outcome_instrument("NO")
     }
 
@@ -319,8 +319,8 @@ impl BinaryOutcomeInstruments {
     #[must_use]
     pub fn synthetic_for_market(key: &BinaryMarketKey) -> Self {
         Self {
-            yes: key.yes_instrument(),
-            no: key.no_instrument(),
+            yes: key.synthetic_yes_instrument(),
+            no: key.synthetic_no_instrument(),
         }
     }
 }

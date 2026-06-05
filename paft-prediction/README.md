@@ -82,7 +82,10 @@ fn run() -> Result<(), PredictionError> {
         OutcomeInstrument::new("KALSHI", "KXHIGHNY-24JAN01-T60", "YES")?;
     assert_eq!(kalshi_yes.to_string(), "KALSHI:KXHIGHNY-24JAN01-T60/YES");
     let kalshi_key = BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60")?;
-    assert_eq!(kalshi_key.no_instrument().outcome_id.as_str(), "NO");
+    assert_eq!(
+        kalshi_key.synthetic_no_instrument().outcome_id.as_str(),
+        "NO"
+    );
 
     let polymarket_market =
         "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de";
