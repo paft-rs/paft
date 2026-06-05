@@ -1,7 +1,8 @@
 use paft_money::{Currency, IsoCurrency};
 use paft_prediction::{
     BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor, EventStructure,
-    NonZeroContractQuantity, OutcomeInstrument, OutcomePayout, PredictionMarketStatus,
+    NonZeroContractQuantity, OutcomeInstrument, OutcomePayout, PredictionEventKey,
+    PredictionMarketStatus,
 };
 use paft_prediction::{NumericBound, NumericRange};
 
@@ -102,6 +103,29 @@ fn binary_market_deserialization_rejects_zero_min_order_quantity() {
     value["min_order_quantity"] = serde_json::json!(0);
 
     assert!(serde_json::from_value::<BinaryMarket>(value).is_err());
+}
+
+#[test]
+fn binary_market_uses_full_event_key_reference() {
+    let key = BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60").unwrap();
+    let mut market = BinaryMarket::new(
+        key.clone(),
+        BinaryOutcomeInstruments::synthetic_for_market(&key),
+        "Will NYC temperature exceed 60F?".to_string(),
+        ClaimDescriptor::Text {
+            description: "NYC temperature exceeds 60F at expiry.".to_string(),
+        },
+        PredictionMarketStatus::Open,
+        Currency::Iso(IsoCurrency::USD),
+        OutcomePayout::ONE,
+    );
+    market.event_key = Some(PredictionEventKey::new("KALSHI", "KXHIGHNY-24JAN01").unwrap());
+
+    let value = serde_json::to_value(&market).unwrap();
+
+    assert!(value.get("event_id").is_none());
+    assert_eq!(value["event_key"]["venue"], "KALSHI");
+    assert_eq!(value["event_key"]["event_id"], "KXHIGHNY-24JAN01");
 }
 
 #[test]

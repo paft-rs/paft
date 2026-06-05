@@ -83,6 +83,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `GenericBinaryMarket` now requires `BinaryOutcomeInstruments`,
   keeping Polymarket-style CLOB token/asset ids in the provider-agnostic
   binary market payload instead of provider metadata.
+- Prediction: standalone market shapes now carry `event_key:
+  Option<PredictionEventKey>` instead of a bare event id so event references
+  are fully venue-namespaced.
 - Prediction: `LinkedBinaryRelation`, `PredictionMarketStatus`, and
   `BinaryResolution` now use paft-style open string parsing/serde, so unknown
   strings deserialize into `Other(...)` and serialize back as strings.

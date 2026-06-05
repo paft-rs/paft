@@ -1,9 +1,7 @@
 //! Prediction event and market metadata models.
 
 use crate::error::PredictionError;
-use crate::identifiers::{
-    PredictionEventId, PredictionOutcomeId, PredictionSeriesId, validate_opaque_identifier,
-};
+use crate::identifiers::{PredictionOutcomeId, PredictionSeriesId, validate_opaque_identifier};
 use crate::instrument::{
     BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
     PredictionMarketKey,
@@ -557,8 +555,8 @@ pub struct GenericBinaryMarket<M = ()> {
     pub key: BinaryMarketKey,
     /// Required tradable YES and NO outcome instruments for this market.
     pub outcomes: BinaryOutcomeInstruments,
-    /// Provider-native event/group id when this market belongs to an event.
-    pub event_id: Option<PredictionEventId>,
+    /// Venue-namespaced event/group key when this market belongs to an event.
+    pub event_key: Option<PredictionEventKey>,
     /// Market title.
     pub title: String,
     /// Optional label for the YES outcome.
@@ -608,7 +606,7 @@ impl<M: Default> GenericBinaryMarket<M> {
         Self {
             key,
             outcomes,
-            event_id: None,
+            event_key: None,
             title,
             yes_label: None,
             no_label: None,
@@ -635,8 +633,8 @@ pub type BinaryMarket = GenericBinaryMarket<()>;
 pub struct GenericMultiOutcomeMarket<M = ()> {
     /// Venue-namespaced market key.
     pub key: PredictionMarketKey,
-    /// Provider-native event/group id when this market belongs to an event.
-    pub event_id: Option<PredictionEventId>,
+    /// Venue-namespaced event/group key when this market belongs to an event.
+    pub event_key: Option<PredictionEventKey>,
     /// Market title.
     pub title: String,
     /// Outcomes available in the market.
@@ -684,8 +682,8 @@ pub struct OutcomeDescriptor {
 pub struct GenericScalarMarket<M = ()> {
     /// Venue-namespaced market key.
     pub key: PredictionMarketKey,
-    /// Provider-native event/group id when this market belongs to an event.
-    pub event_id: Option<PredictionEventId>,
+    /// Venue-namespaced event/group key when this market belongs to an event.
+    pub event_key: Option<PredictionEventKey>,
     /// Market title.
     pub title: String,
     /// Optional unit for the resolved scalar value.
