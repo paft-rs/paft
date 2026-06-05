@@ -1,7 +1,8 @@
 paft-prediction
 ===============
 
-Prediction-market identity and data models for the paft ecosystem.
+Provider-neutral prediction-market identity, metadata, quotes, books, and
+trades for the paft ecosystem.
 
 [![Crates.io](https://img.shields.io/crates/v/paft-prediction)](https://crates.io/crates/paft-prediction)
 [![Docs.rs](https://docs.rs/paft-prediction/badge.svg)](https://docs.rs/paft-prediction)
@@ -35,48 +36,66 @@ paft-utils = { version = "0.9.0", default-features = false, features = ["datafra
 What's inside
 -------------
 
-- `EventId` and `OutcomeId`: validated, serde-stable identifier newtypes. Event
-  IDs normalize to canonical lowercase `0x...` hex; outcome IDs normalize
-  surrounding whitespace and validate as ASCII digit strings up to 78 digits.
-- `PredictionInstrument`: pairs an event ID with an outcome ID and exposes the
-  stable `event_id/outcome_id` display form via `unique_key()`.
-- `Market` and `Token`: plain prediction-market payload structs for a question
-  and its tradeable outcomes. Collateral, minimum order size, and tick size use
-  `paft-money` types.
-- `PredictionError`: non-exhaustive validation error for identifier
-  constructors and serde deserialization.
+- `PredictionVenue` plus role-specific opaque ids:
+  `PredictionSeriesId`, `PredictionEventId`, `PredictionMarketId`, and
+  `PredictionOutcomeId`. Provider ids preserve case and punctuation, trim only
+  surrounding whitespace, reject whitespace/control characters, and cap at 256
+  bytes.
+- `PredictionEventKey`, `PredictionMarketKey`, `BinaryMarketKey`, and
+  `OutcomeInstrument`: venue-namespaced identities for event containers,
+  atomic markets, and tradable outcome shares/tokens/contracts.
+- `PredictionEvent`, `PredictionMarket`, `BinaryMarket`, `MultiOutcomeMarket`,
+  `ScalarMarket`, `EventStructure`, and `ClaimDescriptor`: metadata models that
+  separate event/group context from atomic yes/no claims.
+- `OutcomePrice`, `PriceTick`, `PriceGrid`, `PriceBand`,
+  `ContractQuantity`, and `OutcomePayout`: compact fixed-point integer
+  primitives for prices, ticks, quantities, and contextual unit payouts.
+- `BinaryQuote`, `BinaryOrderBook`, `OutcomeOrderBook`, `PredictionBookLevel`,
+  and `PredictionTrade`: market-data payloads. `BinaryOrderBook` stores a
+  canonical YES-view book and derives NO-side top-of-book values by complement.
+- `PredictionError`: non-exhaustive validation error for constructors, serde,
+  price-grid validation, and book-order validation.
 
 Features
 --------
 
-- `bigdecimal`: switch the shared money/price decimal backend from `rust_decimal` to `bigdecimal`
-- `dataframe`: Polars integration for prediction types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
+- `bigdecimal`: switch the shared decimal backend from `rust_decimal` to `bigdecimal`
+- `dataframe`: Polars integration for flat prediction identity types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 
 Quickstart
 ----------
 
-The quickstart below uses the direct `paft-prediction` dependency. Facade users
-can import the same types from `paft::prediction` or, with the `prediction`
-feature enabled, from `paft::prelude`.
-
 ```rust
-use paft_prediction::{EventId, OutcomeId, PredictionError, PredictionInstrument};
+use paft_prediction::{
+    BinaryMarketKey, BinaryOrderBook, ContractQuantity, OutcomeInstrument,
+    OutcomePrice, PredictionBookLevel, PredictionError,
+};
 
 fn run() -> Result<(), PredictionError> {
-    const RAW_EVENT: &str =
-        "  0xABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890  ";
-    const EVENT: &str =
-        "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
+    let kalshi_yes =
+        OutcomeInstrument::new("KALSHI", "KXHIGHNY-24JAN01-T60", "YES")?;
+    assert_eq!(kalshi_yes.to_string(), "KALSHI:KXHIGHNY-24JAN01-T60/YES");
 
-    let event = EventId::new(RAW_EVENT)?;
-    assert_eq!(event.as_ref(), EVENT);
+    let polymarket_token = OutcomeInstrument::new(
+        "POLYMARKET",
+        "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de",
+        "73470541315377973562501025254719659796416871135081220986683321361000395461644",
+    )?;
+    assert_ne!(kalshi_yes.unique_key(), polymarket_token.unique_key());
 
-    // FromStr is wired through the same validation and normalization path.
-    let outcome: OutcomeId = " 12345 ".parse()?;
+    let mut book =
+        BinaryOrderBook::new(BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60")?);
+    book.yes_bids.push(PredictionBookLevel::new(
+        OutcomePrice::from_micros(410_000)?,
+        ContractQuantity::from_microcontracts(2_000_000),
+    ));
+    book.yes_asks.push(PredictionBookLevel::new(
+        OutcomePrice::from_micros(430_000)?,
+        ContractQuantity::from_microcontracts(3_000_000),
+    ));
 
-    let instrument = PredictionInstrument::from_ids(event, outcome);
-    assert_eq!(instrument.unique_key().as_ref(), format!("{EVENT}/12345"));
-    assert_eq!(instrument.to_string(), instrument.unique_key());
+    assert_eq!(book.best_no_bid().unwrap().price.micros(), 570_000);
+    assert_eq!(book.yes_spread().unwrap().micros(), 20_000);
 
     Ok(())
 }
@@ -87,10 +106,12 @@ run().unwrap();
 Prediction notes
 ----------------
 
-- Prediction-market identity is intentionally separate from
-  `paft_domain::Instrument`; use `PredictionInstrument` for tradeable outcomes.
-- Outcome IDs are only assumed unique within an event, so `unique_key()` always
-  includes both identifiers.
+- `PredictionEvent` is a container/grouping. `BinaryMarket` is the atomic
+  yes/no claim. `OutcomeInstrument` is the tradable outcome share/token/contract.
+- Provider-native identifiers are opaque and venue-namespaced; do not infer
+  relationships by parsing tickers, slugs, or condition ids.
+- Polymarket-specific mechanics such as negative risk belong in
+  `EventStructure`/provider metadata, not as universal fields on every market.
 
 Links
 -----

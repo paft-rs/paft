@@ -1,68 +1,232 @@
-//! Logical identity for a prediction-market outcome.
+//! Logical identity for prediction events, markets, and outcome instruments.
 
 use crate::error::PredictionError;
-use crate::identifiers::{EventId, OutcomeId};
+use crate::identifiers::{
+    PredictionEventId, PredictionMarketId, PredictionOutcomeId, PredictionVenue,
+};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
+use std::fmt;
 
-/// Logical identity for a single prediction-market outcome.
-///
-/// Pairs the event/question identifier with the specific tradeable outcome
-/// identifier. Parallels `paft_domain::Instrument` for prediction markets.
+/// Venue-namespaced key for a prediction event/grouping container.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(df_derive_macros::ToDataFrame))]
-pub struct PredictionInstrument {
-    /// Identifier of the event/question this outcome belongs to.
+pub struct PredictionEventKey {
+    /// Prediction venue that issued the event identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub event_id: EventId,
-    /// Identifier of the specific tradeable outcome.
+    pub venue: PredictionVenue,
+    /// Provider-native event/group identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub outcome_id: OutcomeId,
+    pub event_id: PredictionEventId,
 }
 
-impl PredictionInstrument {
-    /// Construct a new `PredictionInstrument` from string ids, validating each.
+impl PredictionEventKey {
+    /// Construct a key from already-validated venue and event id values.
+    #[must_use]
+    pub const fn from_parts(venue: PredictionVenue, event_id: PredictionEventId) -> Self {
+        Self { venue, event_id }
+    }
+
+    /// Construct a key from string inputs.
     ///
     /// # Errors
-    /// Returns [`PredictionError::InvalidEventId`] or
-    /// [`PredictionError::InvalidOutcomeId`] if validation fails.
-    pub fn new(event_id: &str, outcome_id: &str) -> Result<Self, PredictionError> {
+    ///
+    /// Returns [`PredictionError`] if either input fails validation.
+    pub fn new(venue: &str, event_id: &str) -> Result<Self, PredictionError> {
         Ok(Self {
-            event_id: EventId::new(event_id)?,
-            outcome_id: OutcomeId::new(outcome_id)?,
+            venue: venue.parse()?,
+            event_id: PredictionEventId::new(event_id)?,
         })
     }
 
-    /// Construct a `PredictionInstrument` from already-validated ids.
+    /// Returns a collision-resistant, venue-namespaced identity key.
     #[must_use]
-    pub const fn from_ids(event_id: EventId, outcome_id: OutcomeId) -> Self {
+    pub fn unique_key(&self) -> String {
+        component_key(self.venue.as_str(), "event", self.event_id.as_str())
+    }
+}
+
+impl fmt::Display for PredictionEventKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.venue, self.event_id)
+    }
+}
+
+/// Venue-namespaced key for a prediction market of any shape.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(df_derive_macros::ToDataFrame))]
+pub struct PredictionMarketKey {
+    /// Prediction venue that issued the market identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub venue: PredictionVenue,
+    /// Provider-native market/claim identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub market_id: PredictionMarketId,
+}
+
+impl PredictionMarketKey {
+    /// Construct a key from already-validated venue and market id values.
+    #[must_use]
+    pub const fn from_parts(venue: PredictionVenue, market_id: PredictionMarketId) -> Self {
+        Self { venue, market_id }
+    }
+
+    /// Construct a key from string inputs.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] if either input fails validation.
+    pub fn new(venue: &str, market_id: &str) -> Result<Self, PredictionError> {
+        Ok(Self {
+            venue: venue.parse()?,
+            market_id: PredictionMarketId::new(market_id)?,
+        })
+    }
+
+    /// Returns a collision-resistant, venue-namespaced identity key.
+    #[must_use]
+    pub fn unique_key(&self) -> String {
+        component_key(self.venue.as_str(), "market", self.market_id.as_str())
+    }
+}
+
+impl fmt::Display for PredictionMarketKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.venue, self.market_id)
+    }
+}
+
+/// Venue-namespaced key for an atomic binary yes/no market.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(df_derive_macros::ToDataFrame))]
+pub struct BinaryMarketKey {
+    /// Prediction venue that issued the market identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub venue: PredictionVenue,
+    /// Provider-native atomic binary market/claim identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub market_id: PredictionMarketId,
+}
+
+impl BinaryMarketKey {
+    /// Construct a binary market key from already-validated parts.
+    #[must_use]
+    pub const fn from_parts(venue: PredictionVenue, market_id: PredictionMarketId) -> Self {
+        Self { venue, market_id }
+    }
+
+    /// Construct a binary market key from string inputs.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] if either input fails validation.
+    pub fn new(venue: &str, market_id: &str) -> Result<Self, PredictionError> {
+        Ok(Self {
+            venue: venue.parse()?,
+            market_id: PredictionMarketId::new(market_id)?,
+        })
+    }
+
+    /// Returns this binary key as a shape-agnostic market key.
+    #[must_use]
+    pub fn to_market_key(&self) -> PredictionMarketKey {
+        PredictionMarketKey {
+            venue: self.venue.clone(),
+            market_id: self.market_id.clone(),
+        }
+    }
+
+    /// Returns a collision-resistant, venue-namespaced identity key.
+    #[must_use]
+    pub fn unique_key(&self) -> String {
+        component_key(
+            self.venue.as_str(),
+            "binary_market",
+            self.market_id.as_str(),
+        )
+    }
+}
+
+impl fmt::Display for BinaryMarketKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.venue, self.market_id)
+    }
+}
+
+/// Tradable outcome share/token/contract identity.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "dataframe", derive(df_derive_macros::ToDataFrame))]
+pub struct OutcomeInstrument {
+    /// Prediction venue that issued the outcome instrument identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub venue: PredictionVenue,
+    /// Provider-native market/claim identifier this outcome belongs to.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub market_id: PredictionMarketId,
+    /// Provider-native outcome instrument identifier.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub outcome_id: PredictionOutcomeId,
+}
+
+impl OutcomeInstrument {
+    /// Construct an outcome instrument from already-validated parts.
+    #[must_use]
+    pub const fn from_parts(
+        venue: PredictionVenue,
+        market_id: PredictionMarketId,
+        outcome_id: PredictionOutcomeId,
+    ) -> Self {
         Self {
-            event_id,
+            venue,
+            market_id,
             outcome_id,
         }
     }
 
-    /// Returns the unique key for this prediction outcome (`event_id/outcome_id`).
+    /// Construct an outcome instrument from string inputs.
     ///
-    /// The key includes the event id because outcome ids are only assumed to be
-    /// unique within an event.
-    #[must_use]
-    pub fn unique_key(&self) -> Cow<'_, str> {
-        let event_id = self.event_id.as_ref();
-        let outcome_id = self.outcome_id.as_ref();
-        let mut key = String::with_capacity(event_id.len() + 1 + outcome_id.len());
-        key.push_str(event_id);
-        key.push('/');
-        key.push_str(outcome_id);
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] if any input fails validation.
+    pub fn new(venue: &str, market_id: &str, outcome_id: &str) -> Result<Self, PredictionError> {
+        Ok(Self {
+            venue: venue.parse()?,
+            market_id: PredictionMarketId::new(market_id)?,
+            outcome_id: PredictionOutcomeId::new(outcome_id)?,
+        })
+    }
 
-        Cow::Owned(key)
+    /// Returns the market key this outcome instrument belongs to.
+    #[must_use]
+    pub fn market_key(&self) -> PredictionMarketKey {
+        PredictionMarketKey {
+            venue: self.venue.clone(),
+            market_id: self.market_id.clone(),
+        }
+    }
+
+    /// Returns a collision-resistant, venue-namespaced identity key.
+    #[must_use]
+    pub fn unique_key(&self) -> String {
+        let venue = self.venue.as_str();
+        let market = self.market_id.as_str();
+        let outcome = self.outcome_id.as_str();
+        format!(
+            "{}|market:{}:{}|outcome:{}:{}",
+            venue,
+            market.len(),
+            market,
+            outcome.len(),
+            outcome
+        )
     }
 }
 
-impl std::fmt::Display for PredictionInstrument {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.event_id.as_ref())?;
-        f.write_str("/")?;
-        f.write_str(self.outcome_id.as_ref())
+impl fmt::Display for OutcomeInstrument {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}/{}", self.venue, self.market_id, self.outcome_id)
     }
+}
+
+fn component_key(venue: &str, role: &str, id: &str) -> String {
+    format!("{venue}|{role}:{}:{id}", id.len())
 }

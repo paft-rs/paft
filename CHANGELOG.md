@@ -54,12 +54,20 @@ All notable changes to this project will be documented in this file.
   remain forward-compatible, serde-flattened provider metadata collisions are
   unsupported JSON key names rather than universally detected errors, and
   dataframe exports namespace provider metadata under `provider.*` columns.
+- Prediction/facade: added provider-neutral prediction-market identity,
+  metadata, fixed-point price/quantity, quote, order-book, and trade-history
+  types, including `PredictionVenue`, role-specific opaque ids,
+  `PredictionEvent`, `BinaryMarket`, `OutcomeInstrument`, `OutcomePrice`,
+  `ContractQuantity`, `PriceGrid`, and canonical YES-view
+  `BinaryOrderBook`.
 
 ### Changed
 
 - Workspace: version bumped to `0.9.0`.
-- Prediction/facade: renamed public identifier newtypes from `EventID` and
-  `OutcomeID` to idiomatic Rust casing `EventId` and `OutcomeId`.
+- Prediction/facade: replaced the Polymarket-shaped `EventId`/`OutcomeId`,
+  `PredictionInstrument`, `Market`, and `Token` surface with venue-namespaced
+  `PredictionEventId`, `PredictionMarketId`, `PredictionOutcomeId`,
+  `OutcomeInstrument`, `PredictionEvent`, and market-shape metadata types.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.

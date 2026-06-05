@@ -64,7 +64,7 @@ Features
 - `market` (default, enables `domain`): quotes, history, options, order books, news, search, downloads, and request builders
 - `fundamentals` (default, enables `domain`): profiles, statements, analysis rows, holders, ESG, and key statistics
 - `aggregates` (enables `domain`): `Snapshot` instrument snapshots
-- `prediction`: prediction-market `Market`, `Token`, and `PredictionInstrument` types
+- `prediction`: prediction-market venue/id, event/market metadata, fixed-point price, book, quote, and trade types
 - `dataframe`: Polars DataFrame traits and implementations for enabled paft types
 - `bigdecimal`: switch the shared decimal backend from `rust_decimal` to `bigdecimal`
 - `money-formatting`: locale-aware `Money` formatting and strict parsing APIs

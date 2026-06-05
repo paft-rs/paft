@@ -1,233 +1,322 @@
-//! Generic prediction-market identifier newtypes.
-//!
-//! Both [`EventId`] and [`OutcomeId`] are validated newtypes with normalization
-//! applied at construction time, so two equivalent inputs (modulo case for hex
-//! values, modulo surrounding whitespace, etc.) compare equal.
-//!
-//! # Hex normalization
-//! Inputs starting with `0x` or `0X` are normalised to lowercase `0x...`. The
-//! lowercase convention follows the de-facto standard used by EVM tooling, so
-//! IDs round-trip stably regardless of how upstream providers spell them.
+//! Venue and opaque identifier newtypes for prediction markets.
 
 use crate::error::PredictionError;
-use serde::{Deserialize, Deserializer, Serialize, de};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+use smol_str::SmolStr;
 use std::{convert::TryFrom, fmt, str::FromStr};
 
-/// Length of a canonical hex event ID (`0x` prefix plus 64 hex digits).
-const EVENT_ID_LEN: usize = 66;
+/// Maximum accepted byte length for provider-native prediction identifiers.
+pub const MAX_PREDICTION_ID_LEN: usize = 256;
 
-/// Maximum length of a canonical outcome ID after normalization.
-const OUTCOME_ID_MAX_LEN: usize = 78;
-
-#[inline]
-fn invalid_event_id(value: &str) -> PredictionError {
-    PredictionError::InvalidEventId(value.to_string())
+fn contains_disallowed_identifier_char(value: &str) -> bool {
+    value.chars().any(|c| c.is_control() || c.is_whitespace())
 }
 
-#[inline]
-fn invalid_outcome_id(value: &str) -> PredictionError {
-    PredictionError::InvalidOutcomeId(value.to_string())
-}
-
-/// Returns `true` if `value` contains any ASCII control character (newline,
-/// tab, NUL, etc.) or any Unicode control character.
-fn contains_control_char(value: &str) -> bool {
-    value.chars().any(char::is_control)
-}
-
-/// Trim, hex-case-fold, and validate an event id.
-///
-/// Any leading/trailing ASCII whitespace is removed first, then the hex digits
-/// after `0x` are folded to lowercase. The length check is applied to the
-/// normalized form so callers cannot bypass it by padding the input.
-fn normalize_event_id(input: &str) -> Result<String, PredictionError> {
+pub(crate) fn validate_opaque_identifier(
+    kind: &'static str,
+    input: &str,
+) -> Result<SmolStr, PredictionError> {
     let trimmed = input.trim();
-    if trimmed.is_empty() {
-        return Err(invalid_event_id(input));
-    }
-    if contains_control_char(trimmed) {
-        return Err(invalid_event_id(input));
-    }
-
-    let normalized = trimmed.to_ascii_lowercase();
-    if normalized.len() != EVENT_ID_LEN {
-        return Err(invalid_event_id(input));
-    }
-    if !normalized.starts_with("0x") {
-        return Err(invalid_event_id(input));
-    }
-    if !normalized.as_bytes()[2..].iter().all(u8::is_ascii_hexdigit) {
-        return Err(invalid_event_id(input));
+    if trimmed.is_empty()
+        || trimmed.len() > MAX_PREDICTION_ID_LEN
+        || contains_disallowed_identifier_char(trimmed)
+    {
+        return Err(PredictionError::invalid_identifier(kind, input.to_string()));
     }
 
-    Ok(normalized)
+    Ok(SmolStr::new(trimmed))
 }
 
-/// Trim and validate an outcome id.
-///
-/// Whitespace is stripped from the ends only; embedded whitespace and any
-/// control characters are still rejected. The length check runs on the trimmed
-/// value so a 78-digit id surrounded by spaces is accepted, while one that is
-/// 78 digits *plus* embedded spaces is not.
-fn normalize_outcome_id(input: &str) -> Result<String, PredictionError> {
+fn validate_venue(input: &str) -> Result<SmolStr, PredictionError> {
     let trimmed = input.trim();
-    if trimmed.is_empty() || trimmed.len() > OUTCOME_ID_MAX_LEN {
-        return Err(invalid_outcome_id(input));
-    }
-    if contains_control_char(trimmed) {
-        return Err(invalid_outcome_id(input));
+    if trimmed.is_empty()
+        || trimmed.len() > MAX_PREDICTION_ID_LEN
+        || contains_disallowed_identifier_char(trimmed)
+    {
+        return Err(PredictionError::InvalidVenue {
+            value: input.to_string(),
+        });
     }
 
-    let mut chars = trimmed.chars();
-    let Some(first) = chars.next() else {
-        return Err(invalid_outcome_id(input));
+    Ok(SmolStr::new(trimmed))
+}
+
+macro_rules! opaque_prediction_id {
+    (
+        $(#[$meta:meta])*
+        pub struct $name:ident;
+        kind = $kind:literal;
+    ) => {
+        $(#[$meta])*
+        #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+        pub struct $name(SmolStr);
+
+        impl $name {
+            /// Construct a new validated opaque identifier.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`PredictionError::InvalidIdentifier`] when the trimmed
+            /// value is empty, exceeds [`MAX_PREDICTION_ID_LEN`] bytes, or
+            /// contains whitespace/control characters.
+            pub fn new(value: &str) -> Result<Self, PredictionError> {
+                validate_opaque_identifier($kind, value).map(Self)
+            }
+
+            /// Returns the provider-native identifier string.
+            #[must_use]
+            pub fn as_str(&self) -> &str {
+                self.0.as_str()
+            }
+        }
+
+        impl AsRef<str> for $name {
+            fn as_ref(&self) -> &str {
+                self.as_str()
+            }
+        }
+
+        impl FromStr for $name {
+            type Err = PredictionError;
+
+            fn from_str(input: &str) -> Result<Self, Self::Err> {
+                Self::new(input)
+            }
+        }
+
+        impl TryFrom<String> for $name {
+            type Error = PredictionError;
+
+            fn try_from(value: String) -> Result<Self, Self::Error> {
+                Self::new(&value)
+            }
+        }
+
+        impl From<$name> for String {
+            fn from(id: $name) -> Self {
+                id.0.to_string()
+            }
+        }
+
+        impl fmt::Display for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str(self.as_str())
+            }
+        }
+
+        impl Serialize for $name {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                serializer.serialize_str(self.as_str())
+            }
+        }
+
+        impl<'de> Deserialize<'de> for $name {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                let raw = String::deserialize(deserializer)?;
+                Self::new(&raw).map_err(de::Error::custom)
+            }
+        }
     };
-    if first == '+' || first == '-' || first.is_whitespace() {
-        return Err(invalid_outcome_id(input));
-    }
-    if !first.is_ascii_digit() || !chars.all(|c| c.is_ascii_digit()) {
-        return Err(invalid_outcome_id(input));
-    }
-
-    Ok(trimmed.to_string())
 }
 
-/// Opaque wrapper for a validated prediction event ID.
-///
-/// Stores the canonical lowercase `0x...` form, so two inputs that differ only
-/// in hex letter case or surrounding whitespace compare equal.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
-#[serde(transparent)]
-pub struct EventId(String);
+opaque_prediction_id!(
+    /// Opaque provider-native recurring series/group identifier.
+    pub struct PredictionSeriesId;
+    kind = "prediction series ID";
+);
 
-impl EventId {
-    /// Construct a new validated prediction event ID.
-    ///
-    /// Surrounding ASCII whitespace is stripped and the hex digits are folded
-    /// to lowercase before validation. The normalized value must be exactly 66
-    /// characters: the literal prefix `0x` followed by 64 hexadecimal digits.
+opaque_prediction_id!(
+    /// Opaque provider-native event/group identifier.
+    pub struct PredictionEventId;
+    kind = "prediction event ID";
+);
+
+opaque_prediction_id!(
+    /// Opaque provider-native atomic market/claim identifier.
+    pub struct PredictionMarketId;
+    kind = "prediction market ID";
+);
+
+opaque_prediction_id!(
+    /// Opaque provider-native outcome/instrument identifier.
+    pub struct PredictionOutcomeId;
+    kind = "prediction outcome ID";
+);
+
+/// Provider venue for prediction-market data.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum PredictionVenue {
+    /// Kalshi.
+    Kalshi,
+    /// Polymarket.
+    Polymarket,
+    /// Manifold Markets.
+    Manifold,
+    /// Provider-specific or future venue code.
+    Other(OtherPredictionVenue),
+}
+
+impl PredictionVenue {
+    /// Builds an unknown venue value, rejecting modeled venue codes.
     ///
     /// # Errors
-    /// Returns [`PredictionError::InvalidEventId`] if the input is empty after
-    /// trimming, contains control characters, or does not match the expected
-    /// shape after normalization.
-    pub fn new(value: &str) -> Result<Self, PredictionError> {
-        let normalized = normalize_event_id(value)?;
-        Ok(Self(normalized))
+    ///
+    /// Returns [`PredictionError::InvalidVenue`] if the input is empty, unsafe,
+    /// too long, or names a modeled venue.
+    pub fn other(input: &str) -> Result<Self, PredictionError> {
+        OtherPredictionVenue::new(input).map(Self::Other)
+    }
+
+    /// Parses a venue from a string.
+    ///
+    /// Modeled venue names are case-insensitive. Unknown venue codes are
+    /// preserved exactly after trimming surrounding whitespace.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidVenue`] if the input is empty, unsafe,
+    /// or too long.
+    pub fn try_from_str(input: &str) -> Result<Self, PredictionError> {
+        let value = validate_venue(input)?;
+        let normalized = value.as_str();
+
+        if normalized.eq_ignore_ascii_case("KALSHI") {
+            Ok(Self::Kalshi)
+        } else if normalized.eq_ignore_ascii_case("POLYMARKET") {
+            Ok(Self::Polymarket)
+        } else if normalized.eq_ignore_ascii_case("MANIFOLD") {
+            Ok(Self::Manifold)
+        } else {
+            Ok(Self::Other(OtherPredictionVenue(value)))
+        }
+    }
+
+    /// Returns the canonical venue code for modeled venues or the provider
+    /// code for `Other`.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Kalshi => "KALSHI",
+            Self::Polymarket => "POLYMARKET",
+            Self::Manifold => "MANIFOLD",
+            Self::Other(code) => code.as_str(),
+        }
     }
 }
 
-impl FromStr for EventId {
+impl AsRef<str> for PredictionVenue {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl FromStr for PredictionVenue {
     type Err = PredictionError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s)
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::try_from_str(input)
     }
 }
 
-impl TryFrom<String> for EventId {
-    type Error = PredictionError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::new(&value)
+impl fmt::Display for PredictionVenue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
-impl From<EventId> for String {
-    fn from(id: EventId) -> Self {
-        id.0
+impl Serialize for PredictionVenue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_str())
     }
 }
 
-impl<'de> Deserialize<'de> for EventId {
+impl<'de> Deserialize<'de> for PredictionVenue {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let raw = String::deserialize(deserializer)?;
-        Self::try_from(raw).map_err(de::Error::custom)
+        Self::try_from_str(&raw).map_err(de::Error::custom)
     }
 }
 
-impl AsRef<str> for EventId {
-    fn as_ref(&self) -> &str {
-        &self.0
-    }
-}
+/// Provider-specific prediction venue code not modeled by [`PredictionVenue`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct OtherPredictionVenue(SmolStr);
 
-impl fmt::Display for EventId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-
-/// Opaque wrapper for a validated prediction outcome ID.
-///
-/// Outcome IDs are decimal integers (often very large, hence the 78-digit
-/// upper bound) used by upstream providers to refer to a specific tradeable
-/// outcome of a [`crate::Market`]. Surrounding whitespace is stripped on
-/// construction; embedded whitespace and control characters remain invalid.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
-#[serde(transparent)]
-pub struct OutcomeId(String);
-
-impl OutcomeId {
-    /// Construct a new validated outcome ID.
-    ///
-    /// After trimming surrounding whitespace, the value must be a non-empty
-    /// run of ASCII digits no longer than 78 characters, with no leading
-    /// sign and no embedded whitespace or control characters.
+impl OtherPredictionVenue {
+    /// Construct a new unknown venue code.
     ///
     /// # Errors
-    /// Returns [`PredictionError::InvalidOutcomeId`] when the trimmed value is
-    /// empty, exceeds the 78-character bound, contains control characters, or
-    /// includes any non-digit character.
-    pub fn new(value: &str) -> Result<Self, PredictionError> {
-        let normalized = normalize_outcome_id(value)?;
-        Ok(Self(normalized))
+    ///
+    /// Returns [`PredictionError::InvalidVenue`] when the input is empty,
+    /// unsafe, too long, or names a modeled venue.
+    pub fn new(input: &str) -> Result<Self, PredictionError> {
+        let value = validate_venue(input)?;
+        if value.as_str().eq_ignore_ascii_case("KALSHI")
+            || value.as_str().eq_ignore_ascii_case("POLYMARKET")
+            || value.as_str().eq_ignore_ascii_case("MANIFOLD")
+        {
+            return Err(PredictionError::InvalidVenue {
+                value: input.to_string(),
+            });
+        }
+
+        Ok(Self(value))
+    }
+
+    /// Returns the preserved provider venue code.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
     }
 }
 
-impl FromStr for OutcomeId {
+impl AsRef<str> for OtherPredictionVenue {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl FromStr for OtherPredictionVenue {
     type Err = PredictionError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s)
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::new(input)
     }
 }
 
-impl TryFrom<String> for OutcomeId {
-    type Error = PredictionError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::new(&value)
+impl fmt::Display for OtherPredictionVenue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
-impl From<OutcomeId> for String {
-    fn from(id: OutcomeId) -> Self {
-        id.0
+impl Serialize for OtherPredictionVenue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_str())
     }
 }
 
-impl<'de> Deserialize<'de> for OutcomeId {
+impl<'de> Deserialize<'de> for OtherPredictionVenue {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let raw = String::deserialize(deserializer)?;
-        Self::try_from(raw).map_err(de::Error::custom)
-    }
-}
-
-impl AsRef<str> for OutcomeId {
-    fn as_ref(&self) -> &str {
-        &self.0
-    }
-}
-
-impl fmt::Display for OutcomeId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
+        Self::new(&raw).map_err(de::Error::custom)
     }
 }

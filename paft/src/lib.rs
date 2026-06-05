@@ -5,7 +5,7 @@
 //!
 //! Features
 //! - `domain`, `market`, `fundamentals`, `aggregates`: opt into the areas you need
-//! - `prediction`: prediction market data models (`Market`, `Token`)
+//! - `prediction`: prediction market identity, metadata, quotes, books, and trades
 //! - `bigdecimal`: change the money backend from `rust_decimal` to `bigdecimal`
 //! - `dataframe`: enable `DataFrame` export via Polars helpers
 //! - `panicking-money-ops`: opt‑in operator overloading for `Money` that panics on invalid input
@@ -141,9 +141,7 @@ pub mod aggregates {
 /// Namespaced access to `paft-prediction` (feature-gated).
 #[cfg(feature = "prediction")]
 pub mod prediction {
-    pub use paft_prediction::{
-        EventId, Market, OutcomeId, PredictionError, PredictionInstrument, Token,
-    };
+    pub use paft_prediction::*;
 }
 
 /// Frequently used types for convenient imports.

@@ -63,7 +63,7 @@ models, DataFrame export, tracing, formatting, and backend choices are opt-in.
 | [`paft-market`](paft-market/README.md) | Quotes, candles, history, order books, options, news, search, downloads, and validated market request builders. |
 | [`paft-fundamentals`](paft-fundamentals/README.md) | Profiles, statements, analysis rows, holders, ESG, key statistics, and related helper models. |
 | [`paft-aggregates`](paft-aggregates/README.md) | Instant-in-time instrument snapshots with optional provider metadata. |
-| [`paft-prediction`](paft-prediction/README.md) | Prediction-market identifiers, instruments, markets, and tokens. |
+| [`paft-prediction`](paft-prediction/README.md) | Prediction-market venues, opaque ids, event/market metadata, fixed-point prices, books, quotes, and trades. |
 | [`paft-utils`](paft-utils/README.md) | Canonical string tokens, open-enum support utilities, and optional Polars DataFrame traits. |
 | [`paft-core`](paft-core/README.md) | Shared error, enum, display, and serde macro building blocks for paft crates and compatible adapters. |
 

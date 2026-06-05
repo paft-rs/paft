@@ -96,7 +96,8 @@ Prediction markets
 ------------------
 
 Prediction-market identity is intentionally outside `paft-domain`. Use
-`paft-prediction` for `PredictionInstrument`, `EventId`, and `OutcomeId`.
+`paft-prediction` for `PredictionVenue`, role-specific prediction ids,
+`PredictionEvent`, `BinaryMarket`, and `OutcomeInstrument`.
 
 Links
 -----

@@ -1711,11 +1711,13 @@ version = "0.9.0"
 dependencies = [
  "chrono",
  "df-derive-macros",
+ "paft-decimal",
  "paft-money",
  "paft-utils",
  "polars",
  "serde",
  "serde_json",
+ "smol_str",
  "thiserror",
 ]
 
