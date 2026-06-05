@@ -172,6 +172,46 @@ impl PriceTick {
         }
     }
 
+    /// Construct a price tick from an exact decimal value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when the value is zero, negative, greater
+    /// than `1`, or cannot be represented exactly in millionths.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
+        Self::from_canonical_str(&to_canonical_string(&value))
+    }
+
+    /// Parse an exact decimal price tick.
+    ///
+    /// The accepted scale is millionths. Extra trailing zero fractional digits
+    /// are accepted, but non-zero digits beyond six decimal places are rejected
+    /// instead of rounded.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when `value` is zero, is not a plain decimal
+    /// string, is negative, is greater than `1`, or cannot be represented
+    /// exactly in millionths.
+    pub fn from_canonical_str(value: &str) -> Result<Self, PredictionError> {
+        let micros = parse_fixed_point_units(value, "price tick")?;
+        let micros = u32::try_from(micros).map_err(|_| {
+            PredictionError::invalid_fixed_point_decimal(
+                "price tick",
+                value,
+                "expected value in 0..=1",
+            )
+        })?;
+        Self::from_micros(micros)
+    }
+
+    /// Convert this tick into a decimal value.
+    #[must_use]
+    pub fn to_decimal(self) -> Decimal {
+        from_minor_units(i128::from(self.micros()), FIXED_SCALE_DIGITS_U32)
+    }
+
     /// Returns the fixed-point micro tick.
     #[must_use]
     pub const fn micros(self) -> u32 {
@@ -578,6 +618,39 @@ impl OutcomePayout {
     #[must_use]
     pub const fn from_micropayouts(value: u64) -> Self {
         Self(value)
+    }
+
+    /// Construct a payout from an exact decimal value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when the value is negative, cannot be stored
+    /// as a `u64` micropayout count, or cannot be represented exactly in
+    /// millionths.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
+        Self::from_canonical_str(&to_canonical_string(&value))
+    }
+
+    /// Parse an exact decimal payout.
+    ///
+    /// The accepted scale is millionths. Extra trailing zero fractional digits
+    /// are accepted, but non-zero digits beyond six decimal places are rejected
+    /// instead of rounded.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when `value` is not a plain decimal string,
+    /// is negative, cannot be stored as a `u64` micropayout count, or cannot be
+    /// represented exactly in millionths.
+    pub fn from_canonical_str(value: &str) -> Result<Self, PredictionError> {
+        Ok(Self(parse_fixed_point_units(value, "outcome payout")?))
+    }
+
+    /// Convert this payout into a decimal value.
+    #[must_use]
+    pub fn to_decimal(self) -> Decimal {
+        from_minor_units(i128::from(self.0), FIXED_SCALE_DIGITS_U32)
     }
 
     /// Returns the fixed-point micropayout count.

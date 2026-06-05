@@ -67,10 +67,9 @@ All notable changes to this project will be documented in this file.
   separate instrument ids.
 - Prediction/facade: added `PredictionQuoteLevel` for top-of-book quote levels
   whose displayed quantity may be unavailable.
-- Prediction: added exact decimal/string conversion helpers for
-  `OutcomePrice` and `ContractQuantity`, plus canonical decimal `Display`
-  implementations for `OutcomePrice`, `PriceTick`, `ContractQuantity`, and
-  `OutcomePayout`.
+- Prediction: added exact decimal/string conversion helpers and canonical
+  decimal `Display` implementations for `OutcomePrice`, `PriceTick`,
+  `ContractQuantity`, and `OutcomePayout`.
 - Prediction/facade: added `NonZeroContractQuantity` for quantity surfaces
   where zero is not semantically valid.
 

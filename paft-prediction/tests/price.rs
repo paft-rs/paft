@@ -66,6 +66,41 @@ fn outcome_price_rejects_inexact_or_out_of_range_decimal_values() {
 }
 
 #[test]
+fn price_tick_parses_exact_decimal_values() {
+    assert_eq!(
+        PriceTick::from_canonical_str("0.01").unwrap().micros(),
+        10_000
+    );
+    assert_eq!(
+        PriceTick::from_canonical_str("0.001").unwrap().micros(),
+        1_000
+    );
+    assert_eq!(
+        PriceTick::from_canonical_str("0.0001").unwrap().micros(),
+        100
+    );
+    assert_eq!(
+        PriceTick::from_decimal(decimal("0.01")).unwrap().micros(),
+        10_000
+    );
+    assert_eq!(
+        paft_decimal::to_canonical_string(&PriceTick::from_micros(100).unwrap().to_decimal()),
+        "0.0001"
+    );
+}
+
+#[test]
+fn price_tick_rejects_zero_inexact_or_out_of_range_decimal_values() {
+    assert!(PriceTick::from_canonical_str("0").is_err());
+    assert!(PriceTick::from_canonical_str("0.0000000").is_err());
+    assert!(PriceTick::from_canonical_str("0.0000001").is_err());
+    assert!(PriceTick::from_canonical_str("-0.01").is_err());
+    assert!(PriceTick::from_canonical_str("1.000001").is_err());
+    assert!(PriceTick::from_canonical_str("1e-3").is_err());
+    assert!(PriceTick::from_decimal(decimal("0.1234567")).is_err());
+}
+
+#[test]
 fn fixed_point_display_uses_canonical_decimal_form() {
     assert_eq!(
         OutcomePrice::from_micros(410_000).unwrap().to_string(),
@@ -194,6 +229,41 @@ fn quantity_and_payout_are_transparent_fixed_integers() {
     assert_eq!(quantity.microcontracts(), 219_217_767);
     assert_eq!(payout.micropayouts(), OutcomePayout::SCALE);
     assert!(!quantity.is_zero());
+}
+
+#[test]
+fn outcome_payout_parses_exact_decimal_values() {
+    assert_eq!(
+        OutcomePayout::from_canonical_str("1")
+            .unwrap()
+            .micropayouts(),
+        OutcomePayout::SCALE
+    );
+    assert_eq!(
+        OutcomePayout::from_canonical_str("0.5")
+            .unwrap()
+            .micropayouts(),
+        500_000
+    );
+    assert_eq!(
+        OutcomePayout::from_decimal(decimal("2.25"))
+            .unwrap()
+            .micropayouts(),
+        2_250_000
+    );
+    assert_eq!(
+        paft_decimal::to_canonical_string(&OutcomePayout::from_micropayouts(500_000).to_decimal()),
+        "0.5"
+    );
+}
+
+#[test]
+fn outcome_payout_rejects_inexact_negative_or_overflowing_decimal_values() {
+    assert!(OutcomePayout::from_canonical_str("1.0000001").is_err());
+    assert!(OutcomePayout::from_canonical_str("-1").is_err());
+    assert!(OutcomePayout::from_canonical_str("1e3").is_err());
+    assert!(OutcomePayout::from_canonical_str("18446744073709.551616").is_err());
+    assert!(OutcomePayout::from_decimal(decimal("1.0000001")).is_err());
 }
 
 #[test]
