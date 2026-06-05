@@ -2,7 +2,7 @@
 
 use crate::error::PredictionError;
 use crate::instrument::{BinaryMarketKey, OutcomeInstrument};
-use crate::price::{ContractQuantity, OutcomePrice, PriceGrid};
+use crate::price::{NonZeroContractQuantity, OutcomePrice, PriceGrid};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
@@ -100,8 +100,8 @@ impl BinaryOrderDirection {
 pub struct PredictionBookLevel {
     /// Outcome price at this level.
     pub price: OutcomePrice,
-    /// Displayed quantity at this level.
-    pub quantity: ContractQuantity,
+    /// Non-zero displayed quantity at this level.
+    pub quantity: NonZeroContractQuantity,
     /// Optional number of orders aggregated at this price level.
     pub order_count: Option<NonZeroU32>,
 }
@@ -109,7 +109,7 @@ pub struct PredictionBookLevel {
 impl PredictionBookLevel {
     /// Build a book level with no order count.
     #[must_use]
-    pub const fn new(price: OutcomePrice, quantity: ContractQuantity) -> Self {
+    pub const fn new(price: OutcomePrice, quantity: NonZeroContractQuantity) -> Self {
         Self {
             price,
             quantity,
@@ -136,15 +136,15 @@ impl PredictionBookLevel {
 pub struct PredictionQuoteLevel {
     /// Outcome price at this quote level.
     pub price: OutcomePrice,
-    /// Displayed quantity at this quote level, when reported by the source.
+    /// Non-zero displayed quantity at this quote level, when reported by the source.
     #[serde(default)]
-    pub quantity: Option<ContractQuantity>,
+    pub quantity: Option<NonZeroContractQuantity>,
 }
 
 impl PredictionQuoteLevel {
     /// Build a quote level.
     #[must_use]
-    pub const fn new(price: OutcomePrice, quantity: Option<ContractQuantity>) -> Self {
+    pub const fn new(price: OutcomePrice, quantity: Option<NonZeroContractQuantity>) -> Self {
         Self { price, quantity }
     }
 }
@@ -423,8 +423,8 @@ pub struct GenericPredictionTrade<M = ()> {
     pub instrument: OutcomeInstrument,
     /// Trade price in outcome-price micros.
     pub price: OutcomePrice,
-    /// Trade quantity in microcontracts.
-    pub quantity: ContractQuantity,
+    /// Non-zero trade quantity in microcontracts.
+    pub quantity: NonZeroContractQuantity,
     /// Optional aggressor/action side when known.
     pub action: Option<TradeAction>,
     /// Provider-native trade identifier, if available.

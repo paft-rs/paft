@@ -48,4 +48,7 @@ pub use market_data::{
     GenericBinaryOrderBook, GenericBinaryQuote, GenericOutcomeOrderBook, GenericPredictionTrade,
     OutcomeOrderBook, PredictionBookLevel, PredictionQuoteLevel, PredictionTrade, TradeAction,
 };
-pub use price::{ContractQuantity, OutcomePayout, OutcomePrice, PriceBand, PriceGrid, PriceTick};
+pub use price::{
+    ContractQuantity, NonZeroContractQuantity, OutcomePayout, OutcomePrice, PriceBand, PriceGrid,
+    PriceTick,
+};

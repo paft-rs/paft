@@ -81,9 +81,9 @@ pub use crate::aggregates::{GenericSnapshot, Snapshot};
 pub use crate::prediction::{
     BinaryMarket, BinaryMarketKey, BinaryOrderBook, BinaryOrderDirection, BinaryOutcome,
     BinaryOutcomeInstruments, BinaryQuote, BookSide, ClaimDescriptor, ContractQuantity,
-    EventStructure, OutcomeInstrument, OutcomeOrderBook, OutcomePayout, OutcomePrice,
-    PredictionBookLevel, PredictionError, PredictionEvent, PredictionEventId, PredictionEventKey,
-    PredictionMarket, PredictionMarketId, PredictionMarketKey, PredictionMarketStatus,
-    PredictionOutcomeId, PredictionQuoteLevel, PredictionSeriesId, PredictionTrade,
-    PredictionVenue, PriceGrid, PriceTick, TradeAction,
+    EventStructure, NonZeroContractQuantity, OutcomeInstrument, OutcomeOrderBook, OutcomePayout,
+    OutcomePrice, PredictionBookLevel, PredictionError, PredictionEvent, PredictionEventId,
+    PredictionEventKey, PredictionMarket, PredictionMarketId, PredictionMarketKey,
+    PredictionMarketStatus, PredictionOutcomeId, PredictionQuoteLevel, PredictionSeriesId,
+    PredictionTrade, PredictionVenue, PriceGrid, PriceTick, TradeAction,
 };

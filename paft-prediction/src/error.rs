@@ -49,6 +49,13 @@ pub enum PredictionError {
         micros: u32,
     },
 
+    /// Invalid non-zero fixed-point contract/share quantity.
+    #[error("Invalid contract quantity microcontracts: {microcontracts} - expected > 0")]
+    InvalidContractQuantity {
+        /// Fixed-point microcontract count supplied by the caller.
+        microcontracts: u64,
+    },
+
     /// Invalid decimal input for a fixed-point prediction value.
     #[error("Invalid {kind} decimal '{value}': {reason}")]
     InvalidFixedPointDecimal {

@@ -1,6 +1,8 @@
 use paft_prediction::{
-    ContractQuantity, OutcomePayout, OutcomePrice, PriceBand, PriceGrid, PriceTick,
+    ContractQuantity, NonZeroContractQuantity, OutcomePayout, OutcomePrice, PriceBand, PriceGrid,
+    PriceTick,
 };
+use std::mem::size_of;
 
 fn decimal(value: &str) -> paft_decimal::Decimal {
     paft_decimal::parse_decimal(value).unwrap()
@@ -77,6 +79,12 @@ fn fixed_point_display_uses_canonical_decimal_form() {
     );
     assert_eq!(
         ContractQuantity::from_microcontracts(219_217_767).to_string(),
+        "219.217767"
+    );
+    assert_eq!(
+        NonZeroContractQuantity::from_microcontracts(219_217_767)
+            .unwrap()
+            .to_string(),
         "219.217767"
     );
     assert_eq!(OutcomePayout::from_micropayouts(1_000_000).to_string(), "1");
@@ -178,4 +186,48 @@ fn contract_quantity_rejects_inexact_negative_or_overflowing_decimal_values() {
     assert!(ContractQuantity::from_canonical_str("1e3").is_err());
     assert!(ContractQuantity::from_canonical_str("18446744073709.551616").is_err());
     assert!(ContractQuantity::from_decimal(decimal("1.0000001")).is_err());
+}
+
+#[test]
+fn non_zero_contract_quantity_parses_exact_decimal_values() {
+    let quantity = NonZeroContractQuantity::from_canonical_str("219.217767").unwrap();
+
+    assert_eq!(quantity.microcontracts(), 219_217_767);
+    assert_eq!(
+        NonZeroContractQuantity::from_decimal(decimal("2"))
+            .unwrap()
+            .microcontracts(),
+        2_000_000
+    );
+    assert_eq!(quantity.to_quantity().microcontracts(), 219_217_767);
+    assert_eq!(
+        paft_decimal::to_canonical_string(&quantity.to_decimal()),
+        "219.217767"
+    );
+}
+
+#[test]
+fn non_zero_contract_quantity_rejects_zero_and_preserves_integer_serde() {
+    assert!(NonZeroContractQuantity::from_microcontracts(0).is_err());
+    assert!(NonZeroContractQuantity::from_quantity(ContractQuantity::ZERO).is_err());
+    assert!(NonZeroContractQuantity::from_canonical_str("0").is_err());
+    assert!(NonZeroContractQuantity::from_canonical_str("0.0000000").is_err());
+    assert!(serde_json::from_str::<NonZeroContractQuantity>("0").is_err());
+
+    let quantity = NonZeroContractQuantity::from_microcontracts(2_000_000).unwrap();
+    assert_eq!(serde_json::to_string(&quantity).unwrap(), "2000000");
+    assert_eq!(
+        serde_json::from_str::<NonZeroContractQuantity>("2000000")
+            .unwrap()
+            .microcontracts(),
+        2_000_000
+    );
+}
+
+#[test]
+fn optional_non_zero_contract_quantity_uses_non_zero_niche() {
+    assert_eq!(
+        size_of::<Option<NonZeroContractQuantity>>(),
+        size_of::<u64>()
+    );
 }

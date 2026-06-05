@@ -58,8 +58,8 @@ All notable changes to this project will be documented in this file.
   metadata, fixed-point price/quantity, quote, order-book, and trade-history
   types, including `PredictionVenue`, role-specific opaque ids,
   `PredictionEvent`, `BinaryMarket`, `OutcomeInstrument`, `OutcomePrice`,
-  `ContractQuantity`, `PriceGrid`, and canonical YES-view
-  `BinaryOrderBook`.
+  `ContractQuantity`, `NonZeroContractQuantity`, `PriceGrid`, and canonical
+  YES-view `BinaryOrderBook`.
 - Prediction/facade: added `BinaryOutcomeInstruments` and
   `BinaryMarketKey::{synthetic_yes_instrument, synthetic_no_instrument}` so
   binary markets expose tradable YES/NO outcome instruments directly while
@@ -71,6 +71,8 @@ All notable changes to this project will be documented in this file.
   `OutcomePrice` and `ContractQuantity`, plus canonical decimal `Display`
   implementations for `OutcomePrice`, `PriceTick`, `ContractQuantity`, and
   `OutcomePayout`.
+- Prediction/facade: added `NonZeroContractQuantity` for quantity surfaces
+  where zero is not semantically valid.
 
 ### Changed
 
@@ -96,6 +98,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `BinaryOutcomeInstruments` now validates that YES and NO
   instruments belong to the same venue/market and have distinct outcome ids,
   including during deserialization.
+- Prediction: book levels, present quote quantities, trades, and market
+  minimum order quantities now use `NonZeroContractQuantity` instead of
+  zero-capable `ContractQuantity`.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.

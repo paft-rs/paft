@@ -8,7 +8,7 @@ use crate::instrument::{
     BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
     PredictionMarketKey,
 };
-use crate::price::{ContractQuantity, OutcomePayout, PriceGrid};
+use crate::price::{NonZeroContractQuantity, OutcomePayout, PriceGrid};
 use chrono::{DateTime, Utc};
 use paft_decimal::Decimal;
 use paft_money::Currency;
@@ -574,8 +574,8 @@ pub struct GenericBinaryMarket<M = ()> {
     pub unit_payout: OutcomePayout,
     /// Market-specific price grid, if known.
     pub price_grid: Option<PriceGrid>,
-    /// Minimum accepted order quantity, if known.
-    pub min_order_quantity: Option<ContractQuantity>,
+    /// Non-zero minimum accepted order quantity, if known.
+    pub min_order_quantity: Option<NonZeroContractQuantity>,
     /// Time when the market opens to trading.
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub open_time: Option<DateTime<Utc>>,
@@ -648,8 +648,8 @@ pub struct GenericMultiOutcomeMarket<M = ()> {
     pub unit_payout: OutcomePayout,
     /// Market-specific price grid, if known.
     pub price_grid: Option<PriceGrid>,
-    /// Minimum accepted order quantity, if known.
-    pub min_order_quantity: Option<ContractQuantity>,
+    /// Non-zero minimum accepted order quantity, if known.
+    pub min_order_quantity: Option<NonZeroContractQuantity>,
     /// Time when the market opens to trading.
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub open_time: Option<DateTime<Utc>>,

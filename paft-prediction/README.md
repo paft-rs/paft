@@ -50,13 +50,15 @@ What's inside
   requires `BinaryOutcomeInstruments` so venue-native YES/NO tradable ids stay
   in the core model.
 - `OutcomePrice`, `PriceTick`, `PriceGrid`, `PriceBand`,
-  `ContractQuantity`, and `OutcomePayout`: compact fixed-point integer
-  primitives for prices, ticks, quantities, and contextual unit payouts.
+  `ContractQuantity`, `NonZeroContractQuantity`, and `OutcomePayout`: compact
+  fixed-point integer primitives for prices, ticks, quantities, and contextual
+  unit payouts.
   Decimal parse/display helpers use canonical decimal text while serde remains
   compact integer micros.
 - `BinaryQuote`, `PredictionQuoteLevel`, `BinaryOrderBook`, `OutcomeOrderBook`,
   `PredictionBookLevel`, and `PredictionTrade`: market-data payloads. Quotes
-  allow best bid/ask quantities to be absent, while depth book levels require
+  allow best bid/ask quantities to be absent, while present quote quantities,
+  depth book levels, trades, and minimum order quantities require non-zero
   displayed quantity. `BinaryOrderBook` stores a canonical YES-view book and
   derives NO-side top-of-book values by complement.
 - `PredictionError`: non-exhaustive validation error for constructors, serde,
@@ -73,7 +75,7 @@ Quickstart
 
 ```rust
 use paft_prediction::{
-    BinaryMarketKey, BinaryOrderBook, BinaryOutcomeInstruments, ContractQuantity,
+    BinaryMarketKey, BinaryOrderBook, BinaryOutcomeInstruments, NonZeroContractQuantity,
     OutcomeInstrument, OutcomePrice, PredictionBookLevel, PredictionError,
 };
 
@@ -109,11 +111,11 @@ fn run() -> Result<(), PredictionError> {
     let mut book = BinaryOrderBook::new(kalshi_key);
     book.yes_bids.push(PredictionBookLevel::new(
         OutcomePrice::from_micros(410_000)?,
-        ContractQuantity::from_microcontracts(2_000_000),
+        NonZeroContractQuantity::from_microcontracts(2_000_000)?,
     ));
     book.yes_asks.push(PredictionBookLevel::new(
         OutcomePrice::from_micros(430_000)?,
-        ContractQuantity::from_microcontracts(3_000_000),
+        NonZeroContractQuantity::from_microcontracts(3_000_000)?,
     ));
 
     assert_eq!(book.best_no_bid().unwrap().price.micros(), 570_000);

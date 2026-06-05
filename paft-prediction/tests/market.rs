@@ -1,7 +1,7 @@
 use paft_money::{Currency, IsoCurrency};
 use paft_prediction::{
-    BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor, OutcomeInstrument,
-    OutcomePayout, PredictionMarketStatus,
+    BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor,
+    NonZeroContractQuantity, OutcomeInstrument, OutcomePayout, PredictionMarketStatus,
 };
 use paft_prediction::{NumericBound, NumericRange};
 
@@ -80,6 +80,28 @@ fn numeric_range_constructor_validates_interval() {
         None,
     );
     assert!(empty_zero_width.is_err());
+}
+
+#[test]
+fn binary_market_deserialization_rejects_zero_min_order_quantity() {
+    let key = BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60").unwrap();
+    let mut market = BinaryMarket::new(
+        key.clone(),
+        BinaryOutcomeInstruments::synthetic_for_market(&key),
+        "Will NYC temperature exceed 60F?".to_string(),
+        ClaimDescriptor::Text {
+            description: "NYC temperature exceeds 60F at expiry.".to_string(),
+        },
+        PredictionMarketStatus::Open,
+        Currency::Iso(IsoCurrency::USD),
+        OutcomePayout::ONE,
+    );
+    market.min_order_quantity = Some(NonZeroContractQuantity::ONE);
+
+    let mut value = serde_json::to_value(&market).unwrap();
+    value["min_order_quantity"] = serde_json::json!(0);
+
+    assert!(serde_json::from_value::<BinaryMarket>(value).is_err());
 }
 
 #[test]

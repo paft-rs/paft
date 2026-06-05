@@ -1,12 +1,12 @@
 use paft_prediction::{
-    BinaryMarketKey, BinaryOrderBook, BinaryQuote, ContractQuantity, OutcomePrice,
-    PredictionBookLevel, PredictionQuoteLevel, PriceBand, PriceGrid, PriceTick,
+    BinaryMarketKey, BinaryOrderBook, BinaryQuote, NonZeroContractQuantity, OutcomePrice,
+    PredictionBookLevel, PredictionQuoteLevel, PredictionTrade, PriceBand, PriceGrid, PriceTick,
 };
 
 fn level(micros: u32, qty: u64) -> PredictionBookLevel {
     PredictionBookLevel::new(
         OutcomePrice::from_micros(micros).unwrap(),
-        ContractQuantity::from_microcontracts(qty),
+        NonZeroContractQuantity::from_microcontracts(qty).unwrap(),
     )
 }
 
@@ -21,7 +21,7 @@ fn binary_quote_levels_allow_missing_quantity() {
         )),
         yes_ask: Some(PredictionQuoteLevel::new(
             OutcomePrice::from_micros(430_000).unwrap(),
-            Some(ContractQuantity::from_microcontracts(2_000_000)),
+            Some(NonZeroContractQuantity::from_microcontracts(2_000_000).unwrap()),
         )),
         last_price: None,
         provider: (),
@@ -59,6 +59,61 @@ fn binary_quote_deserializes_missing_level_quantity() {
         quote.yes_ask.unwrap().quantity.unwrap().microcontracts(),
         2_000_000
     );
+}
+
+#[test]
+fn binary_quote_deserialization_rejects_zero_level_quantity() {
+    let json = r#"{
+        "market": {
+            "venue": "POLYMARKET",
+            "market_id": "condition-1"
+        },
+        "as_of": null,
+        "yes_bid": {
+            "price": 410000,
+            "quantity": 0
+        },
+        "yes_ask": null,
+        "last_price": null
+    }"#;
+
+    assert!(serde_json::from_str::<BinaryQuote>(json).is_err());
+}
+
+#[test]
+fn order_book_deserialization_rejects_zero_level_quantity() {
+    let json = r#"{
+        "market": {
+            "venue": "POLYMARKET",
+            "market_id": "condition-1"
+        },
+        "as_of": null,
+        "yes_bids": [
+            { "price": 410000, "quantity": 0, "order_count": null }
+        ],
+        "yes_asks": [],
+        "price_grid": null
+    }"#;
+
+    assert!(serde_json::from_str::<BinaryOrderBook>(json).is_err());
+}
+
+#[test]
+fn prediction_trade_deserialization_rejects_zero_quantity() {
+    let json = r#"{
+        "instrument": {
+            "venue": "POLYMARKET",
+            "market_id": "condition-1",
+            "outcome_id": "yes-token"
+        },
+        "price": 410000,
+        "quantity": 0,
+        "action": null,
+        "trade_id": null,
+        "ts": 0
+    }"#;
+
+    assert!(serde_json::from_str::<PredictionTrade>(json).is_err());
 }
 
 #[test]

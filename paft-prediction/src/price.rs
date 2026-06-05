@@ -3,7 +3,10 @@
 use crate::error::PredictionError;
 use paft_decimal::{Decimal, from_minor_units, to_canonical_string};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
-use std::{fmt, num::NonZeroU32};
+use std::{
+    fmt,
+    num::{NonZeroU32, NonZeroU64},
+};
 
 const FIXED_SCALE: u64 = 1_000_000;
 const FIXED_SCALE_DIGITS: usize = 6;
@@ -421,6 +424,129 @@ impl fmt::Display for ContractQuantity {
 impl From<ContractQuantity> for u64 {
     fn from(value: ContractQuantity) -> Self {
         value.microcontracts()
+    }
+}
+
+/// Non-zero fixed-point contract/share quantity in millionths of one contract.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[repr(transparent)]
+#[serde(transparent)]
+pub struct NonZeroContractQuantity(NonZeroU64);
+
+impl NonZeroContractQuantity {
+    /// Fixed-point scale: one whole contract is `1_000_000` microcontracts.
+    pub const SCALE: u64 = ContractQuantity::SCALE;
+    /// One whole contract.
+    pub const ONE: Self = Self(NonZeroU64::new(Self::SCALE).expect("scale is non-zero"));
+
+    /// Construct a non-zero quantity from an already non-zero microcontract count.
+    #[must_use]
+    pub const fn from_nonzero_microcontracts(value: NonZeroU64) -> Self {
+        Self(value)
+    }
+
+    /// Construct a non-zero quantity from fixed-point microcontracts.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidContractQuantity`] when `value` is
+    /// zero.
+    pub const fn from_microcontracts(value: u64) -> Result<Self, PredictionError> {
+        match NonZeroU64::new(value) {
+            Some(value) => Ok(Self(value)),
+            None => Err(PredictionError::InvalidContractQuantity {
+                microcontracts: value,
+            }),
+        }
+    }
+
+    /// Construct from a zero-capable contract quantity.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidContractQuantity`] when `value` is
+    /// zero.
+    pub const fn from_quantity(value: ContractQuantity) -> Result<Self, PredictionError> {
+        Self::from_microcontracts(value.microcontracts())
+    }
+
+    /// Construct a non-zero contract quantity from an exact decimal value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when the value is zero, negative, cannot be
+    /// stored as a `u64` microcontract count, or cannot be represented exactly
+    /// in millionths.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
+        Self::from_canonical_str(&to_canonical_string(&value))
+    }
+
+    /// Parse an exact non-zero decimal contract quantity.
+    ///
+    /// The accepted scale is millionths. Extra trailing zero fractional digits
+    /// are accepted, but non-zero digits beyond six decimal places are rejected
+    /// instead of rounded.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when `value` is zero, is not a plain decimal
+    /// string, is negative, cannot be stored as a `u64` microcontract count, or
+    /// cannot be represented exactly in millionths.
+    pub fn from_canonical_str(value: &str) -> Result<Self, PredictionError> {
+        Self::from_microcontracts(parse_fixed_point_units(value, "contract quantity")?)
+    }
+
+    /// Convert this quantity into a zero-capable contract quantity.
+    #[must_use]
+    pub const fn to_quantity(self) -> ContractQuantity {
+        ContractQuantity::from_microcontracts(self.microcontracts())
+    }
+
+    /// Convert this quantity into a decimal value.
+    #[must_use]
+    pub fn to_decimal(self) -> Decimal {
+        from_minor_units(i128::from(self.microcontracts()), FIXED_SCALE_DIGITS_U32)
+    }
+
+    /// Returns the fixed-point microcontract count.
+    #[must_use]
+    pub const fn microcontracts(self) -> u64 {
+        self.0.get()
+    }
+}
+
+impl fmt::Display for NonZeroContractQuantity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt_fixed_point_units(f, self.microcontracts())
+    }
+}
+
+impl TryFrom<u64> for NonZeroContractQuantity {
+    type Error = PredictionError;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        Self::from_microcontracts(value)
+    }
+}
+
+impl TryFrom<ContractQuantity> for NonZeroContractQuantity {
+    type Error = PredictionError;
+
+    fn try_from(value: ContractQuantity) -> Result<Self, Self::Error> {
+        Self::from_quantity(value)
+    }
+}
+
+impl From<NonZeroContractQuantity> for u64 {
+    fn from(value: NonZeroContractQuantity) -> Self {
+        value.microcontracts()
+    }
+}
+
+impl From<NonZeroContractQuantity> for ContractQuantity {
+    fn from(value: NonZeroContractQuantity) -> Self {
+        value.to_quantity()
     }
 }
 
