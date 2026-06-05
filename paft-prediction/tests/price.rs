@@ -162,6 +162,21 @@ fn price_grid_deserialization_validates_invariants() {
     }"#;
     assert!(serde_json::from_str::<PriceGrid>(off_tick_endpoint).is_err());
 
+    let unknown_grid_field = r#"{
+        "bands": [
+            { "start": 0, "end": 100000, "tick": 1000 }
+        ],
+        "source": "ignored"
+    }"#;
+    assert!(serde_json::from_str::<PriceGrid>(unknown_grid_field).is_err());
+
+    let unknown_band_field = r#"{
+        "bands": [
+            { "start": 0, "end": 100000, "tick": 1000, "label": "ignored" }
+        ]
+    }"#;
+    assert!(serde_json::from_str::<PriceGrid>(unknown_band_field).is_err());
+
     let valid = r#"{
         "bands": [
             { "start": 0, "end": 100000, "tick": 1000 },

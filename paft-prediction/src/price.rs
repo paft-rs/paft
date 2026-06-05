@@ -220,6 +220,7 @@ impl<'de> Deserialize<'de> for PriceTick {
 
 /// Contiguous price band with a fixed tick size.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PriceBand {
     /// Inclusive band start.
     pub start: OutcomePrice,
@@ -348,6 +349,7 @@ impl<'de> Deserialize<'de> for PriceGrid {
         D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
         struct PriceGridShadow {
             bands: Vec<PriceBand>,
         }

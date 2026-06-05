@@ -1,6 +1,6 @@
 use paft_money::{Currency, IsoCurrency};
 use paft_prediction::{
-    BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor,
+    BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor, EventStructure,
     NonZeroContractQuantity, OutcomeInstrument, OutcomePayout, PredictionMarketStatus,
 };
 use paft_prediction::{NumericBound, NumericRange};
@@ -126,4 +126,29 @@ fn numeric_range_deserialization_validates_interval() {
         "unit": "USD"
     }"#;
     assert!(serde_json::from_str::<NumericRange>(valid).is_ok());
+}
+
+#[test]
+fn semantic_metadata_deserialization_rejects_unknown_fields() {
+    let event_structure = r#"{
+        "kind": "mutually_exclusive",
+        "exhaustive": true,
+        "provider_hint": "ignored"
+    }"#;
+    assert!(serde_json::from_str::<EventStructure>(event_structure).is_err());
+
+    let claim = r#"{
+        "kind": "text",
+        "description": "BTC closes above 100k.",
+        "resolution_source": "ignored"
+    }"#;
+    assert!(serde_json::from_str::<ClaimDescriptor>(claim).is_err());
+
+    let range = r#"{
+        "lower": { "included": "10" },
+        "upper": { "excluded": "11" },
+        "unit": "USD",
+        "precision": "ignored"
+    }"#;
+    assert!(serde_json::from_str::<NumericRange>(range).is_err());
 }

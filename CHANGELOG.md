@@ -105,6 +105,9 @@ All notable changes to this project will be documented in this file.
   level representation compact on current targets.
 - Prediction: `PriceGrid` validation now rejects bands whose inclusive end
   endpoint is not reachable from the start by whole tick increments.
+- Prediction: semantic metadata shapes such as `EventStructure`,
+  `ClaimDescriptor`, `NumericRange`, `PriceGrid`, and `PriceBand` now reject
+  unknown fields during deserialization.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.

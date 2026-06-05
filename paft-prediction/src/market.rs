@@ -248,7 +248,7 @@ macro_rules! open_string_metadata_enum {
 
 /// High-level relationship among markets inside an event.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 #[non_exhaustive]
 pub enum EventStructure {
     /// Event contains exactly one market.
@@ -359,7 +359,7 @@ open_string_metadata_enum!(
 
 /// Description of the claim represented by a prediction market.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 #[non_exhaustive]
 pub enum ClaimDescriptor {
     /// Free-form textual claim.
@@ -454,6 +454,7 @@ impl<'de> Deserialize<'de> for NumericRange {
         D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
         struct NumericRangeShadow {
             lower: NumericBound,
             upper: NumericBound,
