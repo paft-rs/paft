@@ -192,7 +192,7 @@ paft_core::string_enum_with_code!(
         "COO" => InsiderPosition::Coo,
         "CTO" => InsiderPosition::Cto,
         "PRESIDENT" => InsiderPosition::President,
-        "VP" => InsiderPosition::VicePresident,
+        "VICE_PRESIDENT" => InsiderPosition::VicePresident,
         "SECRETARY" => InsiderPosition::Secretary,
         "TREASURER" => InsiderPosition::Treasurer
     },
@@ -205,7 +205,7 @@ paft_core::string_enum_with_code!(
         "CHIEF_FINANCIAL_OFFICER" => InsiderPosition::Cfo,
         "CHIEF_OPERATING_OFFICER" => InsiderPosition::Coo,
         "CHIEF_TECHNOLOGY_OFFICER" => InsiderPosition::Cto,
-        "VICE_PRESIDENT" => InsiderPosition::VicePresident
+        "VP" => InsiderPosition::VicePresident
     }
 );
 

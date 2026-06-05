@@ -262,6 +262,10 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking Changes
 
+- Fundamentals/facade: canonical string output for
+  `RecommendationAction::Initiate` changed from `INIT` to `INITIATE`, and
+  `InsiderPosition::VicePresident` changed from `VP` to `VICE_PRESIDENT`; the old
+  short forms remain accepted aliases.
 - Domain/fundamentals/facade: enum `FromStr`, `TryFrom<String>`,
   `try_from_str`, and `other` constructors now return crate-level errors:
   domain enum APIs return `DomainError`, fundamentals enum APIs return

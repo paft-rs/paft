@@ -157,8 +157,8 @@ fn recommendation_action_cases() -> Vec<Case<RecommendationAction>> {
         },
         Case {
             variant: Initiate,
-            canonical: "INIT",
-            aliases: &["INITIATED", "INITIATE"],
+            canonical: "INITIATE",
+            aliases: &["INIT", "INITIATED"],
         },
         Case {
             variant: Maintain,
@@ -261,8 +261,8 @@ fn insider_position_cases() -> Vec<Case<InsiderPosition>> {
         },
         Case {
             variant: VicePresident,
-            canonical: "VP",
-            aliases: &["VICE_PRESIDENT"],
+            canonical: "VICE_PRESIDENT",
+            aliases: &["VP"],
         },
         Case {
             variant: Secretary,

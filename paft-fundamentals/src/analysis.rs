@@ -178,7 +178,7 @@ paft_core::string_enum_with_code!(
     {
         "UPGRADE" => RecommendationAction::Upgrade,
         "DOWNGRADE" => RecommendationAction::Downgrade,
-        "INIT" => RecommendationAction::Initiate,
+        "INITIATE" => RecommendationAction::Initiate,
         "MAINTAIN" => RecommendationAction::Maintain,
         "RESUME" => RecommendationAction::Resume,
         "SUSPEND" => RecommendationAction::Suspend
@@ -187,8 +187,8 @@ paft_core::string_enum_with_code!(
         // Aliases
         "UP" => RecommendationAction::Upgrade,
         "DOWN" => RecommendationAction::Downgrade,
+        "INIT" => RecommendationAction::Initiate,
         "INITIATED" => RecommendationAction::Initiate,
-        "INITIATE" => RecommendationAction::Initiate,
         "REITERATE" => RecommendationAction::Maintain
     }
 );

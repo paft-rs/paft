@@ -120,6 +120,7 @@ fn other_wrappers_reject_modeled_fundamentals_tokens() {
 
     assert!(OtherRecommendationAction::new("UPGRADE").is_err());
     assert!(OtherRecommendationAction::new("up").is_err());
+    assert!(OtherRecommendationAction::new("init").is_err());
     assert_eq!(
         OtherRecommendationAction::new("affirm").unwrap().as_ref(),
         "AFFIRM"
@@ -134,6 +135,7 @@ fn other_wrappers_reject_modeled_fundamentals_tokens() {
 
     assert!(OtherInsiderPosition::new("CEO").is_err());
     assert!(OtherInsiderPosition::new("chief executive officer").is_err());
+    assert!(OtherInsiderPosition::new("vp").is_err());
     assert_eq!(
         OtherInsiderPosition::new("chief strategy officer")
             .unwrap()
@@ -188,6 +190,7 @@ fn other_wrappers_serde_uses_checked_constructors_for_fundamentals_tokens() {
     assert_eq!(action.as_ref(), "AFFIRM");
     assert!(serde_json::from_str::<OtherRecommendationAction>("\"UPGRADE\"").is_err());
     assert!(serde_json::from_str::<OtherRecommendationAction>("\"up\"").is_err());
+    assert!(serde_json::from_str::<OtherRecommendationAction>("\"init\"").is_err());
 
     let transaction_type = OtherTransactionType::new("vesting").unwrap();
     assert_eq!(
@@ -209,6 +212,7 @@ fn other_wrappers_serde_uses_checked_constructors_for_fundamentals_tokens() {
     assert_eq!(position.as_ref(), "CHIEF_STRATEGY_OFFICER");
     assert!(serde_json::from_str::<OtherInsiderPosition>("\"CEO\"").is_err());
     assert!(serde_json::from_str::<OtherInsiderPosition>("\"chief executive officer\"").is_err());
+    assert!(serde_json::from_str::<OtherInsiderPosition>("\"vp\"").is_err());
 
     let fund_kind = OtherFundKind::new("interval fund").unwrap();
     assert_eq!(
