@@ -64,6 +64,8 @@ All notable changes to this project will be documented in this file.
   `BinaryMarketKey::{yes_instrument, no_instrument}` so binary markets expose
   tradable YES/NO outcome instruments directly while still supporting
   synthetic `YES`/`NO` ids for venues that do not issue separate instrument ids.
+- Prediction/facade: added `PredictionQuoteLevel` for top-of-book quote levels
+  whose displayed quantity may be unavailable.
 
 ### Changed
 
@@ -83,6 +85,9 @@ All notable changes to this project will be documented in this file.
   now emits the same market identity string as `PredictionMarketKey`.
 - Prediction: `PriceGrid` and `NumericRange` deserialization now validates
   constructor invariants instead of accepting invalid wire payloads.
+- Prediction: `BinaryQuote` now uses optional-quantity `PredictionQuoteLevel`
+  values for best bid/ask, while order-book depth continues to use
+  quantity-required `PredictionBookLevel` values.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.

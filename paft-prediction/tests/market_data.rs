@@ -1,6 +1,6 @@
 use paft_prediction::{
-    BinaryMarketKey, BinaryOrderBook, ContractQuantity, OutcomePrice, PredictionBookLevel,
-    PriceBand, PriceGrid, PriceTick,
+    BinaryMarketKey, BinaryOrderBook, BinaryQuote, ContractQuantity, OutcomePrice,
+    PredictionBookLevel, PredictionQuoteLevel, PriceBand, PriceGrid, PriceTick,
 };
 
 fn level(micros: u32, qty: u64) -> PredictionBookLevel {
@@ -8,6 +8,57 @@ fn level(micros: u32, qty: u64) -> PredictionBookLevel {
         OutcomePrice::from_micros(micros).unwrap(),
         ContractQuantity::from_microcontracts(qty),
     )
+}
+
+#[test]
+fn binary_quote_levels_allow_missing_quantity() {
+    let quote = BinaryQuote {
+        market: BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60").unwrap(),
+        as_of: None,
+        yes_bid: Some(PredictionQuoteLevel::new(
+            OutcomePrice::from_micros(410_000).unwrap(),
+            None,
+        )),
+        yes_ask: Some(PredictionQuoteLevel::new(
+            OutcomePrice::from_micros(430_000).unwrap(),
+            Some(ContractQuantity::from_microcontracts(2_000_000)),
+        )),
+        last_price: None,
+        provider: (),
+    };
+
+    assert_eq!(quote.yes_bid.unwrap().quantity, None);
+    assert_eq!(
+        quote.yes_ask.unwrap().quantity.unwrap().microcontracts(),
+        2_000_000
+    );
+}
+
+#[test]
+fn binary_quote_deserializes_missing_level_quantity() {
+    let json = r#"{
+        "market": {
+            "venue": "POLYMARKET",
+            "market_id": "condition-1"
+        },
+        "as_of": null,
+        "yes_bid": {
+            "price": 410000
+        },
+        "yes_ask": {
+            "price": 430000,
+            "quantity": 2000000
+        },
+        "last_price": null
+    }"#;
+
+    let quote: BinaryQuote = serde_json::from_str(json).unwrap();
+
+    assert_eq!(quote.yes_bid.unwrap().quantity, None);
+    assert_eq!(
+        quote.yes_ask.unwrap().quantity.unwrap().microcontracts(),
+        2_000_000
+    );
 }
 
 #[test]

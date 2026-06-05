@@ -52,9 +52,11 @@ What's inside
 - `OutcomePrice`, `PriceTick`, `PriceGrid`, `PriceBand`,
   `ContractQuantity`, and `OutcomePayout`: compact fixed-point integer
   primitives for prices, ticks, quantities, and contextual unit payouts.
-- `BinaryQuote`, `BinaryOrderBook`, `OutcomeOrderBook`, `PredictionBookLevel`,
-  and `PredictionTrade`: market-data payloads. `BinaryOrderBook` stores a
-  canonical YES-view book and derives NO-side top-of-book values by complement.
+- `BinaryQuote`, `PredictionQuoteLevel`, `BinaryOrderBook`, `OutcomeOrderBook`,
+  `PredictionBookLevel`, and `PredictionTrade`: market-data payloads. Quotes
+  allow best bid/ask quantities to be absent, while depth book levels require
+  displayed quantity. `BinaryOrderBook` stores a canonical YES-view book and
+  derives NO-side top-of-book values by complement.
 - `PredictionError`: non-exhaustive validation error for constructors, serde,
   price-grid validation, and book-order validation.
 

@@ -128,6 +128,27 @@ impl PredictionBookLevel {
     }
 }
 
+/// A top-of-book quote level.
+///
+/// Unlike full depth book levels, top-of-book feeds may report only a best
+/// price without a displayed quantity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PredictionQuoteLevel {
+    /// Outcome price at this quote level.
+    pub price: OutcomePrice,
+    /// Displayed quantity at this quote level, when reported by the source.
+    #[serde(default)]
+    pub quantity: Option<ContractQuantity>,
+}
+
+impl PredictionQuoteLevel {
+    /// Build a quote level.
+    #[must_use]
+    pub const fn new(price: OutcomePrice, quantity: Option<ContractQuantity>) -> Self {
+        Self { price, quantity }
+    }
+}
+
 /// Top-of-book quote for a binary market in canonical YES view.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GenericBinaryQuote<M = ()> {
@@ -137,9 +158,9 @@ pub struct GenericBinaryQuote<M = ()> {
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Best YES bid, if known.
-    pub yes_bid: Option<PredictionBookLevel>,
+    pub yes_bid: Option<PredictionQuoteLevel>,
     /// Best YES ask, if known.
-    pub yes_ask: Option<PredictionBookLevel>,
+    pub yes_ask: Option<PredictionQuoteLevel>,
     /// Last traded YES-view price, if known.
     pub last_price: Option<OutcomePrice>,
     /// Provider-specific payload, flattened into the serialized form.

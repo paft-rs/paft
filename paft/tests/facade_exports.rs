@@ -294,6 +294,7 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prediction::BinaryMarket>();
     assert_export::<paft::prediction::OutcomePrice>();
     assert_export::<paft::prediction::ContractQuantity>();
+    assert_export::<paft::prediction::PredictionQuoteLevel>();
     assert_export::<paft::prediction::BinaryOrderBook>();
     assert_export::<paft::prediction::PredictionTrade>();
 
@@ -309,6 +310,7 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prelude::BinaryMarket>();
     assert_export::<paft::prelude::OutcomePrice>();
     assert_export::<paft::prelude::ContractQuantity>();
+    assert_export::<paft::prelude::PredictionQuoteLevel>();
     assert_export::<paft::prelude::BinaryOrderBook>();
     assert_export::<paft::prelude::PredictionTrade>();
 }
