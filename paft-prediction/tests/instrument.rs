@@ -1,6 +1,6 @@
 use paft_prediction::{
-    BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
-    PredictionMarketKey,
+    BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionError,
+    PredictionEventKey, PredictionMarketKey,
 };
 
 #[test]
@@ -68,6 +68,93 @@ fn binary_outcome_instruments_can_be_synthetic_for_market_key() {
     let key = BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60").unwrap();
     let outcomes = BinaryOutcomeInstruments::synthetic_for_market(&key);
 
-    assert_eq!(outcomes.yes.outcome_id.as_str(), "YES");
-    assert_eq!(outcomes.no.outcome_id.as_str(), "NO");
+    assert_eq!(outcomes.yes().outcome_id.as_str(), "YES");
+    assert_eq!(outcomes.no().outcome_id.as_str(), "NO");
+}
+
+#[test]
+fn binary_outcome_instruments_validate_shared_market_identity() {
+    let err = BinaryOutcomeInstruments::new(
+        OutcomeInstrument::new("KALSHI", "MKT1", "YES").unwrap(),
+        OutcomeInstrument::new("POLYMARKET", "OTHER", "NO").unwrap(),
+    )
+    .unwrap_err();
+
+    assert!(matches!(
+        err,
+        PredictionError::MismatchedOutcomeInstrumentMarket { .. }
+    ));
+
+    let err = BinaryOutcomeInstruments::new(
+        OutcomeInstrument::new("KALSHI", "MKT1", "YES").unwrap(),
+        OutcomeInstrument::new("KALSHI", "OTHER", "NO").unwrap(),
+    )
+    .unwrap_err();
+
+    assert!(matches!(
+        err,
+        PredictionError::MismatchedOutcomeInstrumentMarket { .. }
+    ));
+}
+
+#[test]
+fn binary_outcome_instruments_reject_duplicate_outcome_ids() {
+    let err = BinaryOutcomeInstruments::new(
+        OutcomeInstrument::new("KALSHI", "MKT1", "YES").unwrap(),
+        OutcomeInstrument::new("KALSHI", "MKT1", "YES").unwrap(),
+    )
+    .unwrap_err();
+
+    assert!(matches!(
+        err,
+        PredictionError::DuplicateBinaryOutcomeInstrument { .. }
+    ));
+}
+
+#[test]
+fn binary_outcome_instruments_deserialization_validates_pair() {
+    let mismatched = r#"{
+        "yes": {
+            "venue": "KALSHI",
+            "market_id": "MKT1",
+            "outcome_id": "YES"
+        },
+        "no": {
+            "venue": "POLYMARKET",
+            "market_id": "OTHER",
+            "outcome_id": "NO"
+        }
+    }"#;
+    assert!(serde_json::from_str::<BinaryOutcomeInstruments>(mismatched).is_err());
+
+    let duplicate = r#"{
+        "yes": {
+            "venue": "KALSHI",
+            "market_id": "MKT1",
+            "outcome_id": "YES"
+        },
+        "no": {
+            "venue": "KALSHI",
+            "market_id": "MKT1",
+            "outcome_id": "YES"
+        }
+    }"#;
+    assert!(serde_json::from_str::<BinaryOutcomeInstruments>(duplicate).is_err());
+
+    let valid = r#"{
+        "yes": {
+            "venue": "KALSHI",
+            "market_id": "MKT1",
+            "outcome_id": "YES"
+        },
+        "no": {
+            "venue": "KALSHI",
+            "market_id": "MKT1",
+            "outcome_id": "NO"
+        }
+    }"#;
+    let outcomes: BinaryOutcomeInstruments = serde_json::from_str(valid).unwrap();
+
+    assert_eq!(outcomes.yes().outcome_id.as_str(), "YES");
+    assert_eq!(outcomes.no().outcome_id.as_str(), "NO");
 }

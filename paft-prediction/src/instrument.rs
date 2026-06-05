@@ -4,7 +4,7 @@ use crate::error::PredictionError;
 use crate::identifiers::{
     PredictionEventId, PredictionMarketId, PredictionOutcomeId, PredictionVenue,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de};
 use std::fmt;
 
 /// Venue-namespaced key for a prediction event/grouping container.
@@ -255,19 +255,60 @@ impl fmt::Display for OutcomeInstrument {
 }
 
 /// Required YES and NO outcome instruments for an atomic binary market.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct BinaryOutcomeInstruments {
     /// Tradable YES claim/share/token/contract.
-    pub yes: OutcomeInstrument,
+    yes: OutcomeInstrument,
     /// Tradable NO claim/share/token/contract.
-    pub no: OutcomeInstrument,
+    no: OutcomeInstrument,
 }
 
 impl BinaryOutcomeInstruments {
     /// Construct binary outcome instruments from already-validated values.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::MismatchedOutcomeInstrumentMarket`] when the
+    /// instruments do not belong to the same venue and market, or
+    /// [`PredictionError::DuplicateBinaryOutcomeInstrument`] when they use the
+    /// same provider-native outcome id.
+    pub fn new(yes: OutcomeInstrument, no: OutcomeInstrument) -> Result<Self, PredictionError> {
+        if yes.venue != no.venue || yes.market_id != no.market_id {
+            return Err(PredictionError::MismatchedOutcomeInstrumentMarket {
+                yes_venue: yes.venue.to_string(),
+                yes_market_id: yes.market_id.to_string(),
+                no_venue: no.venue.to_string(),
+                no_market_id: no.market_id.to_string(),
+            });
+        }
+
+        if yes.outcome_id == no.outcome_id {
+            return Err(PredictionError::DuplicateBinaryOutcomeInstrument {
+                venue: yes.venue.to_string(),
+                market_id: yes.market_id.to_string(),
+                outcome_id: yes.outcome_id.to_string(),
+            });
+        }
+
+        Ok(Self { yes, no })
+    }
+
+    /// Return the tradable YES claim/share/token/contract.
     #[must_use]
-    pub const fn new(yes: OutcomeInstrument, no: OutcomeInstrument) -> Self {
-        Self { yes, no }
+    pub const fn yes(&self) -> &OutcomeInstrument {
+        &self.yes
+    }
+
+    /// Return the tradable NO claim/share/token/contract.
+    #[must_use]
+    pub const fn no(&self) -> &OutcomeInstrument {
+        &self.no
+    }
+
+    /// Consume the pair and return the YES and NO instruments.
+    #[must_use]
+    pub fn into_parts(self) -> (OutcomeInstrument, OutcomeInstrument) {
+        (self.yes, self.no)
     }
 
     /// Construct synthetic `YES`/`NO` instruments for a binary market key.
@@ -281,6 +322,22 @@ impl BinaryOutcomeInstruments {
             yes: key.yes_instrument(),
             no: key.no_instrument(),
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for BinaryOutcomeInstruments {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct BinaryOutcomeInstrumentsShadow {
+            yes: OutcomeInstrument,
+            no: OutcomeInstrument,
+        }
+
+        let shadow = BinaryOutcomeInstrumentsShadow::deserialize(deserializer)?;
+        Self::new(shadow.yes, shadow.no).map_err(de::Error::custom)
     }
 }
 

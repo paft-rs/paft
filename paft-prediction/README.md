@@ -97,10 +97,10 @@ fn run() -> Result<(), PredictionError> {
             polymarket_market,
             "56393761733830483601097051857899348522495376869600726893014309766300892311293",
         )?,
-    );
+    )?;
     assert_ne!(
-        polymarket_outcomes.yes.unique_key(),
-        polymarket_outcomes.no.unique_key()
+        polymarket_outcomes.yes().unique_key(),
+        polymarket_outcomes.no().unique_key()
     );
 
     let mut book = BinaryOrderBook::new(kalshi_key);

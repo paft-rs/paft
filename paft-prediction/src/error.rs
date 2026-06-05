@@ -60,6 +60,32 @@ pub enum PredictionError {
         reason: &'static str,
     },
 
+    /// YES and NO instruments do not belong to the same venue and market.
+    #[error(
+        "Mismatched binary outcome instruments: YES belongs to {yes_venue}:{yes_market_id}, NO belongs to {no_venue}:{no_market_id}"
+    )]
+    MismatchedOutcomeInstrumentMarket {
+        /// YES instrument venue.
+        yes_venue: String,
+        /// YES instrument market id.
+        yes_market_id: String,
+        /// NO instrument venue.
+        no_venue: String,
+        /// NO instrument market id.
+        no_market_id: String,
+    },
+
+    /// YES and NO instruments have the same outcome id.
+    #[error("Duplicate binary outcome instrument: {venue}:{market_id}/{outcome_id}")]
+    DuplicateBinaryOutcomeInstrument {
+        /// Outcome instrument venue.
+        venue: String,
+        /// Outcome instrument market id.
+        market_id: String,
+        /// Duplicate outcome id.
+        outcome_id: String,
+    },
+
     /// Invalid price-grid structure.
     #[error("Invalid price grid: {reason}")]
     InvalidPriceGrid {

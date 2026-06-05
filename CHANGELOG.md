@@ -92,6 +92,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `BinaryQuote` now uses optional-quantity `PredictionQuoteLevel`
   values for best bid/ask, while order-book depth continues to use
   quantity-required `PredictionBookLevel` values.
+- Prediction: `BinaryOutcomeInstruments` now validates that YES and NO
+  instruments belong to the same venue/market and have distinct outcome ids,
+  including during deserialization.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.
