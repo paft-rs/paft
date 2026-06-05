@@ -168,11 +168,7 @@ impl BinaryMarketKey {
     /// Returns a collision-resistant, venue-namespaced identity key.
     #[must_use]
     pub fn unique_key(&self) -> String {
-        component_key(
-            self.venue.as_str(),
-            "binary_market",
-            self.market_id.as_str(),
-        )
+        component_key(self.venue.as_str(), "market", self.market_id.as_str())
     }
 }
 
@@ -241,7 +237,8 @@ impl OutcomeInstrument {
         let market = self.market_id.as_str();
         let outcome = self.outcome_id.as_str();
         format!(
-            "{}|market:{}:{}|outcome:{}:{}",
+            "venue:{}:{}|market:{}:{}|outcome:{}:{}",
+            venue.len(),
             venue,
             market.len(),
             market,
@@ -288,5 +285,12 @@ impl BinaryOutcomeInstruments {
 }
 
 fn component_key(venue: &str, role: &str, id: &str) -> String {
-    format!("{venue}|{role}:{}:{id}", id.len())
+    format!(
+        "venue:{}:{}|{}:{}:{}",
+        venue.len(),
+        venue,
+        role,
+        id.len(),
+        id
+    )
 }

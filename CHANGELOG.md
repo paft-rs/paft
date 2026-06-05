@@ -78,6 +78,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `LinkedBinaryRelation`, `PredictionMarketStatus`, and
   `BinaryResolution` now use paft-style open string parsing/serde, so unknown
   strings deserialize into `Other(...)` and serialize back as strings.
+- Prediction: prediction event, market, and outcome `unique_key()` values now
+  length-prefix every dynamic component, including venue, and `BinaryMarketKey`
+  now emits the same market identity string as `PredictionMarketKey`.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.

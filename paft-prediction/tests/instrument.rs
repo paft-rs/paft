@@ -10,6 +10,7 @@ fn market_keys_are_venue_namespaced() {
 
     assert_ne!(kalshi.unique_key(), other_venue.unique_key());
     assert_eq!(kalshi.to_string(), "KALSHI:KXHIGHNY-24JAN01-T60");
+    assert_eq!(kalshi.unique_key(), kalshi.to_market_key().unique_key());
 }
 
 #[test]
@@ -34,6 +35,19 @@ fn event_and_market_keys_have_distinct_unique_key_roles() {
     let market = PredictionMarketKey::new("POLYMARKET", "btc-price").unwrap();
 
     assert_ne!(event.unique_key(), market.unique_key());
+}
+
+#[test]
+fn unique_keys_length_prefix_every_dynamic_component() {
+    let first = OutcomeInstrument::new("A|market:1:B", "C", "D").unwrap();
+    let second = OutcomeInstrument::new("A", "B|market:1:C", "D").unwrap();
+
+    assert_ne!(first.unique_key(), second.unique_key());
+
+    let first_event = PredictionEventKey::new("A|event:1:B", "C").unwrap();
+    let second_event = PredictionEventKey::new("A", "B|event:1:C").unwrap();
+
+    assert_ne!(first_event.unique_key(), second_event.unique_key());
 }
 
 #[test]
