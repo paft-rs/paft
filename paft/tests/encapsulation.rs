@@ -18,7 +18,7 @@ fn test_encapsulation_prevents_invalid_construction() {
         include_prepost: false,
         include_actions: true,
         prefer_adjusted_prices: true,
-        keepna: false,
+        keep_missing: false,
     };
 
     let invalid_search = SearchRequest {

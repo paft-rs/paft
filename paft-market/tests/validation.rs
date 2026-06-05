@@ -251,6 +251,15 @@ fn history_flags_deserialization_unknown_bits_rejected() {
 }
 
 #[test]
+fn history_flags_keep_missing_preserves_existing_wire_bit() {
+    assert_eq!(HistoryFlags::KEEP_MISSING.bits(), 0b1000);
+    assert_eq!(
+        serde_json::to_value(HistoryFlags::KEEP_MISSING).unwrap(),
+        serde_json::json!(0b1000_u8)
+    );
+}
+
+#[test]
 fn history_request_deserialization_unknown_flag_bits_rejected() {
     let invalid = serde_json::json!({
         "time_spec": {

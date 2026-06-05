@@ -144,7 +144,7 @@ fn history_request_with_period() {
         .include_prepost(false)
         .include_actions(false)
         .prefer_adjusted_prices(true)
-        .keepna(true)
+        .keep_missing(true)
         .build()
         .unwrap();
 
@@ -160,6 +160,7 @@ fn history_request_with_period() {
 
     let deserialized: HistoryRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
+    assert!(deserialized.keep_missing());
 }
 
 #[test]

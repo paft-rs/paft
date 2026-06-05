@@ -447,7 +447,7 @@ bitflags! {
         /// Prefer provider-adjusted prices when the provider supports them.
         const PREFER_ADJUSTED_PRICES = 0b0100;
         /// Keep missing candle slots as placeholders depending on consumer.
-        const KEEPNA = 0b1000;
+        const KEEP_MISSING = 0b1000;
     }
 }
 
@@ -712,11 +712,11 @@ impl HistoryRequestBuilder {
 
     /// Set whether to keep missing candle slots.
     #[must_use]
-    pub fn keepna(mut self, keep: bool) -> Self {
+    pub fn keep_missing(mut self, keep: bool) -> Self {
         if keep {
-            self.flags.insert(HistoryFlags::KEEPNA);
+            self.flags.insert(HistoryFlags::KEEP_MISSING);
         } else {
-            self.flags.remove(HistoryFlags::KEEPNA);
+            self.flags.remove(HistoryFlags::KEEP_MISSING);
         }
         self
     }
@@ -831,7 +831,7 @@ impl HistoryRequest {
 
     /// Get whether missing values are kept.
     #[must_use]
-    pub const fn keepna(&self) -> bool {
-        self.flags.contains(HistoryFlags::KEEPNA)
+    pub const fn keep_missing(&self) -> bool {
+        self.flags.contains(HistoryFlags::KEEP_MISSING)
     }
 }

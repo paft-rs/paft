@@ -311,6 +311,11 @@ All notable changes to this project will be documented in this file.
   `HistoryRequest::auto_adjust` to `HistoryFlags::PREFER_ADJUSTED_PRICES`,
   `HistoryRequestBuilder::prefer_adjusted_prices`, and
   `HistoryRequest::prefer_adjusted_prices`.
+- Market/facade: history request missing-slot APIs were renamed from
+  `HistoryFlags::KEEPNA`, `HistoryRequestBuilder::keepna`, and
+  `HistoryRequest::keepna` to `HistoryFlags::KEEP_MISSING`,
+  `HistoryRequestBuilder::keep_missing`, and `HistoryRequest::keep_missing`.
+  The serialized flag bit is unchanged.
 - Market/facade: nested metadata containers gained independent child metadata
   type parameters. `GenericHistoryResponse<M>`, `GenericOptionChain<M>`,
   `GenericDownloadEntry<M>`, `GenericDownloadResponse<M>`,
