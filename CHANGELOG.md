@@ -103,6 +103,8 @@ All notable changes to this project will be documented in this file.
   zero-capable `ContractQuantity`.
 - Prediction: `PredictionBookLevel` fields are ordered to keep the common depth
   level representation compact on current targets.
+- Prediction: `PriceGrid` validation now rejects bands whose inclusive end
+  endpoint is not reachable from the start by whole tick increments.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.

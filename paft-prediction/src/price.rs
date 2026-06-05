@@ -264,7 +264,8 @@ impl PriceGrid {
     /// # Errors
     ///
     /// Returns [`PredictionError::InvalidPriceGrid`] when the band list is
-    /// empty, a band has descending bounds, or bands overlap.
+    /// empty, a band has descending bounds, a band endpoint is not reachable
+    /// on its tick grid, or bands overlap.
     pub fn new(bands: Vec<PriceBand>) -> Result<Self, PredictionError> {
         let grid = Self { bands };
         grid.validate()?;
@@ -276,7 +277,8 @@ impl PriceGrid {
     /// # Errors
     ///
     /// Returns [`PredictionError::InvalidPriceGrid`] when the band list is
-    /// empty, a band has descending bounds, or bands overlap.
+    /// empty, a band has descending bounds, a band endpoint is not reachable
+    /// on its tick grid, or bands overlap.
     pub fn validate(&self) -> Result<(), PredictionError> {
         if self.bands.is_empty() {
             return Err(PredictionError::InvalidPriceGrid {
@@ -288,6 +290,12 @@ impl PriceGrid {
             if !band.has_valid_bounds() {
                 return Err(PredictionError::InvalidPriceGrid {
                     reason: "band start must be less than or equal to band end",
+                });
+            }
+
+            if !(band.end.micros() - band.start.micros()).is_multiple_of(band.tick.micros()) {
+                return Err(PredictionError::InvalidPriceGrid {
+                    reason: "band end must align to the band's tick grid",
                 });
             }
         }

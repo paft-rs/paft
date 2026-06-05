@@ -112,7 +112,7 @@ fn price_grid_validates_piecewise_ticks() {
             tick: PriceTick::from_micros(1_000).unwrap(),
         },
         PriceBand {
-            start: OutcomePrice::from_micros(100_001).unwrap(),
+            start: OutcomePrice::from_micros(100_100).unwrap(),
             end: OutcomePrice::ONE,
             tick: PriceTick::from_micros(100).unwrap(),
         },
@@ -120,8 +120,19 @@ fn price_grid_validates_piecewise_ticks() {
     .unwrap();
 
     assert!(grid.contains_price(OutcomePrice::from_micros(50_000).unwrap()));
-    assert!(grid.contains_price(OutcomePrice::from_micros(100_101).unwrap()));
+    assert!(grid.contains_price(OutcomePrice::from_micros(100_100).unwrap()));
     assert!(!grid.contains_price(OutcomePrice::from_micros(100_150).unwrap()));
+}
+
+#[test]
+fn price_grid_rejects_band_endpoints_off_tick_grid() {
+    let grid = PriceGrid::new(vec![PriceBand {
+        start: OutcomePrice::ZERO,
+        end: OutcomePrice::from_micros(100).unwrap(),
+        tick: PriceTick::from_micros(30).unwrap(),
+    }]);
+
+    assert!(grid.is_err());
 }
 
 #[test]
@@ -144,10 +155,17 @@ fn price_grid_deserialization_validates_invariants() {
     }"#;
     assert!(serde_json::from_str::<PriceGrid>(overlapping).is_err());
 
+    let off_tick_endpoint = r#"{
+        "bands": [
+            { "start": 0, "end": 100, "tick": 30 }
+        ]
+    }"#;
+    assert!(serde_json::from_str::<PriceGrid>(off_tick_endpoint).is_err());
+
     let valid = r#"{
         "bands": [
             { "start": 0, "end": 100000, "tick": 1000 },
-            { "start": 100001, "end": 200000, "tick": 1000 }
+            { "start": 100001, "end": 200001, "tick": 1000 }
         ]
     }"#;
     assert!(serde_json::from_str::<PriceGrid>(valid).is_ok());
