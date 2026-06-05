@@ -39,6 +39,8 @@ All notable changes to this project will be documented in this file.
   `OptionExpirationsResponse::is_sorted_unique`.
 - Market: added `TimeSpec::{range, period, validate}` so standalone time
   specifications have an explicit period-validation boundary.
+- Market/facade: added `FromStr` parsers for closed request enums `Range`,
+  `Interval`, `NewsTab`, and `OptionSide`.
 - Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
   constrained decimal constructors to compose with `paft::prelude::Result`.
 - Facade: `paft::prelude` now re-exports `IsoCurrency` for common

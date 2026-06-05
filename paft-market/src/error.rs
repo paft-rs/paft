@@ -29,4 +29,13 @@ pub enum MarketError {
         /// End timestamp (milliseconds since epoch).
         end: i64,
     },
+
+    /// String value did not match any modeled closed market enum code.
+    #[error("{enum_name}: invalid enum value '{value}'")]
+    InvalidEnumValue {
+        /// Enum type that rejected the value.
+        enum_name: &'static str,
+        /// Rejected input value.
+        value: String,
+    },
 }

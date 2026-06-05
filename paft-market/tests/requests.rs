@@ -1,5 +1,7 @@
 use paft_domain::AssetKind;
-use paft_market::{HistoryRequest, Interval, NewsRequest, NewsTab, Range, SearchRequest, TimeSpec};
+use paft_market::{
+    HistoryRequest, Interval, MarketError, NewsRequest, NewsTab, Range, SearchRequest, TimeSpec,
+};
 use std::num::NonZeroU32;
 
 #[test]
@@ -80,11 +82,25 @@ fn news_tab_serialization() {
     for (tab, code) in tabs {
         assert_eq!(tab.code(), code);
         assert_eq!(tab.to_string(), code);
+        assert_eq!(code.parse::<NewsTab>().unwrap(), tab);
         assert_eq!(serde_json::to_value(tab).unwrap(), serde_json::json!(code));
 
         let deserialized: NewsTab = serde_json::from_value(serde_json::json!(code)).unwrap();
         assert_eq!(tab, deserialized);
     }
+}
+
+#[test]
+fn news_tab_from_str_rejects_unknown_code() {
+    let err = "PRESS".parse::<NewsTab>().unwrap_err();
+
+    assert!(matches!(
+        err,
+        MarketError::InvalidEnumValue {
+            enum_name: "NewsTab",
+            value,
+        } if value == "PRESS"
+    ));
 }
 
 #[test]
@@ -271,6 +287,7 @@ fn interval_serialization() {
     for (interval, code) in intervals {
         assert_eq!(interval.code(), code);
         assert_eq!(interval.to_string(), code);
+        assert_eq!(code.parse::<Interval>().unwrap(), interval);
         assert_eq!(
             serde_json::to_value(interval).unwrap(),
             serde_json::json!(code)
@@ -279,6 +296,19 @@ fn interval_serialization() {
         let deserialized: Interval = serde_json::from_value(serde_json::json!(code)).unwrap();
         assert_eq!(interval, deserialized);
     }
+}
+
+#[test]
+fn interval_from_str_rejects_unknown_code() {
+    let err = "1week".parse::<Interval>().unwrap_err();
+
+    assert!(matches!(
+        err,
+        MarketError::InvalidEnumValue {
+            enum_name: "Interval",
+            value,
+        } if value == "1week"
+    ));
 }
 
 #[test]
@@ -311,6 +341,7 @@ fn range_serialization() {
     for (range, code) in ranges {
         assert_eq!(range.code(), code);
         assert_eq!(range.to_string(), code);
+        assert_eq!(code.parse::<Range>().unwrap(), range);
         assert_eq!(
             serde_json::to_value(range).unwrap(),
             serde_json::json!(code)
@@ -319,4 +350,17 @@ fn range_serialization() {
         let deserialized: Range = serde_json::from_value(serde_json::json!(code)).unwrap();
         assert_eq!(range, deserialized);
     }
+}
+
+#[test]
+fn range_from_str_rejects_unknown_code() {
+    let err = "all".parse::<Range>().unwrap_err();
+
+    assert!(matches!(
+        err,
+        MarketError::InvalidEnumValue {
+            enum_name: "Range",
+            value,
+        } if value == "all"
+    ));
 }

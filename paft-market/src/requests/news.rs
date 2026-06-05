@@ -2,8 +2,11 @@
 
 use std::fmt;
 use std::num::NonZeroU32;
+use std::str::FromStr;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::error::MarketError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
@@ -50,6 +53,17 @@ impl AsRef<str> for NewsTab {
 impl fmt::Display for NewsTab {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str((*self).code())
+    }
+}
+
+impl FromStr for NewsTab {
+    type Err = MarketError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::from_code(value).ok_or_else(|| MarketError::InvalidEnumValue {
+            enum_name: "NewsTab",
+            value: value.to_string(),
+        })
     }
 }
 

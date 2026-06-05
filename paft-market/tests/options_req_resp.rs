@@ -3,7 +3,7 @@ use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::OptionUpdate as MarketOptionUpdate;
 use paft_market::{
-    OptionChainRequest, OptionContract, OptionContractKey, OptionExpirationsRequest,
+    MarketError, OptionChainRequest, OptionContract, OptionContractKey, OptionExpirationsRequest,
     OptionExpirationsResponse, OptionGreeks, OptionSide, OptionUpdate,
 };
 use paft_money::{Currency, IsoCurrency, Price, PriceAmount};
@@ -32,6 +32,28 @@ fn option_key() -> OptionContractKey {
         usd(150),
         NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
     )
+}
+
+#[test]
+fn option_side_from_str_uses_stable_codes() {
+    for (side, code) in [(OptionSide::Call, "CALL"), (OptionSide::Put, "PUT")] {
+        assert_eq!(side.to_string(), code);
+        assert_eq!(code.parse::<OptionSide>().unwrap(), side);
+        assert_eq!(serde_json::to_value(side).unwrap(), serde_json::json!(code));
+    }
+}
+
+#[test]
+fn option_side_from_str_rejects_unknown_code() {
+    let err = "BUY_TO_OPEN".parse::<OptionSide>().unwrap_err();
+
+    assert!(matches!(
+        err,
+        MarketError::InvalidEnumValue {
+            enum_name: "OptionSide",
+            value,
+        } if value == "BUY_TO_OPEN"
+    ));
 }
 
 #[test]

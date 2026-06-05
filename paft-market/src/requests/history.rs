@@ -1,5 +1,6 @@
 //! Historical data request types and helpers.
 use std::fmt::Display;
+use std::str::FromStr;
 
 use bitflags::bitflags;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -123,6 +124,17 @@ impl Display for Range {
     }
 }
 
+impl FromStr for Range {
+    type Err = MarketError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::from_code(value).ok_or_else(|| MarketError::InvalidEnumValue {
+            enum_name: "Range",
+            value: value.to_string(),
+        })
+    }
+}
+
 impl Serialize for Range {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -230,6 +242,17 @@ pub enum Interval {
 impl Display for Interval {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str((*self).code())
+    }
+}
+
+impl FromStr for Interval {
+    type Err = MarketError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::from_code(value).ok_or_else(|| MarketError::InvalidEnumValue {
+            enum_name: "Interval",
+            value: value.to_string(),
+        })
     }
 }
 

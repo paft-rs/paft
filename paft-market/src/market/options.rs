@@ -9,6 +9,9 @@ use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::Instrument;
 use paft_money::{Currency, Price, PriceAmount};
 use std::fmt;
+use std::str::FromStr;
+
+use crate::error::MarketError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
@@ -50,6 +53,14 @@ impl OptionSide {
             Self::Put => "PUT",
         }
     }
+
+    fn from_code(value: &str) -> Option<Self> {
+        match value {
+            "CALL" => Some(Self::Call),
+            "PUT" => Some(Self::Put),
+            _ => None,
+        }
+    }
 }
 
 impl AsRef<str> for OptionSide {
@@ -61,6 +72,17 @@ impl AsRef<str> for OptionSide {
 impl fmt::Display for OptionSide {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str((*self).as_str())
+    }
+}
+
+impl FromStr for OptionSide {
+    type Err = MarketError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::from_code(value).ok_or_else(|| MarketError::InvalidEnumValue {
+            enum_name: "OptionSide",
+            value: value.to_string(),
+        })
     }
 }
 
