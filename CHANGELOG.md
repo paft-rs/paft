@@ -184,6 +184,10 @@ All notable changes to this project will be documented in this file.
 - Market requests: `HistoryRequest` and `SearchRequest` JSON deserialization
   now rejects unknown top-level fields instead of silently ignoring request
   typos.
+- Market requests/responses: `NewsRequest`, `OptionExpirationsRequest`,
+  `OptionChainRequest`, and `HistoryMeta` JSON deserialization now rejects
+  unknown fields, keeping semantic wire shapes aligned with the strict request
+  policy.
 - Market requests: `SearchRequest` now trims accepted `lang`/`region` values
   and rejects empty or whitespace-only values through both builder and serde
   construction paths.

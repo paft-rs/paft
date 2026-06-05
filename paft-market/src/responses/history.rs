@@ -549,8 +549,12 @@ impl AdjustmentMethod {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Optional metadata describing the history series.
+///
+/// Serde rejects unknown fields for this semantic metadata shape: timezone and
+/// offset metadata affect timestamp interpretation.
 pub struct HistoryMeta {
     /// IANA timezone identifier.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]

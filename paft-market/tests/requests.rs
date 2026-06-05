@@ -59,6 +59,17 @@ fn news_request_rejects_zero_count() {
 }
 
 #[test]
+fn news_request_deserialization_unknown_field_rejected() {
+    let mut value = serde_json::to_value(NewsRequest::default()).unwrap();
+    value
+        .as_object_mut()
+        .expect("news request serializes as an object")
+        .insert("coutn".to_owned(), serde_json::json!(25));
+
+    assert!(serde_json::from_value::<NewsRequest>(value).is_err());
+}
+
+#[test]
 fn news_tab_serialization() {
     let tabs = [
         (NewsTab::News, "NEWS"),

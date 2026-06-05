@@ -74,6 +74,7 @@ impl<'de> Deserialize<'de> for NewsTab {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 /// Parameters for fetching instrument news.
 pub struct NewsRequest {
     /// Maximum number of articles to fetch.

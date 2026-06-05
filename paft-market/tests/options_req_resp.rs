@@ -45,6 +45,20 @@ fn option_expirations_request_roundtrip() {
 }
 
 #[test]
+fn option_expirations_request_deserialization_unknown_field_rejected() {
+    let req = OptionExpirationsRequest {
+        underlying: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+    };
+    let mut value = serde_json::to_value(&req).unwrap();
+    value
+        .as_object_mut()
+        .expect("option expirations request serializes as an object")
+        .insert("underling".to_owned(), serde_json::json!("AAPL"));
+
+    assert!(serde_json::from_value::<OptionExpirationsRequest>(value).is_err());
+}
+
+#[test]
 fn option_chain_request_roundtrip() {
     let req = OptionChainRequest {
         underlying: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
@@ -53,6 +67,21 @@ fn option_chain_request_roundtrip() {
     let json = serde_json::to_string(&req).unwrap();
     let de: OptionChainRequest = serde_json::from_str(&json).unwrap();
     assert_eq!(req, de);
+}
+
+#[test]
+fn option_chain_request_deserialization_unknown_field_rejected() {
+    let req = OptionChainRequest {
+        underlying: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
+        expiration: NaiveDate::from_ymd_opt(2025, 1, 17).unwrap(),
+    };
+    let mut value = serde_json::to_value(&req).unwrap();
+    value
+        .as_object_mut()
+        .expect("option chain request serializes as an object")
+        .insert("expriation".to_owned(), serde_json::json!("2025-01-17"));
+
+    assert!(serde_json::from_value::<OptionChainRequest>(value).is_err());
 }
 
 #[test]

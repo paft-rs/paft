@@ -202,6 +202,17 @@ fn history_meta_with_none_fields() {
 }
 
 #[test]
+fn history_meta_deserialization_unknown_field_rejected() {
+    let value = serde_json::json!({
+        "timezone": "America/New_York",
+        "utc_offset_seconds": -18_000,
+        "utc_offset": "-05:00"
+    });
+
+    assert!(serde_json::from_value::<HistoryMeta>(value).is_err());
+}
+
+#[test]
 fn ohlc_price_basis_helpers_and_serialization() {
     let raw = OhlcPriceBasis::raw();
     assert_eq!(
