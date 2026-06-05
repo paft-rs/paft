@@ -1,8 +1,13 @@
 //! Fixed-point prediction-market price, quantity, payout, and grid types.
 
 use crate::error::PredictionError;
+use paft_decimal::{Decimal, from_minor_units, to_canonical_string};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
-use std::num::NonZeroU32;
+use std::{fmt, num::NonZeroU32};
+
+const FIXED_SCALE: u64 = 1_000_000;
+const FIXED_SCALE_DIGITS: usize = 6;
+const FIXED_SCALE_DIGITS_U32: u32 = 6;
 
 /// Fixed-point probability/price in millionths of unit payout.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -31,6 +36,55 @@ impl OutcomePrice {
         }
     }
 
+    /// Construct an outcome price from an exact decimal value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when the value is negative, greater than
+    /// `1`, not finite in the active decimal backend, or cannot be represented
+    /// exactly in millionths.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
+        Self::from_canonical_str(&to_canonical_string(&value))
+    }
+
+    /// Parse an exact decimal outcome price.
+    ///
+    /// The accepted scale is millionths. Extra trailing zero fractional digits
+    /// are accepted, but non-zero digits beyond six decimal places are rejected
+    /// instead of rounded.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when `value` is not a plain decimal string,
+    /// is negative, is greater than `1`, or cannot be represented exactly in
+    /// millionths.
+    pub fn from_canonical_str(value: &str) -> Result<Self, PredictionError> {
+        let micros = parse_fixed_point_units(value, "outcome price")?;
+        if micros > u64::from(Self::SCALE) {
+            return Err(PredictionError::invalid_fixed_point_decimal(
+                "outcome price",
+                value,
+                "expected value in 0..=1",
+            ));
+        }
+
+        let micros = u32::try_from(micros).map_err(|_| {
+            PredictionError::invalid_fixed_point_decimal(
+                "outcome price",
+                value,
+                "expected value in 0..=1",
+            )
+        })?;
+        Self::from_micros(micros)
+    }
+
+    /// Convert this price into a decimal value.
+    #[must_use]
+    pub fn to_decimal(self) -> Decimal {
+        from_minor_units(i128::from(self.0), FIXED_SCALE_DIGITS_U32)
+    }
+
     /// Returns the fixed-point micro value.
     #[must_use]
     pub const fn micros(self) -> u32 {
@@ -51,6 +105,12 @@ impl OutcomePrice {
 
     pub(crate) const fn from_valid_micros(value: u32) -> Self {
         Self(value)
+    }
+}
+
+impl fmt::Display for OutcomePrice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt_fixed_point_units(f, u64::from(self.micros()))
     }
 }
 
@@ -113,6 +173,12 @@ impl PriceTick {
     #[must_use]
     pub const fn micros(self) -> u32 {
         self.0.get()
+    }
+}
+
+impl fmt::Display for PriceTick {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt_fixed_point_units(f, u64::from(self.micros()))
     }
 }
 
@@ -300,6 +366,39 @@ impl ContractQuantity {
         Self(value)
     }
 
+    /// Construct a contract quantity from an exact decimal value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when the value is negative, cannot be stored
+    /// as a `u64` microcontract count, or cannot be represented exactly in
+    /// millionths.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
+        Self::from_canonical_str(&to_canonical_string(&value))
+    }
+
+    /// Parse an exact decimal contract quantity.
+    ///
+    /// The accepted scale is millionths. Extra trailing zero fractional digits
+    /// are accepted, but non-zero digits beyond six decimal places are rejected
+    /// instead of rounded.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when `value` is not a plain decimal string,
+    /// is negative, cannot be stored as a `u64` microcontract count, or cannot
+    /// be represented exactly in millionths.
+    pub fn from_canonical_str(value: &str) -> Result<Self, PredictionError> {
+        Ok(Self(parse_fixed_point_units(value, "contract quantity")?))
+    }
+
+    /// Convert this quantity into a decimal value.
+    #[must_use]
+    pub fn to_decimal(self) -> Decimal {
+        from_minor_units(i128::from(self.0), FIXED_SCALE_DIGITS_U32)
+    }
+
     /// Returns the fixed-point microcontract count.
     #[must_use]
     pub const fn microcontracts(self) -> u64 {
@@ -310,6 +409,12 @@ impl ContractQuantity {
     #[must_use]
     pub const fn is_zero(self) -> bool {
         self.0 == 0
+    }
+}
+
+impl fmt::Display for ContractQuantity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt_fixed_point_units(f, self.microcontracts())
     }
 }
 
@@ -346,8 +451,143 @@ impl OutcomePayout {
     }
 }
 
+impl fmt::Display for OutcomePayout {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt_fixed_point_units(f, self.micropayouts())
+    }
+}
+
 impl From<OutcomePayout> for u64 {
     fn from(value: OutcomePayout) -> Self {
         value.micropayouts()
     }
+}
+
+fn parse_fixed_point_units(value: &str, kind: &'static str) -> Result<u64, PredictionError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(PredictionError::invalid_fixed_point_decimal(
+            kind,
+            value,
+            "expected a plain decimal string",
+        ));
+    }
+
+    let (is_negative, unsigned) = match trimmed.as_bytes().first().copied() {
+        Some(b'+') => (false, &trimmed[1..]),
+        Some(b'-') => (true, &trimmed[1..]),
+        Some(_) => (false, trimmed),
+        None => {
+            return Err(PredictionError::invalid_fixed_point_decimal(
+                kind,
+                value,
+                "expected a plain decimal string",
+            ));
+        }
+    };
+
+    if unsigned.is_empty() {
+        return Err(PredictionError::invalid_fixed_point_decimal(
+            kind,
+            value,
+            "expected digits",
+        ));
+    }
+
+    let (whole, fraction) = unsigned.split_once('.').unwrap_or((unsigned, ""));
+    if whole.is_empty() && fraction.is_empty() {
+        return Err(PredictionError::invalid_fixed_point_decimal(
+            kind,
+            value,
+            "expected digits",
+        ));
+    }
+
+    if !whole.bytes().all(|byte| byte.is_ascii_digit())
+        || !fraction.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return Err(PredictionError::invalid_fixed_point_decimal(
+            kind,
+            value,
+            "expected a plain decimal string",
+        ));
+    }
+
+    if fraction.len() > FIXED_SCALE_DIGITS
+        && fraction.as_bytes()[FIXED_SCALE_DIGITS..]
+            .iter()
+            .any(|byte| *byte != b'0')
+    {
+        return Err(PredictionError::invalid_fixed_point_decimal(
+            kind,
+            value,
+            "more than 6 fractional digits",
+        ));
+    }
+
+    let whole_units = parse_digit_units(whole, kind, value)?;
+    let accepted_fraction_len = fraction.len().min(FIXED_SCALE_DIGITS);
+    let accepted_fraction = &fraction[..accepted_fraction_len];
+    let mut fraction_units = parse_digit_units(accepted_fraction, kind, value)?;
+    for _ in accepted_fraction_len..FIXED_SCALE_DIGITS {
+        fraction_units *= 10;
+    }
+
+    let scaled = whole_units
+        .checked_mul(u128::from(FIXED_SCALE))
+        .and_then(|whole| whole.checked_add(fraction_units))
+        .ok_or_else(|| {
+            PredictionError::invalid_fixed_point_decimal(kind, value, "exceeds fixed-point storage")
+        })?;
+
+    if is_negative && scaled != 0 {
+        return Err(PredictionError::invalid_fixed_point_decimal(
+            kind,
+            value,
+            "expected a non-negative decimal",
+        ));
+    }
+
+    u64::try_from(scaled).map_err(|_| {
+        PredictionError::invalid_fixed_point_decimal(kind, value, "exceeds fixed-point storage")
+    })
+}
+
+fn parse_digit_units(
+    digits: &str,
+    kind: &'static str,
+    value: &str,
+) -> Result<u128, PredictionError> {
+    let mut units = 0_u128;
+    for byte in digits.bytes() {
+        let digit = u128::from(byte - b'0');
+        units = units
+            .checked_mul(10)
+            .and_then(|current| current.checked_add(digit))
+            .ok_or_else(|| {
+                PredictionError::invalid_fixed_point_decimal(
+                    kind,
+                    value,
+                    "exceeds fixed-point storage",
+                )
+            })?;
+    }
+    Ok(units)
+}
+
+fn fmt_fixed_point_units(f: &mut fmt::Formatter<'_>, units: u64) -> fmt::Result {
+    let whole = units / FIXED_SCALE;
+    let mut fraction = units % FIXED_SCALE;
+
+    if fraction == 0 {
+        return write!(f, "{whole}");
+    }
+
+    let mut width = FIXED_SCALE_DIGITS;
+    while fraction.is_multiple_of(10) {
+        fraction /= 10;
+        width -= 1;
+    }
+
+    write!(f, "{whole}.{fraction:0width$}")
 }

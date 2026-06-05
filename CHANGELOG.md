@@ -66,6 +66,10 @@ All notable changes to this project will be documented in this file.
   synthetic `YES`/`NO` ids for venues that do not issue separate instrument ids.
 - Prediction/facade: added `PredictionQuoteLevel` for top-of-book quote levels
   whose displayed quantity may be unavailable.
+- Prediction: added exact decimal/string conversion helpers for
+  `OutcomePrice` and `ContractQuantity`, plus canonical decimal `Display`
+  implementations for `OutcomePrice`, `PriceTick`, `ContractQuantity`, and
+  `OutcomePayout`.
 
 ### Changed
 

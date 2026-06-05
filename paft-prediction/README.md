@@ -52,6 +52,8 @@ What's inside
 - `OutcomePrice`, `PriceTick`, `PriceGrid`, `PriceBand`,
   `ContractQuantity`, and `OutcomePayout`: compact fixed-point integer
   primitives for prices, ticks, quantities, and contextual unit payouts.
+  Decimal parse/display helpers use canonical decimal text while serde remains
+  compact integer micros.
 - `BinaryQuote`, `PredictionQuoteLevel`, `BinaryOrderBook`, `OutcomeOrderBook`,
   `PredictionBookLevel`, and `PredictionTrade`: market-data payloads. Quotes
   allow best bid/ask quantities to be absent, while depth book levels require

@@ -49,6 +49,17 @@ pub enum PredictionError {
         micros: u32,
     },
 
+    /// Invalid decimal input for a fixed-point prediction value.
+    #[error("Invalid {kind} decimal '{value}': {reason}")]
+    InvalidFixedPointDecimal {
+        /// Human-readable fixed-point value role.
+        kind: &'static str,
+        /// Original decimal text supplied by the caller.
+        value: String,
+        /// Validation failure reason.
+        reason: &'static str,
+    },
+
     /// Invalid price-grid structure.
     #[error("Invalid price grid: {reason}")]
     InvalidPriceGrid {
@@ -96,5 +107,17 @@ impl PredictionError {
 
     pub(crate) const fn modeled_metadata_code(kind: &'static str, value: String) -> Self {
         Self::ModeledMetadataCode { kind, value }
+    }
+
+    pub(crate) fn invalid_fixed_point_decimal(
+        kind: &'static str,
+        value: &str,
+        reason: &'static str,
+    ) -> Self {
+        Self::InvalidFixedPointDecimal {
+            kind,
+            value: value.to_owned(),
+            reason,
+        }
     }
 }

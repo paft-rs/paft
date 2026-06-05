@@ -2,6 +2,10 @@ use paft_prediction::{
     ContractQuantity, OutcomePayout, OutcomePrice, PriceBand, PriceGrid, PriceTick,
 };
 
+fn decimal(value: &str) -> paft_decimal::Decimal {
+    paft_decimal::parse_decimal(value).unwrap()
+}
+
 #[test]
 fn outcome_price_uses_micro_unit_scale_and_complements() {
     let price = OutcomePrice::from_micros(250_000).unwrap();
@@ -14,6 +18,68 @@ fn outcome_price_uses_micro_unit_scale_and_complements() {
             .micros(),
         500_000
     );
+}
+
+#[test]
+fn outcome_price_parses_exact_decimal_values() {
+    assert_eq!(
+        OutcomePrice::from_canonical_str("0.41").unwrap().micros(),
+        410_000
+    );
+    assert_eq!(
+        OutcomePrice::from_canonical_str("0.999").unwrap().micros(),
+        999_000
+    );
+    assert_eq!(
+        OutcomePrice::from_canonical_str("0.0001").unwrap().micros(),
+        100
+    );
+    assert_eq!(
+        OutcomePrice::from_canonical_str("1.0000000")
+            .unwrap()
+            .micros(),
+        OutcomePrice::SCALE
+    );
+    assert_eq!(
+        OutcomePrice::from_decimal(decimal("0.41"))
+            .unwrap()
+            .micros(),
+        410_000
+    );
+    assert_eq!(
+        paft_decimal::to_canonical_string(
+            &OutcomePrice::from_micros(410_000).unwrap().to_decimal()
+        ),
+        "0.41"
+    );
+}
+
+#[test]
+fn outcome_price_rejects_inexact_or_out_of_range_decimal_values() {
+    assert!(OutcomePrice::from_canonical_str("0.0000001").is_err());
+    assert!(OutcomePrice::from_canonical_str("-0.1").is_err());
+    assert!(OutcomePrice::from_canonical_str("1.000001").is_err());
+    assert!(OutcomePrice::from_canonical_str("1e-3").is_err());
+    assert!(OutcomePrice::from_decimal(decimal("0.1234567")).is_err());
+}
+
+#[test]
+fn fixed_point_display_uses_canonical_decimal_form() {
+    assert_eq!(
+        OutcomePrice::from_micros(410_000).unwrap().to_string(),
+        "0.41"
+    );
+    assert_eq!(OutcomePrice::ONE.to_string(), "1");
+    assert_eq!(PriceTick::from_micros(100).unwrap().to_string(), "0.0001");
+    assert_eq!(
+        ContractQuantity::from_microcontracts(2_000_000).to_string(),
+        "2"
+    );
+    assert_eq!(
+        ContractQuantity::from_microcontracts(219_217_767).to_string(),
+        "219.217767"
+    );
+    assert_eq!(OutcomePayout::from_micropayouts(1_000_000).to_string(), "1");
 }
 
 #[test]
@@ -87,4 +153,29 @@ fn quantity_and_payout_are_transparent_fixed_integers() {
     assert_eq!(quantity.microcontracts(), 219_217_767);
     assert_eq!(payout.micropayouts(), OutcomePayout::SCALE);
     assert!(!quantity.is_zero());
+}
+
+#[test]
+fn contract_quantity_parses_exact_decimal_values() {
+    let quantity = ContractQuantity::from_canonical_str("219.217767").unwrap();
+    assert_eq!(quantity.microcontracts(), 219_217_767);
+    assert_eq!(
+        ContractQuantity::from_decimal(decimal("2"))
+            .unwrap()
+            .microcontracts(),
+        2_000_000
+    );
+    assert_eq!(
+        paft_decimal::to_canonical_string(&quantity.to_decimal()),
+        "219.217767"
+    );
+}
+
+#[test]
+fn contract_quantity_rejects_inexact_negative_or_overflowing_decimal_values() {
+    assert!(ContractQuantity::from_canonical_str("219.2177671").is_err());
+    assert!(ContractQuantity::from_canonical_str("-1").is_err());
+    assert!(ContractQuantity::from_canonical_str("1e3").is_err());
+    assert!(ContractQuantity::from_canonical_str("18446744073709.551616").is_err());
+    assert!(ContractQuantity::from_decimal(decimal("1.0000001")).is_err());
 }
