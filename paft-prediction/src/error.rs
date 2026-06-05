@@ -56,6 +56,13 @@ pub enum PredictionError {
         reason: &'static str,
     },
 
+    /// Invalid numeric range descriptor.
+    #[error("Invalid numeric range: {reason}")]
+    InvalidNumericRange {
+        /// Validation failure reason.
+        reason: &'static str,
+    },
+
     /// Price does not fall on the applicable grid.
     #[error("Outcome price {micros} micros is not on the price grid")]
     PriceOffGrid {

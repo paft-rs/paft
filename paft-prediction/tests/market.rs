@@ -3,6 +3,7 @@ use paft_prediction::{
     BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor, OutcomeInstrument,
     OutcomePayout, PredictionMarketStatus,
 };
+use paft_prediction::{NumericBound, NumericRange};
 
 #[test]
 fn binary_market_carries_required_polymarket_outcome_instruments() {
@@ -48,4 +49,52 @@ fn binary_market_carries_required_polymarket_outcome_instruments() {
     );
     assert_eq!(market.outcomes.yes.market_key(), market.key.to_market_key());
     assert_eq!(market.outcomes.no.market_key(), market.key.to_market_key());
+}
+
+#[test]
+fn numeric_range_constructor_validates_interval() {
+    let valid_single_point = NumericRange::new(
+        NumericBound::Included(10.into()),
+        NumericBound::Included(10.into()),
+        Some("USD".to_string()),
+    );
+    assert!(valid_single_point.is_ok());
+
+    let descending = NumericRange::new(
+        NumericBound::Included(11.into()),
+        NumericBound::Included(10.into()),
+        None,
+    );
+    assert!(descending.is_err());
+
+    let empty_zero_width = NumericRange::new(
+        NumericBound::Included(10.into()),
+        NumericBound::Excluded(10.into()),
+        None,
+    );
+    assert!(empty_zero_width.is_err());
+}
+
+#[test]
+fn numeric_range_deserialization_validates_interval() {
+    let descending = r#"{
+        "lower": { "included": "11" },
+        "upper": { "included": "10" },
+        "unit": "USD"
+    }"#;
+    assert!(serde_json::from_str::<NumericRange>(descending).is_err());
+
+    let empty_zero_width = r#"{
+        "lower": { "excluded": "10" },
+        "upper": { "included": "10" },
+        "unit": null
+    }"#;
+    assert!(serde_json::from_str::<NumericRange>(empty_zero_width).is_err());
+
+    let valid = r#"{
+        "lower": { "included": "10" },
+        "upper": { "excluded": "11" },
+        "unit": "USD"
+    }"#;
+    assert!(serde_json::from_str::<NumericRange>(valid).is_ok());
 }

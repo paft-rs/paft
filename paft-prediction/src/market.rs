@@ -389,7 +389,7 @@ pub enum ClaimDescriptor {
 }
 
 /// Parsed numeric interval for a range/bucket market.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct NumericRange {
     /// Lower interval bound.
     pub lower: NumericBound,
@@ -397,6 +397,72 @@ pub struct NumericRange {
     pub upper: NumericBound,
     /// Optional unit for the numeric value, such as `USD`.
     pub unit: Option<String>,
+}
+
+impl NumericRange {
+    /// Construct a numeric range and validate its interval.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidNumericRange`] when finite bounds are
+    /// descending or when equal finite endpoints do not include the single
+    /// endpoint value.
+    pub fn new(
+        lower: NumericBound,
+        upper: NumericBound,
+        unit: Option<String>,
+    ) -> Result<Self, PredictionError> {
+        let range = Self { lower, upper, unit };
+        range.validate()?;
+        Ok(range)
+    }
+
+    /// Validate the range interval.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidNumericRange`] when finite bounds are
+    /// descending or when equal finite endpoints do not include the single
+    /// endpoint value.
+    pub fn validate(&self) -> Result<(), PredictionError> {
+        let Some((lower, lower_included)) = self.lower.finite_value() else {
+            return Ok(());
+        };
+        let Some((upper, upper_included)) = self.upper.finite_value() else {
+            return Ok(());
+        };
+
+        if lower > upper {
+            return Err(PredictionError::InvalidNumericRange {
+                reason: "lower bound must be less than or equal to upper bound",
+            });
+        }
+
+        if lower == upper && !(lower_included && upper_included) {
+            return Err(PredictionError::InvalidNumericRange {
+                reason: "zero-width finite ranges must include both endpoints",
+            });
+        }
+
+        Ok(())
+    }
+}
+
+impl<'de> Deserialize<'de> for NumericRange {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct NumericRangeShadow {
+            lower: NumericBound,
+            upper: NumericBound,
+            unit: Option<String>,
+        }
+
+        let shadow = NumericRangeShadow::deserialize(deserializer)?;
+        Self::new(shadow.lower, shadow.upper, shadow.unit).map_err(de::Error::custom)
+    }
 }
 
 /// Inclusive, exclusive, or unbounded numeric range endpoint.
@@ -410,6 +476,16 @@ pub enum NumericBound {
     Excluded(#[serde(with = "paft_decimal::serde::canonical_str")] Decimal),
     /// Unbounded endpoint.
     Unbounded,
+}
+
+impl NumericBound {
+    const fn finite_value(&self) -> Option<(&Decimal, bool)> {
+        match self {
+            Self::Included(value) => Some((value, true)),
+            Self::Excluded(value) => Some((value, false)),
+            Self::Unbounded => None,
+        }
+    }
 }
 
 /// Grouping/container for related prediction markets.

@@ -183,7 +183,7 @@ impl PriceBand {
 }
 
 /// Piecewise price grid for a prediction market.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct PriceGrid {
     /// Ordered price bands that define valid ticks.
     pub bands: Vec<PriceBand>,
@@ -262,6 +262,21 @@ impl PriceGrid {
                 micros: price.micros(),
             })
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for PriceGrid {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct PriceGridShadow {
+            bands: Vec<PriceBand>,
+        }
+
+        let shadow = PriceGridShadow::deserialize(deserializer)?;
+        Self::new(shadow.bands).map_err(de::Error::custom)
     }
 }
 

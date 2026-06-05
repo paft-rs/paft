@@ -51,6 +51,35 @@ fn price_grid_validates_piecewise_ticks() {
 }
 
 #[test]
+fn price_grid_deserialization_validates_invariants() {
+    let empty = r#"{"bands":[]}"#;
+    assert!(serde_json::from_str::<PriceGrid>(empty).is_err());
+
+    let descending_band = r#"{
+        "bands": [
+            { "start": 100000, "end": 0, "tick": 1000 }
+        ]
+    }"#;
+    assert!(serde_json::from_str::<PriceGrid>(descending_band).is_err());
+
+    let overlapping = r#"{
+        "bands": [
+            { "start": 0, "end": 100000, "tick": 1000 },
+            { "start": 100000, "end": 200000, "tick": 1000 }
+        ]
+    }"#;
+    assert!(serde_json::from_str::<PriceGrid>(overlapping).is_err());
+
+    let valid = r#"{
+        "bands": [
+            { "start": 0, "end": 100000, "tick": 1000 },
+            { "start": 100001, "end": 200000, "tick": 1000 }
+        ]
+    }"#;
+    assert!(serde_json::from_str::<PriceGrid>(valid).is_ok());
+}
+
+#[test]
 fn quantity_and_payout_are_transparent_fixed_integers() {
     let quantity = ContractQuantity::from_microcontracts(219_217_767);
     let payout = OutcomePayout::from_micropayouts(1_000_000);

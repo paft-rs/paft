@@ -81,6 +81,8 @@ All notable changes to this project will be documented in this file.
 - Prediction: prediction event, market, and outcome `unique_key()` values now
   length-prefix every dynamic component, including venue, and `BinaryMarketKey`
   now emits the same market identity string as `PredictionMarketKey`.
+- Prediction: `PriceGrid` and `NumericRange` deserialization now validates
+  constructor invariants instead of accepting invalid wire payloads.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.
@@ -256,6 +258,8 @@ All notable changes to this project will be documented in this file.
   trailing zeroes, matching serde and hash behavior.
 - Prediction: `Other*` metadata-code constructors now reject codes already
   modeled by their owning enum instead of allowing ambiguous `Other` values.
+- Prediction: `NumericRange` now rejects descending finite ranges and empty
+  zero-width finite intervals.
 - Decimal feature matrix: crates that import `paft_decimal::Decimal` now compile
   correctly when another package in the dependency graph enables
   `paft-decimal/bigdecimal` without enabling each downstream crate's local
