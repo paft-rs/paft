@@ -5,7 +5,7 @@ use crate::instrument::{BinaryMarketKey, OutcomeInstrument};
 use crate::price::{NonZeroContractQuantity, OutcomePrice, PriceGrid};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::num::NonZeroU32;
+use std::{cmp::Reverse, num::NonZeroU32};
 
 /// YES/NO outcome side for binary prediction markets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -206,6 +206,15 @@ impl<M: Default> GenericBinaryOrderBook<M> {
 }
 
 impl<M> GenericBinaryOrderBook<M> {
+    /// Canonicalize level ordering in place.
+    ///
+    /// Bids are sorted by price descending and asks by price ascending. Equal
+    /// price levels keep their relative order.
+    pub fn sort_levels(&mut self) {
+        self.yes_bids.sort_by_key(|level| Reverse(level.price));
+        self.yes_asks.sort_by_key(|level| level.price);
+    }
+
     /// Returns the best YES bid.
     #[must_use]
     pub fn best_yes_bid(&self) -> Option<&PredictionBookLevel> {
@@ -346,6 +355,15 @@ impl<M: Default> GenericOutcomeOrderBook<M> {
 }
 
 impl<M> GenericOutcomeOrderBook<M> {
+    /// Canonicalize level ordering in place.
+    ///
+    /// Bids are sorted by price descending and asks by price ascending. Equal
+    /// price levels keep their relative order.
+    pub fn sort_levels(&mut self) {
+        self.bids.sort_by_key(|level| Reverse(level.price));
+        self.asks.sort_by_key(|level| level.price);
+    }
+
     /// Returns the best bid.
     #[must_use]
     pub fn best_bid(&self) -> Option<&PredictionBookLevel> {

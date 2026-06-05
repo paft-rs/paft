@@ -1,6 +1,7 @@
 use paft_prediction::{
-    BinaryMarketKey, BinaryOrderBook, BinaryQuote, NonZeroContractQuantity, OutcomePrice,
-    PredictionBookLevel, PredictionQuoteLevel, PredictionTrade, PriceBand, PriceGrid, PriceTick,
+    BinaryMarketKey, BinaryOrderBook, BinaryQuote, NonZeroContractQuantity, OutcomeInstrument,
+    OutcomeOrderBook, OutcomePrice, PredictionBookLevel, PredictionQuoteLevel, PredictionTrade,
+    PriceBand, PriceGrid, PriceTick,
 };
 use std::mem::size_of;
 
@@ -151,6 +152,44 @@ fn binary_order_book_validation_rejects_unsorted_and_crossed_books() {
     crossed.yes_asks = vec![level(590_000, 1)];
     assert!(crossed.validate_sorted().is_err());
     assert!(crossed.yes_spread().is_none());
+}
+
+#[test]
+fn binary_order_book_sort_levels_canonicalizes_sides_stably() {
+    let mut book = BinaryOrderBook::new(BinaryMarketKey::new("POLYMARKET", "condition-1").unwrap());
+    book.yes_bids = vec![level(400_000, 1), level(410_000, 2), level(410_000, 3)];
+    book.yes_asks = vec![level(430_000, 4), level(420_000, 5), level(420_000, 6)];
+
+    assert!(!book.is_sorted());
+    book.sort_levels();
+
+    assert!(book.validate_sorted().is_ok());
+    assert_eq!(book.yes_bids[0].quantity.microcontracts(), 2);
+    assert_eq!(book.yes_bids[1].quantity.microcontracts(), 3);
+    assert_eq!(book.yes_bids[2].quantity.microcontracts(), 1);
+    assert_eq!(book.yes_asks[0].quantity.microcontracts(), 5);
+    assert_eq!(book.yes_asks[1].quantity.microcontracts(), 6);
+    assert_eq!(book.yes_asks[2].quantity.microcontracts(), 4);
+}
+
+#[test]
+fn outcome_order_book_sort_levels_canonicalizes_sides_stably() {
+    let mut book = OutcomeOrderBook::new(
+        OutcomeInstrument::new("POLYMARKET", "condition-1", "yes-token").unwrap(),
+    );
+    book.bids = vec![level(400_000, 1), level(410_000, 2), level(410_000, 3)];
+    book.asks = vec![level(430_000, 4), level(420_000, 5), level(420_000, 6)];
+
+    assert!(!book.is_sorted());
+    book.sort_levels();
+
+    assert!(book.validate_sorted().is_ok());
+    assert_eq!(book.bids[0].quantity.microcontracts(), 2);
+    assert_eq!(book.bids[1].quantity.microcontracts(), 3);
+    assert_eq!(book.bids[2].quantity.microcontracts(), 1);
+    assert_eq!(book.asks[0].quantity.microcontracts(), 5);
+    assert_eq!(book.asks[1].quantity.microcontracts(), 6);
+    assert_eq!(book.asks[2].quantity.microcontracts(), 4);
 }
 
 #[test]

@@ -74,6 +74,8 @@ All notable changes to this project will be documented in this file.
   where zero is not semantically valid.
 - Prediction/facade: added `PredictionSeriesKey` for venue-namespaced recurring
   series identity.
+- Prediction: added `sort_levels()` helpers for binary and outcome order books
+  to canonicalize bid/ask level ordering in place.
 
 ### Changed
 
