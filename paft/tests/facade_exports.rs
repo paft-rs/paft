@@ -287,6 +287,7 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prediction::PredictionMarketId>();
     assert_export::<paft::prediction::PredictionOutcomeId>();
     assert_export::<paft::prediction::BinaryMarketKey>();
+    assert_export::<paft::prediction::BinaryOutcomeInstruments>();
     assert_export::<paft::prediction::OutcomeInstrument>();
     assert_export::<paft::prediction::PredictionEvent>();
     assert_export::<paft::prediction::PredictionMarket>();
@@ -301,6 +302,7 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prelude::PredictionMarketId>();
     assert_export::<paft::prelude::PredictionOutcomeId>();
     assert_export::<paft::prelude::BinaryMarketKey>();
+    assert_export::<paft::prelude::BinaryOutcomeInstruments>();
     assert_export::<paft::prelude::OutcomeInstrument>();
     assert_export::<paft::prelude::PredictionEvent>();
     assert_export::<paft::prelude::PredictionMarket>();

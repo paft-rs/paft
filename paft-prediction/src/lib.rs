@@ -2,8 +2,9 @@
 //!
 //! `paft-prediction` models provider-neutral prediction concepts:
 //! [`PredictionEvent`] groups related markets, [`BinaryMarket`] is one atomic
-//! yes/no claim, [`OutcomeInstrument`] is a tradable outcome share/token/contract,
-//! [`OutcomePrice`] is a fixed-point fraction of unit payout, and
+//! yes/no claim with required [`BinaryOutcomeInstruments`], [`OutcomeInstrument`]
+//! is a tradable outcome share/token/contract, [`OutcomePrice`] is a
+//! fixed-point fraction of unit payout, and
 //! [`BinaryOrderBook`] is normalized to a canonical YES view.
 //!
 //! Provider-native tickers, slugs, condition ids, CTF token ids, and venue
@@ -30,7 +31,10 @@ pub use identifiers::{
     MAX_PREDICTION_ID_LEN, OtherPredictionVenue, PredictionEventId, PredictionMarketId,
     PredictionOutcomeId, PredictionSeriesId, PredictionVenue,
 };
-pub use instrument::{BinaryMarketKey, OutcomeInstrument, PredictionEventKey, PredictionMarketKey};
+pub use instrument::{
+    BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
+    PredictionMarketKey,
+};
 pub use market::{
     BinaryMarket, BinaryResolution, ClaimDescriptor, EventStructure, GenericBinaryMarket,
     GenericMultiOutcomeMarket, GenericPredictionEvent, GenericPredictionMarket,

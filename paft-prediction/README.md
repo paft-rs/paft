@@ -46,7 +46,9 @@ What's inside
   atomic markets, and tradable outcome shares/tokens/contracts.
 - `PredictionEvent`, `PredictionMarket`, `BinaryMarket`, `MultiOutcomeMarket`,
   `ScalarMarket`, `EventStructure`, and `ClaimDescriptor`: metadata models that
-  separate event/group context from atomic yes/no claims.
+  separate event/group context from atomic yes/no claims. `BinaryMarket`
+  requires `BinaryOutcomeInstruments` so venue-native YES/NO tradable ids stay
+  in the core model.
 - `OutcomePrice`, `PriceTick`, `PriceGrid`, `PriceBand`,
   `ContractQuantity`, and `OutcomePayout`: compact fixed-point integer
   primitives for prices, ticks, quantities, and contextual unit payouts.
@@ -67,24 +69,37 @@ Quickstart
 
 ```rust
 use paft_prediction::{
-    BinaryMarketKey, BinaryOrderBook, ContractQuantity, OutcomeInstrument,
-    OutcomePrice, PredictionBookLevel, PredictionError,
+    BinaryMarketKey, BinaryOrderBook, BinaryOutcomeInstruments, ContractQuantity,
+    OutcomeInstrument, OutcomePrice, PredictionBookLevel, PredictionError,
 };
 
 fn run() -> Result<(), PredictionError> {
     let kalshi_yes =
         OutcomeInstrument::new("KALSHI", "KXHIGHNY-24JAN01-T60", "YES")?;
     assert_eq!(kalshi_yes.to_string(), "KALSHI:KXHIGHNY-24JAN01-T60/YES");
+    let kalshi_key = BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60")?;
+    assert_eq!(kalshi_key.no_instrument().outcome_id.as_str(), "NO");
 
-    let polymarket_token = OutcomeInstrument::new(
-        "POLYMARKET",
-        "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de",
-        "73470541315377973562501025254719659796416871135081220986683321361000395461644",
-    )?;
-    assert_ne!(kalshi_yes.unique_key(), polymarket_token.unique_key());
+    let polymarket_market =
+        "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de";
+    let polymarket_outcomes = BinaryOutcomeInstruments::new(
+        OutcomeInstrument::new(
+            "POLYMARKET",
+            polymarket_market,
+            "73470541315377973562501025254719659796416871135081220986683321361000395461644",
+        )?,
+        OutcomeInstrument::new(
+            "POLYMARKET",
+            polymarket_market,
+            "56393761733830483601097051857899348522495376869600726893014309766300892311293",
+        )?,
+    );
+    assert_ne!(
+        polymarket_outcomes.yes.unique_key(),
+        polymarket_outcomes.no.unique_key()
+    );
 
-    let mut book =
-        BinaryOrderBook::new(BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60")?);
+    let mut book = BinaryOrderBook::new(kalshi_key);
     book.yes_bids.push(PredictionBookLevel::new(
         OutcomePrice::from_micros(410_000)?,
         ContractQuantity::from_microcontracts(2_000_000),

@@ -1,5 +1,6 @@
 use paft_prediction::{
-    BinaryMarketKey, OutcomeInstrument, PredictionEventKey, PredictionMarketKey,
+    BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
+    PredictionMarketKey,
 };
 
 #[test]
@@ -33,4 +34,26 @@ fn event_and_market_keys_have_distinct_unique_key_roles() {
     let market = PredictionMarketKey::new("POLYMARKET", "btc-price").unwrap();
 
     assert_ne!(event.unique_key(), market.unique_key());
+}
+
+#[test]
+fn binary_market_key_builds_synthetic_yes_no_instruments() {
+    let key = BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60").unwrap();
+
+    let yes = key.yes_instrument();
+    let no = key.no_instrument();
+
+    assert_eq!(yes.to_string(), "KALSHI:KXHIGHNY-24JAN01-T60/YES");
+    assert_eq!(no.to_string(), "KALSHI:KXHIGHNY-24JAN01-T60/NO");
+    assert_eq!(yes.market_key(), key.to_market_key());
+    assert_ne!(yes.unique_key(), no.unique_key());
+}
+
+#[test]
+fn binary_outcome_instruments_can_be_synthetic_for_market_key() {
+    let key = BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60").unwrap();
+    let outcomes = BinaryOutcomeInstruments::synthetic_for_market(&key);
+
+    assert_eq!(outcomes.yes.outcome_id.as_str(), "YES");
+    assert_eq!(outcomes.no.outcome_id.as_str(), "NO");
 }

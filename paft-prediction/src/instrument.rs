@@ -135,6 +135,36 @@ impl BinaryMarketKey {
         }
     }
 
+    /// Returns the synthetic YES outcome instrument for this binary market.
+    ///
+    /// This is intended for venues whose provider-native binary instruments are
+    /// naturally identified as `YES`/`NO`, such as Kalshi-style adapters. Venues
+    /// with provider-issued outcome ids, such as Polymarket CLOB token ids,
+    /// should carry those concrete ids in [`BinaryOutcomeInstruments`].
+    #[must_use]
+    pub fn yes_instrument(&self) -> OutcomeInstrument {
+        self.synthetic_outcome_instrument("YES")
+    }
+
+    /// Returns the synthetic NO outcome instrument for this binary market.
+    ///
+    /// This is intended for venues whose provider-native binary instruments are
+    /// naturally identified as `YES`/`NO`, such as Kalshi-style adapters. Venues
+    /// with provider-issued outcome ids, such as Polymarket CLOB token ids,
+    /// should carry those concrete ids in [`BinaryOutcomeInstruments`].
+    #[must_use]
+    pub fn no_instrument(&self) -> OutcomeInstrument {
+        self.synthetic_outcome_instrument("NO")
+    }
+
+    fn synthetic_outcome_instrument(&self, outcome_id: &'static str) -> OutcomeInstrument {
+        OutcomeInstrument {
+            venue: self.venue.clone(),
+            market_id: self.market_id.clone(),
+            outcome_id: PredictionOutcomeId::from_static_unchecked(outcome_id),
+        }
+    }
+
     /// Returns a collision-resistant, venue-namespaced identity key.
     #[must_use]
     pub fn unique_key(&self) -> String {
@@ -224,6 +254,36 @@ impl OutcomeInstrument {
 impl fmt::Display for OutcomeInstrument {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}:{}/{}", self.venue, self.market_id, self.outcome_id)
+    }
+}
+
+/// Required YES and NO outcome instruments for an atomic binary market.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BinaryOutcomeInstruments {
+    /// Tradable YES claim/share/token/contract.
+    pub yes: OutcomeInstrument,
+    /// Tradable NO claim/share/token/contract.
+    pub no: OutcomeInstrument,
+}
+
+impl BinaryOutcomeInstruments {
+    /// Construct binary outcome instruments from already-validated values.
+    #[must_use]
+    pub const fn new(yes: OutcomeInstrument, no: OutcomeInstrument) -> Self {
+        Self { yes, no }
+    }
+
+    /// Construct synthetic `YES`/`NO` instruments for a binary market key.
+    ///
+    /// Use this for venues whose provider-native outcome identity is stable as
+    /// `YES`/`NO`. Use [`Self::new`] with concrete provider ids when the venue
+    /// exposes distinct outcome identifiers.
+    #[must_use]
+    pub fn synthetic_for_market(key: &BinaryMarketKey) -> Self {
+        Self {
+            yes: key.yes_instrument(),
+            no: key.no_instrument(),
+        }
     }
 }
 

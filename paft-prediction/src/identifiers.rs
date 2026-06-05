@@ -149,6 +149,14 @@ opaque_prediction_id!(
     kind = "prediction outcome ID";
 );
 
+impl PredictionOutcomeId {
+    #[doc(hidden)]
+    #[must_use]
+    pub(crate) const fn from_static_unchecked(value: &'static str) -> Self {
+        Self(SmolStr::new_static(value))
+    }
+}
+
 /// Provider venue for prediction-market data.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[non_exhaustive]

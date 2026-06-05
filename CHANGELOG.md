@@ -60,6 +60,10 @@ All notable changes to this project will be documented in this file.
   `PredictionEvent`, `BinaryMarket`, `OutcomeInstrument`, `OutcomePrice`,
   `ContractQuantity`, `PriceGrid`, and canonical YES-view
   `BinaryOrderBook`.
+- Prediction/facade: added `BinaryOutcomeInstruments` and
+  `BinaryMarketKey::{yes_instrument, no_instrument}` so binary markets expose
+  tradable YES/NO outcome instruments directly while still supporting
+  synthetic `YES`/`NO` ids for venues that do not issue separate instrument ids.
 
 ### Changed
 
@@ -68,6 +72,9 @@ All notable changes to this project will be documented in this file.
   `PredictionInstrument`, `Market`, and `Token` surface with venue-namespaced
   `PredictionEventId`, `PredictionMarketId`, `PredictionOutcomeId`,
   `OutcomeInstrument`, `PredictionEvent`, and market-shape metadata types.
+- Prediction: `GenericBinaryMarket` now requires `BinaryOutcomeInstruments`,
+  keeping Polymarket-style CLOB token/asset ids in the provider-agnostic
+  binary market payload instead of provider metadata.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.

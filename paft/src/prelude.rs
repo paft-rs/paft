@@ -80,9 +80,10 @@ pub use crate::aggregates::{GenericSnapshot, Snapshot};
 #[cfg(feature = "prediction")]
 pub use crate::prediction::{
     BinaryMarket, BinaryMarketKey, BinaryOrderBook, BinaryOrderDirection, BinaryOutcome,
-    BinaryQuote, BookSide, ClaimDescriptor, ContractQuantity, EventStructure, OutcomeInstrument,
-    OutcomeOrderBook, OutcomePayout, OutcomePrice, PredictionBookLevel, PredictionError,
-    PredictionEvent, PredictionEventId, PredictionEventKey, PredictionMarket, PredictionMarketId,
-    PredictionMarketKey, PredictionMarketStatus, PredictionOutcomeId, PredictionSeriesId,
-    PredictionTrade, PredictionVenue, PriceGrid, PriceTick, TradeAction,
+    BinaryOutcomeInstruments, BinaryQuote, BookSide, ClaimDescriptor, ContractQuantity,
+    EventStructure, OutcomeInstrument, OutcomeOrderBook, OutcomePayout, OutcomePrice,
+    PredictionBookLevel, PredictionError, PredictionEvent, PredictionEventId, PredictionEventKey,
+    PredictionMarket, PredictionMarketId, PredictionMarketKey, PredictionMarketStatus,
+    PredictionOutcomeId, PredictionSeriesId, PredictionTrade, PredictionVenue, PriceGrid,
+    PriceTick, TradeAction,
 };

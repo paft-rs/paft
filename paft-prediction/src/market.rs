@@ -5,7 +5,8 @@ use crate::identifiers::{
     PredictionEventId, PredictionOutcomeId, PredictionSeriesId, validate_opaque_identifier,
 };
 use crate::instrument::{
-    BinaryMarketKey, OutcomeInstrument, PredictionEventKey, PredictionMarketKey,
+    BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
+    PredictionMarketKey,
 };
 use crate::price::{ContractQuantity, OutcomePayout, PriceGrid};
 use chrono::{DateTime, Utc};
@@ -299,6 +300,9 @@ pub type PredictionEvent = GenericPredictionEvent<(), ()>;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "market", rename_all = "snake_case")]
 #[non_exhaustive]
+// Keep market variants inline so construction and pattern matching stay direct;
+// this is metadata, not a high-cardinality in-memory book representation.
+#[allow(clippy::large_enum_variant)]
 pub enum GenericPredictionMarket<M = ()> {
     /// Atomic yes/no claim.
     Binary(GenericBinaryMarket<M>),
@@ -316,6 +320,8 @@ pub type PredictionMarket = GenericPredictionMarket<()>;
 pub struct GenericBinaryMarket<M = ()> {
     /// Venue-namespaced binary market key.
     pub key: BinaryMarketKey,
+    /// Required tradable YES and NO outcome instruments for this market.
+    pub outcomes: BinaryOutcomeInstruments,
     /// Provider-native event/group id when this market belongs to an event.
     pub event_id: Option<PredictionEventId>,
     /// Market title.
@@ -357,6 +363,7 @@ impl<M: Default> GenericBinaryMarket<M> {
     #[must_use]
     pub fn new(
         key: BinaryMarketKey,
+        outcomes: BinaryOutcomeInstruments,
         title: String,
         claim: ClaimDescriptor,
         status: PredictionMarketStatus,
@@ -365,6 +372,7 @@ impl<M: Default> GenericBinaryMarket<M> {
     ) -> Self {
         Self {
             key,
+            outcomes,
             event_id: None,
             title,
             yes_label: None,
