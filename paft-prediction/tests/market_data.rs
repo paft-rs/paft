@@ -2,12 +2,18 @@ use paft_prediction::{
     BinaryMarketKey, BinaryOrderBook, BinaryQuote, NonZeroContractQuantity, OutcomePrice,
     PredictionBookLevel, PredictionQuoteLevel, PredictionTrade, PriceBand, PriceGrid, PriceTick,
 };
+use std::mem::size_of;
 
 fn level(micros: u32, qty: u64) -> PredictionBookLevel {
     PredictionBookLevel::new(
         OutcomePrice::from_micros(micros).unwrap(),
         NonZeroContractQuantity::from_microcontracts(qty).unwrap(),
     )
+}
+
+#[test]
+fn prediction_book_level_size_is_compact() {
+    assert_eq!(size_of::<PredictionBookLevel>(), 16);
 }
 
 #[test]

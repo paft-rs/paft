@@ -101,6 +101,8 @@ All notable changes to this project will be documented in this file.
 - Prediction: book levels, present quote quantities, trades, and market
   minimum order quantities now use `NonZeroContractQuantity` instead of
   zero-capable `ContractQuantity`.
+- Prediction: `PredictionBookLevel` fields are ordered to keep the common depth
+  level representation compact on current targets.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.

@@ -98,10 +98,10 @@ impl BinaryOrderDirection {
 /// A single prediction-market book level.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PredictionBookLevel {
-    /// Outcome price at this level.
-    pub price: OutcomePrice,
     /// Non-zero displayed quantity at this level.
     pub quantity: NonZeroContractQuantity,
+    /// Outcome price at this level.
+    pub price: OutcomePrice,
     /// Optional number of orders aggregated at this price level.
     pub order_count: Option<NonZeroU32>,
 }
@@ -111,8 +111,8 @@ impl PredictionBookLevel {
     #[must_use]
     pub const fn new(price: OutcomePrice, quantity: NonZeroContractQuantity) -> Self {
         Self {
-            price,
             quantity,
+            price,
             order_count: None,
         }
     }
@@ -121,8 +121,8 @@ impl PredictionBookLevel {
     #[must_use]
     pub const fn complement_price(self) -> Self {
         Self {
-            price: self.price.complement(),
             quantity: self.quantity,
+            price: self.price.complement(),
             order_count: self.order_count,
         }
     }
