@@ -176,6 +176,7 @@ Examples
 - [`examples/v09_ergonomics.rs`](examples/v09_ergonomics.rs): default facade usage without provider metadata
 - [`examples/provider_metadata.rs`](examples/provider_metadata.rs): generic provider metadata payloads
 - [`examples/metadata_dataframe.rs`](examples/metadata_dataframe.rs): DataFrame export with provider metadata
+- [`examples/nested_metadata_propagation.rs`](examples/nested_metadata_propagation.rs): independent provider metadata at each nested layer
 - [`examples/extensible_enums.rs`](examples/extensible_enums.rs): unknown provider tokens and typed `Other` wrappers
 
 Links
