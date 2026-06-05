@@ -5,11 +5,11 @@ use paft_domain::{Horizon, Isin, PeriodYear, ReportingPeriod};
 use paft_fundamentals::{
     Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
     EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
-    EpsRevisions, EpsTrend, EsgInvolvement, EsgScores, FundKind, FundProfile, IncomeStatementRow,
-    InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, KeyStatistics,
-    MajorHolder, NetSharePurchaseActivity, PriceTarget, Profile, RecommendationAction,
-    RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
-    ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
+    EpsRevisions, EpsTrend, EsgInvolvement, EsgScores, EsgSummary, FundKind, FundProfile,
+    IncomeStatementRow, InsiderPosition, InsiderRosterHolder, InsiderTransaction,
+    InstitutionalHolder, KeyStatistics, MajorHolder, NetSharePurchaseActivity, PriceTarget,
+    Profile, RecommendationAction, RecommendationGrade, RecommendationRow, RecommendationSummary,
+    RevenueEstimate, RevisionPoint, ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
 };
 use paft_money::{IsoCurrency, Money, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
@@ -534,6 +534,34 @@ fn esg_involvement_vec_to_dataframe() {
 
     let df = involvement.as_slice().to_dataframe().unwrap();
     assert_eq!(df.height(), 2);
+}
+
+#[test]
+fn esg_summary_to_dataframe() {
+    let summary = EsgSummary {
+        scores: Some(EsgScores {
+            environmental: Some(dec("55.0")),
+            social: Some(dec("60.5")),
+            governance: Some(dec("70.2")),
+        }),
+        involvement: vec![
+            EsgInvolvement {
+                category: "Thermal Coal".to_string(),
+                score: Some(dec("0.1")),
+            },
+            EsgInvolvement {
+                category: "Renewables".to_string(),
+                score: Some(dec("0.8")),
+            },
+        ],
+    };
+
+    let df = summary.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+    let columns = df.get_column_names();
+    assert!(columns.iter().any(|c| c.as_str() == "scores.environmental"));
+    assert!(columns.iter().any(|c| c.as_str() == "involvement.category"));
+    assert!(columns.iter().any(|c| c.as_str() == "involvement.score"));
 }
 
 #[test]

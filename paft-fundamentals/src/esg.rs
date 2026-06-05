@@ -33,6 +33,7 @@ pub struct EsgScores {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// ESG summary including scores and involvement details.
 pub struct EsgSummary {
     /// Optional aggregate scores.

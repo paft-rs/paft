@@ -37,6 +37,8 @@ All notable changes to this project will be documented in this file.
   `GenericHistoryResponse::{validate, into_chronological}`,
   `GenericOrderBook::{is_sorted, sort_levels}`, and
   `OptionExpirationsResponse::is_sorted_unique`.
+- Fundamentals/facade: added `DataFrame` export support for `EsgSummary`,
+  including nested `scores.*` and `involvement.*` columns.
 - Market: added `TimeSpec::{range, period, validate}` so standalone time
   specifications have an explicit period-validation boundary.
 - Market/facade: added `FromStr` parsers for closed request enums `Range`,
