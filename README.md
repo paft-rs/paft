@@ -6,373 +6,209 @@
 [![Downloads](https://img.shields.io/crates/d/paft)](https://crates.io/crates/paft)
 [![License](https://img.shields.io/crates/l/paft)](LICENSE)
 
-**Building the unified ecosystem for financial data in Rust.**
+**Building a provider-neutral foundation for financial data in Rust.**
 
-> 🎯 **New to paft?** Start with the [paft crate README](paft/README.md) for practical usage examples and quick setup. This document focuses on the broader vision and ecosystem architecture.
+> New to paft? Start with the [facade crate README](paft/README.md) for
+> installation, feature flags, examples, and API-level usage. This root README
+> explains the workspace, design contract, and provider integration model.
 
 ## Vision
 
-The financial data ecosystem is fragmented. Every provider—Yahoo Finance, Alpha Vantage, IEX Cloud, Polygon, etc.—has their own data formats, field names, and API structures. This fragmentation makes it difficult to:
+Financial data providers expose different wire formats, field names, request
+models, enum tokens, and completeness guarantees. That fragmentation makes it
+harder to switch providers, combine multiple sources, share analysis code, and
+build reusable Rust libraries over financial data.
 
-- Switch between providers
-- Build applications that work with multiple data sources
-- Create reusable financial analysis libraries
-- Maintain consistent data handling across projects
+`paft` models reusable financial concepts, not provider wire shapes. It gives
+provider adapters, applications, storage layers, analysis libraries, and
+visualization tools a common set of data values without forcing every provider
+behind one artificial client API.
 
-**paft** (Provider Agnostic Financial Types) solves this by providing a standardized set of Rust types that represent financial data in a provider-neutral way. The goal is to create an ecosystem where:
+The goal is an ecosystem where:
 
-1. **Data providers** can build crates that convert their proprietary formats to paft types
-2. **Application developers** can write analysis code that works with any provider's paft-compatible output
-3. **Library authors** can build on a stable, well-defined foundation of standardized types
-4. **The community** benefits from shared tooling and best practices around financial data structures
+1. Provider crates keep their own authentication, endpoints, rate limits, and
+   request flow, but return paft-compatible output values.
+2. Application developers can write analysis code over stable financial types
+   instead of each provider's proprietary payloads.
+3. Library authors can build on a shared foundation for identifiers, money,
+   market data, fundamentals, prediction markets, and DataFrame export.
+4. Unknown provider values and provider-specific extras remain representable
+   without weakening the canonical paft model.
 
 ## The Dream
 
-Imagine a future where financial data providers expose standardized types:
+A provider adapter should be free to look like itself. A Yahoo-style client, a
+brokerage data client, and a prediction-market client can all expose different
+methods, pagination, auth, and rate-limit behavior. The interoperability point
+is the value boundary: once they hand you a `Quote`, `HistoryResponse`,
+`Money`, `Instrument`, or `Profile`, the rest of your code can stop caring
+which upstream API produced it.
 
-```rust
-use paft::prelude::{HistoryResponse, Interval, Quote, Range, Result};
+That is the narrow promise of paft: not a universal financial API, but a stable
+language of financial data types that provider crates and downstream tools can
+agree on.
 
-// Each provider has their own API, but returns standardized paft types
-async fn analyze_with_generic_provider(symbol: &str) -> Result<()> {
-    let provider = GenericProvider::new();
-    let quote = provider.get_quote(symbol).await?; // Returns paft::market::market::quote::Quote
-    let history = provider.get_history(symbol, Range::M6, Interval::D1).await?; // Returns paft::market::responses::history::HistoryResponse
-    
-    analyze_data(quote, history);
-    Ok(())
-}
+## Workspace Crates
 
-async fn analyze_with_alpha_vantage(symbol: &str) -> Result<()> {
-    let av = AlphaVantage::new("your-api-key");
-    let quote = av.get_quote(symbol).await?; // Returns paft::market::market::quote::Quote
-    let history = av.get_daily(symbol, Range::M6).await?; // Returns paft::market::responses::history::HistoryResponse
-    
-    analyze_data(quote, history); // Same analysis function works!
-    Ok(())
-}
+The workspace is on the v0.9.0 line. The `paft` facade enables domain, market,
+and fundamentals types by default; aggregate snapshots, prediction-market
+models, DataFrame export, tracing, formatting, and backend choices are opt-in.
 
-// Your analysis logic works with any provider's paft types
-fn analyze_data(quote: Quote, history: HistoryResponse) {
-    if let Some(price) = quote.price.as_ref() {
-        println!("Current price: {price} {}", quote.currency);
-    }
+| Crate README | Role |
+| --- | --- |
+| [`paft`](paft/README.md) | Facade crate for applications that want one dependency, common re-exports, forwarded features, and runnable examples. |
+| [`paft-domain`](paft-domain/README.md) | Instruments, exchanges, asset kinds, market state, reporting/calendar periods, horizons, and validated security identifiers. |
+| [`paft-money`](paft-money/README.md) | Currency, money, price, quantity, settlement scale, runtime currency metadata, and optional localized formatting. |
+| [`paft-decimal`](paft-decimal/README.md) | Backend-agnostic decimal alias and helpers, constrained decimal newtypes, canonical string serde, and decimal128 support. |
+| [`paft-market`](paft-market/README.md) | Quotes, candles, history, order books, options, news, search, downloads, and validated market request builders. |
+| [`paft-fundamentals`](paft-fundamentals/README.md) | Profiles, statements, analysis rows, holders, ESG, key statistics, and related helper models. |
+| [`paft-aggregates`](paft-aggregates/README.md) | Instant-in-time instrument snapshots with optional provider metadata. |
+| [`paft-prediction`](paft-prediction/README.md) | Prediction-market identifiers, instruments, markets, and tokens. |
+| [`paft-utils`](paft-utils/README.md) | Canonical string tokens, open-enum support utilities, and optional Polars DataFrame traits. |
+| [`paft-core`](paft-core/README.md) | Shared error, enum, display, and serde macro building blocks for paft crates and compatible adapters. |
 
-    if let Some(high) = history.candles.iter().map(|c| c.ohlc.high.as_decimal()).max() {
-        println!("6-month high: {high}");
-    }
-}
-```
+## Architecture
 
-**Key Point**: paft doesn't create a unified API across providers—each provider keeps their own methods, authentication, rate limits, and data access patterns. What paft provides is **standardized data structures** so your analysis code can work with any provider's output.
-
-## What's Included
-
-### Core Types
-
-- **Instruments & Identifiers**: `Instrument` (flat: `symbol`, `exchange`, `figi`, `isin`, `kind`), `AssetKind`, `Exchange`
-  - IDs: `Symbol`, `Figi`, `Isin`
-  - Prediction-market identity (in `paft-prediction`): `PredictionInstrument`, `EventID`, `OutcomeID`
-  - Time periods and lookbacks: `ReportingPeriod`, `CalendarPeriod`, `Horizon`
-- **Market Data**: `Quote`, `QuoteUpdate`, `OrderBook`, `Candle`, `Ohlc`, `Action`, `MarketState`
-- **Historical Data**: `HistoryRequest`, `HistoryRequestBuilder`, `HistoryResponse`, `HistoryMeta`, `OhlcPriceBasis`, `PriceBasis`, `Interval`, `Range`
-- **Money & Currency**: `Money`, `Price`, `PriceAmount`, `MonetaryAmount`, `QuantityAmount`, `Currency`, `ExchangeRate` (and with `paft/money-formatting`: `Locale`, `LocalizedMoney`)
-- **Fundamentals – Profile**: `CompanyProfile`, `FundProfile`, `FundKind`, `Profile`, `Address`, `ShareCount`
-- **Fundamentals – Statements**: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`, `Calendar`
-- **Fundamentals – Analysis**: `AnalysisSummary`, `Earnings`, `EarningsYear`, `EarningsQuarter`, `EarningsQuarterEps`, `EarningsEstimate`, `RevenueEstimate`, `EarningsTrendRow`, `TrendPoint`, `EpsTrend`, `RevisionPoint`, `EpsRevisions`, `PriceTarget`, `RecommendationAction`, `RecommendationGrade`, `RecommendationRow`, `RecommendationSummary`, `UpgradeDowngradeRow`
-- **Fundamentals – ESG**: `EsgScores`, `EsgInvolvement`, `EsgSummary`
-- **Fundamentals – Holders**: `InstitutionalHolder`, `InsiderTransaction`, `InsiderPosition`, `InsiderRosterHolder`, `MajorHolder`, `NetSharePurchaseActivity`, `TransactionType`
-- **Options**: `OptionContractKey`, `OptionSide`, `OptionContract`, `OptionGreeks`, `OptionChain`, `OptionUpdate`, `OptionChainRequest`, `OptionExpirationsRequest`, `OptionExpirationsResponse`
-- **News & Search**: `NewsArticle`, `NewsRequest`, `NewsTab`, `SearchRequest`, `SearchResponse`, `SearchResult`
-- **Downloads**: `DownloadResponse`
-- **Prediction Markets** (feature `prediction`): `Market`, `Token`
-- **Aggregates** (with `paft/aggregates`): `Snapshot` instrument snapshots
-- **Errors**: `Error`, `Result`
-
-### Advanced Features
-
-- **DataFrame Support**: Optional Polars integration with `ToDataFrame` trait (via `df-derive-macros`; enable with the `dataframe` feature)
-- **Validated Identifiers**: `Figi`/`Isin` enforce checksum validation; prediction-market IDs in `paft-prediction` (`EventID`, `OutcomeID`) validate format and length. Invalid identifiers fail at construction and during serde.
-- **Flexible Enums**: Type-safe enums with fallback variants for unknown values
-- **Comprehensive Validation**: Built-in request validation and error handling
-- **Serialization**: Full serde support for JSON, CSV, and other formats
-- **Unified Error**: Single `paft::Error` enum and `paft::Result<T>` unify errors across crates
-- **Feature Flags**:
-  - `paft/dataframe`: Enables DataFrame helpers and derives through the facade
-  - `paft/panicking-money-ops` (opt-in): Enables ergonomic arithmetic operators on `Money` that panic on currency mismatch, division by zero, or conversion/metadata failures. By default, operator overloads are disabled and you should use the safe `try_add`, `try_sub`, `try_mul`, and `try_div` methods instead.
-  - `paft/money-formatting` (opt-in): Locale‑aware money formatting and strict parsing APIs (re‑exports `Locale`/`LocalizedMoney`).
-  - `paft/prediction` (opt-in): Prediction market data models (`Market`, `Token`).
-  - `paft/aggregates` (opt-in): Aggregated snapshot type (`Snapshot`).
-  - `paft/bigdecimal` (opt-in): Switches the money backend to `BigDecimal`; `rust_decimal` is the implicit default.
-  - `paft/tracing` (opt-in): Enables instrumentation spans in selected constructors and validators for `paft-domain`, `paft-money`, `paft-market`, and `paft-fundamentals`; zero-cost when disabled; no subscriber bundled.
-  - `paft/full`: Convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, `prediction`, and `dataframe`.
-
-  To enable panicking operators via the `paft` facade:
-
-  ```toml
-  [dependencies]
-  paft = { version = "0.9.0", features = ["panicking-money-ops"] }
-  ```
-
-  Note: This feature is opt-in and enables the `+`, `-`, `*`, and `/` operators to
-  panic on currency mismatch, division by zero, or conversion/metadata failures.
-  Prefer `try_*` methods in most apps.
-
-  For ergonomics in math-heavy code, enable this only when you control the
-  data end to end (e.g., internal pipelines with strict invariants) and are
-  absolutely sure all arithmetic uses matching currencies. For external or
-  untrusted data, keep this feature disabled and use the `try_*` APIs.
-
-## Wire Compatibility Policy
-
-paft uses strict serde boundaries for requests, configuration, and semantic
-metadata shapes where silently dropping fields could change meaning. Examples
-include validated request shadows, history flags, `TimeSpec`, money scale
-payloads, and price-basis metadata. A `kind` discriminator alone does not make
-a data payload strict.
-
-Provider/data payload models are forward-compatible by default: unmodeled JSON
-fields are ignored unless validation requires rejection. Generic provider
-metadata is serde-flattened into the owning JSON object, so metadata field names
-share the JSON namespace with paft fields. Colliding JSON names are unsupported;
-use provider-specific prefixes or nested metadata fields when in doubt.
-DataFrame export is separately namespaced: provider metadata columns are emitted
-under `provider.*`, while explicitly `df_derive(flatten)`ed fields validate
-duplicate output column names.
-
-## Observability (tracing)
-
-paft ships with optional, feature-gated instrumentation using the `tracing` crate. This adds spans around selected fallible constructors and validators in `paft-domain`, `paft-money`, `paft-market`, and `paft-fundamentals`. The feature is off by default and no subscriber is bundled.
-
-- Zero-cost when disabled (no code generated)
-- Light overhead when enabled; spans are annotated at `debug` level and include `err` on failures
-- The `paft/tracing` feature propagates to instrumented member crates so a facade user can enable it in one place
-
-### What’s instrumented
-
-- `paft-domain`: `Isin::new`, `Figi::new`, `Symbol::new`, `ReportingPeriod::from_str`, `CalendarPeriod::from_str`, `Exchange::try_from_str`, `Instrument` fallible helpers
-- `paft-money`: `Money::{new, from_canonical_str, from_minor_units}`, `Price`, `MonetaryAmount`, arithmetic ops (`try_add`, `try_sub`, `try_mul`, `try_div`, `try_convert_with`), parser, `currency_utils::set_currency_metadata`
-- `paft-market`: `HistoryRequestBuilder::build`, `SearchRequestBuilder::build`, `SearchRequest::new`
-- `paft-fundamentals`: enum `try_from_str` and `TrendPoint/RevisionPoint::try_new_str`
-
-Note: For large arguments we use `skip(...)` to avoid logging entire structs (e.g., `self`, `rhs`, exchange rates). If you need additional fields, attach them in your application spans.
-
-## What's NOT Included (Yet)
-
-**Important**: paft currently focuses on **market data and fundamental analysis**, not trading execution. If you're building backtesting systems, trading bots, or portfolio management tools, you'll need additional types that paft doesn't provide yet:
-
-### Missing Trading Types
-
-- **Orders**: `Order`, `OrderType` (Market, Limit, Stop, etc.), `OrderStatus`
-- **Trades**: `Trade`, `TradeExecution`, `Fill`
-- **Positions**: `Position`, `Portfolio`, `Holding`
-- **Account Data**: `Account`, `Balance`, `Cash`, `Margin`
-- **Risk Management**: `RiskMetrics`, `Drawdown`, `SharpeRatio`
-- **Strategy Types**: `Strategy`, `Signal`, `BacktestResult`
-- **Performance**: `PerformanceMetrics`, `Returns`, `Benchmark`
-
-### Why These Aren't Included
-
-1. **Scope**: paft aims to standardize **market data types**, not trading infrastructure
-2. **Complexity**: Trading systems have vastly different requirements (real-time vs backtesting, different brokers, etc.)
-3. **Provider Diversity**: Trading APIs vary more than market data APIs
-4. **Focus**: Better to do one thing well than many things poorly
-
-### For Trading Applications
-
-If you're building trading systems, consider:
-
-- Using paft for market data ingestion and analysis
-- Building your own trading types on top of paft's market data
-- Looking into specialized trading crates like `ta` for technical analysis
-- Using paft's DataFrame integration for backtesting data preparation
-
-**Collaboration Welcome**: I would warmly welcome any collaboration on adding trading types to paft! If you're interested in contributing order types, portfolio management structures, or backtesting utilities, please reach out via [GitHub Issues](https://github.com/paft-rs/paft/issues) or [Discussions](https://github.com/paft-rs/paft/discussions).
-
-## Quick Start
-
-Ready to use paft in your project? Head to the [paft crate README](paft/README.md) for installation instructions, code examples, and practical usage guidance.
-
-For a deeper dive into specific patterns and concepts, use the crate READMEs and
-runnable examples closest to the APIs they cover:
-
-- **[Examples](paft/examples/)**: Working code examples for common patterns,
-  including the no-metadata v0.9 ergonomics tour in
-  [`v09_ergonomics.rs`](paft/examples/v09_ergonomics.rs)
-- **[paft README](paft/README.md)**: Facade usage, feature flags, and common
-  consumer patterns.
-- **[paft-core README](paft-core/README.md)**: Canonical string enum macro
-  patterns for maintainers adding new provider-facing enums.
-
-## Ecosystem Architecture
-
-The paft ecosystem is designed around interoperable layers that work together to create a unified financial data experience:
-
-### Core Crates
-
-- **`paft`** - Facade crate re-exporting standardized financial data types, unified error, and forwarded features. This is what most users will depend on directly.
-- **`paft-domain`** - Domain models (`Instrument`, `Exchange`, `ReportingPeriod`, `CalendarPeriod`), typed identifiers (`Isin`, `Figi`), and related errors.
-- **`paft-market`** - Market data types, requests, and responses.
-- **`paft-fundamentals`** - Fundamentals types (financial statements, ESG, holders, analysis helpers).
-- **`paft-aggregates`** - Aggregated snapshot types for instrument rollups.
-- **`paft-prediction`** - Prediction market data models (`Market`, `Token`), re-exported via the facade under the `prediction` feature.
-- **`paft-money`** - Currency and money primitives with ISO 4217 integration, safe arithmetic, and pluggable decimal backends.
-- **`paft-utils`** - Canonical string utilities and DataFrame traits used across the workspace.
-- **`paft-core`** - Infrastructure utilities and serde helpers used internally by the ecosystem.
-
-### Ecosystem Layers
+`paft` separates provider access from data semantics:
 
 ```text
-┌─────────────────────────────────────┐
-│          Your Application           │
-├─────────────────────────────────────┤
-│      Analysis & Visualization       │
-│      (charts, backtesting, ML)      │
-├─────────────────────────────────────┤
-│           paft Core Types           │
-│   (standardized data structures)    │
-├─────────────────────────────────────┤
-│         Provider Adapters           │
-│    (generic-provider-paft, etc.)    │
-├─────────────────────────────────────┤
-│        Data Provider APIs           │
-│ (Generic, Bloomberg, Alpha Vantage) │
-└─────────────────────────────────────┘
+Applications, analysis libraries, storage, visualization
+        ^
+        | consume standardized paft values
+        |
+Provider adapters and client crates
+        ^
+        | fetch, authenticate, rate-limit, and normalize
+        |
+Financial data provider APIs
 ```
 
-### Provider Integration Philosophy
+The ecosystem layers are:
 
-paft doesn't create a unified API—each provider maintains their unique methods, authentication, and rate limits. Instead, paft provides **standardized output types** that enable your analysis code to work with any provider's data.
+- `paft`: facade for normal application use.
+- Domain model crates: `paft-domain`, `paft-money`, `paft-decimal`,
+  `paft-market`, `paft-fundamentals`, `paft-aggregates`, and
+  `paft-prediction`.
+- Infrastructure crates: `paft-core` and `paft-utils`.
+- Provider crates outside this workspace: API clients that convert provider
+  wire data into paft values.
 
-## Building Provider Crates
+This structure lets applications and libraries share analysis code over paft
+types while providers keep their specialized APIs.
 
-Data provider crates are the bridge between proprietary APIs and standardized paft types. The recommended architecture balances efficiency with standardization:
+## Provider-Agnostic Contract
 
-### Implementation Strategy
+`paft` types represent concepts, not "whatever this provider happened to
+return". Required fields are the valid minimum for the concept. If a provider
+record cannot supply those fields, the adapter should fail the conversion or
+keep the data in provider-specific metadata instead of manufacturing an
+invalid paft value.
 
-1. **Keep your wire types**: Maintain existing serialization types for API efficiency
-2. **Add conversion layer**: Create functions from wire types to paft types  
-3. **Expose paft types**: Use paft types as your public API surface
-4. **Leverage paft patterns**: Use extensible enums and hierarchical identifiers
+Provider-specific extras belong in generic metadata. Standard type aliases use
+no metadata where that is the common case, and `Generic*` forms preserve
+provider fields when adapters need them.
 
-### Provider Mapping Rules
+Provider-facing enums are open where upstreams can add new tokens. Known
+provider aliases should map to canonical variants. Truly unknown values should
+round-trip through typed `Other` wrappers, not through ad hoc strings.
 
-Provider-facing enums are intentionally extensible: known tokens parse to
-canonical variants, and unknown tokens fall back to typed wrappers such as
-`OtherCurrency`, `OtherExchange`, or `OtherPeriod`.
+## Provider Integration Guidance
 
-- Map provider-specific aliases to canonical variants whenever paft models the
-  concept, for example `"US_DOLLAR"` -> `Currency::Iso(IsoCurrency::USD)`.
-- Use `Type::other(..)` or `OtherType::new(..)` only for genuinely unknown
-  provider tokens. These constructors reject values that already parse to a
-  modeled variant or alias.
-- Log unknown `Other` values in adapter code. That gives you evidence for
-  future canonical mappings without losing the provider token today.
-- Do not force incomplete provider records into paft concepts. If required
-  conceptual fields are absent, fail the conversion or keep the data in
-  provider metadata.
-- Test both sides of every mapping: provider aliases that should become
-  canonical variants, and truly unknown tokens that should round-trip through
-  typed `Other` values.
+Provider crates should keep efficient internal wire types and add an explicit
+conversion layer into paft values at the public boundary. Public APIs can still
+look like the provider: provider-specific method names, pagination, auth,
+regional behavior, and rate-limit policies are not hidden by paft.
 
-### Provider Architecture Example
+When mapping provider data:
 
-```rust
-use paft::money::IsoCurrency;
-use paft::prelude::{AssetKind, Currency, Exchange, Instrument, PriceAmount, Quote};
+- Map aliases to canonical variants whenever paft models the concept.
+- Use `Type::other(..)` or typed `OtherType::new(..)` only for genuinely
+  unknown provider tokens; those constructors reject values that already parse
+  to modeled variants or aliases.
+- Log unknown `Other` values in adapter code so future canonical mappings can
+  be added with evidence.
+- Test both directions of every mapping: known provider aliases should become
+  canonical variants, and unknown provider tokens should round-trip.
+- Do not flatten incomplete provider records into paft concepts. Missing
+  required conceptual fields are conversion errors, not optional details.
+- Prefix or nest provider metadata fields when there is any chance of colliding
+  with paft-owned JSON fields.
 
-// Internal wire types (efficient for serialization)
-#[derive(Deserialize)]
-struct GenericQuoteWire {
-    regularMarketPrice: Option<paft_decimal::Decimal>,
-    regularMarketPreviousClose: Option<paft_decimal::Decimal>,
-    exchange: Option<String>, // "NASDAQ", "NYSE", etc.
-}
+## Wire And Metadata Policy
 
-// Public API returns paft types
-impl GenericProvider {
-    pub async fn get_quote(&self, symbol: &str) -> Result<Quote, Error> {
-        let wire = self.fetch_quote_wire(symbol).await?;
-        Ok(wire.into_paft_quote(symbol)?)
-    }
-}
+Requests, configuration, and semantic metadata shapes are strict when silently
+dropping fields could change meaning. Invariant-bearing request/config types
+use builders and manual or shadow deserialization where needed. Plain data bags
+can remain public structs when no invariant is enforced.
 
-// Conversion handles provider-specific mappings
-impl GenericQuoteWire {
-    fn into_paft_quote(self, symbol: &str) -> paft::Result<Quote> {
-        let exchange = self
-            .exchange
-            .as_deref()
-            .map(Exchange::try_from_str)
-            .transpose()?;
-        let instrument = match exchange {
-            Some(exchange) => Instrument::from_symbol_and_exchange(symbol, exchange, AssetKind::Equity),
-            None => Instrument::from_symbol(symbol, AssetKind::Equity),
-        }?;
-        let currency = Currency::Iso(IsoCurrency::USD);
+Provider and data payload structs are forward-compatible by default: unmodeled
+JSON fields are ignored unless validation requires rejecting them. A tagged
+payload is not strict solely because it has a `kind` discriminator.
 
-        Ok(Quote {
-            instrument,
-            name: None,
-            currency,
-            price: self.regularMarketPrice.map(PriceAmount::new),
-            bid: None,
-            ask: None,
-            previous_close: self.regularMarketPreviousClose.map(PriceAmount::new),
-            day_volume: None,
-            market_state: None,
-            as_of: None,
-            provider: (),
-        })
-    }
-}
-```
+Serde-flattened provider metadata shares the owning JSON namespace, so
+colliding JSON field names are unsupported rather than universally detected.
+Prefer provider-specific prefixes or nested metadata objects. DataFrame export
+uses a separate namespace: provider metadata columns are emitted under
+`provider.*`, while explicitly flattened DataFrame fields validate duplicate
+output column names.
 
-This approach allows provider crates to focus on their unique value-add (authentication, rate limiting, specialized endpoints) while ensuring output compatibility across the ecosystem.
+## Feature Families
 
-## Contributing to the Ecosystem
+Exact feature names and install snippets live in the crate READMEs. At the
+workspace level, the optional feature families are:
 
-Contributions of all kinds are welcome:
+- DataFrame export through Polars and shared `ToDataFrame` traits.
+- `bigdecimal` as an alternate decimal backend to the default
+  `rust_decimal` backend.
+- Locale-aware money formatting and strict parsing.
+- Opt-in panicking `Money` arithmetic operators for controlled code paths;
+  safe `try_*` methods remain the default recommendation.
+- Feature-gated `tracing` spans in selected constructors, validators, parsers,
+  and money operations. No subscriber is bundled.
+- Optional aggregate snapshot and prediction-market model crates through the
+  facade.
 
-- Core/domain types and provider adapters
-- Documentation, examples, and tests
-- Performance and ergonomics improvements
+## Scope
 
-Get started:
+`paft` currently focuses on reusable financial data values: market data,
+fundamentals, aggregate snapshots, prediction-market payloads, identifiers,
+money, decimal handling, serde, and optional DataFrame export.
 
-1. Read the [CONTRIBUTING.md](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md)
-2. Open an [issue](https://github.com/paft-rs/paft/issues) or start a [discussion](https://github.com/paft-rs/paft/discussions)
-3. Submit a pull request when ready
+It does not model trading execution or portfolio infrastructure. Orders,
+trades, fills, positions, accounts, balances, portfolio accounting, risk
+metrics, strategy models, and backtest result types should be built by
+specialized crates or applications on top of paft data.
 
-## Community
+## Examples And Docs
 
-- **Discussions**: [GitHub Discussions](https://github.com/paft-rs/paft/discussions)
-- **Issues**: [GitHub Issues](https://github.com/paft-rs/paft/issues)
-
-## License
-
-MIT License. See [LICENSE](LICENSE) for details.
-
-## Acknowledgments
-
-Inspired by the need for standardized financial data types in the Rust ecosystem. Special thanks to the Polars team for their excellent DataFrame library and the broader Rust community for their support.
-
----
-
-**Ready to join the ecosystem?**
-
-- **Users**: Start with the [paft crate](paft/README.md) for practical usage
-- **Contributors**: Explore [contribution opportunities](#contributing-to-the-ecosystem)
-- **Providers**: Build your adapter using our [integration guidelines](#building-provider-crates)
-
-Together, we're building a standardized, interoperable, developer-friendly financial data ecosystem in Rust.
+- [Facade README](paft/README.md): installation, feature flags, quickstart, and
+  common examples.
+- [Facade examples](paft/examples/): runnable examples for v0.9 ergonomics,
+  provider metadata, metadata DataFrame export, and extensible enums.
+- [docs.rs/paft](https://docs.rs/paft): facade API documentation.
+- Crate-specific docs and links are listed in [Workspace Crates](#workspace-crates).
 
 ## Projects Using paft
 
 The following open-source projects use paft types in their public APIs:
 
-- [yfinance-rs](https://github.com/gramistella/yfinance-rs) — Ergonomic Yahoo Finance client.
-
-- [borsa](https://github.com/borsaorg/borsa) — a high-level, asynchronous API for fetching market and financial data from multiple sources.
+- [yfinance-rs](https://github.com/gramistella/yfinance-rs): ergonomic Yahoo
+  Finance client.
+- [borsa](https://github.com/borsaorg/borsa): high-level asynchronous API for
+  fetching market and financial data from multiple sources.
 
 Want to add your project? Open a PR to include it here.
+
+## Contributing
+
+Contributions are welcome for core models, provider adapters, documentation,
+examples, tests, performance, and ergonomics.
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), then open a
+[GitHub issue](https://github.com/paft-rs/paft/issues) or start a
+[GitHub discussion](https://github.com/paft-rs/paft/discussions).
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.

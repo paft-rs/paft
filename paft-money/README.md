@@ -5,16 +5,14 @@ Currency and money primitives for the paft ecosystem.
 
 [![Crates.io](https://img.shields.io/crates/v/paft-money)](https://crates.io/crates/paft-money)
 [![Docs.rs](https://docs.rs/paft-money/badge.svg)](https://docs.rs/paft-money)
+[![Downloads](https://img.shields.io/crates/d/paft-money)](https://crates.io/crates/paft-money)
 
-- `Currency` with ISO 4217 integration and extensible fallback
-- Integrates with [`paft-decimal`](https://crates.io/crates/paft-decimal) for backend-agnostic decimal helpers
-- `Money` for settled/payable amounts with currency minor-unit enforcement
-- `Price` for full-precision per-unit quotes
-- `PriceAmount` for full-precision contextual price amounts whose currency is
-  supplied by a containing market record
-- `MonetaryAmount` for exact currency totals before settlement rounding
-- `QuantityAmount` for full-precision non-negative contextual quantities
-- Runtime currency metadata overlays for ISO codes without minor-unit exponents (e.g., `XAU`, `XDR`) and custom/non-ISO currencies
+- `Currency` with ISO 4217 integration, built-in non-ISO codes, and typed fallback codes
+- `Money` for settled/payable amounts with captured minor-unit scale
+- `Price` and `MonetaryAmount` for full-precision quoted values and exact totals
+- `PriceAmount` and `QuantityAmount` for contextual market payload amounts
+- Runtime metadata overlays for ISO-None codes such as `XAU`/`XDR` and custom currencies
+- Optional locale-aware formatting, DataFrame export, tracing, and `bigdecimal` backend support
 
 Install
 -------
@@ -31,7 +29,7 @@ Advanced (direct dependency, default backend):
 ```toml
 [dependencies]
 paft-money = "0.9.0"
-paft-decimal = "0.9.0" # only needed if you use paft_decimal helpers directly
+paft-decimal = "0.9.0" # only needed when using decimal helpers directly
 ```
 
 Alternate decimal backend:
@@ -56,26 +54,31 @@ With panicking ops:
 paft-money = { version = "0.9.0", features = ["panicking-money-ops"] }
 ```
 
+With locale-aware formatting:
+
+```toml
+[dependencies]
+paft-money = { version = "0.9.0", features = ["money-formatting"] }
+```
+
 Features
 --------
 
 - `bigdecimal`: switch to arbitrary precision decimals
-- `dataframe`: Polars integration for paft-money types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
-- `panicking-money-ops`: opt-in operator overloading that panics on invalid operations
+- `dataframe`: Polars integration for money types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 - `money-formatting`: locale-aware formatting and strict parsing for `Money`
+- `panicking-money-ops`: opt-in `Add`/`Sub`/`Mul`/`Div` implementations that panic on invalid operations
 - `tracing`: enable lightweight instrumentation on constructors, parsers, currency metadata helpers, and money operations
 
-Currency value types
---------------------
+Quickstart
+----------
 
 Choose the level of structure you need:
 
-- [`paft-decimal`](https://crates.io/crates/paft-decimal) exposes helpers such as `parse_decimal`, `from_minor_units`, `zero`, and `one`
 - `Money` carries a currency and enforces settlement minor units
 - `Price` carries a currency and preserves provider quote precision
-- `PriceAmount` carries only the decimal amount; attach a currency with
-  `with_currency` when the value needs to stand alone
 - `MonetaryAmount` carries a currency and preserves exact totals/intermediates until final settlement rounding
+- `PriceAmount` carries only the decimal amount; attach a currency with `with_currency` when it needs to stand alone
 - `QuantityAmount` carries a non-negative decimal quantity whose unit comes from the surrounding market record
 
 ```rust
@@ -100,50 +103,60 @@ fn run() -> Result<(), MoneyError> {
         None,
     )?;
     assert_eq!(money.format(), "3.4 USD");
+
+    let tax = Money::from_canonical_str("0.10", Currency::Iso(IsoCurrency::USD))?;
+    let total = money.try_add(&tax)?;
+    assert_eq!(total.format(), "3.5 USD");
     Ok(())
 }
 
 run().unwrap();
 ```
 
-Quickstart
-----------
+Money Scale
+-----------
 
-```rust
-use paft_money::{Currency, IsoCurrency, Money};
-
-let price = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD))?;
-let tax   = Money::from_canonical_str("1.23",  Currency::Iso(IsoCurrency::USD))?;
-let total = price.try_add(&tax)?;
-assert_eq!(total.format(), "13.57 USD");
-# Ok::<(), paft_money::MoneyError>(())
-```
-
-Serde and captured scales
--------------------------
-
-`Money` JSON is self-contained with respect to settlement scale:
+`Money` captures the resolved minor-unit scale when it is constructed and
+serializes that scale with the amount and currency:
 
 ```json
 {"amount":"12.34","currency":"USD","minor_units":2}
 ```
 
 The `minor_units` field is the scale captured when the value was constructed,
-and it participates in equality, hashing, `as_minor_units()`, and same-currency
-arithmetic compatibility. Deserialization validates the amount against this
-serialized scale. If current metadata exists for the currency and disagrees
-with the serialized scale, the payload is rejected; if metadata is absent for a
-custom/ISO-None currency, the serialized scale is enough to restore the value's
-captured settlement semantics.
+and it participates in equality, hashing, `as_minor_units()`, and arithmetic
+compatibility. Deserialization validates the amount against the serialized
+scale. If current metadata exists for the currency and disagrees with the
+serialized scale, the payload is rejected; if metadata is absent for a custom
+or ISO-None currency, the serialized scale is enough to restore the captured
+settlement semantics.
+
+Currency Metadata
+-----------------
+
+For ISO codes without a prescribed minor-unit exponent, or for custom
+currencies, register metadata before constructing settlement `Money`:
+
+```rust
+use paft_money::{Currency, Locale, Money, set_currency_metadata};
+
+set_currency_metadata("XAU", "Gold", 3, "XAU", true, Locale::EnUs).unwrap();
+
+let gold = Money::from_canonical_str("1.234", Currency::try_from_str("XAU").unwrap()).unwrap();
+assert_eq!(gold.as_minor_units().unwrap(), 1234);
+```
+
+`set_currency_metadata` refuses to change an already-known scale. Use
+`override_currency_metadata` only when a scale change is intentional; existing
+`Money` values keep their captured scale.
 
 Locale-aware formatting
 -----------------------
 
-When you enable the optional `money-formatting` feature, localized output lives behind explicit APIs so the canonical `Display` remains stable (`"<amount> <CODE>"`).
+When you enable `money-formatting`, localized output lives behind explicit APIs
+so canonical `Display` remains stable as `"<amount> <CODE>"`.
 
 ```rust
-# #[cfg(feature = "money-formatting")]
-# {
 use paft_money::{Currency, IsoCurrency, Locale, Money};
 
 let eur = Money::from_canonical_str("1234.56", Currency::Iso(IsoCurrency::EUR)).unwrap();
@@ -154,7 +167,6 @@ assert_eq!(format!("{}", eur.localized(Locale::EnEu).with_code()), "€1.234,56 
 let parsed =
     Money::from_str_locale("€1.234,56", Currency::Iso(IsoCurrency::EUR), Locale::EnEu).unwrap();
 assert_eq!(parsed.format(), "1234.56 EUR");
-# }
 ```
 
 Links

@@ -5,10 +5,11 @@ Domain modeling primitives for the paft ecosystem: instruments, exchanges, perio
 
 [![Crates.io](https://img.shields.io/crates/v/paft-domain)](https://crates.io/crates/paft-domain)
 [![Docs.rs](https://docs.rs/paft-domain/badge.svg)](https://docs.rs/paft-domain)
+[![Downloads](https://img.shields.io/crates/d/paft-domain)](https://crates.io/crates/paft-domain)
 
-- Strongly-typed identifiers for securities (`Symbol`, `Figi`, `Isin`) with enforced validation
-- `Instrument` with hierarchical identifiers for securities (FIGI → ISIN → Symbol@Exchange → Symbol)
-- Canonical, serde-stable enums (`Exchange`, `AssetKind`, `MarketState`)
+- Validated identifiers for securities (`Symbol`, `Figi`, `Isin`)
+- `Instrument` identity precedence: FIGI, then ISIN, then symbol plus exchange, then symbol
+- Canonical, serde-stable open enums (`Exchange`, `AssetKind`, `MarketState`)
 - `ReportingPeriod` parsing for fiscal/provider labels with a canonical wire format
 - `CalendarPeriod` helpers for calendar year/quarter/date boundaries
 - `Horizon` parsing for relative lookback windows such as `7d`, `1mo`, and `1y`
@@ -58,9 +59,10 @@ use paft_domain::{
 // Minimal: instrument from symbol + exchange
 let aapl = Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
     .unwrap();
+assert_eq!(aapl.display_key(), "AAPL@NASDAQ");
+assert_eq!(aapl.unique_key(), "EQUITY|SYMBOL|4:AAPL|EXCHANGE|NASDAQ");
 
-// Globally-identified: build the flat struct directly to attach FIGI/ISIN
-// (preferred over symbol when available).
+// Attach global identifiers directly when provider data includes them.
 let aapl_pro = Instrument {
     symbol: Symbol::new("AAPL").unwrap(),
     exchange: Some(Exchange::NASDAQ),
@@ -71,7 +73,7 @@ let aapl_pro = Instrument {
 assert_eq!(aapl_pro.unique_key(), "EQUITY|FIGI|BBG000B9XRY4");
 assert_eq!(aapl_pro.display_key(), "BBG000B9XRY4");
 
-// ReportingPeriod constructors validate fiscal/provider labels.
+// ReportingPeriod models reporting/fiscal labels; constructors validate components.
 let reported_q4 = ReportingPeriod::quarterly(2023, 4).unwrap();
 assert_eq!(reported_q4.to_string(), "2023Q4");
 assert!(ReportingPeriod::quarterly(2023, 5).is_err());
@@ -93,34 +95,8 @@ assert_eq!(horizon.to_string(), "3mo");
 Prediction markets
 ------------------
 
-Prediction-market identity is intentionally outside `paft-domain`; use the separate `paft-prediction` crate:
-
-```toml
-[dependencies]
-paft-domain = "0.9.0"
-paft-prediction = "0.9.0"
-```
-
-```rust
-use paft_prediction::PredictionInstrument;
-
-// Create an instrument for a prediction market outcome
-let pm = PredictionInstrument::new(
-    "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de",
-    "73470541315377973562501025254719659796416871135081220986683321361000395461644",
-).unwrap();
-
-// Unique key for prediction markets is event_id/outcome_id
-let expected = concat!(
-    "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de",
-    "/",
-    "73470541315377973562501025254719659796416871135081220986683321361000395461644",
-);
-assert_eq!(
-    pm.unique_key(),
-    expected,
-);
-```
+Prediction-market identity is intentionally outside `paft-domain`. Use
+`paft-prediction` for `PredictionInstrument`, `EventID`, and `OutcomeID`.
 
 Links
 -----

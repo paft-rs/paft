@@ -5,9 +5,10 @@ Fundamentals data models for the paft ecosystem: financial statements, analysis,
 
 [![Crates.io](https://img.shields.io/crates/v/paft-fundamentals)](https://crates.io/crates/paft-fundamentals)
 [![Docs.rs](https://docs.rs/paft-fundamentals/badge.svg)](https://docs.rs/paft-fundamentals)
+[![Downloads](https://img.shields.io/crates/d/paft-fundamentals)](https://crates.io/crates/paft-fundamentals)
 
 - Profiles: `CompanyProfile`, `FundProfile`
-- Statements: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`
+- Statements: `IncomeStatementRow`, `BalanceSheetRow`, `CashflowRow`, `Calendar`
 - Analysis: earnings, recommendations, price targets, horizon-based trend/revision helper rows
 - Statistics: `KeyStatistics`
 - Holders: institutional, insiders
@@ -48,26 +49,29 @@ paft-utils = { version = "0.9.0", default-features = false, features = ["datafra
 Features
 --------
 
-- `bigdecimal`: switch `Money`/`Price` and decimal-backed fields to `bigdecimal` by forwarding `paft-money`, `paft-decimal`, and `paft-utils`
+- `bigdecimal`: switch the shared decimal backend used by `Money`, `Price`, and decimal-backed fields from `rust_decimal` to `bigdecimal`
 - `dataframe`: Polars integration for dataframe-enabled row/leaf fundamentals types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 - `tracing`: enable lightweight instrumentation on parsing and helper constructors
 
 Quickstart
 ----------
 
-When constructing rows directly, fundamentals types usually compose with
-`paft-domain`, `paft-money`, and `paft-decimal` primitives.
+The quickstart below uses direct crate imports. Direct users should also add
+the companion crates used by their constructors (`paft-decimal`, `paft-money`,
+and sometimes `paft-domain`). Facade users can import through `paft::prelude`.
 
 ```rust
 use paft_decimal::{Decimal, Ratio};
-use paft_domain::Horizon;
 use paft_fundamentals::{
     CompanyProfile, Earnings, EarningsYear, EpsRevisions, EpsTrend, MajorHolder, Profile,
     RevisionPoint, TrendPoint,
 };
 use paft_money::{Currency, IsoCurrency, Price};
 
-let earnings = Earnings { yearly: vec![EarningsYear::new(2023).unwrap()], ..Default::default() };
+let earnings = Earnings {
+    yearly: vec![EarningsYear::new(2023).unwrap()],
+    ..Default::default()
+};
 assert_eq!(earnings.yearly[0].year.get(), 2023);
 
 let usd = Currency::Iso(IsoCurrency::USD);
@@ -76,10 +80,12 @@ let eps_trend = EpsTrend::new(
     vec![TrendPoint::try_new_str(
         "3mo",
         Price::from_canonical_str("1.05", usd).unwrap(),
-    ).unwrap()],
+    )
+    .unwrap()],
 );
 assert!(eps_trend
-    .find_by_horizon(&Horizon::months(3).unwrap())
+    .find_by_horizon_str("3mo")
+    .unwrap()
     .is_some());
 
 let revisions = EpsRevisions::new(vec![RevisionPoint::try_new_str("30d", 4, 1).unwrap()]);

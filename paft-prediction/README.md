@@ -1,10 +1,11 @@
 paft-prediction
 ===============
 
-Prediction-market data models for the paft ecosystem.
+Prediction-market identity and data models for the paft ecosystem.
 
 [![Crates.io](https://img.shields.io/crates/v/paft-prediction)](https://crates.io/crates/paft-prediction)
 [![Docs.rs](https://docs.rs/paft-prediction/badge.svg)](https://docs.rs/paft-prediction)
+[![Downloads](https://img.shields.io/crates/d/paft-prediction)](https://crates.io/crates/paft-prediction)
 
 Install
 -------
@@ -34,47 +35,62 @@ paft-utils = { version = "0.9.0", default-features = false, features = ["datafra
 What's inside
 -------------
 
-- `EventID`, `OutcomeID` — validated newtypes for the two prediction-market
-  identifier classes. Hex event IDs are case- and whitespace-normalized at
-  construction; outcome IDs are trimmed and validated as ASCII decimal
-  integers up to 78 digits long.
-- `PredictionInstrument` — pairs an `EventID` with an `OutcomeID` to identify
-  a single tradeable outcome. Parallels `paft_domain::Instrument`.
-- `Market`, `Token` — higher-level aggregates describing the question being
-  predicted and the tokens used to bet on its outcomes. `Money` and `Price`
-  fields reuse `paft_money` so they compose cleanly with the rest of the
-  workspace.
-- `PredictionError` — error type returned by identifier constructors.
-
-Quickstart
-----------
-
-This example uses the facade dependency shown first.
-
-```rust
-use paft::prediction::{EventID, OutcomeID, PredictionInstrument};
-
-// Identifiers normalize on construction: lowercase hex, trimmed.
-let a = EventID::new("  0xABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890  ").unwrap();
-let b = EventID::new("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890").unwrap();
-assert_eq!(a, b);
-
-// FromStr is wired via ::new, so .parse() works too.
-let outcome: OutcomeID = "12345".parse().unwrap();
-
-let instrument = PredictionInstrument::from_ids(a, outcome);
-println!("{instrument}"); // displays event_id/outcome_id
-```
-
-For direct `paft-prediction` users, import the same types from
-`paft_prediction::{EventID, OutcomeID, PredictionInstrument}`.
+- `EventID` and `OutcomeID`: validated, serde-stable identifier newtypes. Event
+  IDs normalize to canonical lowercase `0x...` hex; outcome IDs normalize
+  surrounding whitespace and validate as ASCII digit strings up to 78 digits.
+- `PredictionInstrument`: pairs an event ID with an outcome ID and exposes the
+  stable `event_id/outcome_id` display form via `unique_key()`.
+- `Market` and `Token`: plain prediction-market payload structs for a question
+  and its tradeable outcomes. Collateral, minimum order size, and tick size use
+  `paft-money` types.
+- `PredictionError`: non-exhaustive validation error for identifier
+  constructors and serde deserialization.
 
 Features
 --------
 
-- `dataframe`: derive Polars dataframe support for prediction types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
-- `bigdecimal`: forwards to `paft-money` and `paft-utils` to switch the money
-  backend from `rust_decimal` to `bigdecimal`
+- `bigdecimal`: switch the shared money/price decimal backend from `rust_decimal` to `bigdecimal`
+- `dataframe`: Polars integration for prediction types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
+
+Quickstart
+----------
+
+The quickstart below uses the direct `paft-prediction` dependency. Facade users
+can import the same types from `paft::prediction` or, with the `prediction`
+feature enabled, from `paft::prelude`.
+
+```rust
+use paft_prediction::{EventID, OutcomeID, PredictionError, PredictionInstrument};
+
+fn run() -> Result<(), PredictionError> {
+    const RAW_EVENT: &str =
+        "  0xABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890  ";
+    const EVENT: &str =
+        "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
+
+    let event = EventID::new(RAW_EVENT)?;
+    assert_eq!(event.as_ref(), EVENT);
+
+    // FromStr is wired through the same validation and normalization path.
+    let outcome: OutcomeID = " 12345 ".parse()?;
+
+    let instrument = PredictionInstrument::from_ids(event, outcome);
+    assert_eq!(instrument.unique_key().as_ref(), format!("{EVENT}/12345"));
+    assert_eq!(instrument.to_string(), instrument.unique_key());
+
+    Ok(())
+}
+
+run().unwrap();
+```
+
+Prediction notes
+----------------
+
+- Prediction-market identity is intentionally separate from
+  `paft_domain::Instrument`; use `PredictionInstrument` for tradeable outcomes.
+- Outcome IDs are only assumed unique within an event, so `unique_key()` always
+  includes both identifiers.
 
 Links
 -----

@@ -52,6 +52,9 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Workspace: version bumped to `0.9.0`.
+- Docs: consolidated the workspace and crate READMEs around crate-local usage,
+  standardized crate badges for Crates.io, docs.rs, and downloads, and removed
+  duplicated install/API guidance from the root README.
 - Market/fundamentals: universally constrained non-amount fields now use
   dedicated newtypes: option implied volatility uses `NonNegativeDecimal`,
   holder fractions use `Ratio`, and news request counts use `NonZeroU32`.
