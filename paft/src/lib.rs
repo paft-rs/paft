@@ -142,7 +142,7 @@ pub mod aggregates {
 #[cfg(feature = "prediction")]
 pub mod prediction {
     pub use paft_prediction::{
-        EventID, Market, OutcomeID, PredictionError, PredictionInstrument, Token,
+        EventId, Market, OutcomeId, PredictionError, PredictionInstrument, Token,
     };
 }
 

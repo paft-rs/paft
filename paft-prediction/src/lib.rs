@@ -1,6 +1,6 @@
 //! Prediction-market data models for the paft ecosystem.
 //!
-//! Provides validated identifier newtypes ([`EventID`], [`OutcomeID`]), a
+//! Provides validated identifier newtypes ([`EventId`], [`OutcomeId`]), a
 //! [`PredictionInstrument`] that pairs them, and the higher-level [`Market`] and
 //! [`Token`] aggregates used to describe a tradeable outcome of a prediction
 //! market. Money and price values reuse [`paft_money`] so amounts compose cleanly with
@@ -20,7 +20,7 @@ pub mod identifiers;
 pub mod instrument;
 
 pub use error::PredictionError;
-pub use identifiers::{EventID, OutcomeID};
+pub use identifiers::{EventId, OutcomeId};
 pub use instrument::PredictionInstrument;
 
 use paft_money::{Currency, Money, Price};
@@ -39,7 +39,7 @@ use df_derive_macros::ToDataFrame;
 pub struct Token {
     /// Provider-issued identifier for the tradeable outcome.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub outcome_id: OutcomeID,
+    pub outcome_id: OutcomeId,
     /// Human-readable label for the outcome (e.g. `"Yes"`, `"No"`,
     /// `"Candidate A"`).
     pub outcome: String,
@@ -52,7 +52,7 @@ pub struct Token {
 pub struct Market {
     /// On-chain or provider-issued identifier of the underlying event.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub event_id: EventID,
+    pub event_id: EventId,
     /// Tradeable outcomes belonging to this market.
     pub tokens: Vec<Token>,
     /// Long-form description of the market and its resolution criteria.

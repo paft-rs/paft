@@ -1,6 +1,6 @@
 //! Generic prediction-market identifier newtypes.
 //!
-//! Both [`EventID`] and [`OutcomeID`] are validated newtypes with normalization
+//! Both [`EventId`] and [`OutcomeId`] are validated newtypes with normalization
 //! applied at construction time, so two equivalent inputs (modulo case for hex
 //! values, modulo surrounding whitespace, etc.) compare equal.
 //!
@@ -98,9 +98,9 @@ fn normalize_outcome_id(input: &str) -> Result<String, PredictionError> {
 /// in hex letter case or surrounding whitespace compare equal.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
 #[serde(transparent)]
-pub struct EventID(String);
+pub struct EventId(String);
 
-impl EventID {
+impl EventId {
     /// Construct a new validated prediction event ID.
     ///
     /// Surrounding ASCII whitespace is stripped and the hex digits are folded
@@ -117,7 +117,7 @@ impl EventID {
     }
 }
 
-impl FromStr for EventID {
+impl FromStr for EventId {
     type Err = PredictionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -125,7 +125,7 @@ impl FromStr for EventID {
     }
 }
 
-impl TryFrom<String> for EventID {
+impl TryFrom<String> for EventId {
     type Error = PredictionError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -133,13 +133,13 @@ impl TryFrom<String> for EventID {
     }
 }
 
-impl From<EventID> for String {
-    fn from(id: EventID) -> Self {
+impl From<EventId> for String {
+    fn from(id: EventId) -> Self {
         id.0
     }
 }
 
-impl<'de> Deserialize<'de> for EventID {
+impl<'de> Deserialize<'de> for EventId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -149,13 +149,13 @@ impl<'de> Deserialize<'de> for EventID {
     }
 }
 
-impl AsRef<str> for EventID {
+impl AsRef<str> for EventId {
     fn as_ref(&self) -> &str {
         &self.0
     }
 }
 
-impl fmt::Display for EventID {
+impl fmt::Display for EventId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }
@@ -169,9 +169,9 @@ impl fmt::Display for EventID {
 /// construction; embedded whitespace and control characters remain invalid.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
 #[serde(transparent)]
-pub struct OutcomeID(String);
+pub struct OutcomeId(String);
 
-impl OutcomeID {
+impl OutcomeId {
     /// Construct a new validated outcome ID.
     ///
     /// After trimming surrounding whitespace, the value must be a non-empty
@@ -188,7 +188,7 @@ impl OutcomeID {
     }
 }
 
-impl FromStr for OutcomeID {
+impl FromStr for OutcomeId {
     type Err = PredictionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -196,7 +196,7 @@ impl FromStr for OutcomeID {
     }
 }
 
-impl TryFrom<String> for OutcomeID {
+impl TryFrom<String> for OutcomeId {
     type Error = PredictionError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -204,13 +204,13 @@ impl TryFrom<String> for OutcomeID {
     }
 }
 
-impl From<OutcomeID> for String {
-    fn from(id: OutcomeID) -> Self {
+impl From<OutcomeId> for String {
+    fn from(id: OutcomeId) -> Self {
         id.0
     }
 }
 
-impl<'de> Deserialize<'de> for OutcomeID {
+impl<'de> Deserialize<'de> for OutcomeId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -220,13 +220,13 @@ impl<'de> Deserialize<'de> for OutcomeID {
     }
 }
 
-impl AsRef<str> for OutcomeID {
+impl AsRef<str> for OutcomeId {
     fn as_ref(&self) -> &str {
         &self.0
     }
 }
 
-impl fmt::Display for OutcomeID {
+impl fmt::Display for OutcomeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }

@@ -1,7 +1,7 @@
 //! Logical identity for a prediction-market outcome.
 
 use crate::error::PredictionError;
-use crate::identifiers::{EventID, OutcomeID};
+use crate::identifiers::{EventId, OutcomeId};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -14,10 +14,10 @@ use std::borrow::Cow;
 pub struct PredictionInstrument {
     /// Identifier of the event/question this outcome belongs to.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub event_id: EventID,
+    pub event_id: EventId,
     /// Identifier of the specific tradeable outcome.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
-    pub outcome_id: OutcomeID,
+    pub outcome_id: OutcomeId,
 }
 
 impl PredictionInstrument {
@@ -28,14 +28,14 @@ impl PredictionInstrument {
     /// [`PredictionError::InvalidOutcomeId`] if validation fails.
     pub fn new(event_id: &str, outcome_id: &str) -> Result<Self, PredictionError> {
         Ok(Self {
-            event_id: EventID::new(event_id)?,
-            outcome_id: OutcomeID::new(outcome_id)?,
+            event_id: EventId::new(event_id)?,
+            outcome_id: OutcomeId::new(outcome_id)?,
         })
     }
 
     /// Construct a `PredictionInstrument` from already-validated ids.
     #[must_use]
-    pub const fn from_ids(event_id: EventID, outcome_id: OutcomeID) -> Self {
+    pub const fn from_ids(event_id: EventId, outcome_id: OutcomeId) -> Self {
         Self {
             event_id,
             outcome_id,

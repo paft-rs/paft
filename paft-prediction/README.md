@@ -35,7 +35,7 @@ paft-utils = { version = "0.9.0", default-features = false, features = ["datafra
 What's inside
 -------------
 
-- `EventID` and `OutcomeID`: validated, serde-stable identifier newtypes. Event
+- `EventId` and `OutcomeId`: validated, serde-stable identifier newtypes. Event
   IDs normalize to canonical lowercase `0x...` hex; outcome IDs normalize
   surrounding whitespace and validate as ASCII digit strings up to 78 digits.
 - `PredictionInstrument`: pairs an event ID with an outcome ID and exposes the
@@ -60,7 +60,7 @@ can import the same types from `paft::prediction` or, with the `prediction`
 feature enabled, from `paft::prelude`.
 
 ```rust
-use paft_prediction::{EventID, OutcomeID, PredictionError, PredictionInstrument};
+use paft_prediction::{EventId, OutcomeId, PredictionError, PredictionInstrument};
 
 fn run() -> Result<(), PredictionError> {
     const RAW_EVENT: &str =
@@ -68,11 +68,11 @@ fn run() -> Result<(), PredictionError> {
     const EVENT: &str =
         "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 
-    let event = EventID::new(RAW_EVENT)?;
+    let event = EventId::new(RAW_EVENT)?;
     assert_eq!(event.as_ref(), EVENT);
 
     // FromStr is wired through the same validation and normalization path.
-    let outcome: OutcomeID = " 12345 ".parse()?;
+    let outcome: OutcomeId = " 12345 ".parse()?;
 
     let instrument = PredictionInstrument::from_ids(event, outcome);
     assert_eq!(instrument.unique_key().as_ref(), format!("{EVENT}/12345"));

@@ -78,4 +78,4 @@ pub use crate::market::{
 pub use crate::aggregates::{GenericSnapshot, Snapshot};
 
 #[cfg(feature = "prediction")]
-pub use crate::prediction::{EventID, Market, OutcomeID, PredictionInstrument, Token};
+pub use crate::prediction::{EventId, Market, OutcomeId, PredictionInstrument, Token};

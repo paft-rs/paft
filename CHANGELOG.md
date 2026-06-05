@@ -58,6 +58,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Workspace: version bumped to `0.9.0`.
+- Prediction/facade: renamed public identifier newtypes from `EventID` and
+  `OutcomeID` to idiomatic Rust casing `EventId` and `OutcomeId`.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.
@@ -257,7 +259,7 @@ All notable changes to this project will be documented in this file.
   configuration, and semantic invariant-bearing tagged shapes are strict,
   while provider/data payloads are forward-compatible by default. `Action`
   JSON now follows that policy by ignoring unknown payload fields.
-- Prediction/money docs: public `OutcomeID` and `from_scaled_units`
+- Prediction/money docs: public `OutcomeId` and `from_scaled_units`
   messages/docs now match trimming and decimal-backend behavior.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
   payloads can no longer use tokens already modeled by the owning enum,
@@ -401,7 +403,7 @@ wire-format update across the workspace.
 - New crate `paft-decimal` exposing `Decimal`, `RoundingStrategy`, parsing,
   rounding, scaled-unit construction, and canonical rendering helpers shared by
   money, market, fundamentals, and dataframe code.
-- New crate `paft-prediction` exposing validated `EventID` and `OutcomeID`
+- New crate `paft-prediction` exposing validated `EventId` and `OutcomeId`
   newtypes, `PredictionInstrument`, `Market`, `Token`, and `PredictionError`.
   The facade exposes these behind the new `prediction` feature.
 - Money: added full-precision `Price` and `MonetaryAmount` value types. `Money`
