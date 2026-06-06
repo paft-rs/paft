@@ -87,6 +87,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `GenericBinaryMarket` now requires `BinaryOutcomeInstruments`,
   keeping Polymarket-style CLOB token/asset ids in the provider-agnostic
   binary market payload instead of provider metadata.
+- Prediction: `GenericBinaryMarket::new` is now fallible and binary market
+  deserialization validates that YES/NO outcome instruments belong to the
+  market key.
 - Prediction: standalone market shapes now carry `event_key:
   Option<PredictionEventKey>` instead of a bare event id so event references
   are fully venue-namespaced.

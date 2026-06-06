@@ -1,7 +1,7 @@
 use paft_money::{Currency, IsoCurrency};
 use paft_prediction::{
     BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor, EventStructure,
-    NonZeroContractQuantity, OutcomeInstrument, OutcomePayout, PredictionEventKey,
+    NonZeroContractQuantity, OutcomeInstrument, OutcomePayout, PredictionError, PredictionEventKey,
     PredictionMarketStatus, PredictionSeriesKey,
 };
 use paft_prediction::{NumericBound, NumericRange, PredictionEvent};
@@ -39,7 +39,8 @@ fn binary_market_carries_required_polymarket_outcome_instruments() {
         PredictionMarketStatus::Open,
         Currency::Iso(IsoCurrency::USD),
         OutcomePayout::ONE,
-    );
+    )
+    .unwrap();
 
     assert_eq!(
         market.outcomes.yes().outcome_id.as_str(),
@@ -96,7 +97,8 @@ fn binary_market_deserialization_rejects_zero_min_order_quantity() {
         PredictionMarketStatus::Open,
         Currency::Iso(IsoCurrency::USD),
         OutcomePayout::ONE,
-    );
+    )
+    .unwrap();
     market.min_order_quantity = Some(NonZeroContractQuantity::ONE);
 
     let mut value = serde_json::to_value(&market).unwrap();
@@ -118,7 +120,8 @@ fn binary_market_uses_full_event_key_reference() {
         PredictionMarketStatus::Open,
         Currency::Iso(IsoCurrency::USD),
         OutcomePayout::ONE,
-    );
+    )
+    .unwrap();
     market.event_key = Some(PredictionEventKey::new("KALSHI", "KXHIGHNY-24JAN01").unwrap());
 
     let value = serde_json::to_value(&market).unwrap();
@@ -126,6 +129,74 @@ fn binary_market_uses_full_event_key_reference() {
     assert!(value.get("event_id").is_none());
     assert_eq!(value["event_key"]["venue"], "KALSHI");
     assert_eq!(value["event_key"]["event_id"], "KXHIGHNY-24JAN01");
+}
+
+#[test]
+fn binary_market_constructor_rejects_outcomes_for_different_market_key() {
+    let key = BinaryMarketKey::new("KALSHI", "MARKET_A").unwrap();
+    let other_key = BinaryMarketKey::new("KALSHI", "MARKET_B").unwrap();
+    let outcomes = BinaryOutcomeInstruments::synthetic_for_market(&other_key);
+
+    let err = BinaryMarket::new(
+        key,
+        outcomes,
+        "Will MARKET_A resolve YES?".to_string(),
+        ClaimDescriptor::Text {
+            description: "MARKET_A resolves YES.".to_string(),
+        },
+        PredictionMarketStatus::Open,
+        Currency::Iso(IsoCurrency::USD),
+        OutcomePayout::ONE,
+    )
+    .unwrap_err();
+
+    assert!(matches!(
+        err,
+        PredictionError::MismatchedBinaryMarketOutcomes(_)
+    ));
+}
+
+#[test]
+fn binary_market_deserialization_rejects_outcomes_for_different_market_key() {
+    let json = r#"{
+        "key": {
+            "venue": "KALSHI",
+            "market_id": "MARKET_A"
+        },
+        "outcomes": {
+            "yes": {
+                "venue": "KALSHI",
+                "market_id": "MARKET_B",
+                "outcome_id": "YES"
+            },
+            "no": {
+                "venue": "KALSHI",
+                "market_id": "MARKET_B",
+                "outcome_id": "NO"
+            }
+        },
+        "event_key": null,
+        "title": "Will MARKET_A resolve YES?",
+        "yes_label": null,
+        "no_label": null,
+        "claim": {
+            "kind": "text",
+            "description": "MARKET_A resolves YES."
+        },
+        "status": "open",
+        "collateral_currency": {
+            "iso": "USD"
+        },
+        "unit_payout": 1000000,
+        "price_grid": null,
+        "min_order_quantity": null,
+        "open_time": null,
+        "close_time": null,
+        "settlement_time": null,
+        "resolution": null
+    }"#;
+
+    assert!(serde_json::from_str::<BinaryMarket>(json).is_err());
 }
 
 #[test]

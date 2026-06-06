@@ -1,6 +1,6 @@
 //! Prediction event and market metadata models.
 
-use crate::error::PredictionError;
+use crate::error::{BinaryMarketOutcomeMismatch, PredictionError};
 use crate::identifiers::{PredictionOutcomeId, validate_opaque_identifier};
 use crate::instrument::{
     BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
@@ -489,6 +489,7 @@ impl NumericBound {
 
 /// Grouping/container for related prediction markets.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(bound(deserialize = "E: Default + Deserialize<'de>, M: Default + Deserialize<'de>"))]
 pub struct GenericPredictionEvent<E = (), M = ()> {
     /// Venue-namespaced event key.
     pub key: PredictionEventKey,
@@ -532,6 +533,7 @@ pub type PredictionEvent = GenericPredictionEvent<(), ()>;
 /// Prediction market shape.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "market", rename_all = "snake_case")]
+#[serde(bound(deserialize = "M: Default + Deserialize<'de>"))]
 #[non_exhaustive]
 // Keep market variants inline so construction and pattern matching stay direct;
 // this is metadata, not a high-cardinality in-memory book representation.
@@ -549,7 +551,7 @@ pub enum GenericPredictionMarket<M = ()> {
 pub type PredictionMarket = GenericPredictionMarket<()>;
 
 /// Atomic yes/no prediction market metadata.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct GenericBinaryMarket<M = ()> {
     /// Venue-namespaced binary market key.
     pub key: BinaryMarketKey,
@@ -593,7 +595,11 @@ pub struct GenericBinaryMarket<M = ()> {
 
 impl<M: Default> GenericBinaryMarket<M> {
     /// Build a binary market with the minimum required metadata.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::MismatchedBinaryMarketOutcomes`] when the
+    /// outcome instruments do not belong to `key`.
     pub fn new(
         key: BinaryMarketKey,
         outcomes: BinaryOutcomeInstruments,
@@ -602,8 +608,10 @@ impl<M: Default> GenericBinaryMarket<M> {
         status: PredictionMarketStatus,
         collateral_currency: Currency,
         unit_payout: OutcomePayout,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, PredictionError> {
+        validate_binary_market_outcomes(&key, &outcomes)?;
+
+        Ok(Self {
             key,
             outcomes,
             event_key: None,
@@ -621,8 +629,93 @@ impl<M: Default> GenericBinaryMarket<M> {
             settlement_time: None,
             resolution: None,
             provider: M::default(),
-        }
+        })
     }
+}
+
+impl<'de, M> Deserialize<'de> for GenericBinaryMarket<M>
+where
+    M: Default + Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct GenericBinaryMarketShadow<M> {
+            key: BinaryMarketKey,
+            outcomes: BinaryOutcomeInstruments,
+            event_key: Option<PredictionEventKey>,
+            title: String,
+            yes_label: Option<String>,
+            no_label: Option<String>,
+            claim: ClaimDescriptor,
+            status: PredictionMarketStatus,
+            collateral_currency: Currency,
+            unit_payout: OutcomePayout,
+            price_grid: Option<PriceGrid>,
+            min_order_quantity: Option<NonZeroContractQuantity>,
+            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            open_time: Option<DateTime<Utc>>,
+            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            close_time: Option<DateTime<Utc>>,
+            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            settlement_time: Option<DateTime<Utc>>,
+            resolution: Option<BinaryResolution>,
+            #[serde(flatten, default = "Default::default")]
+            provider: M,
+        }
+
+        let shadow = GenericBinaryMarketShadow::deserialize(deserializer)?;
+        validate_binary_market_outcomes(&shadow.key, &shadow.outcomes)
+            .map_err(de::Error::custom)?;
+
+        Ok(Self {
+            key: shadow.key,
+            outcomes: shadow.outcomes,
+            event_key: shadow.event_key,
+            title: shadow.title,
+            yes_label: shadow.yes_label,
+            no_label: shadow.no_label,
+            claim: shadow.claim,
+            status: shadow.status,
+            collateral_currency: shadow.collateral_currency,
+            unit_payout: shadow.unit_payout,
+            price_grid: shadow.price_grid,
+            min_order_quantity: shadow.min_order_quantity,
+            open_time: shadow.open_time,
+            close_time: shadow.close_time,
+            settlement_time: shadow.settlement_time,
+            resolution: shadow.resolution,
+            provider: shadow.provider,
+        })
+    }
+}
+
+fn validate_binary_market_outcomes(
+    key: &BinaryMarketKey,
+    outcomes: &BinaryOutcomeInstruments,
+) -> Result<(), PredictionError> {
+    let yes = outcomes.yes();
+    let no = outcomes.no();
+    if yes.venue == key.venue
+        && no.venue == key.venue
+        && yes.market_id == key.market_id
+        && no.market_id == key.market_id
+    {
+        return Ok(());
+    }
+
+    Err(PredictionError::MismatchedBinaryMarketOutcomes(Box::new(
+        BinaryMarketOutcomeMismatch {
+            key_venue: key.venue.to_string(),
+            key_market_id: key.market_id.to_string(),
+            yes_venue: yes.venue.to_string(),
+            yes_market_id: yes.market_id.to_string(),
+            no_venue: no.venue.to_string(),
+            no_market_id: no.market_id.to_string(),
+        },
+    )))
 }
 
 /// Standard binary market with no provider metadata.

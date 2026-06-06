@@ -1,6 +1,39 @@
 //! Error types specific to `paft-prediction`.
 
+use std::fmt;
 use thiserror::Error;
+
+/// Details for a binary market whose outcome instruments do not match its key.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BinaryMarketOutcomeMismatch {
+    /// Binary market key venue.
+    pub key_venue: String,
+    /// Binary market key market id.
+    pub key_market_id: String,
+    /// YES instrument venue.
+    pub yes_venue: String,
+    /// YES instrument market id.
+    pub yes_market_id: String,
+    /// NO instrument venue.
+    pub no_venue: String,
+    /// NO instrument market id.
+    pub no_market_id: String,
+}
+
+impl fmt::Display for BinaryMarketOutcomeMismatch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Mismatched binary market outcomes: market key is {}:{}, YES belongs to {}:{}, NO belongs to {}:{}",
+            self.key_venue,
+            self.key_market_id,
+            self.yes_venue,
+            self.yes_market_id,
+            self.no_venue,
+            self.no_market_id,
+        )
+    }
+}
 
 /// Errors produced by prediction-market constructors and validators.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -92,6 +125,13 @@ pub enum PredictionError {
         /// Duplicate outcome id.
         outcome_id: String,
     },
+
+    /// Binary outcome instruments do not belong to their binary market key.
+    #[error("{0}")]
+    MismatchedBinaryMarketOutcomes(
+        /// Mismatch details.
+        Box<BinaryMarketOutcomeMismatch>,
+    ),
 
     /// Invalid price-grid structure.
     #[error("Invalid price grid: {reason}")]
