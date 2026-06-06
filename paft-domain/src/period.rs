@@ -53,7 +53,6 @@ impl PeriodYear {
 
     /// Returns the year as an `i32`, matching [`chrono::Datelike::year`].
     #[must_use]
-    #[allow(clippy::cast_lossless)]
     pub const fn get(self) -> i32 {
         self.0 as i32
     }

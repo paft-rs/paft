@@ -88,6 +88,8 @@ wire-format update across the workspace.
 ### Changed
 
 - Workspace: version bumped to `0.9.0`.
+- Workspace: documented the Clippy suppression policy and replaced intentional
+  suppressions with reasoned lint expectations.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.

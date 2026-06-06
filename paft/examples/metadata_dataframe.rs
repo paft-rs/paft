@@ -5,7 +5,8 @@
     clippy::doc_markdown,
     clippy::unreadable_literal,
     clippy::too_many_lines,
-    clippy::missing_panics_doc
+    clippy::missing_panics_doc,
+    reason = "pedagogical examples prioritize narrative clarity over production lint style"
 )]
 
 //! Provider metadata in Polars `DataFrame` exports.

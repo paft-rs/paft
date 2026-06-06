@@ -7,7 +7,8 @@
     clippy::too_many_lines,
     clippy::missing_panics_doc,
     clippy::inconsistent_digit_grouping,
-    clippy::similar_names
+    clippy::similar_names,
+    reason = "pedagogical examples prioritize narrative clarity over production lint style"
 )]
 
 //! Layered nested metadata.

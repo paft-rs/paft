@@ -233,7 +233,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
-#![allow(clippy::cargo_common_metadata)]
 
 mod amount;
 pub(crate) mod decimal;

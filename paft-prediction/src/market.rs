@@ -663,7 +663,10 @@ pub type PredictionEvent = GenericPredictionEvent<(), ()>;
 #[non_exhaustive]
 // Keep market variants inline so construction and pattern matching stay direct;
 // this is metadata, not a high-cardinality in-memory book representation.
-#[allow(clippy::large_enum_variant)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "market metadata variants stay inline for direct construction and pattern matching"
+)]
 pub enum GenericPredictionMarket<M = ()> {
     /// Atomic yes/no claim.
     Binary(GenericBinaryMarket<M>),
