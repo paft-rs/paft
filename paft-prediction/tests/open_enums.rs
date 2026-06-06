@@ -1,5 +1,5 @@
 use paft_prediction::{
-    BinaryPayoutVector, BinarySettlement, LinkedBinaryRelation, OtherBinaryResolution,
+    BinaryPayoutVector, BinarySettlement, LinkedBinaryRelation, OtherBinarySettlement,
     OtherClaimDescriptor, OtherEventStructure, OtherLinkedBinaryRelation,
     OtherPredictionMarketStatus, OutcomePayout, PredictionMarketStatus,
 };
@@ -47,9 +47,9 @@ fn simple_open_enum_other_constructors_reject_modeled_codes() {
     assert!(OtherLinkedBinaryRelation::new("Negative_Risk_Conversion").is_err());
     assert!(OtherPredictionMarketStatus::new("open").is_err());
     assert!(OtherPredictionMarketStatus::new("Resolved").is_err());
-    assert!(OtherBinaryResolution::new("yes").is_err());
-    assert!(OtherBinaryResolution::new("payout_vector").is_err());
-    assert!(OtherBinaryResolution::new("Void").is_err());
+    assert!(OtherBinarySettlement::new("yes").is_err());
+    assert!(OtherBinarySettlement::new("payout_vector").is_err());
+    assert!(OtherBinarySettlement::new("Void").is_err());
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn binary_settlement_uses_structured_serde() {
     .unwrap();
     assert_eq!(parsed, vector);
 
-    let other = BinarySettlement::Other(OtherBinaryResolution::new("provider_voided").unwrap());
+    let other = BinarySettlement::Other(OtherBinarySettlement::new("provider_voided").unwrap());
     assert_eq!(
         serde_json::to_value(&other).unwrap(),
         serde_json::json!({

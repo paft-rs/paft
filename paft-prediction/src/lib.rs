@@ -39,7 +39,7 @@ pub use market::{
     BinaryMarket, BinaryPayoutVector, BinarySettlement, ClaimDescriptor, EventStructure,
     GenericBinaryMarket, GenericMultiOutcomeMarket, GenericPredictionEvent,
     GenericPredictionMarket, GenericScalarMarket, LinkedBinaryRelation, MultiOutcomeMarket,
-    NumericBound, NumericRange, OtherBinaryResolution, OtherClaimDescriptor, OtherEventStructure,
+    NumericBound, NumericRange, OtherBinarySettlement, OtherClaimDescriptor, OtherEventStructure,
     OtherLinkedBinaryRelation, OtherPredictionMarketStatus, OutcomeDescriptor, PredictionEvent,
     PredictionMarket, PredictionMarketStatus, ScalarMarket,
 };

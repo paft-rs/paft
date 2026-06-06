@@ -101,6 +101,8 @@ All notable changes to this project will be documented in this file.
 - Prediction: `GenericBinaryMarket` now uses `winning_payout:
   NonZeroOutcomePayout` and `settlement: Option<BinarySettlement>` instead of
   zero-capable `unit_payout` plus `BinaryResolution`.
+- Prediction: renamed `OtherBinaryResolution` to `OtherBinarySettlement` to
+  match `BinarySettlement`.
 - Prediction: `GenericMultiOutcomeMarket` now validates outcome count,
   outcome instrument market identity, duplicate outcome ids, and listed
   resolutions through a fallible constructor and deserialization.

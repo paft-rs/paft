@@ -123,7 +123,7 @@ opaque_metadata_code!(
 
 opaque_metadata_code!(
     /// Binary-settlement code not modeled by [`BinarySettlement`].
-    pub struct OtherBinaryResolution;
+    pub struct OtherBinarySettlement;
     kind = "binary settlement code";
     modeled_by = is_modeled_binary_settlement_code;
 );
@@ -371,7 +371,7 @@ pub enum BinarySettlement {
     /// Market voided/cancelled without a simple payout vector.
     Void,
     /// Provider-specific binary settlement result.
-    Other(OtherBinaryResolution),
+    Other(OtherBinarySettlement),
 }
 
 impl BinarySettlement {
