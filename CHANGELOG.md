@@ -104,6 +104,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `GenericMultiOutcomeMarket` now validates outcome count,
   outcome instrument market identity, duplicate outcome ids, and listed
   resolutions through a fallible constructor and deserialization.
+- Prediction: `PredictionEvent` now documents event structure as relationship
+  metadata during construction and exposes `validate_structure()` for modeled
+  market-count checks.
 - Prediction: standalone market shapes now carry `event_key:
   Option<PredictionEventKey>` instead of a bare event id so event references
   are fully venue-namespaced.

@@ -3,8 +3,8 @@ use paft_prediction::{
     BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, BinaryPayoutVector, BinarySettlement,
     ClaimDescriptor, EventStructure, MultiOutcomeMarket, NonZeroContractQuantity,
     NonZeroOutcomePayout, OutcomeDescriptor, OutcomeInstrument, OutcomePayout, PredictionError,
-    PredictionEventKey, PredictionMarketKey, PredictionMarketStatus, PredictionOutcomeId,
-    PredictionSeriesKey,
+    PredictionEventKey, PredictionMarket, PredictionMarketKey, PredictionMarketStatus,
+    PredictionOutcomeId, PredictionSeriesKey,
 };
 use paft_prediction::{NumericBound, NumericRange, PredictionEvent};
 
@@ -13,6 +13,22 @@ fn outcome(market_id: &str, outcome_id: &str, label: &str) -> OutcomeDescriptor 
         instrument: OutcomeInstrument::new("MANIFOLD", market_id, outcome_id).unwrap(),
         label: label.to_string(),
     }
+}
+
+fn binary_market(market_id: &str) -> BinaryMarket {
+    let key = BinaryMarketKey::new("KALSHI", market_id).unwrap();
+    BinaryMarket::new(
+        key.clone(),
+        BinaryOutcomeInstruments::synthetic_for_market(&key),
+        format!("Market {market_id}"),
+        ClaimDescriptor::Text {
+            description: format!("Claim {market_id}"),
+        },
+        PredictionMarketStatus::Open,
+        Currency::Iso(IsoCurrency::USD),
+        NonZeroOutcomePayout::ONE,
+    )
+    .unwrap()
 }
 
 #[test]
@@ -437,6 +453,62 @@ fn prediction_event_uses_full_series_key_reference() {
     assert!(value.get("series_id").is_none());
     assert_eq!(value["series_key"]["venue"], "KALSHI");
     assert_eq!(value["series_key"]["series_id"], "KXHIGHNY");
+}
+
+#[test]
+fn prediction_event_structure_validation_is_explicit() {
+    let mut single = PredictionEvent::new(
+        PredictionEventKey::new("KALSHI", "SINGLE").unwrap(),
+        "Single market event".to_string(),
+        EventStructure::SingleMarket,
+    );
+    assert!(matches!(
+        single.validate_structure(),
+        Err(PredictionError::InvalidEventStructure {
+            structure: "single_market",
+            market_count: 0,
+            ..
+        })
+    ));
+
+    single
+        .markets
+        .push(PredictionMarket::Binary(binary_market("MKT1")));
+    assert!(single.validate_structure().is_ok());
+
+    single
+        .markets
+        .push(PredictionMarket::Binary(binary_market("MKT2")));
+    assert!(matches!(
+        single.validate_structure(),
+        Err(PredictionError::InvalidEventStructure {
+            structure: "single_market",
+            market_count: 2,
+            ..
+        })
+    ));
+
+    let mut buckets = PredictionEvent::new(
+        PredictionEventKey::new("KALSHI", "BUCKETS").unwrap(),
+        "Bucket event".to_string(),
+        EventStructure::OrderedBuckets { exhaustive: true },
+    );
+    buckets
+        .markets
+        .push(PredictionMarket::Binary(binary_market("BUCKET1")));
+    assert!(matches!(
+        buckets.validate_structure(),
+        Err(PredictionError::InvalidEventStructure {
+            structure: "ordered_buckets",
+            market_count: 1,
+            ..
+        })
+    ));
+
+    buckets
+        .markets
+        .push(PredictionMarket::Binary(binary_market("BUCKET2")));
+    assert!(buckets.validate_structure().is_ok());
 }
 
 #[test]

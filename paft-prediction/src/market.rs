@@ -251,21 +251,21 @@ macro_rules! open_string_metadata_enum {
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 #[non_exhaustive]
 pub enum EventStructure {
-    /// Event contains exactly one market.
+    /// Event is intended to group exactly one market.
     SingleMarket,
     /// Markets are related only by provider grouping/context.
     IndependentClaims,
-    /// Markets represent mutually exclusive outcomes.
+    /// Markets are intended to represent mutually exclusive outcomes.
     MutuallyExclusive {
         /// Whether the outcome set is exhaustive.
         exhaustive: bool,
     },
-    /// Binary markets represent ordered numeric buckets.
+    /// Binary markets are intended to represent ordered numeric buckets.
     OrderedBuckets {
         /// Whether the bucket set is exhaustive.
         exhaustive: bool,
     },
-    /// Markets are linked by a named binary-claim relation.
+    /// Markets are intended to be linked by a named binary-claim relation.
     LinkedBinaryClaims {
         /// The relation that links the binary claims.
         relation: LinkedBinaryRelation,
@@ -566,7 +566,11 @@ pub struct GenericPredictionEvent<E = (), M = ()> {
     pub category: Option<String>,
     /// Optional venue-namespaced recurring-series/group key.
     pub series_key: Option<PredictionSeriesKey>,
-    /// Relationship among the event's markets.
+    /// Relationship metadata for the event's markets.
+    ///
+    /// This is not enforced by construction because events are often built
+    /// before their market list is populated. Call [`Self::validate_structure`]
+    /// after filling `markets` to check currently modeled cardinality rules.
     pub structure: EventStructure,
     /// Markets grouped under this event.
     pub markets: Vec<GenericPredictionMarket<M>>,
@@ -577,6 +581,10 @@ pub struct GenericPredictionEvent<E = (), M = ()> {
 
 impl<E: Default, M> GenericPredictionEvent<E, M> {
     /// Build an empty prediction event with the given key, title, and structure.
+    ///
+    /// The event starts with no markets even when `structure` implies a market
+    /// cardinality. Populate `markets`, then call [`Self::validate_structure`]
+    /// when the event is expected to be semantically complete.
     #[must_use]
     pub fn new(key: PredictionEventKey, title: String, structure: EventStructure) -> Self {
         Self {
@@ -589,6 +597,59 @@ impl<E: Default, M> GenericPredictionEvent<E, M> {
             markets: Vec::new(),
             provider: E::default(),
         }
+    }
+}
+
+impl<E, M> GenericPredictionEvent<E, M> {
+    /// Validate that the event's market count matches modeled structure rules.
+    ///
+    /// This intentionally validates only structure-level cardinality. It does
+    /// not try to prove provider-specific semantics, such as whether an
+    /// ordered-bucket event's binary claims all carry numeric range descriptors.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidEventStructure`] when the event's
+    /// market count is inconsistent with its [`EventStructure`].
+    pub fn validate_structure(&self) -> Result<(), PredictionError> {
+        validate_event_structure(&self.structure, self.markets.len())
+    }
+}
+
+fn validate_event_structure(
+    structure: &EventStructure,
+    market_count: usize,
+) -> Result<(), PredictionError> {
+    let invalid = |structure, reason| PredictionError::InvalidEventStructure {
+        structure,
+        market_count,
+        reason,
+    };
+
+    match structure {
+        EventStructure::SingleMarket if market_count != 1 => Err(invalid(
+            "single_market",
+            "expected exactly one contained market",
+        )),
+        EventStructure::MutuallyExclusive { .. } if market_count < 2 => Err(invalid(
+            "mutually_exclusive",
+            "expected at least two contained markets",
+        )),
+        EventStructure::OrderedBuckets { .. } if market_count < 2 => Err(invalid(
+            "ordered_buckets",
+            "expected at least two contained markets",
+        )),
+        EventStructure::LinkedBinaryClaims { .. } if market_count < 2 => Err(invalid(
+            "linked_binary_claims",
+            "expected at least two contained markets",
+        )),
+        EventStructure::SingleMarket
+        | EventStructure::IndependentClaims
+        | EventStructure::MutuallyExclusive { .. }
+        | EventStructure::OrderedBuckets { .. }
+        | EventStructure::LinkedBinaryClaims { .. }
+        | EventStructure::Composite
+        | EventStructure::Other { .. } => Ok(()),
     }
 }
 

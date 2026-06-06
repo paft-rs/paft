@@ -207,6 +207,17 @@ pub enum PredictionError {
         outcome_id: String,
     },
 
+    /// Event structure metadata is inconsistent with the contained markets.
+    #[error("Invalid event structure {structure} with {market_count} markets: {reason}")]
+    InvalidEventStructure {
+        /// Event-structure code.
+        structure: &'static str,
+        /// Number of markets contained by the event.
+        market_count: usize,
+        /// Validation failure reason.
+        reason: &'static str,
+    },
+
     /// Invalid price-grid structure.
     #[error("Invalid price grid: {reason}")]
     InvalidPriceGrid {
