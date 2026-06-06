@@ -8,7 +8,7 @@ use crate::instrument::{
     BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
     PredictionMarketKey, PredictionSeriesKey,
 };
-use crate::price::{NonZeroContractQuantity, OutcomePayout, PriceGrid};
+use crate::price::{NonZeroContractQuantity, NonZeroOutcomePayout, OutcomePayout, PriceGrid};
 use chrono::{DateTime, Utc};
 use paft_decimal::Decimal;
 use paft_money::Currency;
@@ -122,10 +122,10 @@ opaque_metadata_code!(
 );
 
 opaque_metadata_code!(
-    /// Binary-resolution code not modeled by [`BinaryResolution`].
+    /// Binary-settlement code not modeled by [`BinarySettlement`].
     pub struct OtherBinaryResolution;
-    kind = "binary resolution code";
-    modeled_by = is_modeled_binary_resolution_code;
+    kind = "binary settlement code";
+    modeled_by = is_modeled_binary_settlement_code;
 );
 
 fn is_modeled_code(input: &str, modeled: &[&str]) -> bool {
@@ -174,8 +174,8 @@ fn is_modeled_prediction_market_status_code(input: &str) -> bool {
     )
 }
 
-fn is_modeled_binary_resolution_code(input: &str) -> bool {
-    is_modeled_code(input, &["yes", "no", "void"])
+fn is_modeled_binary_settlement_code(input: &str) -> bool {
+    is_modeled_code(input, &["yes", "no", "payout_vector", "void"])
 }
 
 macro_rules! open_string_metadata_enum {
@@ -334,28 +334,67 @@ open_string_metadata_enum!(
     }
 );
 
-/// Final binary market resolution.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Explicit settlement payouts for a binary market.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BinaryPayoutVector {
+    /// Resolved payout for a YES outcome instrument.
+    pub yes: OutcomePayout,
+    /// Resolved payout for a NO outcome instrument.
+    pub no: OutcomePayout,
+}
+
+impl BinaryPayoutVector {
+    /// Build an explicit binary settlement payout vector.
+    #[must_use]
+    pub const fn new(yes: OutcomePayout, no: OutcomePayout) -> Self {
+        Self { yes, no }
+    }
+}
+
+/// Final binary market settlement.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    content = "value",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 #[non_exhaustive]
-pub enum BinaryResolution {
-    /// YES won.
+pub enum BinarySettlement {
+    /// YES pays the market's full winning payout; NO pays zero.
     Yes,
-    /// NO won.
+    /// NO pays the market's full winning payout; YES pays zero.
     No,
-    /// Market was voided/cancelled and did not resolve yes/no.
+    /// Explicit payout vector, including partial, cancelled, or scalar-like settlement.
+    PayoutVector(BinaryPayoutVector),
+    /// Market voided/cancelled without a simple payout vector.
     Void,
-    /// Provider-specific binary resolution.
+    /// Provider-specific binary settlement result.
     Other(OtherBinaryResolution),
 }
 
-open_string_metadata_enum!(
-    BinaryResolution, OtherBinaryResolution, "binary resolution code";
-    {
-        "yes" => Yes,
-        "no" => No,
-        "void" => Void,
+impl BinarySettlement {
+    /// Derive YES/NO payouts for settlements that define a payout vector.
+    #[must_use]
+    pub const fn resolved_payouts(
+        &self,
+        winning_payout: NonZeroOutcomePayout,
+    ) -> Option<BinaryPayoutVector> {
+        match self {
+            Self::Yes => Some(BinaryPayoutVector {
+                yes: winning_payout.to_payout(),
+                no: OutcomePayout::ZERO,
+            }),
+            Self::No => Some(BinaryPayoutVector {
+                yes: OutcomePayout::ZERO,
+                no: winning_payout.to_payout(),
+            }),
+            Self::PayoutVector(vector) => Some(*vector),
+            Self::Void | Self::Other(_) => None,
+        }
     }
-);
+}
 
 /// Description of the claim represented by a prediction market.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -573,8 +612,8 @@ pub struct GenericBinaryMarket<M = ()> {
     pub status: PredictionMarketStatus,
     /// Currency used for collateral and settlement.
     pub collateral_currency: Currency,
-    /// Payout per winning contract/share, denominated by `collateral_currency`.
-    pub unit_payout: OutcomePayout,
+    /// Non-zero payout per winning contract/share, denominated by `collateral_currency`.
+    pub winning_payout: NonZeroOutcomePayout,
     /// Market-specific price grid, if known.
     pub price_grid: Option<PriceGrid>,
     /// Non-zero minimum accepted order quantity, if known.
@@ -588,8 +627,8 @@ pub struct GenericBinaryMarket<M = ()> {
     /// Time when the market settled/resolved.
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub settlement_time: Option<DateTime<Utc>>,
-    /// Binary resolution, if known.
-    pub resolution: Option<BinaryResolution>,
+    /// Binary settlement result, if known.
+    pub settlement: Option<BinarySettlement>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
@@ -609,7 +648,7 @@ impl<M: Default> GenericBinaryMarket<M> {
         claim: ClaimDescriptor,
         status: PredictionMarketStatus,
         collateral_currency: Currency,
-        unit_payout: OutcomePayout,
+        winning_payout: NonZeroOutcomePayout,
     ) -> Result<Self, PredictionError> {
         validate_binary_market_outcomes(&key, &outcomes)?;
 
@@ -623,13 +662,13 @@ impl<M: Default> GenericBinaryMarket<M> {
             claim,
             status,
             collateral_currency,
-            unit_payout,
+            winning_payout,
             price_grid: None,
             min_order_quantity: None,
             open_time: None,
             close_time: None,
             settlement_time: None,
-            resolution: None,
+            settlement: None,
             provider: M::default(),
         })
     }
@@ -654,7 +693,7 @@ where
             claim: ClaimDescriptor,
             status: PredictionMarketStatus,
             collateral_currency: Currency,
-            unit_payout: OutcomePayout,
+            winning_payout: NonZeroOutcomePayout,
             price_grid: Option<PriceGrid>,
             min_order_quantity: Option<NonZeroContractQuantity>,
             #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
@@ -663,7 +702,7 @@ where
             close_time: Option<DateTime<Utc>>,
             #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
             settlement_time: Option<DateTime<Utc>>,
-            resolution: Option<BinaryResolution>,
+            settlement: Option<BinarySettlement>,
             #[serde(flatten, default = "Default::default")]
             provider: M,
         }
@@ -682,15 +721,25 @@ where
             claim: shadow.claim,
             status: shadow.status,
             collateral_currency: shadow.collateral_currency,
-            unit_payout: shadow.unit_payout,
+            winning_payout: shadow.winning_payout,
             price_grid: shadow.price_grid,
             min_order_quantity: shadow.min_order_quantity,
             open_time: shadow.open_time,
             close_time: shadow.close_time,
             settlement_time: shadow.settlement_time,
-            resolution: shadow.resolution,
+            settlement: shadow.settlement,
             provider: shadow.provider,
         })
+    }
+}
+
+impl<M> GenericBinaryMarket<M> {
+    /// Derive resolved YES/NO payouts from this market's settlement, when possible.
+    #[must_use]
+    pub fn resolved_payouts(&self) -> Option<BinaryPayoutVector> {
+        self.settlement
+            .as_ref()?
+            .resolved_payouts(self.winning_payout)
     }
 }
 

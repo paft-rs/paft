@@ -1,6 +1,6 @@
 use paft_prediction::{
-    ContractQuantity, NonZeroContractQuantity, OutcomePayout, OutcomePrice, PriceBand, PriceGrid,
-    PriceTick,
+    ContractQuantity, NonZeroContractQuantity, NonZeroOutcomePayout, OutcomePayout, OutcomePrice,
+    PriceBand, PriceGrid, PriceTick,
 };
 use std::mem::size_of;
 
@@ -123,6 +123,12 @@ fn fixed_point_display_uses_canonical_decimal_form() {
         "219.217767"
     );
     assert_eq!(OutcomePayout::from_micropayouts(1_000_000).to_string(), "1");
+    assert_eq!(
+        NonZeroOutcomePayout::from_micropayouts(1_000_000)
+            .unwrap()
+            .to_string(),
+        "1"
+    );
 }
 
 #[test]
@@ -258,6 +264,42 @@ fn outcome_payout_parses_exact_decimal_values() {
 }
 
 #[test]
+fn non_zero_outcome_payout_parses_exact_decimal_values() {
+    let payout = NonZeroOutcomePayout::from_canonical_str("2.25").unwrap();
+
+    assert_eq!(payout.micropayouts(), 2_250_000);
+    assert_eq!(
+        NonZeroOutcomePayout::from_decimal(decimal("1"))
+            .unwrap()
+            .micropayouts(),
+        OutcomePayout::SCALE
+    );
+    assert_eq!(payout.to_payout().micropayouts(), 2_250_000);
+    assert_eq!(
+        paft_decimal::to_canonical_string(&payout.to_decimal()),
+        "2.25"
+    );
+}
+
+#[test]
+fn non_zero_outcome_payout_rejects_zero_and_preserves_integer_serde() {
+    assert!(NonZeroOutcomePayout::from_micropayouts(0).is_err());
+    assert!(NonZeroOutcomePayout::from_payout(OutcomePayout::ZERO).is_err());
+    assert!(NonZeroOutcomePayout::from_canonical_str("0").is_err());
+    assert!(NonZeroOutcomePayout::from_canonical_str("0.0000000").is_err());
+    assert!(serde_json::from_str::<NonZeroOutcomePayout>("0").is_err());
+
+    let payout = NonZeroOutcomePayout::from_micropayouts(2_000_000).unwrap();
+    assert_eq!(serde_json::to_string(&payout).unwrap(), "2000000");
+    assert_eq!(
+        serde_json::from_str::<NonZeroOutcomePayout>("2000000")
+            .unwrap()
+            .micropayouts(),
+        2_000_000
+    );
+}
+
+#[test]
 fn outcome_payout_rejects_inexact_negative_or_overflowing_decimal_values() {
     assert!(OutcomePayout::from_canonical_str("1.0000001").is_err());
     assert!(OutcomePayout::from_canonical_str("-1").is_err());
@@ -333,4 +375,9 @@ fn optional_non_zero_contract_quantity_uses_non_zero_niche() {
         size_of::<Option<NonZeroContractQuantity>>(),
         size_of::<u64>()
     );
+}
+
+#[test]
+fn optional_non_zero_outcome_payout_uses_non_zero_niche() {
+    assert_eq!(size_of::<Option<NonZeroOutcomePayout>>(), size_of::<u64>());
 }

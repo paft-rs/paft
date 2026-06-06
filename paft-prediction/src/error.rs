@@ -118,6 +118,13 @@ pub enum PredictionError {
         microcontracts: u64,
     },
 
+    /// Invalid non-zero fixed-point outcome payout.
+    #[error("Invalid outcome payout micropayouts: {micropayouts} - expected > 0")]
+    InvalidOutcomePayout {
+        /// Fixed-point micropayout count supplied by the caller.
+        micropayouts: u64,
+    },
+
     /// Invalid decimal input for a fixed-point prediction value.
     #[error("Invalid {kind} decimal '{value}': {reason}")]
     InvalidFixedPointDecimal {

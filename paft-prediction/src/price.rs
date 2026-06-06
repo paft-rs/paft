@@ -672,6 +672,127 @@ impl From<OutcomePayout> for u64 {
     }
 }
 
+/// Non-zero currencyless unit-payout amount in millionths of the collateral unit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[repr(transparent)]
+#[serde(transparent)]
+pub struct NonZeroOutcomePayout(NonZeroU64);
+
+impl NonZeroOutcomePayout {
+    /// Fixed-point scale: one whole collateral unit is `1_000_000` micropayouts.
+    pub const SCALE: u64 = OutcomePayout::SCALE;
+    /// One whole collateral unit of payout.
+    pub const ONE: Self = Self(NonZeroU64::new(Self::SCALE).expect("scale is non-zero"));
+
+    /// Construct a non-zero payout from an already non-zero micropayout count.
+    #[must_use]
+    pub const fn from_nonzero_micropayouts(value: NonZeroU64) -> Self {
+        Self(value)
+    }
+
+    /// Construct a non-zero payout from fixed-point micropayouts.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidOutcomePayout`] when `value` is zero.
+    pub const fn from_micropayouts(value: u64) -> Result<Self, PredictionError> {
+        match NonZeroU64::new(value) {
+            Some(value) => Ok(Self(value)),
+            None => Err(PredictionError::InvalidOutcomePayout {
+                micropayouts: value,
+            }),
+        }
+    }
+
+    /// Construct from a zero-capable outcome payout.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidOutcomePayout`] when `value` is zero.
+    pub const fn from_payout(value: OutcomePayout) -> Result<Self, PredictionError> {
+        Self::from_micropayouts(value.micropayouts())
+    }
+
+    /// Construct a non-zero payout from an exact decimal value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when the value is zero, negative, cannot be
+    /// stored as a `u64` micropayout count, or cannot be represented exactly
+    /// in millionths.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
+        Self::from_canonical_str(&to_canonical_string(&value))
+    }
+
+    /// Parse an exact non-zero decimal payout.
+    ///
+    /// The accepted scale is millionths. Extra trailing zero fractional digits
+    /// are accepted, but non-zero digits beyond six decimal places are rejected
+    /// instead of rounded.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when `value` is zero, is not a plain decimal
+    /// string, is negative, cannot be stored as a `u64` micropayout count, or
+    /// cannot be represented exactly in millionths.
+    pub fn from_canonical_str(value: &str) -> Result<Self, PredictionError> {
+        Self::from_micropayouts(parse_fixed_point_units(value, "outcome payout")?)
+    }
+
+    /// Convert this value into a zero-capable outcome payout.
+    #[must_use]
+    pub const fn to_payout(self) -> OutcomePayout {
+        OutcomePayout::from_micropayouts(self.micropayouts())
+    }
+
+    /// Convert this payout into a decimal value.
+    #[must_use]
+    pub fn to_decimal(self) -> Decimal {
+        from_minor_units(i128::from(self.micropayouts()), FIXED_SCALE_DIGITS_U32)
+    }
+
+    /// Returns the fixed-point micropayout count.
+    #[must_use]
+    pub const fn micropayouts(self) -> u64 {
+        self.0.get()
+    }
+}
+
+impl fmt::Display for NonZeroOutcomePayout {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt_fixed_point_units(f, self.micropayouts())
+    }
+}
+
+impl TryFrom<u64> for NonZeroOutcomePayout {
+    type Error = PredictionError;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        Self::from_micropayouts(value)
+    }
+}
+
+impl TryFrom<OutcomePayout> for NonZeroOutcomePayout {
+    type Error = PredictionError;
+
+    fn try_from(value: OutcomePayout) -> Result<Self, Self::Error> {
+        Self::from_payout(value)
+    }
+}
+
+impl From<NonZeroOutcomePayout> for u64 {
+    fn from(value: NonZeroOutcomePayout) -> Self {
+        value.micropayouts()
+    }
+}
+
+impl From<NonZeroOutcomePayout> for OutcomePayout {
+    fn from(value: NonZeroOutcomePayout) -> Self {
+        value.to_payout()
+    }
+}
+
 fn parse_fixed_point_units(value: &str, kind: &'static str) -> Result<u64, PredictionError> {
     let trimmed = value.trim();
     if trimmed.is_empty() {

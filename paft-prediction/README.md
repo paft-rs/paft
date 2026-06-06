@@ -51,11 +51,14 @@ What's inside
   requires `BinaryOutcomeInstruments` so venue-native YES/NO tradable ids stay
   in the core model.
 - `OutcomePrice`, `PriceTick`, `PriceGrid`, `PriceBand`,
-  `ContractQuantity`, `NonZeroContractQuantity`, and `OutcomePayout`: compact
-  fixed-point integer primitives for prices, ticks, quantities, and contextual
-  unit payouts.
+  `ContractQuantity`, `NonZeroContractQuantity`, `OutcomePayout`, and
+  `NonZeroOutcomePayout`: compact fixed-point integer primitives for prices,
+  ticks, quantities, and contextual unit payouts.
   Decimal parse/display helpers use canonical decimal text while serde remains
   compact integer micros.
+- `BinarySettlement` and `BinaryPayoutVector`: binary settlement metadata where
+  a market has a non-zero winning payout but resolved outcome payouts may be
+  zero or explicit partial values.
 - `BinaryQuote`, `PredictionQuoteLevel`, `BinaryOrderBook`, `OutcomeOrderBook`,
   `PredictionBookLevel`, and `PredictionTrade`: market-data payloads. Quotes
   allow best bid/ask quantities to be absent, while present quote quantities,

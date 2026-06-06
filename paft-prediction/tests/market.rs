@@ -1,9 +1,10 @@
 use paft_money::{Currency, IsoCurrency};
 use paft_prediction::{
-    BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor, EventStructure,
-    MultiOutcomeMarket, NonZeroContractQuantity, OutcomeDescriptor, OutcomeInstrument,
-    OutcomePayout, PredictionError, PredictionEventKey, PredictionMarketKey,
-    PredictionMarketStatus, PredictionOutcomeId, PredictionSeriesKey,
+    BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, BinaryPayoutVector, BinarySettlement,
+    ClaimDescriptor, EventStructure, MultiOutcomeMarket, NonZeroContractQuantity,
+    NonZeroOutcomePayout, OutcomeDescriptor, OutcomeInstrument, OutcomePayout, PredictionError,
+    PredictionEventKey, PredictionMarketKey, PredictionMarketStatus, PredictionOutcomeId,
+    PredictionSeriesKey,
 };
 use paft_prediction::{NumericBound, NumericRange, PredictionEvent};
 
@@ -46,7 +47,7 @@ fn binary_market_carries_required_polymarket_outcome_instruments() {
         },
         PredictionMarketStatus::Open,
         Currency::Iso(IsoCurrency::USD),
-        OutcomePayout::ONE,
+        NonZeroOutcomePayout::ONE,
     )
     .unwrap();
 
@@ -104,7 +105,7 @@ fn binary_market_deserialization_rejects_zero_min_order_quantity() {
         },
         PredictionMarketStatus::Open,
         Currency::Iso(IsoCurrency::USD),
-        OutcomePayout::ONE,
+        NonZeroOutcomePayout::ONE,
     )
     .unwrap();
     market.min_order_quantity = Some(NonZeroContractQuantity::ONE);
@@ -127,7 +128,7 @@ fn binary_market_uses_full_event_key_reference() {
         },
         PredictionMarketStatus::Open,
         Currency::Iso(IsoCurrency::USD),
-        OutcomePayout::ONE,
+        NonZeroOutcomePayout::ONE,
     )
     .unwrap();
     market.event_key = Some(PredictionEventKey::new("KALSHI", "KXHIGHNY-24JAN01").unwrap());
@@ -137,6 +138,44 @@ fn binary_market_uses_full_event_key_reference() {
     assert!(value.get("event_id").is_none());
     assert_eq!(value["event_key"]["venue"], "KALSHI");
     assert_eq!(value["event_key"]["event_id"], "KXHIGHNY-24JAN01");
+}
+
+#[test]
+fn binary_market_derives_settlement_payout_vectors() {
+    let key = BinaryMarketKey::new("KALSHI", "KXHIGHNY-24JAN01-T60").unwrap();
+    let mut market = BinaryMarket::new(
+        key.clone(),
+        BinaryOutcomeInstruments::synthetic_for_market(&key),
+        "Will NYC temperature exceed 60F?".to_string(),
+        ClaimDescriptor::Text {
+            description: "NYC temperature exceeds 60F at expiry.".to_string(),
+        },
+        PredictionMarketStatus::Resolved,
+        Currency::Iso(IsoCurrency::USD),
+        NonZeroOutcomePayout::ONE,
+    )
+    .unwrap();
+
+    market.settlement = Some(BinarySettlement::Yes);
+    let payouts = market.resolved_payouts().unwrap();
+    assert_eq!(payouts.yes, OutcomePayout::ONE);
+    assert_eq!(payouts.no, OutcomePayout::ZERO);
+
+    market.settlement = Some(BinarySettlement::No);
+    let payouts = market.resolved_payouts().unwrap();
+    assert_eq!(payouts.yes, OutcomePayout::ZERO);
+    assert_eq!(payouts.no, OutcomePayout::ONE);
+
+    market.settlement = Some(BinarySettlement::PayoutVector(BinaryPayoutVector::new(
+        OutcomePayout::from_micropayouts(370_000),
+        OutcomePayout::from_micropayouts(630_000),
+    )));
+    let payouts = market.resolved_payouts().unwrap();
+    assert_eq!(payouts.yes.micropayouts(), 370_000);
+    assert_eq!(payouts.no.micropayouts(), 630_000);
+
+    market.settlement = Some(BinarySettlement::Void);
+    assert_eq!(market.resolved_payouts(), None);
 }
 
 #[test]
@@ -154,7 +193,7 @@ fn binary_market_constructor_rejects_outcomes_for_different_market_key() {
         },
         PredictionMarketStatus::Open,
         Currency::Iso(IsoCurrency::USD),
-        OutcomePayout::ONE,
+        NonZeroOutcomePayout::ONE,
     )
     .unwrap_err();
 
@@ -195,13 +234,13 @@ fn binary_market_deserialization_rejects_outcomes_for_different_market_key() {
         "collateral_currency": {
             "iso": "USD"
         },
-        "unit_payout": 1000000,
+        "winning_payout": 1000000,
         "price_grid": null,
         "min_order_quantity": null,
         "open_time": null,
         "close_time": null,
         "settlement_time": null,
-        "resolution": null
+        "settlement": null
     }"#;
 
     assert!(serde_json::from_str::<BinaryMarket>(json).is_err());

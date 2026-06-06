@@ -36,12 +36,12 @@ pub use instrument::{
     PredictionMarketKey, PredictionSeriesKey,
 };
 pub use market::{
-    BinaryMarket, BinaryResolution, ClaimDescriptor, EventStructure, GenericBinaryMarket,
-    GenericMultiOutcomeMarket, GenericPredictionEvent, GenericPredictionMarket,
-    GenericScalarMarket, LinkedBinaryRelation, MultiOutcomeMarket, NumericBound, NumericRange,
-    OtherBinaryResolution, OtherClaimDescriptor, OtherEventStructure, OtherLinkedBinaryRelation,
-    OtherPredictionMarketStatus, OutcomeDescriptor, PredictionEvent, PredictionMarket,
-    PredictionMarketStatus, ScalarMarket,
+    BinaryMarket, BinaryPayoutVector, BinarySettlement, ClaimDescriptor, EventStructure,
+    GenericBinaryMarket, GenericMultiOutcomeMarket, GenericPredictionEvent,
+    GenericPredictionMarket, GenericScalarMarket, LinkedBinaryRelation, MultiOutcomeMarket,
+    NumericBound, NumericRange, OtherBinaryResolution, OtherClaimDescriptor, OtherEventStructure,
+    OtherLinkedBinaryRelation, OtherPredictionMarketStatus, OutcomeDescriptor, PredictionEvent,
+    PredictionMarket, PredictionMarketStatus, ScalarMarket,
 };
 pub use market_data::{
     BinaryOrderBook, BinaryOrderDirection, BinaryOutcome, BinaryQuote, BookSide,
@@ -49,6 +49,6 @@ pub use market_data::{
     OutcomeOrderBook, PredictionBookLevel, PredictionQuoteLevel, PredictionTrade, TradeAction,
 };
 pub use price::{
-    ContractQuantity, NonZeroContractQuantity, OutcomePayout, OutcomePrice, PriceBand, PriceGrid,
-    PriceTick,
+    ContractQuantity, NonZeroContractQuantity, NonZeroOutcomePayout, OutcomePayout, OutcomePrice,
+    PriceBand, PriceGrid, PriceTick,
 };

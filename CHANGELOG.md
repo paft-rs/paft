@@ -72,10 +72,15 @@ All notable changes to this project will be documented in this file.
   `ContractQuantity`, and `OutcomePayout`.
 - Prediction/facade: added `NonZeroContractQuantity` for quantity surfaces
   where zero is not semantically valid.
+- Prediction/facade: added `NonZeroOutcomePayout` for market metadata payout
+  surfaces where zero is not semantically valid.
 - Prediction/facade: added `PredictionSeriesKey` for venue-namespaced recurring
   series identity.
 - Prediction: added `sort_levels()` helpers for binary and outcome order books
   to canonicalize bid/ask level ordering in place.
+- Prediction: added `BinarySettlement` and `BinaryPayoutVector` so binary
+  markets can distinguish non-zero winning payout from zero-capable resolved
+  outcome payout vectors.
 
 ### Changed
 
@@ -90,6 +95,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `GenericBinaryMarket::new` is now fallible and binary market
   deserialization validates that YES/NO outcome instruments belong to the
   market key.
+- Prediction: `GenericBinaryMarket` now uses `winning_payout:
+  NonZeroOutcomePayout` and `settlement: Option<BinarySettlement>` instead of
+  zero-capable `unit_payout` plus `BinaryResolution`.
 - Prediction: `GenericMultiOutcomeMarket` now validates outcome count,
   outcome instrument market identity, duplicate outcome ids, and listed
   resolutions through a fallible constructor and deserialization.
@@ -99,9 +107,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `PredictionEvent` now carries `series_key:
   Option<PredictionSeriesKey>` instead of a bare series id so series references
   are fully venue-namespaced.
-- Prediction: `LinkedBinaryRelation`, `PredictionMarketStatus`, and
-  `BinaryResolution` now use paft-style open string parsing/serde, so unknown
-  strings deserialize into `Other(...)` and serialize back as strings.
+- Prediction: `LinkedBinaryRelation` and `PredictionMarketStatus` now use
+  paft-style open string parsing/serde, so unknown strings deserialize into
+  `Other(...)` and serialize back as strings.
 - Prediction: prediction event, market, and outcome `unique_key()` values now
   length-prefix every dynamic component, including venue, and `BinaryMarketKey`
   now emits the same market identity string as `PredictionMarketKey`.

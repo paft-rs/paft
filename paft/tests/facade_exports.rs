@@ -289,6 +289,8 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prediction::PredictionOutcomeId>();
     assert_export::<paft::prediction::BinaryMarketKey>();
     assert_export::<paft::prediction::BinaryOutcomeInstruments>();
+    assert_export::<paft::prediction::BinaryPayoutVector>();
+    assert_export::<paft::prediction::BinarySettlement>();
     assert_export::<paft::prediction::OutcomeInstrument>();
     assert_export::<paft::prediction::PredictionEvent>();
     assert_export::<paft::prediction::PredictionMarket>();
@@ -296,6 +298,7 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prediction::OutcomePrice>();
     assert_export::<paft::prediction::ContractQuantity>();
     assert_export::<paft::prediction::NonZeroContractQuantity>();
+    assert_export::<paft::prediction::NonZeroOutcomePayout>();
     assert_export::<paft::prediction::PredictionQuoteLevel>();
     assert_export::<paft::prediction::BinaryOrderBook>();
     assert_export::<paft::prediction::PredictionTrade>();
@@ -307,6 +310,8 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prelude::PredictionOutcomeId>();
     assert_export::<paft::prelude::BinaryMarketKey>();
     assert_export::<paft::prelude::BinaryOutcomeInstruments>();
+    assert_export::<paft::prelude::BinaryPayoutVector>();
+    assert_export::<paft::prelude::BinarySettlement>();
     assert_export::<paft::prelude::OutcomeInstrument>();
     assert_export::<paft::prelude::PredictionEvent>();
     assert_export::<paft::prelude::PredictionMarket>();
@@ -314,6 +319,7 @@ fn prediction_exports_are_available_from_facade_and_prelude() {
     assert_export::<paft::prelude::OutcomePrice>();
     assert_export::<paft::prelude::ContractQuantity>();
     assert_export::<paft::prelude::NonZeroContractQuantity>();
+    assert_export::<paft::prelude::NonZeroOutcomePayout>();
     assert_export::<paft::prelude::PredictionQuoteLevel>();
     assert_export::<paft::prelude::BinaryOrderBook>();
     assert_export::<paft::prelude::PredictionTrade>();
