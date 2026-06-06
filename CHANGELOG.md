@@ -92,6 +92,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `GenericBinaryMarket` now requires `BinaryOutcomeInstruments`,
   keeping Polymarket-style CLOB token/asset ids in the provider-agnostic
   binary market payload instead of provider metadata.
+- Prediction: `GenericBinaryMarket` now keeps `key` and `outcomes` private
+  with read-only accessors so validated market/outcome identity cannot be
+  bypassed through struct literals or field mutation.
 - Prediction: `GenericBinaryMarket::new` is now fallible and binary market
   deserialization validates that YES/NO outcome instruments belong to the
   market key.

@@ -595,9 +595,9 @@ pub type PredictionMarket = GenericPredictionMarket<()>;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct GenericBinaryMarket<M = ()> {
     /// Venue-namespaced binary market key.
-    pub key: BinaryMarketKey,
+    key: BinaryMarketKey,
     /// Required tradable YES and NO outcome instruments for this market.
-    pub outcomes: BinaryOutcomeInstruments,
+    outcomes: BinaryOutcomeInstruments,
     /// Venue-namespaced event/group key when this market belongs to an event.
     pub event_key: Option<PredictionEventKey>,
     /// Market title.
@@ -734,6 +734,18 @@ where
 }
 
 impl<M> GenericBinaryMarket<M> {
+    /// Return the venue-namespaced binary market key.
+    #[must_use]
+    pub const fn key(&self) -> &BinaryMarketKey {
+        &self.key
+    }
+
+    /// Return the required tradable YES and NO outcome instruments.
+    #[must_use]
+    pub const fn outcomes(&self) -> &BinaryOutcomeInstruments {
+        &self.outcomes
+    }
+
     /// Derive resolved YES/NO payouts from this market's settlement, when possible.
     #[must_use]
     pub fn resolved_payouts(&self) -> Option<BinaryPayoutVector> {
