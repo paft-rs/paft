@@ -20,6 +20,9 @@ wire-format update across the workspace.
   amount for values whose currency is supplied by an enclosing market record.
 - Money/facade: added `QuantityAmount`, a transparent non-negative decimal
   quantity amount for provider-agnostic market sizes and volumes.
+- Money/facade: added `Price::try_total_decimal` for signed or otherwise raw
+  decimal price-times-quantity totals where `QuantityAmount` is not the right
+  domain.
 - Money: added `override_currency_metadata` for explicitly replacing a
   registered non-ISO currency scale while still rejecting conflicts with
   ISO-defined currency exponents.
@@ -100,7 +103,7 @@ wire-format update across the workspace.
   filing URLs can be represented without sentinel strings.
 - Money: scalar arithmetic helpers now borrow decimal operands:
   `Money::{try_mul, try_div}`, `MonetaryAmount::{try_mul, try_div}`,
-  `Price::{try_mul, try_div}`, and `Price::try_total_decimal`.
+  and `Price::{try_mul, try_div}`.
 - Money: `Price::try_total` now accepts `&QuantityAmount`, keeping normal
   price-times-quantity totals on the non-negative quantity path. Use
   `Price::try_total_decimal` for signed/raw decimal quantity semantics.
@@ -168,9 +171,9 @@ wire-format update across the workspace.
   `is_same_exact_bucket_as`.
 - Fundamentals/facade: `EarningsYear::year` now uses the validated
   `PeriodYear` newtype instead of raw `i32`.
-- Domain/fundamentals/facade: `PeriodYear` serde now emits canonical
-  four-digit strings, including nested uses such as `EarningsYear::year`, while
-  deserialization still accepts integer years and normalizes them on output.
+- Domain/fundamentals/facade: fields backed by `PeriodYear` serialize as
+  canonical four-digit strings, including `EarningsYear::year`; deserialization
+  still accepts integer years and normalizes them on output.
 - Fundamentals/facade: EPS trend and revision historical points now use
   `Horizon` for lookback windows instead of overloading `ReportingPeriod`.
 - Domain/money/fundamentals/facade: extensible enum `Other` variants now use
@@ -381,9 +384,10 @@ wire-format update across the workspace.
 - Domain/fundamentals/facade: removed `Default` from `Symbol`, `Exchange`,
   `AssetKind`, and `FundKind` because their old defaults (`DEFAULT`, `NASDAQ`,
   `EQUITY`, and `ETF`) looked like real financial identity data.
-- Domain/facade: `ReportingPeriod` no longer exposes calendar boundary helpers
-  or `Ord`/`PartialOrd`; callers must choose `CalendarPeriod` for calendar
-  boundaries or a provider-specific structural sort key for fiscal labels.
+- Domain/facade: calendar boundary helpers and `Ord`/`PartialOrd` from the old
+  `Period` API were not carried over to `ReportingPeriod`; callers must choose
+  `CalendarPeriod` for calendar boundaries or a provider-specific structural
+  sort key for fiscal labels.
 - Fundamentals/facade: `TrendPoint::period` and `RevisionPoint::period` were
   renamed to `horizon` and now use `Horizon`; helper methods were renamed from
   `find_by_period*`/`available_periods` to
