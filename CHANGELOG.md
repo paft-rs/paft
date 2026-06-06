@@ -16,6 +16,8 @@ wire-format update across the workspace.
   `DecimalConstraintError`.
 - Decimal: added `serde::canonical_str` and `serde::option_canonical_str`
   helpers for backend-stable decimal string wire formats.
+- Decimal: added `try_to_scaled_units` for exact no-rounding conversion from a
+  decimal value into base-10 scaled integer units.
 - Money/facade: added `PriceAmount`, a transparent contextual price-domain
   amount for values whose currency is supplied by an enclosing market record.
 - Money/facade: added `QuantityAmount`, a transparent non-negative decimal
@@ -215,6 +217,9 @@ wire-format update across the workspace.
   `+-1` and `++1` instead of accepting them after leading-plus normalization.
 - Dataframe: `Decimal128Encode` now rejects target scales above Polars decimal
   precision and uses checked exponentiation when rescaling mantissas.
+- Prediction: decimal constructors for fixed-point price, quantity, and payout
+  types now convert through exact scaled units instead of formatting and parsing
+  canonical decimal strings on the success path.
 - Market requests: `HistoryRequest` and `SearchRequest` JSON deserialization
   now rejects unknown top-level fields instead of silently ignoring request
   typos.

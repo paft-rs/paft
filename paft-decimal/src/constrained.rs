@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use ::serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 use crate::{Decimal, one, serde::canonical_str, to_canonical_string, zero};
 

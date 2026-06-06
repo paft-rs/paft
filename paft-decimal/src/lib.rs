@@ -39,7 +39,9 @@ pub enum RoundingStrategy {
 
 #[cfg(not(feature = "bigdecimal"))]
 mod backend {
-    use super::{FromStr, RoundingStrategy, rust_decimal_to_i128_mantissa};
+    use super::{
+        FromStr, RoundingStrategy, rust_decimal_to_i128_mantissa, rust_decimal_to_scaled_units,
+    };
 
     pub use rust_decimal::Decimal;
     use rust_decimal::RoundingStrategy as RustRoundingStrategy;
@@ -102,6 +104,10 @@ mod backend {
 
     pub fn checked_div(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
         lhs.checked_div(*rhs)
+    }
+
+    pub fn try_to_scaled_units(value: &Decimal, target_scale: u32) -> Option<i128> {
+        rust_decimal_to_scaled_units(value, target_scale)
     }
 
     pub fn try_to_i128_mantissa(value: &Decimal, target_scale: u32) -> Option<i128> {
@@ -209,6 +215,32 @@ mod backend {
         Some(lhs / rhs)
     }
 
+    pub fn try_to_scaled_units(value: &Decimal, target_scale: u32) -> Option<i128> {
+        let (mantissa, source_scale) = value.as_bigint_and_exponent();
+        if mantissa.is_zero() {
+            return Some(0);
+        }
+
+        let target_scale = i64::from(target_scale);
+        let units = match source_scale.cmp(&target_scale) {
+            std::cmp::Ordering::Equal => mantissa,
+            std::cmp::Ordering::Less => {
+                let diff = u32::try_from(target_scale - source_scale).ok()?;
+                mantissa * BigInt::from(10_u8).pow(diff)
+            }
+            std::cmp::Ordering::Greater => {
+                let diff = u32::try_from(source_scale - target_scale).ok()?;
+                let divisor = BigInt::from(10_u8).pow(diff);
+                if (&mantissa % &divisor) != BigInt::zero() {
+                    return None;
+                }
+                mantissa / divisor
+            }
+        };
+
+        i128::try_from(units).ok()
+    }
+
     pub fn try_to_i128_mantissa(value: &Decimal, target_scale: u32) -> Option<i128> {
         if target_scale > DECIMAL128_PRECISION {
             return None;
@@ -228,6 +260,28 @@ pub use backend::{Decimal, ToPrimitive};
 
 const DECIMAL128_PRECISION: u32 = 38;
 const MAX_I128_MANTISSA: i128 = 10_i128.pow(DECIMAL128_PRECISION);
+
+#[cfg(not(feature = "bigdecimal"))]
+fn rust_decimal_to_scaled_units(value: &rust_decimal::Decimal, target_scale: u32) -> Option<i128> {
+    let source_scale = value.scale();
+    let mantissa = value.mantissa();
+    match source_scale.cmp(&target_scale) {
+        std::cmp::Ordering::Equal => Some(mantissa),
+        std::cmp::Ordering::Less => {
+            let diff = target_scale - source_scale;
+            let pow = 10_i128.checked_pow(diff)?;
+            mantissa.checked_mul(pow)
+        }
+        std::cmp::Ordering::Greater => {
+            let diff = source_scale - target_scale;
+            let pow = 10_i128.checked_pow(diff)?;
+            if mantissa % pow != 0 {
+                return None;
+            }
+            Some(mantissa / pow)
+        }
+    }
+}
 
 fn rust_decimal_to_i128_mantissa(value: &rust_decimal::Decimal, target_scale: u32) -> Option<i128> {
     if target_scale > DECIMAL128_PRECISION {
@@ -450,6 +504,15 @@ pub fn try_from_scaled_units(value: i128, scale: u32) -> Option<Decimal> {
     backend::try_from_scaled_units(value, scale)
 }
 
+/// Converts a decimal into exact base-10 scaled integer units.
+///
+/// Returns `None` when converting to `target_scale` would require rounding or
+/// when the exact scaled unit count cannot be stored in `i128`.
+#[must_use]
+pub fn try_to_scaled_units(value: &Decimal, target_scale: u32) -> Option<i128> {
+    backend::try_to_scaled_units(value, target_scale)
+}
+
 /// Rounds a decimal to the requested scale using a rounding strategy.
 #[must_use]
 pub fn round_dp_with_strategy(value: &Decimal, scale: u32, strategy: RoundingStrategy) -> Decimal {
@@ -463,7 +526,7 @@ pub fn round_dp_with_strategy(value: &Decimal, scale: u32, strategy: RoundingStr
 /// backend-native differences such as scale preservation or exponent output.
 pub mod serde {
     use super::{Cow, Decimal};
-    use ::serde::{Deserialize, Serializer, de};
+    use serde::{Deserialize, Serializer, de};
 
     fn invalid_decimal<E>(value: &str) -> E
     where
@@ -506,7 +569,7 @@ pub mod serde {
     pub mod option_canonical_str {
         use super::{Cow, Decimal, Deserialize, Serializer, invalid_decimal};
         use crate::{parse_decimal, to_canonical_string};
-        use ::serde::Serialize;
+        use serde::Serialize;
 
         /// Serializes an optional decimal as a canonical string or `null`.
         ///
@@ -565,7 +628,7 @@ mod tests {
 
     use super::{
         Decimal, RoundingStrategy, checked_div, parse_decimal, round_dp_with_strategy,
-        to_canonical_string, try_from_scaled_units,
+        to_canonical_string, try_from_scaled_units, try_to_scaled_units,
     };
 
     #[test]
@@ -682,6 +745,25 @@ mod tests {
     fn try_from_scaled_units_accepts_representable_values() {
         let value = try_from_scaled_units(123_456, 3).unwrap();
         assert_eq!(to_canonical_string(&value), "123.456");
+    }
+
+    #[test]
+    fn try_to_scaled_units_accepts_exact_values() {
+        let value = parse_decimal("123.4560").unwrap();
+        assert_eq!(try_to_scaled_units(&value, 6), Some(123_456_000));
+        assert_eq!(try_to_scaled_units(&value, 3), Some(123_456));
+
+        let negative = parse_decimal("-1.25").unwrap();
+        assert_eq!(try_to_scaled_units(&negative, 2), Some(-125));
+    }
+
+    #[test]
+    fn try_to_scaled_units_rejects_inexact_values_instead_of_rounding() {
+        let above_half = parse_decimal("1.250001").unwrap();
+        assert_eq!(try_to_scaled_units(&above_half, 1), None);
+
+        let tie = parse_decimal("1.25").unwrap();
+        assert_eq!(try_to_scaled_units(&tie, 1), None);
     }
 
     #[cfg(not(feature = "bigdecimal"))]

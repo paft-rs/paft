@@ -10,7 +10,7 @@ Backend-agnostic decimal helpers for the paft ecosystem.
 - `Decimal` aliases the active backend: `rust_decimal::Decimal` by default, or
   `bigdecimal::BigDecimal` with the `bigdecimal` feature
 - Backend-stable helpers for plain decimal parsing, canonical rendering,
-  rounding, checked arithmetic, and scaled-unit construction
+  rounding, checked arithmetic, and exact scaled-unit conversion
 - Constrained decimal newtypes: `NonNegativeDecimal`, `PositiveDecimal`, and
   `Ratio`
 - Serde adapters for canonical decimal strings
@@ -28,7 +28,7 @@ paft = "0.9.0"
 ```
 
 Depend directly when you need helpers such as `parse_decimal`,
-`from_minor_units`, or the serde adapters:
+`try_to_scaled_units`, `from_minor_units`, or the serde adapters:
 
 ```toml
 [dependencies]
