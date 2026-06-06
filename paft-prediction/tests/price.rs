@@ -147,16 +147,18 @@ fn outcome_price_and_tick_validate_through_serde() {
 #[test]
 fn price_grid_validates_piecewise_ticks() {
     let grid = PriceGrid::new(vec![
-        PriceBand {
-            start: OutcomePrice::ZERO,
-            end: OutcomePrice::from_micros(100_000).unwrap(),
-            tick: PriceTick::from_micros(1_000).unwrap(),
-        },
-        PriceBand {
-            start: OutcomePrice::from_micros(100_100).unwrap(),
-            end: OutcomePrice::ONE,
-            tick: PriceTick::from_micros(100).unwrap(),
-        },
+        PriceBand::new(
+            OutcomePrice::ZERO,
+            OutcomePrice::from_micros(100_000).unwrap(),
+            PriceTick::from_micros(1_000).unwrap(),
+        )
+        .unwrap(),
+        PriceBand::new(
+            OutcomePrice::from_micros(100_100).unwrap(),
+            OutcomePrice::ONE,
+            PriceTick::from_micros(100).unwrap(),
+        )
+        .unwrap(),
     ])
     .unwrap();
 
@@ -164,18 +166,30 @@ fn price_grid_validates_piecewise_ticks() {
     assert!(grid.contains_price(OutcomePrice::from_micros(100_100).unwrap()));
     assert!(!grid.contains_price(OutcomePrice::from_micros(100_150).unwrap()));
     assert_eq!(grid.bands().len(), 2);
+    assert_eq!(grid.bands()[0].start(), OutcomePrice::ZERO);
+    assert_eq!(grid.bands()[0].tick().micros(), 1_000);
     assert_eq!(grid.into_bands().len(), 2);
 }
 
 #[test]
-fn price_grid_rejects_band_endpoints_off_tick_grid() {
-    let grid = PriceGrid::new(vec![PriceBand {
-        start: OutcomePrice::ZERO,
-        end: OutcomePrice::from_micros(100).unwrap(),
-        tick: PriceTick::from_micros(30).unwrap(),
-    }]);
+fn price_band_constructor_and_deserialization_validate_invariants() {
+    let descending = PriceBand::new(
+        OutcomePrice::from_micros(100).unwrap(),
+        OutcomePrice::ZERO,
+        PriceTick::from_micros(10).unwrap(),
+    );
+    assert!(descending.is_err());
 
-    assert!(grid.is_err());
+    let off_tick_endpoint = PriceBand::new(
+        OutcomePrice::ZERO,
+        OutcomePrice::from_micros(100).unwrap(),
+        PriceTick::from_micros(30).unwrap(),
+    );
+    assert!(off_tick_endpoint.is_err());
+
+    assert!(
+        serde_json::from_str::<PriceBand>(r#"{ "start": 0, "end": 100, "tick": 30 }"#).is_err()
+    );
 }
 
 #[test]

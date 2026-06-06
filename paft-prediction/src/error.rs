@@ -218,6 +218,13 @@ pub enum PredictionError {
         reason: &'static str,
     },
 
+    /// Invalid price-band structure.
+    #[error("Invalid price band: {reason}")]
+    InvalidPriceBand {
+        /// Validation failure reason.
+        reason: &'static str,
+    },
+
     /// Invalid price-grid structure.
     #[error("Invalid price grid: {reason}")]
     InvalidPriceGrid {

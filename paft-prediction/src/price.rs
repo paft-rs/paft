@@ -259,18 +259,75 @@ impl<'de> Deserialize<'de> for PriceTick {
 }
 
 /// Contiguous price band with a fixed tick size.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 pub struct PriceBand {
     /// Inclusive band start.
-    pub start: OutcomePrice,
+    start: OutcomePrice,
     /// Inclusive band end.
-    pub end: OutcomePrice,
+    end: OutcomePrice,
     /// Tick size for prices in this band.
-    pub tick: PriceTick,
+    tick: PriceTick,
 }
 
 impl PriceBand {
+    /// Construct a price band and validate its bounds and tick alignment.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidPriceBand`] when the band has
+    /// descending bounds or its inclusive end is not reachable from its start
+    /// by whole tick increments.
+    pub fn new(
+        start: OutcomePrice,
+        end: OutcomePrice,
+        tick: PriceTick,
+    ) -> Result<Self, PredictionError> {
+        let band = Self { start, end, tick };
+        band.validate()?;
+        Ok(band)
+    }
+
+    /// Return the inclusive band start.
+    #[must_use]
+    pub const fn start(&self) -> OutcomePrice {
+        self.start
+    }
+
+    /// Return the inclusive band end.
+    #[must_use]
+    pub const fn end(&self) -> OutcomePrice {
+        self.end
+    }
+
+    /// Return the tick size for prices in this band.
+    #[must_use]
+    pub const fn tick(&self) -> PriceTick {
+        self.tick
+    }
+
+    /// Validate the band's bounds and endpoint alignment.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidPriceBand`] when the band has
+    /// descending bounds or its inclusive end is not reachable from its start
+    /// by whole tick increments.
+    pub const fn validate(&self) -> Result<(), PredictionError> {
+        if !self.has_valid_bounds() {
+            return Err(PredictionError::InvalidPriceBand {
+                reason: "band start must be less than or equal to band end",
+            });
+        }
+
+        if !(self.end.micros() - self.start.micros()).is_multiple_of(self.tick.micros()) {
+            return Err(PredictionError::InvalidPriceBand {
+                reason: "band end must align to the band's tick grid",
+            });
+        }
+
+        Ok(())
+    }
+
     /// Returns `true` when `price` lies in this band.
     #[must_use]
     pub const fn contains(&self, price: OutcomePrice) -> bool {
@@ -292,6 +349,24 @@ impl PriceBand {
     }
 }
 
+impl<'de> Deserialize<'de> for PriceBand {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct PriceBandShadow {
+            start: OutcomePrice,
+            end: OutcomePrice,
+            tick: PriceTick,
+        }
+
+        let shadow = PriceBandShadow::deserialize(deserializer)?;
+        Self::new(shadow.start, shadow.end, shadow.tick).map_err(de::Error::custom)
+    }
+}
+
 /// Piecewise price grid for a prediction market.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct PriceGrid {
@@ -305,8 +380,8 @@ impl PriceGrid {
     /// # Errors
     ///
     /// Returns [`PredictionError::InvalidPriceGrid`] when the band list is
-    /// empty, a band has descending bounds, a band endpoint is not reachable
-    /// on its tick grid, or bands overlap.
+    /// empty or bands overlap, and [`PredictionError::InvalidPriceBand`] when
+    /// a contained band is invalid.
     pub fn new(bands: Vec<PriceBand>) -> Result<Self, PredictionError> {
         let grid = Self { bands };
         grid.validate()?;
@@ -330,8 +405,8 @@ impl PriceGrid {
     /// # Errors
     ///
     /// Returns [`PredictionError::InvalidPriceGrid`] when the band list is
-    /// empty, a band has descending bounds, a band endpoint is not reachable
-    /// on its tick grid, or bands overlap.
+    /// empty or bands overlap, and [`PredictionError::InvalidPriceBand`] when
+    /// a contained band is invalid.
     pub fn validate(&self) -> Result<(), PredictionError> {
         if self.bands.is_empty() {
             return Err(PredictionError::InvalidPriceGrid {
@@ -340,17 +415,7 @@ impl PriceGrid {
         }
 
         for band in &self.bands {
-            if !band.has_valid_bounds() {
-                return Err(PredictionError::InvalidPriceGrid {
-                    reason: "band start must be less than or equal to band end",
-                });
-            }
-
-            if !(band.end.micros() - band.start.micros()).is_multiple_of(band.tick.micros()) {
-                return Err(PredictionError::InvalidPriceGrid {
-                    reason: "band end must align to the band's tick grid",
-                });
-            }
+            band.validate()?;
         }
 
         for pair in self.bands.windows(2) {

@@ -125,6 +125,8 @@ All notable changes to this project will be documented in this file.
   constructor invariants instead of accepting invalid wire payloads.
 - Prediction: `PriceGrid` and `NumericRange` now keep invariant-bearing fields
   private and expose read-only accessors plus consuming part extraction.
+- Prediction: `PriceBand` now has private fields, a fallible constructor,
+  read-only accessors, and validated deserialization for band-level invariants.
 - Prediction: `BinaryQuote` now uses optional-quantity `PredictionQuoteLevel`
   values for best bid/ask, while order-book depth continues to use
   quantity-required `PredictionBookLevel` values.

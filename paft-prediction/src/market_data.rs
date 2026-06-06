@@ -298,7 +298,8 @@ impl<M> GenericBinaryOrderBook<M> {
     ///
     /// # Errors
     ///
-    /// Returns [`PredictionError::InvalidPriceGrid`] for an invalid grid or
+    /// Returns [`PredictionError::InvalidPriceGrid`] or
+    /// [`PredictionError::InvalidPriceBand`] for an invalid grid, or
     /// [`PredictionError::PriceOffGrid`] for the first off-grid level.
     pub fn validate_on_grid(&self) -> Result<(), PredictionError> {
         let Some(grid) = &self.price_grid else {
@@ -412,7 +413,8 @@ impl<M> GenericOutcomeOrderBook<M> {
     ///
     /// # Errors
     ///
-    /// Returns [`PredictionError::InvalidPriceGrid`] for an invalid grid or
+    /// Returns [`PredictionError::InvalidPriceGrid`] or
+    /// [`PredictionError::InvalidPriceBand`] for an invalid grid, or
     /// [`PredictionError::PriceOffGrid`] for the first off-grid level.
     pub fn validate_on_grid(&self) -> Result<(), PredictionError> {
         let Some(grid) = &self.price_grid else {

@@ -194,11 +194,14 @@ fn outcome_order_book_sort_levels_canonicalizes_sides_stably() {
 
 #[test]
 fn binary_order_book_validates_prices_on_grid() {
-    let grid = PriceGrid::new(vec![PriceBand {
-        start: OutcomePrice::ZERO,
-        end: OutcomePrice::ONE,
-        tick: PriceTick::from_micros(10_000).unwrap(),
-    }])
+    let grid = PriceGrid::new(vec![
+        PriceBand::new(
+            OutcomePrice::ZERO,
+            OutcomePrice::ONE,
+            PriceTick::from_micros(10_000).unwrap(),
+        )
+        .unwrap(),
+    ])
     .unwrap();
 
     let mut book =
