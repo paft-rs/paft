@@ -163,6 +163,8 @@ fn price_grid_validates_piecewise_ticks() {
     assert!(grid.contains_price(OutcomePrice::from_micros(50_000).unwrap()));
     assert!(grid.contains_price(OutcomePrice::from_micros(100_100).unwrap()));
     assert!(!grid.contains_price(OutcomePrice::from_micros(100_150).unwrap()));
+    assert_eq!(grid.bands().len(), 2);
+    assert_eq!(grid.into_bands().len(), 2);
 }
 
 #[test]

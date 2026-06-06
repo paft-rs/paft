@@ -296,7 +296,7 @@ impl PriceBand {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct PriceGrid {
     /// Ordered price bands that define valid ticks.
-    pub bands: Vec<PriceBand>,
+    bands: Vec<PriceBand>,
 }
 
 impl PriceGrid {
@@ -311,6 +311,18 @@ impl PriceGrid {
         let grid = Self { bands };
         grid.validate()?;
         Ok(grid)
+    }
+
+    /// Return the validated, ordered price bands.
+    #[must_use]
+    pub fn bands(&self) -> &[PriceBand] {
+        &self.bands
+    }
+
+    /// Consume this grid and return its validated price bands.
+    #[must_use]
+    pub fn into_bands(self) -> Vec<PriceBand> {
+        self.bands
     }
 
     /// Validate the grid's band structure.

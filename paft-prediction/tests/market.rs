@@ -76,7 +76,18 @@ fn numeric_range_constructor_validates_interval() {
         NumericBound::Included(10.into()),
         Some("USD".to_string()),
     );
-    assert!(valid_single_point.is_ok());
+    let valid_single_point = valid_single_point.unwrap();
+    assert!(matches!(
+        valid_single_point.lower(),
+        NumericBound::Included(_)
+    ));
+    assert!(matches!(
+        valid_single_point.upper(),
+        NumericBound::Included(_)
+    ));
+    assert_eq!(valid_single_point.unit(), Some("USD"));
+    let (_, _, unit) = valid_single_point.into_parts();
+    assert_eq!(unit.as_deref(), Some("USD"));
 
     let descending = NumericRange::new(
         NumericBound::Included(11.into()),

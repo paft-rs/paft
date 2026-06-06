@@ -431,11 +431,11 @@ pub enum ClaimDescriptor {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct NumericRange {
     /// Lower interval bound.
-    pub lower: NumericBound,
+    lower: NumericBound,
     /// Upper interval bound.
-    pub upper: NumericBound,
+    upper: NumericBound,
     /// Optional unit for the numeric value, such as `USD`.
-    pub unit: Option<String>,
+    unit: Option<String>,
 }
 
 impl NumericRange {
@@ -454,6 +454,30 @@ impl NumericRange {
         let range = Self { lower, upper, unit };
         range.validate()?;
         Ok(range)
+    }
+
+    /// Return the lower interval bound.
+    #[must_use]
+    pub const fn lower(&self) -> &NumericBound {
+        &self.lower
+    }
+
+    /// Return the upper interval bound.
+    #[must_use]
+    pub const fn upper(&self) -> &NumericBound {
+        &self.upper
+    }
+
+    /// Return the optional unit for the numeric value, such as `USD`.
+    #[must_use]
+    pub fn unit(&self) -> Option<&str> {
+        self.unit.as_deref()
+    }
+
+    /// Consume this range and return its validated parts.
+    #[must_use]
+    pub fn into_parts(self) -> (NumericBound, NumericBound, Option<String>) {
+        (self.lower, self.upper, self.unit)
     }
 
     /// Validate the range interval.
