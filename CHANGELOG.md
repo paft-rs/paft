@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.9.0] - 2026-06-02
+## [0.9.0] - 2026-06-06
+
+This release is audited against the `v0.8.0` tag. It is a breaking API and
+wire-format update across the workspace.
 
 ### Added
 
@@ -19,32 +22,28 @@ All notable changes to this project will be documented in this file.
   quantity amount for provider-agnostic market sizes and volumes.
 - Money: added `override_currency_metadata` for explicitly replacing a
   registered currency scale.
-- Domain/facade: added `CalendarPeriod` for calendar year/quarter/date
+- Domain/facade: added validated period components `PeriodYear`, `PeriodDate`,
+  and `QuarterOfYear`, including standalone serde support.
+- Domain/facade: added `CalendarPeriod` for calendar year, quarter, and date
   boundary helpers such as `start_date`, `end_date`, `overlaps`, `contains`,
   and `is_same_exact_bucket_as`.
-- Domain/facade: added standalone serde support for `PeriodDate` and
-  `QuarterOfYear`, matching `PeriodYear` as validated public period
-  components.
 - Domain/facade: added `Horizon` and `OtherHorizon` for relative lookback
   windows such as `7d`, `1mo`, and `1y`.
 - Market/facade: added `Ohlc` plus OHLC price-basis modeling types
   `OhlcPriceBasis`, `PriceBasis`, `AdjustmentAnchor`, `AdjustmentMethod`,
   `CorporateActionAdjustmentCause`, and `CorporateActionAdjustmentCauses`.
-- Market: added `OptionExpirationsResponse::new_sorted` and
-  `GenericHistoryResponse::is_chronologically_ordered` helpers for callers that
-  need explicit date/order normalization or validation.
-- Market: added advisory-invariant helpers for response boundaries:
-  `GenericHistoryResponse::{validate, into_chronological}`,
-  `GenericOrderBook::{is_sorted, sort_levels}`, and
-  `OptionExpirationsResponse::is_sorted_unique`.
+- Market: added advisory normalization and validation helpers:
+  `OptionExpirationsResponse::{new_sorted, is_sorted_unique}`,
+  `GenericHistoryResponse::{is_chronologically_ordered, validate,
+  into_chronological}`, `GenericOrderBook::{is_sorted, sort_levels}`, and
+  `TimeSpec::{range, period, validate}`.
 - Fundamentals/facade: added `DataFrame` export support for `EsgSummary`,
   including nested `scores.*` and `involvement.*` columns.
-- Market: added `TimeSpec::{range, period, validate}` so standalone time
-  specifications have an explicit period-validation boundary.
 - Market/facade: added `FromStr` parsers for closed request enums `Range`,
   `Interval`, `NewsTab`, and `OptionSide`.
-- Facade: `paft::Error` now converts from `DecimalConstraintError`, allowing
-  constrained decimal constructors to compose with `paft::prelude::Result`.
+- Facade: `paft::Error` now converts from `DecimalConstraintError`,
+  `HistoryValidationError`, and `FundamentalsError`, allowing validated domain
+  helpers to compose with `paft::prelude::Result`.
 - Facade: `paft::prelude` now re-exports `IsoCurrency` for common
   `Currency::Iso(IsoCurrency::...)` construction.
 - Docs/examples: added a no-metadata v0.9 ergonomics example and refreshed
@@ -54,95 +53,35 @@ All notable changes to this project will be documented in this file.
   remain forward-compatible, serde-flattened provider metadata collisions are
   unsupported JSON key names rather than universally detected errors, and
   dataframe exports namespace provider metadata under `provider.*` columns.
-- Prediction/facade: added provider-neutral prediction-market identity,
-  metadata, fixed-point price/quantity, quote, order-book, and trade-history
-  types, including `PredictionVenue`, role-specific opaque ids,
-  `PredictionEvent`, `BinaryMarket`, `OutcomeInstrument`, `OutcomePrice`,
-  `ContractQuantity`, `NonZeroContractQuantity`, `PriceGrid`, and canonical
-  YES-view `BinaryOrderBook`.
-- Prediction/facade: added `BinaryOutcomeInstruments` and
+- Prediction/facade: added a provider-neutral prediction-market model with
+  venue-namespaced identity, market metadata, fixed-point prices, quantities,
+  payout vectors, quotes, order books, and trade history. The public surface
+  includes `PredictionVenue`, role-specific opaque ids, `PredictionEvent`,
+  `PredictionMarket`, `BinaryMarket`, `MultiOutcomeMarket`, `ScalarMarket`,
+  `OutcomeInstrument`, `BinaryOutcomeInstruments`, `OutcomePrice`,
+  `PriceTick`, `ContractQuantity`, `NonZeroContractQuantity`, `OutcomePayout`,
+  `NonZeroOutcomePayout`, `BinarySettlement`, `BinaryPayoutVector`,
+  `PriceGrid`, `PriceBand`, `NumericRange`, `BinaryOrderBook`,
+  `OutcomeOrderBook`, `BinaryQuote`, `PredictionQuoteLevel`, and
+  `PredictionTrade`.
+- Prediction/facade: added `PredictionSeriesKey` plus
   `BinaryMarketKey::{synthetic_yes_instrument, synthetic_no_instrument}` so
   binary markets expose tradable YES/NO outcome instruments directly while
   still supporting synthetic `YES`/`NO` ids for venues that do not issue
   separate instrument ids.
-- Prediction/facade: added `PredictionQuoteLevel` for top-of-book quote levels
-  whose displayed quantity may be unavailable.
 - Prediction: added exact decimal/string conversion helpers and canonical
   decimal `Display` implementations for `OutcomePrice`, `PriceTick`,
   `ContractQuantity`, and `OutcomePayout`.
-- Prediction/facade: added `NonZeroContractQuantity` for quantity surfaces
-  where zero is not semantically valid.
-- Prediction/facade: added `NonZeroOutcomePayout` for market metadata payout
-  surfaces where zero is not semantically valid.
-- Prediction/facade: added `PredictionSeriesKey` for venue-namespaced recurring
-  series identity.
 - Prediction: added `sort_levels()` helpers for binary and outcome order books
   to canonicalize bid/ask level ordering in place.
-- Prediction: added `BinarySettlement` and `BinaryPayoutVector` so binary
-  markets can distinguish non-zero winning payout from zero-capable resolved
-  outcome payout vectors.
+- Prediction: added validated constructors and serde boundaries for market
+  identity, binary outcome instruments, event structure cardinality,
+  market/outcome consistency, price grids, price bands, numeric ranges, and
+  open string metadata codes.
 
 ### Changed
 
 - Workspace: version bumped to `0.9.0`.
-- Prediction/facade: replaced the Polymarket-shaped `EventId`/`OutcomeId`,
-  `PredictionInstrument`, `Market`, and `Token` surface with venue-namespaced
-  `PredictionEventId`, `PredictionMarketId`, `PredictionOutcomeId`,
-  `OutcomeInstrument`, `PredictionEvent`, and market-shape metadata types.
-- Prediction: `GenericBinaryMarket` now requires `BinaryOutcomeInstruments`,
-  keeping Polymarket-style CLOB token/asset ids in the provider-agnostic
-  binary market payload instead of provider metadata.
-- Prediction: `GenericBinaryMarket` now keeps `key` and `outcomes` private
-  with read-only accessors so validated market/outcome identity cannot be
-  bypassed through struct literals or field mutation.
-- Prediction: `GenericBinaryMarket::new` is now fallible and binary market
-  deserialization validates that YES/NO outcome instruments belong to the
-  market key.
-- Prediction: `GenericBinaryMarket` now uses `winning_payout:
-  NonZeroOutcomePayout` and `settlement: Option<BinarySettlement>` instead of
-  zero-capable `unit_payout` plus `BinaryResolution`.
-- Prediction: renamed `OtherBinaryResolution` to `OtherBinarySettlement` to
-  match `BinarySettlement`.
-- Prediction: `GenericMultiOutcomeMarket` now validates outcome count,
-  outcome instrument market identity, duplicate outcome ids, and listed
-  resolutions through a fallible constructor and deserialization.
-- Prediction: `PredictionEvent` now documents event structure as relationship
-  metadata during construction and exposes `validate_structure()` for modeled
-  market-count checks.
-- Prediction: standalone market shapes now carry `event_key:
-  Option<PredictionEventKey>` instead of a bare event id so event references
-  are fully venue-namespaced.
-- Prediction: `PredictionEvent` now carries `series_key:
-  Option<PredictionSeriesKey>` instead of a bare series id so series references
-  are fully venue-namespaced.
-- Prediction: `LinkedBinaryRelation` and `PredictionMarketStatus` now use
-  paft-style open string parsing/serde, so unknown strings deserialize into
-  `Other(...)` and serialize back as strings.
-- Prediction: prediction event, market, and outcome `unique_key()` values now
-  length-prefix every dynamic component, including venue, and `BinaryMarketKey`
-  now emits the same market identity string as `PredictionMarketKey`.
-- Prediction: `PriceGrid` and `NumericRange` deserialization now validates
-  constructor invariants instead of accepting invalid wire payloads.
-- Prediction: `PriceGrid` and `NumericRange` now keep invariant-bearing fields
-  private and expose read-only accessors plus consuming part extraction.
-- Prediction: `PriceBand` now has private fields, a fallible constructor,
-  read-only accessors, and validated deserialization for band-level invariants.
-- Prediction: `BinaryQuote` now uses optional-quantity `PredictionQuoteLevel`
-  values for best bid/ask, while order-book depth continues to use
-  quantity-required `PredictionBookLevel` values.
-- Prediction: `BinaryOutcomeInstruments` now validates that YES and NO
-  instruments belong to the same venue/market and have distinct outcome ids,
-  including during deserialization.
-- Prediction: book levels, present quote quantities, trades, and market
-  minimum order quantities now use `NonZeroContractQuantity` instead of
-  zero-capable `ContractQuantity`.
-- Prediction: `PredictionBookLevel` fields are ordered to keep the common depth
-  level representation compact on current targets.
-- Prediction: `PriceGrid` validation now rejects bands whose inclusive end
-  endpoint is not reachable from the start by whole tick increments.
-- Prediction: semantic metadata shapes such as `EventStructure`,
-  `ClaimDescriptor`, `NumericRange`, `PriceGrid`, and `PriceBand` now reject
-  unknown fields during deserialization.
 - Docs: consolidated the workspace and crate READMEs around crate-local usage,
   standardized crate badges for Crates.io, docs.rs, and downloads, and removed
   duplicated install/API guidance from the root README.
@@ -187,16 +126,14 @@ All notable changes to this project will be documented in this file.
   precision limits, and decimal128 mantissa encoding now live behind
   `paft-decimal` APIs so downstream crates do not infer the active decimal
   backend from their own local feature flags.
-- Money/facade: `PriceAmount` and `QuantityAmount` no longer implement `Copy`
-  under the default local feature set. They remain `Clone`, matching the
-  backend-agnostic ownership contract of `paft_decimal::Decimal`.
 - Market history: `HistoryResponse` now exposes `price_basis:
   OhlcPriceBasis`, describing the returned OHLC price basis as either uniform
   `PriceBasis` metadata or per-field open/high/low/close bases.
 - Market/fundamentals: `Action` and `Profile` now use flat tagged serde shapes
   with a `kind` discriminator instead of externally tagged enum objects.
-- Market: standalone `TimeSpec` deserialization now rejects `Period` values
-  whose `start >= end`, matching `HistoryRequest` validation.
+- Market: standalone `TimeSpec` deserialization now rejects
+  `TimeSpec::Period` values whose `start >= end`, matching `HistoryRequest`
+  validation.
 - Market/aggregates: high-cardinality price records now carry denomination once
   at the containing record and store contextual `PriceAmount` values for
   candles, order-book levels, quotes, quote updates, snapshots, and option
@@ -244,9 +181,9 @@ All notable changes to this project will be documented in this file.
   `OtherRecommendationGrade`, `OtherRecommendationAction`,
   `OtherTransactionType`, `OtherInsiderPosition`, and `OtherFundKind`) instead
   of raw `Canonical` payloads.
-- Domain/facade: `MarketState` is now extensible via
-  `MarketState::Other(OtherMarketState)`, so provider-specific session states
-  round-trip instead of failing as invalid enum values.
+- Domain/facade: `MarketState::full_name()` now returns `Cow<'static, str>` so
+  provider-specific `OtherMarketState` values can be displayed without leaking
+  borrowed storage assumptions.
 - Domain/fundamentals/facade: enum parsing APIs now expose crate-level domain
   errors instead of `paft_core::PaftError`; domain enums use `DomainError`, and
   fundamentals enums use the new `FundamentalsError` surfaced by `paft::Error`.
@@ -299,9 +236,6 @@ All notable changes to this project will be documented in this file.
   active decimal backend precision instead of attempting unbounded zero padding.
 - Money: localized parsing now delegates to `Money::new_exact`, encoding its
   no-implicit-rounding contract at construction.
-- Money: `PriceAmount::into_inner` and `QuantityAmount::into_inner` are now
-  `const fn` under the default decimal backend, matching constrained decimal
-  accessor behavior.
 - Money: `Money` and `ExchangeRate` JSON deserialization now rejects unknown
   top-level fields instead of silently ignoring stale wire payloads.
 - Money: existing `Money` values now capture their resolved minor-unit scale,
@@ -313,13 +247,6 @@ All notable changes to this project will be documented in this file.
   changing the value identity.
 - Money: `as_minor_units()` now rejects non-integral scaled decimals before
   converting to `i128`.
-- Decimal/money: constrained decimal and contextual amount `Display`
-  implementations now emit canonical decimal strings without gratuitous
-  trailing zeroes, matching serde and hash behavior.
-- Prediction: `Other*` metadata-code constructors now reject codes already
-  modeled by their owning enum instead of allowing ambiguous `Other` values.
-- Prediction: `NumericRange` now rejects descending finite ranges and empty
-  zero-width finite intervals.
 - Decimal feature matrix: crates that import `paft_decimal::Decimal` now compile
   correctly when another package in the dependency graph enables
   `paft-decimal/bigdecimal` without enabling each downstream crate's local
@@ -346,8 +273,8 @@ All notable changes to this project will be documented in this file.
   configuration, and semantic invariant-bearing tagged shapes are strict,
   while provider/data payloads are forward-compatible by default. `Action`
   JSON now follows that policy by ignoring unknown payload fields.
-- Prediction/money docs: public `OutcomeId` and `from_scaled_units`
-  messages/docs now match trimming and decimal-backend behavior.
+- Money docs: public `from_scaled_units` messages now match decimal-backend
+  behavior.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
   payloads can no longer use tokens already modeled by the owning enum,
   preserving serde identity for values created through public constructors.
@@ -357,6 +284,12 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking Changes
 
+- Prediction/facade: the v0.8 Polymarket-shaped `EventID`/`OutcomeID`,
+  `PredictionInstrument`, `Market`, and `Token` surface was replaced by the
+  provider-neutral, venue-namespaced model. Use role-specific ids and keys such
+  as `PredictionEventId`, `PredictionMarketId`, `PredictionOutcomeId`,
+  `PredictionSeriesId`, `PredictionEventKey`, `PredictionMarketKey`,
+  `BinaryMarketKey`, `PredictionSeriesKey`, and `OutcomeInstrument`.
 - Fundamentals/facade: canonical string output for
   `RecommendationAction::Initiate` changed from `INIT` to `INITIATE`, and
   `InsiderPosition::VicePresident` changed from `VP` to `VICE_PRESIDENT`; the old
@@ -366,10 +299,9 @@ All notable changes to this project will be documented in this file.
   domain enum APIs return `DomainError`, fundamentals enum APIs return
   `FundamentalsError`, and facade callers can compose fundamentals parse
   failures through `paft::Error`.
-- Domain/facade: `MarketState` no longer implements `Copy`, unknown
-  `MarketState` tokens now parse as `MarketState::Other(OtherMarketState)`, and
-  `MarketState::code()` is no longer `const`. `MarketState::full_name()` now
-  returns `Cow<'static, str>` to display unknown provider states.
+- Domain/facade: `MarketState::Other(Canonical)` is now
+  `MarketState::Other(OtherMarketState)`, and `MarketState::full_name()` now
+  returns `Cow<'static, str>` instead of `&str`.
 - Market/facade: `BookLevel::size` now uses `Option<QuantityAmount>`;
   `OptionContract::implied_volatility` and `OptionUpdate::implied_volatility`
   now use `Option<NonNegativeDecimal>`. `NewsRequest::count` now uses
@@ -412,13 +344,12 @@ All notable changes to this project will be documented in this file.
   `HistoryRequestBuilder::keep_missing`, and `HistoryRequest::keep_missing`.
   The serialized flag bit is unchanged.
 - Market/facade: nested metadata containers gained independent child metadata
-  type parameters. `GenericHistoryResponse<M>`, `GenericOptionChain<M>`,
-  `GenericDownloadEntry<M>`, `GenericDownloadResponse<M>`,
-  `GenericCandleUpdate<M>`, `GenericOrderBook<M>`, `GenericQuote<M>`, and
-  `GenericSearchResponse<M>` now apply `M` to the outer/container provider
-  payload while nested rows or leaves default to `()`. Use the additional type
-  parameters when child metadata is needed, such as
-  `GenericHistoryResponse<ResponseMeta, CandleMeta>`.
+  type parameters. Final signatures include
+  `GenericHistoryResponse<R, C>`, `GenericOptionChain<R, C>`,
+  `GenericDownloadEntry<E, H, C>`, `GenericDownloadResponse<R, E, H, C>`,
+  `GenericCandleUpdate<U, C>`, `GenericOrderBook<B, L>`,
+  `GenericQuote<Q, L>`, and `GenericSearchResponse<R, S>`, with child row or
+  leaf metadata defaulting to `()`.
 - Market/fundamentals: `Action` and `Profile` JSON moved from externally tagged
   enum objects to flat tagged payloads with `kind`; fund profiles now put the
   fund type in `fund_kind` so it does not collide with the discriminator.
@@ -490,7 +421,7 @@ wire-format update across the workspace.
 - New crate `paft-decimal` exposing `Decimal`, `RoundingStrategy`, parsing,
   rounding, scaled-unit construction, and canonical rendering helpers shared by
   money, market, fundamentals, and dataframe code.
-- New crate `paft-prediction` exposing validated `EventId` and `OutcomeId`
+- New crate `paft-prediction` exposing validated `EventID` and `OutcomeID`
   newtypes, `PredictionInstrument`, `Market`, `Token`, and `PredictionError`.
   The facade exposes these behind the new `prediction` feature.
 - Money: added full-precision `Price` and `MonetaryAmount` value types. `Money`
@@ -527,9 +458,9 @@ wire-format update across the workspace.
   money precision limits, and prediction types.
 - Domain/utils: `Symbol` and `Canonical` now use `SmolStr`; typical short
   tokens avoid heap allocation and longer clones share storage.
-- Domain: `AssetKind` is extensible via `AssetKind::Other(Canonical)`, and
-  `Exchange::full_name()`/`AssetKind::full_name()` now return
-  `Cow<'static, str>`.
+- Domain: `AssetKind` and `MarketState` are extensible via
+  `Other(Canonical)`, and `Exchange::full_name()`/`AssetKind::full_name()` now
+  return `Cow<'static, str>`.
 - Domain: `Figi` now validates the Bloomberg FIGI structure in addition to the
   checksum, `Isin` uses strict `isin::parse`, and `Symbol` rejects non-ASCII
   input.
@@ -562,6 +493,9 @@ wire-format update across the workspace.
 - Domain: `AssetKind` no longer implements `Copy`; `AssetKind::code()` and
   `SearchRequestBuilder::kind()` are no longer `const`, and
   `SearchRequest::kind()` returns `Option<&AssetKind>`.
+- Domain: `MarketState` now includes `MarketState::Other(Canonical)` for
+  provider-specific states, no longer implements `Copy`, and
+  `MarketState::code()`/`MarketState::full_name()` are no longer `const`.
 - Domain: `Exchange::full_name()` and `AssetKind::full_name()` now return
   `Cow<'static, str>` instead of `&str`.
 - Aggregates: `FastInfo` and `Info` were removed. Use `Snapshot` for
@@ -589,18 +523,13 @@ wire-format update across the workspace.
   `contract_symbol` became optional `contract_instrument`, `in_the_money` is
   `Option<bool>`, `OptionChain` uses `contracts` plus `calls()`/`puts()`, and
   option requests use `underlying: Instrument` instead of `symbol: Symbol`.
-- Market actions: `Action` serde now uses tagged snake_case JSON with a
-  `"kind"` discriminator instead of externally tagged Rust variant names.
-  `Action::Split` numerator and denominator fields are now `NonZeroU32`
-  instead of `u32`; serde deserialization rejects zero split ratio components.
+- Market actions: `Action::Split` numerator and denominator fields are now
+  `NonZeroU32` instead of `u32`; serde deserialization rejects zero split ratio
+  components.
 - Market, aggregates, and fundamentals timestamps that were serialized as Unix
   seconds now serialize as Unix milliseconds in the affected structs.
 - Market payload aliases no longer implement `Eq`, and refactored generic
   payloads do not derive `Hash`; compare or hash explicit keys instead.
-- Fundamentals: `Profile` serde now uses tagged snake_case JSON with a `"kind"`
-  discriminator instead of externally tagged Rust variant names; `Profile::Fund`
-  payloads use `"fund_kind"` for the fund type to avoid colliding with the
-  profile discriminator.
 - Fundamentals: analyst, ESG, holder, profile, and statement structs changed
   several field types (`Money` to `Price`, `f64` to `Decimal`, seconds to
   milliseconds) and added new optional statement fields. Revision helper totals
