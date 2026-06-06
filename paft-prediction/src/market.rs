@@ -1,6 +1,8 @@
 //! Prediction event and market metadata models.
 
-use crate::error::{BinaryMarketOutcomeMismatch, PredictionError};
+use crate::error::{
+    BinaryMarketOutcomeMismatch, MultiOutcomeMarketOutcomeMismatch, PredictionError,
+};
 use crate::identifiers::{PredictionOutcomeId, validate_opaque_identifier};
 use crate::instrument::{
     BinaryMarketKey, BinaryOutcomeInstruments, OutcomeInstrument, PredictionEventKey,
@@ -12,7 +14,7 @@ use paft_decimal::Decimal;
 use paft_money::Currency;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use smol_str::SmolStr;
-use std::{fmt, str::FromStr};
+use std::{collections::HashSet, fmt, str::FromStr};
 
 macro_rules! opaque_metadata_code {
     (
@@ -722,16 +724,16 @@ fn validate_binary_market_outcomes(
 pub type BinaryMarket = GenericBinaryMarket<()>;
 
 /// Native multi-answer market metadata.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct GenericMultiOutcomeMarket<M = ()> {
     /// Venue-namespaced market key.
-    pub key: PredictionMarketKey,
+    key: PredictionMarketKey,
     /// Venue-namespaced event/group key when this market belongs to an event.
     pub event_key: Option<PredictionEventKey>,
     /// Market title.
     pub title: String,
     /// Outcomes available in the market.
-    pub outcomes: Vec<OutcomeDescriptor>,
+    outcomes: Vec<OutcomeDescriptor>,
     /// Market lifecycle status.
     pub status: PredictionMarketStatus,
     /// Currency used for collateral and settlement.
@@ -752,10 +754,195 @@ pub struct GenericMultiOutcomeMarket<M = ()> {
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub settlement_time: Option<DateTime<Utc>>,
     /// Winning outcome id, if resolved to one outcome.
-    pub resolution: Option<PredictionOutcomeId>,
+    resolution: Option<PredictionOutcomeId>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
+}
+
+impl<M: Default> GenericMultiOutcomeMarket<M> {
+    /// Build a native multi-outcome market with the minimum required metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError`] when fewer than two outcomes are supplied,
+    /// an outcome instrument does not belong to `key`, or outcome ids repeat.
+    pub fn new(
+        key: PredictionMarketKey,
+        title: String,
+        outcomes: Vec<OutcomeDescriptor>,
+        status: PredictionMarketStatus,
+        collateral_currency: Currency,
+        unit_payout: OutcomePayout,
+    ) -> Result<Self, PredictionError> {
+        validate_multi_outcome_market(&key, &outcomes, None)?;
+
+        Ok(Self {
+            key,
+            event_key: None,
+            title,
+            outcomes,
+            status,
+            collateral_currency,
+            unit_payout,
+            price_grid: None,
+            min_order_quantity: None,
+            open_time: None,
+            close_time: None,
+            settlement_time: None,
+            resolution: None,
+            provider: M::default(),
+        })
+    }
+}
+
+impl<M> GenericMultiOutcomeMarket<M> {
+    /// Return the venue-namespaced market key.
+    #[must_use]
+    pub const fn key(&self) -> &PredictionMarketKey {
+        &self.key
+    }
+
+    /// Return the outcome descriptors in provider order.
+    #[must_use]
+    pub fn outcomes(&self) -> &[OutcomeDescriptor] {
+        &self.outcomes
+    }
+
+    /// Return the winning outcome id, if resolved.
+    #[must_use]
+    pub const fn resolution(&self) -> Option<&PredictionOutcomeId> {
+        self.resolution.as_ref()
+    }
+
+    /// Set or clear the winning outcome id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PredictionError::InvalidMultiOutcomeMarketResolution`] when
+    /// `resolution` is not one of the listed outcome ids.
+    pub fn set_resolution(
+        &mut self,
+        resolution: Option<PredictionOutcomeId>,
+    ) -> Result<(), PredictionError> {
+        validate_multi_outcome_market_resolution(&self.key, &self.outcomes, resolution.as_ref())?;
+        self.resolution = resolution;
+        Ok(())
+    }
+}
+
+impl<'de, M> Deserialize<'de> for GenericMultiOutcomeMarket<M>
+where
+    M: Default + Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct GenericMultiOutcomeMarketShadow<M> {
+            key: PredictionMarketKey,
+            event_key: Option<PredictionEventKey>,
+            title: String,
+            outcomes: Vec<OutcomeDescriptor>,
+            status: PredictionMarketStatus,
+            collateral_currency: Currency,
+            unit_payout: OutcomePayout,
+            price_grid: Option<PriceGrid>,
+            min_order_quantity: Option<NonZeroContractQuantity>,
+            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            open_time: Option<DateTime<Utc>>,
+            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            close_time: Option<DateTime<Utc>>,
+            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            settlement_time: Option<DateTime<Utc>>,
+            resolution: Option<PredictionOutcomeId>,
+            #[serde(flatten, default = "Default::default")]
+            provider: M,
+        }
+
+        let shadow = GenericMultiOutcomeMarketShadow::deserialize(deserializer)?;
+        validate_multi_outcome_market(&shadow.key, &shadow.outcomes, shadow.resolution.as_ref())
+            .map_err(de::Error::custom)?;
+
+        Ok(Self {
+            key: shadow.key,
+            event_key: shadow.event_key,
+            title: shadow.title,
+            outcomes: shadow.outcomes,
+            status: shadow.status,
+            collateral_currency: shadow.collateral_currency,
+            unit_payout: shadow.unit_payout,
+            price_grid: shadow.price_grid,
+            min_order_quantity: shadow.min_order_quantity,
+            open_time: shadow.open_time,
+            close_time: shadow.close_time,
+            settlement_time: shadow.settlement_time,
+            resolution: shadow.resolution,
+            provider: shadow.provider,
+        })
+    }
+}
+
+fn validate_multi_outcome_market(
+    key: &PredictionMarketKey,
+    outcomes: &[OutcomeDescriptor],
+    resolution: Option<&PredictionOutcomeId>,
+) -> Result<(), PredictionError> {
+    if outcomes.len() < 2 {
+        return Err(PredictionError::TooFewMultiOutcomeMarketOutcomes {
+            count: outcomes.len(),
+        });
+    }
+
+    let mut outcome_ids = HashSet::with_capacity(outcomes.len());
+    for outcome in outcomes {
+        let instrument = &outcome.instrument;
+        if instrument.venue != key.venue || instrument.market_id != key.market_id {
+            return Err(PredictionError::MismatchedMultiOutcomeMarketOutcome(
+                Box::new(MultiOutcomeMarketOutcomeMismatch {
+                    key_venue: key.venue.to_string(),
+                    key_market_id: key.market_id.to_string(),
+                    outcome_venue: instrument.venue.to_string(),
+                    outcome_market_id: instrument.market_id.to_string(),
+                    outcome_id: instrument.outcome_id.to_string(),
+                }),
+            ));
+        }
+
+        if !outcome_ids.insert(&instrument.outcome_id) {
+            return Err(PredictionError::DuplicateMultiOutcomeMarketOutcome {
+                venue: instrument.venue.to_string(),
+                market_id: instrument.market_id.to_string(),
+                outcome_id: instrument.outcome_id.to_string(),
+            });
+        }
+    }
+
+    validate_multi_outcome_market_resolution(key, outcomes, resolution)
+}
+
+fn validate_multi_outcome_market_resolution(
+    key: &PredictionMarketKey,
+    outcomes: &[OutcomeDescriptor],
+    resolution: Option<&PredictionOutcomeId>,
+) -> Result<(), PredictionError> {
+    let Some(resolution) = resolution else {
+        return Ok(());
+    };
+
+    if outcomes
+        .iter()
+        .any(|outcome| outcome.instrument.outcome_id == *resolution)
+    {
+        return Ok(());
+    }
+
+    Err(PredictionError::InvalidMultiOutcomeMarketResolution {
+        venue: key.venue.to_string(),
+        market_id: key.market_id.to_string(),
+        outcome_id: resolution.to_string(),
+    })
 }
 
 /// Standard multi-outcome market with no provider metadata.

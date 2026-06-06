@@ -1,10 +1,18 @@
 use paft_money::{Currency, IsoCurrency};
 use paft_prediction::{
     BinaryMarket, BinaryMarketKey, BinaryOutcomeInstruments, ClaimDescriptor, EventStructure,
-    NonZeroContractQuantity, OutcomeInstrument, OutcomePayout, PredictionError, PredictionEventKey,
-    PredictionMarketStatus, PredictionSeriesKey,
+    MultiOutcomeMarket, NonZeroContractQuantity, OutcomeDescriptor, OutcomeInstrument,
+    OutcomePayout, PredictionError, PredictionEventKey, PredictionMarketKey,
+    PredictionMarketStatus, PredictionOutcomeId, PredictionSeriesKey,
 };
 use paft_prediction::{NumericBound, NumericRange, PredictionEvent};
+
+fn outcome(market_id: &str, outcome_id: &str, label: &str) -> OutcomeDescriptor {
+    OutcomeDescriptor {
+        instrument: OutcomeInstrument::new("MANIFOLD", market_id, outcome_id).unwrap(),
+        label: label.to_string(),
+    }
+}
 
 #[test]
 fn binary_market_carries_required_polymarket_outcome_instruments() {
@@ -197,6 +205,171 @@ fn binary_market_deserialization_rejects_outcomes_for_different_market_key() {
     }"#;
 
     assert!(serde_json::from_str::<BinaryMarket>(json).is_err());
+}
+
+#[test]
+fn multi_outcome_market_constructor_validates_outcomes() {
+    let key = PredictionMarketKey::new("MANIFOLD", "contract-1").unwrap();
+    let too_few = MultiOutcomeMarket::new(
+        key.clone(),
+        "Which team wins?".to_string(),
+        vec![outcome("contract-1", "A", "Team A")],
+        PredictionMarketStatus::Open,
+        Currency::Iso(IsoCurrency::USD),
+        OutcomePayout::ONE,
+    )
+    .unwrap_err();
+    assert!(matches!(
+        too_few,
+        PredictionError::TooFewMultiOutcomeMarketOutcomes { count: 1 }
+    ));
+
+    let mismatched = MultiOutcomeMarket::new(
+        key.clone(),
+        "Which team wins?".to_string(),
+        vec![
+            outcome("contract-1", "A", "Team A"),
+            outcome("other-contract", "B", "Team B"),
+        ],
+        PredictionMarketStatus::Open,
+        Currency::Iso(IsoCurrency::USD),
+        OutcomePayout::ONE,
+    )
+    .unwrap_err();
+    assert!(matches!(
+        mismatched,
+        PredictionError::MismatchedMultiOutcomeMarketOutcome(_)
+    ));
+
+    let duplicate = MultiOutcomeMarket::new(
+        key,
+        "Which team wins?".to_string(),
+        vec![
+            outcome("contract-1", "A", "Team A"),
+            outcome("contract-1", "A", "Team A again"),
+        ],
+        PredictionMarketStatus::Open,
+        Currency::Iso(IsoCurrency::USD),
+        OutcomePayout::ONE,
+    )
+    .unwrap_err();
+    assert!(matches!(
+        duplicate,
+        PredictionError::DuplicateMultiOutcomeMarketOutcome { .. }
+    ));
+}
+
+#[test]
+fn multi_outcome_market_resolution_must_reference_listed_outcome() {
+    let key = PredictionMarketKey::new("MANIFOLD", "contract-1").unwrap();
+    let mut market = MultiOutcomeMarket::new(
+        key.clone(),
+        "Which team wins?".to_string(),
+        vec![
+            outcome("contract-1", "A", "Team A"),
+            outcome("contract-1", "B", "Team B"),
+        ],
+        PredictionMarketStatus::Open,
+        Currency::Iso(IsoCurrency::USD),
+        OutcomePayout::ONE,
+    )
+    .unwrap();
+
+    let err = market
+        .set_resolution(Some(PredictionOutcomeId::new("C").unwrap()))
+        .unwrap_err();
+    assert!(matches!(
+        err,
+        PredictionError::InvalidMultiOutcomeMarketResolution { .. }
+    ));
+
+    market
+        .set_resolution(Some(PredictionOutcomeId::new("B").unwrap()))
+        .unwrap();
+    assert_eq!(market.key(), &key);
+    assert_eq!(market.outcomes().len(), 2);
+    assert_eq!(market.resolution().unwrap().as_str(), "B");
+}
+
+#[test]
+fn multi_outcome_market_deserialization_validates_outcomes_and_resolution() {
+    let mismatched = r#"{
+        "key": {
+            "venue": "MANIFOLD",
+            "market_id": "contract-1"
+        },
+        "event_key": null,
+        "title": "Which team wins?",
+        "outcomes": [
+            {
+                "instrument": {
+                    "venue": "MANIFOLD",
+                    "market_id": "contract-1",
+                    "outcome_id": "A"
+                },
+                "label": "Team A"
+            },
+            {
+                "instrument": {
+                    "venue": "MANIFOLD",
+                    "market_id": "other-contract",
+                    "outcome_id": "B"
+                },
+                "label": "Team B"
+            }
+        ],
+        "status": "open",
+        "collateral_currency": {
+            "iso": "USD"
+        },
+        "unit_payout": 1000000,
+        "price_grid": null,
+        "min_order_quantity": null,
+        "open_time": null,
+        "close_time": null,
+        "settlement_time": null,
+        "resolution": null
+    }"#;
+    assert!(serde_json::from_str::<MultiOutcomeMarket>(mismatched).is_err());
+
+    let invalid_resolution = r#"{
+        "key": {
+            "venue": "MANIFOLD",
+            "market_id": "contract-1"
+        },
+        "event_key": null,
+        "title": "Which team wins?",
+        "outcomes": [
+            {
+                "instrument": {
+                    "venue": "MANIFOLD",
+                    "market_id": "contract-1",
+                    "outcome_id": "A"
+                },
+                "label": "Team A"
+            },
+            {
+                "instrument": {
+                    "venue": "MANIFOLD",
+                    "market_id": "contract-1",
+                    "outcome_id": "B"
+                },
+                "label": "Team B"
+            }
+        ],
+        "status": "open",
+        "collateral_currency": {
+            "iso": "USD"
+        },
+        "unit_payout": 1000000,
+        "price_grid": null,
+        "min_order_quantity": null,
+        "open_time": null,
+        "close_time": null,
+        "settlement_time": null,
+        "resolution": "C"
+    }"#;
+    assert!(serde_json::from_str::<MultiOutcomeMarket>(invalid_resolution).is_err());
 }
 
 #[test]

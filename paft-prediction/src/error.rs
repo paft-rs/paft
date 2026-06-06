@@ -35,6 +35,35 @@ impl fmt::Display for BinaryMarketOutcomeMismatch {
     }
 }
 
+/// Details for a multi-outcome entry whose instrument does not match its market key.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MultiOutcomeMarketOutcomeMismatch {
+    /// Multi-outcome market key venue.
+    pub key_venue: String,
+    /// Multi-outcome market key market id.
+    pub key_market_id: String,
+    /// Outcome instrument venue.
+    pub outcome_venue: String,
+    /// Outcome instrument market id.
+    pub outcome_market_id: String,
+    /// Outcome instrument outcome id.
+    pub outcome_id: String,
+}
+
+impl fmt::Display for MultiOutcomeMarketOutcomeMismatch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Mismatched multi-outcome market outcome: market key is {}:{}, outcome {} belongs to {}:{}",
+            self.key_venue,
+            self.key_market_id,
+            self.outcome_id,
+            self.outcome_venue,
+            self.outcome_market_id,
+        )
+    }
+}
+
 /// Errors produced by prediction-market constructors and validators.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -132,6 +161,44 @@ pub enum PredictionError {
         /// Mismatch details.
         Box<BinaryMarketOutcomeMismatch>,
     ),
+
+    /// Multi-outcome markets must carry at least two outcomes.
+    #[error("Invalid multi-outcome market: expected at least 2 outcomes, got {count}")]
+    TooFewMultiOutcomeMarketOutcomes {
+        /// Number of outcomes supplied.
+        count: usize,
+    },
+
+    /// A multi-outcome market outcome does not belong to its market key.
+    #[error("{0}")]
+    MismatchedMultiOutcomeMarketOutcome(
+        /// Mismatch details.
+        Box<MultiOutcomeMarketOutcomeMismatch>,
+    ),
+
+    /// A multi-outcome market repeats an outcome id.
+    #[error("Duplicate multi-outcome market outcome: {venue}:{market_id}/{outcome_id}")]
+    DuplicateMultiOutcomeMarketOutcome {
+        /// Outcome instrument venue.
+        venue: String,
+        /// Outcome instrument market id.
+        market_id: String,
+        /// Duplicate outcome id.
+        outcome_id: String,
+    },
+
+    /// A multi-outcome market resolution does not reference a listed outcome.
+    #[error(
+        "Invalid multi-outcome market resolution: {venue}:{market_id}/{outcome_id} is not listed"
+    )]
+    InvalidMultiOutcomeMarketResolution {
+        /// Market venue.
+        venue: String,
+        /// Market id.
+        market_id: String,
+        /// Unlisted resolution outcome id.
+        outcome_id: String,
+    },
 
     /// Invalid price-grid structure.
     #[error("Invalid price grid: {reason}")]

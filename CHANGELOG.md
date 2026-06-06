@@ -90,6 +90,9 @@ All notable changes to this project will be documented in this file.
 - Prediction: `GenericBinaryMarket::new` is now fallible and binary market
   deserialization validates that YES/NO outcome instruments belong to the
   market key.
+- Prediction: `GenericMultiOutcomeMarket` now validates outcome count,
+  outcome instrument market identity, duplicate outcome ids, and listed
+  resolutions through a fallible constructor and deserialization.
 - Prediction: standalone market shapes now carry `event_key:
   Option<PredictionEventKey>` instead of a bare event id so event references
   are fully venue-namespaced.
