@@ -21,14 +21,15 @@ wire-format update across the workspace.
 - Money/facade: added `QuantityAmount`, a transparent non-negative decimal
   quantity amount for provider-agnostic market sizes and volumes.
 - Money: added `override_currency_metadata` for explicitly replacing a
-  registered currency scale.
+  registered non-ISO currency scale while still rejecting conflicts with
+  ISO-defined currency exponents.
 - Domain/facade: added validated period components `PeriodYear`, `PeriodDate`,
   and `QuarterOfYear`, including standalone serde support.
 - Domain/facade: added `CalendarPeriod` for calendar year, quarter, and date
   boundary helpers such as `start_date`, `end_date`, `overlaps`, `contains`,
   and `is_same_exact_bucket_as`.
-- Domain/facade: added `Horizon` and `OtherHorizon` for relative lookback
-  windows such as `7d`, `1mo`, and `1y`.
+- Domain/facade: added `Horizon` and `OtherHorizon` for validated relative
+  lookback windows such as `7d`, `1mo`, and `1y`.
 - Market/facade: added `Ohlc` plus OHLC price-basis modeling types
   `OhlcPriceBasis`, `PriceBasis`, `AdjustmentAnchor`, `AdjustmentMethod`,
   `CorporateActionAdjustmentCause`, and `CorporateActionAdjustmentCauses`.
@@ -106,9 +107,6 @@ wire-format update across the workspace.
 - Money: `set_currency_metadata` now preserves an already registered
   minor-unit scale; callers must use `override_currency_metadata` for
   intentional scale changes.
-- Money: `override_currency_metadata` now rejects `minor_units` values that
-  conflict with an ISO-defined exponent, keeping public metadata aligned with
-  `Currency::decimal_places()`.
 - Money: `Currency::full_name()` now uses registered metadata for all non-ISO
   currencies, including modeled variants such as `BTC`, `ETH`, and `XMR`; ISO
   currency names remain sourced from ISO 4217.
@@ -165,8 +163,8 @@ wire-format update across the workspace.
   labels and `CalendarPeriod` for date-boundary logic. Structured period
   variants now store validated `PeriodYear`, `QuarterOfYear`, and
   `PeriodDate` components.
-- Domain/facade: split the ambiguous `CalendarPeriod::is_same_bucket_as`
-  relationship helper into `overlaps`, `contains`, and
+- Domain/facade: replaced the old ambiguous `Period::is_same_bucket_as`
+  relationship helper with explicit `CalendarPeriod::overlaps`, `contains`, and
   `is_same_exact_bucket_as`.
 - Fundamentals/facade: `EarningsYear::year` now uses the validated
   `PeriodYear` newtype instead of raw `i32`.
@@ -227,8 +225,6 @@ wire-format update across the workspace.
 - Market/facade: `SearchRequest` now stores result limits as
   `Option<std::num::NonZeroU32>` and validates builder/deserialized limits from
   `u32`, avoiding platform-dependent `usize` in serialized request models.
-- Market/facade: `HistoryValidationError` now converts into `paft::Error`, so
-  `HistoryResponse::validate()?` composes with `paft::Result`.
 - Market requests: `HistoryFlags` now serializes as an explicit `u8` bitset,
   and deserialization rejects unknown flag bits instead of retaining unmodeled
   request behavior.
@@ -255,24 +251,15 @@ wire-format update across the workspace.
   states such as quarter 5 or date/period years outside `0..=9999`, and low
   years now emit four-digit canonical codes so display/serde round trips
   preserve identity.
-- Domain: `Horizon` and `ReportingPeriod` parsing now rejects malformed inputs whose
-  canonical fallback would become a modeled token, such as `-1d` or
-  `-2023Q4`, instead of accepting them as valid structured values.
-- Domain docs/tests: clarified that partial modeled-looking provider labels
-  such as `FY`, `2023-Q`, and `7 d` remain extensible `Other` values unless
-  they match a supported parser shape or would canonicalize to a modeled token.
+- Domain: `ReportingPeriod` parsing now rejects malformed inputs whose
+  canonical fallback would become a modeled period token, such as `-2023Q4`,
+  instead of accepting them as valid structured values.
 - Domain/money/fundamentals: string enum parsers now reject malformed inputs
   whose canonicalized form would resolve to a modeled value, such as `$USD`,
   `---NYSE`, or `CLOSED!`.
 - Money: `Currency` parsing and metadata registration now require valid token
   boundaries for every code, so malformed metadata-known open currencies such
   as `$DOGE` no longer normalize to `DOGE`.
-- Fundamentals: `Profile` JSON deserialization no longer rejects unknown
-  payload fields, matching the workspace's open data-model serde policy.
-- Docs/market: documented the wire compatibility policy: requests,
-  configuration, and semantic invariant-bearing tagged shapes are strict,
-  while provider/data payloads are forward-compatible by default. `Action`
-  JSON now follows that policy by ignoring unknown payload fields.
 - Money docs: public `from_scaled_units` messages now match decimal-backend
   behavior.
 - Domain/money/fundamentals: manually constructed extensible enum `Other`
