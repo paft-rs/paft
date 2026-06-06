@@ -208,7 +208,7 @@ pub fn try_normalize_currency_code(code: &str) -> Result<Currency, MoneyParseErr
     Currency::try_from_str(code)
 }
 
-fn validate_minor_units(minor_units: u8) -> Result<(), MinorUnitError> {
+const fn validate_minor_units(minor_units: u8) -> Result<(), MinorUnitError> {
     if minor_units > paft_decimal::max_decimal_precision() {
         return Err(MinorUnitError::ExceedsDecimalPrecision {
             decimals: minor_units,
@@ -389,7 +389,10 @@ pub fn currency_metadata(code: &str) -> Option<CurrencyMetadata> {
 /// The previous `CurrencyMetadata`, if any, is returned. Callers commonly
 /// only care about the side effect, so the result is intentionally not
 /// `#[must_use]`.
-#[allow(clippy::must_use_candidate)]
+#[expect(
+    clippy::must_use_candidate,
+    reason = "callers commonly clear metadata for the side effect and may ignore the previous value"
+)]
 pub fn clear_currency_metadata(code: &str) -> Option<CurrencyMetadata> {
     let canonical = canonicalize(code);
     write_custom_metadata().remove(canonical.as_ref())

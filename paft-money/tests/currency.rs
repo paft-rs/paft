@@ -13,7 +13,6 @@ struct Case {
 }
 
 #[test]
-#[allow(clippy::too_many_lines)]
 fn currency_round_trips_display_fromstr_and_serde() {
     for case in cases() {
         assert_round_trip(&case);
@@ -126,7 +125,10 @@ fn currency_reserve_currency_helper() {
     assert!(!Currency::Iso(IsoCurrency::CAD).is_reserve_currency());
 }
 
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "the fixture table is clearer as one canonical currency mapping list"
+)]
 fn cases() -> Vec<Case> {
     vec![
         Case {

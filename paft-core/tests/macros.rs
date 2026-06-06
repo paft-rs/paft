@@ -10,8 +10,6 @@
 //! crates do not need implementation dependencies in scope under any particular
 //! name.
 
-#![allow(clippy::items_after_statements)]
-
 use paft_core::__utils::{Canonical, MAX_CANONICAL_TOKEN_LEN, StringCode};
 use paft_core::PaftError;
 

@@ -41,7 +41,10 @@ fn exchange_is_european_checks_geography() {
     assert!(!Exchange::PSE.is_european_exchange());
 }
 
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "the fixture table is clearer as one canonical exchange mapping list"
+)]
 fn cases() -> Vec<Case> {
     use Exchange::*;
 

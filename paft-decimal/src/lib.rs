@@ -9,7 +9,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
-#![allow(clippy::cargo_common_metadata)]
 
 use std::{borrow::Cow, str::FromStr};
 
@@ -165,7 +164,10 @@ mod backend {
         Decimal::new(BigInt::from(value), i64::from(scale))
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "bigdecimal accepts every i128 coefficient and u32 scale, but the backend API mirrors rust_decimal"
+    )]
     pub fn try_from_scaled_units(value: i128, scale: u32) -> Option<Decimal> {
         Some(Decimal::new(BigInt::from(value), i64::from(scale)))
     }
@@ -192,17 +194,26 @@ mod backend {
         value.to_plain_string()
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "bigdecimal addition cannot overflow here, but the backend API mirrors rust_decimal checked arithmetic"
+    )]
     pub fn checked_add(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
         Some(lhs + rhs)
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "bigdecimal subtraction cannot overflow here, but the backend API mirrors rust_decimal checked arithmetic"
+    )]
     pub fn checked_sub(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
         Some(lhs - rhs)
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "bigdecimal multiplication cannot overflow here, but the backend API mirrors rust_decimal checked arithmetic"
+    )]
     pub fn checked_mul(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
         Some(lhs * rhs)
     }
@@ -324,14 +335,19 @@ pub const MAX_DECIMAL_PRECISION: u8 = backend::MAX_DECIMAL_PRECISION;
 
 /// Returns the maximum fractional precision supported by the active decimal backend.
 #[must_use]
-#[allow(clippy::missing_const_for_fn)]
-pub fn max_decimal_precision() -> u8 {
+pub const fn max_decimal_precision() -> u8 {
     backend::MAX_DECIMAL_PRECISION
 }
 
 /// Clones a decimal value using the active backend's cheapest owned-value path.
 #[must_use]
-#[allow(clippy::missing_const_for_fn)]
+#[cfg_attr(
+    not(feature = "bigdecimal"),
+    expect(
+        clippy::missing_const_for_fn,
+        reason = "the public helper stays non-const because bigdecimal cloning is not const"
+    )
+)]
 pub fn clone_decimal(value: &Decimal) -> Decimal {
     backend::clone_decimal(value)
 }
@@ -469,14 +485,26 @@ fn normalize_decimal_literal(value: &str) -> Option<Cow<'_, str>> {
 
 /// Returns the zero value for the active decimal backend.
 #[must_use]
-#[allow(clippy::missing_const_for_fn)]
+#[cfg_attr(
+    not(feature = "bigdecimal"),
+    expect(
+        clippy::missing_const_for_fn,
+        reason = "the public helper stays non-const because bigdecimal zero construction is not const"
+    )
+)]
 pub fn zero() -> Decimal {
     backend::zero()
 }
 
 /// Returns the one value for the active decimal backend.
 #[must_use]
-#[allow(clippy::missing_const_for_fn)]
+#[cfg_attr(
+    not(feature = "bigdecimal"),
+    expect(
+        clippy::missing_const_for_fn,
+        reason = "the public helper stays non-const because bigdecimal one construction is not const"
+    )
+)]
 pub fn one() -> Decimal {
     backend::one()
 }
@@ -499,7 +527,6 @@ pub fn from_minor_units(value: i128, scale: u32) -> Decimal {
 /// 96-bit mantissa. The `bigdecimal` backend accepts every `i128` coefficient
 /// and `u32` scale.
 #[must_use]
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
 pub fn try_from_scaled_units(value: i128, scale: u32) -> Option<Decimal> {
     backend::try_from_scaled_units(value, scale)
 }

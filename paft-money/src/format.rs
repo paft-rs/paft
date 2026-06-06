@@ -33,10 +33,8 @@ pub struct Params<'a> {
     pub code: Option<Cow<'a, str>>,
 }
 
-#[allow(clippy::elidable_lifetime_names)]
-impl<'a> Params<'a> {
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn new(positions: Vec<FormatItem>) -> Self {
+impl Params<'_> {
+    pub const fn new(positions: Vec<FormatItem>) -> Self {
         Self {
             positions,
             rounding_digits: None,
@@ -55,7 +53,6 @@ pub struct Formatter<'a> {
 
 impl<'a> Formatter<'a> {
     /// Creates a new formatter for the provided Decimal value.
-    #[allow(clippy::missing_const_for_fn)]
     pub fn new(value: Decimal, locale: Locale, params: Params<'a>) -> Self {
         Self {
             value,

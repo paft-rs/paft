@@ -18,3 +18,6 @@ Requests, configuration, and semantic metadata shapes are strict when silently d
 - Private fields plus builder for validated requests.
 - Manual/shadow deserialization for any type whose constructor enforces invariants.
 - No derived Deserialize for invariant-bearing structs unless all fields are already validated newtypes and no cross-field invariant exists.
+
+## Clippy suppression policy
+- Prefer fixing lints. For intentional suppressions, use `#[expect(..., reason = "...")]` so stale suppressions fail linting; use `allow(..., reason = "...")` only when `expect` cannot model the feature/cfg shape.

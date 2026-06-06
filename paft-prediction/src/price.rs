@@ -46,7 +46,13 @@ impl OutcomePrice {
     /// Returns [`PredictionError`] when the value is negative, greater than
     /// `1`, not finite in the active decimal backend, or cannot be represented
     /// exactly in millionths.
-    #[allow(clippy::needless_pass_by_value)]
+    #[cfg_attr(
+        feature = "bigdecimal",
+        expect(
+            clippy::needless_pass_by_value,
+            reason = "decimal constructors accept owned values even though validation borrows internally"
+        )
+    )]
     pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
         let micros = decimal_to_fixed_point_units(&value, "outcome price")?;
         if micros > u64::from(Self::SCALE) {
@@ -194,7 +200,13 @@ impl PriceTick {
     ///
     /// Returns [`PredictionError`] when the value is zero, negative, greater
     /// than `1`, or cannot be represented exactly in millionths.
-    #[allow(clippy::needless_pass_by_value)]
+    #[cfg_attr(
+        feature = "bigdecimal",
+        expect(
+            clippy::needless_pass_by_value,
+            reason = "decimal constructors accept owned values even though validation borrows internally"
+        )
+    )]
     pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
         let micros = decimal_to_fixed_point_units(&value, "price tick")?;
         let micros = u32::try_from(micros).map_err(|_| {
@@ -527,7 +539,13 @@ impl ContractQuantity {
     /// Returns [`PredictionError`] when the value is negative, cannot be stored
     /// as a `u64` microcontract count, or cannot be represented exactly in
     /// millionths.
-    #[allow(clippy::needless_pass_by_value)]
+    #[cfg_attr(
+        feature = "bigdecimal",
+        expect(
+            clippy::needless_pass_by_value,
+            reason = "decimal constructors accept owned values even though validation borrows internally"
+        )
+    )]
     pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
         Ok(Self(decimal_to_fixed_point_units(
             &value,
@@ -631,7 +649,13 @@ impl NonZeroContractQuantity {
     /// Returns [`PredictionError`] when the value is zero, negative, cannot be
     /// stored as a `u64` microcontract count, or cannot be represented exactly
     /// in millionths.
-    #[allow(clippy::needless_pass_by_value)]
+    #[cfg_attr(
+        feature = "bigdecimal",
+        expect(
+            clippy::needless_pass_by_value,
+            reason = "decimal constructors accept owned values even though validation borrows internally"
+        )
+    )]
     pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
         Self::from_microcontracts(decimal_to_fixed_point_units(&value, "contract quantity")?)
     }
@@ -731,7 +755,13 @@ impl OutcomePayout {
     /// Returns [`PredictionError`] when the value is negative, cannot be stored
     /// as a `u64` micropayout count, or cannot be represented exactly in
     /// millionths.
-    #[allow(clippy::needless_pass_by_value)]
+    #[cfg_attr(
+        feature = "bigdecimal",
+        expect(
+            clippy::needless_pass_by_value,
+            reason = "decimal constructors accept owned values even though validation borrows internally"
+        )
+    )]
     pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
         Ok(Self(decimal_to_fixed_point_units(
             &value,
@@ -827,7 +857,13 @@ impl NonZeroOutcomePayout {
     /// Returns [`PredictionError`] when the value is zero, negative, cannot be
     /// stored as a `u64` micropayout count, or cannot be represented exactly
     /// in millionths.
-    #[allow(clippy::needless_pass_by_value)]
+    #[cfg_attr(
+        feature = "bigdecimal",
+        expect(
+            clippy::needless_pass_by_value,
+            reason = "decimal constructors accept owned values even though validation borrows internally"
+        )
+    )]
     pub fn from_decimal(value: Decimal) -> Result<Self, PredictionError> {
         Self::from_micropayouts(decimal_to_fixed_point_units(&value, "outcome payout")?)
     }
