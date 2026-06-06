@@ -1,5 +1,8 @@
 use chrono::NaiveDate;
-use paft_domain::{DomainError, MarketState, Period};
+use paft_domain::{
+    CalendarPeriod, DomainError, MarketState, PeriodDate, PeriodYear, QuarterOfYear,
+    ReportingPeriod,
+};
 use std::str::FromStr;
 
 #[test]
@@ -9,25 +12,20 @@ fn market_state_helper_methods() {
     assert!(MarketState::Post.is_trading());
     assert!(!MarketState::Closed.is_trading());
     assert!(!MarketState::Halted.is_trading());
-    assert!(!"delayed".parse::<MarketState>().unwrap().is_trading());
 
     assert_eq!(MarketState::Pre.full_name(), "Pre-market");
     assert_eq!(MarketState::Regular.full_name(), "Regular session");
     assert_eq!(MarketState::Post.full_name(), "Post-market");
-    assert_eq!(
-        "delayed".parse::<MarketState>().unwrap().full_name(),
-        "DELAYED"
-    );
 }
 
 struct PeriodCase {
     input: &'static str,
-    expected: Period,
+    expected: ReportingPeriod,
     canonical: &'static str,
 }
 
 fn assert_invalid_period_format(input: &str) {
-    let err = input.parse::<Period>().unwrap_err();
+    let err = input.parse::<ReportingPeriod>().unwrap_err();
     match err {
         DomainError::InvalidPeriodFormat { format } => {
             assert_eq!(format, input);
@@ -36,36 +34,44 @@ fn assert_invalid_period_format(input: &str) {
     }
 }
 
-fn assert_period_roundtrips(input: &str) -> Period {
-    let p: Period = input.parse().unwrap();
+fn assert_period_roundtrips(input: &str) -> ReportingPeriod {
+    let p: ReportingPeriod = input.parse().unwrap();
     let display = p.to_string();
-    let display_reparsed: Period = display.parse().unwrap();
+    let display_reparsed: ReportingPeriod = display.parse().unwrap();
     assert_eq!(
         p, display_reparsed,
         "display round-trip failed for {input:?} ({display:?})"
     );
 
     let json = serde_json::to_string(&p).unwrap();
-    let reparsed: Period = serde_json::from_str(&json).unwrap();
+    let reparsed: ReportingPeriod = serde_json::from_str(&json).unwrap();
     assert_eq!(p, reparsed, "serde round-trip failed for {input:?}");
     p
+}
+
+fn date_period(year: i32, month: u32, day: u32) -> ReportingPeriod {
+    ReportingPeriod::date(NaiveDate::from_ymd_opt(year, month, day).unwrap()).unwrap()
+}
+
+fn calendar_date_period(year: i32, month: u32, day: u32) -> CalendarPeriod {
+    CalendarPeriod::date(NaiveDate::from_ymd_opt(year, month, day).unwrap()).unwrap()
 }
 
 #[test]
 fn period_round_trips_display_fromstr_serde() {
     for case in period_cases() {
-        let parsed = case.input.parse::<Period>().unwrap();
+        let parsed = case.input.parse::<ReportingPeriod>().unwrap();
         assert_eq!(parsed, case.expected);
 
         let display = parsed.to_string();
         assert_eq!(display, case.canonical);
 
-        let reparsed = Period::from_str(&display).unwrap();
+        let reparsed = ReportingPeriod::from_str(&display).unwrap();
         assert_eq!(reparsed, case.expected);
 
         let json = serde_json::to_string(&parsed).unwrap();
         assert_eq!(json, format!("\"{}\"", case.canonical));
-        let back: Period = serde_json::from_str(&json).unwrap();
+        let back: ReportingPeriod = serde_json::from_str(&json).unwrap();
         assert_eq!(back, case.expected);
     }
 }
@@ -95,7 +101,7 @@ fn period_alias_inputs_normalize_to_canonical() {
 
     for (alias, canonical) in aliases {
         let parsed = alias
-            .parse::<Period>()
+            .parse::<ReportingPeriod>()
             .unwrap_or_else(|e| panic!("expected {alias:?} to parse, got {e:?}"));
         assert_eq!(parsed.to_string(), canonical, "input: {alias:?}");
     }
@@ -132,7 +138,7 @@ fn period_invalid_matches_raise_error() {
         "01-00-2023",
     ];
     for invalid in invalids {
-        let err = invalid.parse::<Period>().unwrap_err();
+        let err = invalid.parse::<ReportingPeriod>().unwrap_err();
         match err {
             DomainError::InvalidPeriodFormat { format } => {
                 assert_eq!(format, invalid);
@@ -145,6 +151,17 @@ fn period_invalid_matches_raise_error() {
 #[test]
 fn period_rejects_inputs_that_canonicalize_to_invalid_structured_tokens() {
     for input in ["-2023Q5", "(2023Q5)", "!2023Q5!", "2023Q5!"] {
+        assert_invalid_period_format(input);
+    }
+}
+
+#[test]
+fn period_rejects_inputs_that_canonicalize_to_modeled_tokens() {
+    let cases = [
+        "-2023Q4", "+2023Q4", "(2023Q4)", "!2023Q4!", "(2023)", "-2023", "+2023", "1234-",
+    ];
+
+    for input in cases {
         assert_invalid_period_format(input);
     }
 }
@@ -176,14 +193,14 @@ fn period_byte_parser_falls_through_to_other() {
             continue;
         }
         let parsed = input
-            .parse::<Period>()
+            .parse::<ReportingPeriod>()
             .unwrap_or_else(|e| panic!("expected {input:?} to parse, got {e:?}"));
         assert_eq!(parsed.to_string(), canonical, "input: {input:?}");
     }
 
     // "12-34-5678" matches the day-first byte-parser shape but month=34 is
     // invalid, so it must surface InvalidPeriodFormat (not fall through to Other).
-    match "12-34-5678".parse::<Period>() {
+    match "12-34-5678".parse::<ReportingPeriod>() {
         Err(DomainError::InvalidPeriodFormat { format }) => {
             assert_eq!(format, "12-34-5678");
         }
@@ -196,24 +213,113 @@ fn period_byte_parser_year_boundaries() {
     // Year 0 and year 9999 are accepted by the byte parser; chrono accepts them
     // too. Quarter boundaries 1 and 4 are inclusive.
     assert_eq!(
-        "0000Q1".parse::<Period>().unwrap(),
-        Period::Quarter {
-            year: 0,
-            quarter: 1
-        }
+        "0000Q1".parse::<ReportingPeriod>().unwrap(),
+        ReportingPeriod::quarterly(0, 1).unwrap()
     );
     assert_eq!(
-        "9999Q4".parse::<Period>().unwrap(),
-        Period::Quarter {
-            year: 9999,
-            quarter: 4
-        }
+        "9999Q4".parse::<ReportingPeriod>().unwrap(),
+        ReportingPeriod::quarterly(9999, 4).unwrap()
     );
-    assert_eq!("0000".parse::<Period>().unwrap(), Period::Year { year: 0 });
     assert_eq!(
-        "9999".parse::<Period>().unwrap(),
-        Period::Year { year: 9999 }
+        "0000".parse::<ReportingPeriod>().unwrap(),
+        ReportingPeriod::annual(0).unwrap()
     );
+    assert_eq!(
+        "9999".parse::<ReportingPeriod>().unwrap(),
+        ReportingPeriod::annual(9999).unwrap()
+    );
+}
+
+#[test]
+fn period_low_years_emit_four_digit_canonical_codes() {
+    let cases = [
+        ("0000", ReportingPeriod::annual(0).unwrap()),
+        ("0001", ReportingPeriod::annual(1).unwrap()),
+        ("0012", ReportingPeriod::annual(12).unwrap()),
+        ("0123", ReportingPeriod::annual(123).unwrap()),
+        ("0000Q1", ReportingPeriod::quarterly(0, 1).unwrap()),
+        ("0012Q4", ReportingPeriod::quarterly(12, 4).unwrap()),
+    ];
+
+    for (canonical, period) in cases {
+        assert_eq!(period.to_string(), canonical);
+
+        let display_round_trip: ReportingPeriod = period.to_string().parse().unwrap();
+        assert_eq!(display_round_trip, period);
+
+        let json = serde_json::to_string(&period).unwrap();
+        let serde_round_trip: ReportingPeriod = serde_json::from_str(&json).unwrap();
+        assert_eq!(serde_round_trip, period);
+    }
+}
+
+#[test]
+fn period_year_serde_emits_canonical_strings_and_validates() {
+    let year = PeriodYear::new(2024).unwrap();
+    let json = serde_json::to_string(&year).unwrap();
+    assert_eq!(json, "\"2024\"");
+
+    let round_trip: PeriodYear = serde_json::from_str(&json).unwrap();
+    assert_eq!(round_trip, year);
+
+    let low_year = PeriodYear::new(7).unwrap();
+    assert_eq!(serde_json::to_string(&low_year).unwrap(), "\"0007\"");
+    assert_eq!(
+        serde_json::from_str::<PeriodYear>("\"0007\"").unwrap(),
+        low_year
+    );
+
+    assert_eq!(serde_json::from_str::<PeriodYear>("7").unwrap(), low_year);
+    assert!(serde_json::from_str::<PeriodYear>("\"7\"").is_err());
+    assert!(serde_json::from_str::<PeriodYear>("\"10000\"").is_err());
+    assert!(serde_json::from_str::<PeriodYear>("10000").is_err());
+    assert!(serde_json::from_str::<PeriodYear>("-1").is_err());
+}
+
+#[test]
+fn period_date_serde_emits_canonical_strings_and_validates() {
+    let date = PeriodDate::new(NaiveDate::from_ymd_opt(2024, 1, 2).unwrap()).unwrap();
+    let json = serde_json::to_string(&date).unwrap();
+    assert_eq!(json, "\"2024-01-02\"");
+
+    let round_trip: PeriodDate = serde_json::from_str(&json).unwrap();
+    assert_eq!(round_trip, date);
+
+    let low_year = PeriodDate::new(NaiveDate::from_ymd_opt(7, 1, 2).unwrap()).unwrap();
+    assert_eq!(serde_json::to_string(&low_year).unwrap(), "\"0007-01-02\"");
+    assert_eq!(
+        serde_json::from_str::<PeriodDate>("\"0007-01-02\"").unwrap(),
+        low_year
+    );
+
+    assert!(serde_json::from_str::<PeriodDate>("\"7-01-02\"").is_err());
+    assert!(serde_json::from_str::<PeriodDate>("\"2024-1-2\"").is_err());
+    assert!(serde_json::from_str::<PeriodDate>("\"2024/01/02\"").is_err());
+    assert!(serde_json::from_str::<PeriodDate>("\"2024-02-30\"").is_err());
+    assert!(serde_json::from_str::<PeriodDate>("20240102").is_err());
+}
+
+#[test]
+fn quarter_of_year_serde_emits_canonical_strings_and_validates() {
+    let quarter = QuarterOfYear::Q4;
+    let json = serde_json::to_string(&quarter).unwrap();
+    assert_eq!(json, "\"4\"");
+
+    let round_trip: QuarterOfYear = serde_json::from_str(&json).unwrap();
+    assert_eq!(round_trip, quarter);
+
+    assert_eq!(serde_json::from_str::<QuarterOfYear>("4").unwrap(), quarter);
+    assert_eq!(
+        serde_json::from_str::<QuarterOfYear>("\"1\"").unwrap(),
+        QuarterOfYear::Q1
+    );
+
+    assert!(serde_json::from_str::<QuarterOfYear>("0").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("5").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("\"0\"").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("\"5\"").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("\"04\"").is_err());
+    assert!(serde_json::from_str::<QuarterOfYear>("\"Q4\"").is_err());
 }
 
 #[test]
@@ -222,22 +328,16 @@ fn period_byte_parser_iso_does_not_swallow_us_or_dayfirst() {
     // or day-first (those start with 1-2 digits). Verify by checking inputs
     // that begin with 4 digits and the ISO branch ultimately fails.
     //
-    // `"1234-"` is not in this list: its canonical form is `"1234"`, which is
-    // a valid 4-digit year. The `FromStr` invariant requires that we never
-    // produce an `Other` whose canonical token re-parses as a structured
-    // variant, so `"1234-"` is intentionally promoted to `Year { year: 1234 }`
-    // (covered separately in
-    // `period_other_canonical_does_not_collide_with_structured_variants`).
     let cases = [
         "1234-X", // length 6, ISO partial then non-digit → Other
         "1234/X", // length 6, ISO partial then non-digit → Other
     ];
     for input in cases {
         let parsed = input
-            .parse::<Period>()
+            .parse::<ReportingPeriod>()
             .unwrap_or_else(|e| panic!("expected {input:?} to parse to Other, got {e:?}"));
         match parsed {
-            Period::Other(_) => {}
+            ReportingPeriod::Other(_) => {}
             other => panic!("expected Other(_) for {input:?}, got {other:?}"),
         }
     }
@@ -261,81 +361,13 @@ fn period_byte_parser_quarter_separator_whitespace_variants() {
         "2023 \t \t Q4",
         "2023\t\tq4",
     ];
-    let expected = Period::Quarter {
-        year: 2023,
-        quarter: 4,
-    };
+    let expected = ReportingPeriod::quarterly(2023, 4).unwrap();
     for input in inputs {
         assert_eq!(
-            input.parse::<Period>().unwrap(),
+            input.parse::<ReportingPeriod>().unwrap(),
             expected,
             "input: {input:?}"
         );
-    }
-}
-
-#[test]
-fn period_other_canonical_does_not_collide_with_structured_variants() {
-    // Inputs that the structured parsers reject directly but whose canonical
-    // form *does* parse as a structured variant. The fix re-runs the
-    // structured parsers on the canonical form so we never produce an
-    // `Other` whose serialised form would re-parse as a different variant.
-    //
-    // Each of these should parse straight to a structured variant (not
-    // `Other`), and each should round-trip cleanly via `Display`/`FromStr`
-    // and serde.
-    let cases: &[(&str, Period)] = &[
-        (
-            "-2023Q4",
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
-        ),
-        (
-            "(2023Q4)",
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
-        ),
-        // Leading non-alphanumerics that strip away cleanly during
-        // canonicalization to leave a bare `YYYYQ#`.
-        (
-            "!2023Q4!",
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
-        ),
-        // Same idea, but ending up at a bare 4-digit year token.
-        ("(2023)", Period::Year { year: 2023 }),
-        ("-2023", Period::Year { year: 2023 }),
-        // 4-digit prefix followed by a stray separator: previously stored as
-        // `Other("1234")`, which serde-deserialized to `Year { 1234 }` — the
-        // exact identity-violation this fix prevents. Must now resolve to
-        // `Year` directly.
-        ("1234-", Period::Year { year: 1234 }),
-    ];
-
-    for (input, expected) in cases {
-        let p: Period = input.parse().unwrap();
-        assert_eq!(&p, expected, "input: {input:?}");
-
-        // Display round-trip
-        let s = p.to_string();
-        let p_disp: Period = s.parse().unwrap();
-        assert_eq!(
-            p_disp, p,
-            "Display round-trip for {input:?} (display: {s:?})"
-        );
-
-        // Serde round-trip — this is what was originally broken: serializing
-        // an `Other` whose canonical token re-parsed as `Quarter` yielded a
-        // different variant on deserialize.
-        let json = serde_json::to_string(&p).unwrap();
-        let p2: Period = serde_json::from_str(&json).unwrap();
-        assert_eq!(p, p2, "round-trip identity violated for {input:?} ({p:?})");
     }
 }
 
@@ -360,7 +392,21 @@ fn period_other_round_trip_for_genuine_other_inputs() {
     for input in inputs {
         let p = assert_period_roundtrips(input);
         assert!(
-            matches!(p, Period::Other(_)),
+            matches!(p, ReportingPeriod::Other(_)),
+            "expected Other for {input:?}, got {p:?}"
+        );
+    }
+}
+
+#[test]
+fn period_partial_modeled_looking_provider_labels_remain_other() {
+    let cases = [("2023-Q", "2023_Q"), ("FY", "FY")];
+
+    for (input, canonical) in cases {
+        let p = assert_period_roundtrips(input);
+        assert_eq!(p.to_string(), canonical, "input: {input:?}");
+        assert!(
+            matches!(p, ReportingPeriod::Other(_)),
             "expected Other for {input:?}, got {p:?}"
         );
     }
@@ -369,142 +415,183 @@ fn period_other_round_trip_for_genuine_other_inputs() {
 #[test]
 fn period_byte_parser_too_long_inputs_fall_through() {
     // Length > 10 cannot match any date format. They must fall through to Other.
-    let parsed = "2023-12-31x".parse::<Period>().unwrap();
-    assert!(matches!(parsed, Period::Other(_)));
+    let parsed = "2023-12-31x".parse::<ReportingPeriod>().unwrap();
+    assert!(matches!(parsed, ReportingPeriod::Other(_)));
 }
 
 #[test]
-fn period_ordering_is_stable_and_chronological() {
-    use std::cmp::Ordering::*;
-    let d1 = Period::Date(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap());
-    let d2 = Period::Date(NaiveDate::from_ymd_opt(2023, 12, 31).unwrap());
-    let q1 = Period::Quarter {
-        year: 2023,
-        quarter: 1,
-    };
-    let q2 = Period::Quarter {
-        year: 2023,
-        quarter: 2,
-    };
-    let y = Period::Year { year: 2023 };
-    let o = Period::try_from("ALPHA".to_string()).unwrap();
+fn period_calendar_boundaries_are_explicit() {
+    let date = calendar_date_period(2023, 5, 17);
+    assert_eq!(
+        date.start_date(),
+        NaiveDate::from_ymd_opt(2023, 5, 17).unwrap()
+    );
+    assert_eq!(
+        date.end_date(),
+        NaiveDate::from_ymd_opt(2023, 5, 17).unwrap()
+    );
 
-    // Variant precedence: Date < Quarter < Year < Other
-    assert_eq!(d1.cmp(&q1), Less);
-    assert_eq!(q1.cmp(&y), Less);
-    assert_eq!(y.cmp(&o), Less);
+    let quarter = CalendarPeriod::quarterly(2023, 2).unwrap();
+    assert_eq!(
+        quarter.start_date(),
+        NaiveDate::from_ymd_opt(2023, 4, 1).unwrap()
+    );
+    assert_eq!(
+        quarter.end_date(),
+        NaiveDate::from_ymd_opt(2023, 6, 30).unwrap()
+    );
 
-    // Intra-variant chronology
-    assert_eq!(d1.cmp(&d2), Less);
-    assert_eq!(q1.cmp(&q2), Less);
-    assert_eq!(Period::Year { year: 2022 }.cmp(&y), Less);
+    let year = CalendarPeriod::annual(2023).unwrap();
+    assert_eq!(
+        year.start_date(),
+        NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()
+    );
+    assert_eq!(
+        year.end_date(),
+        NaiveDate::from_ymd_opt(2023, 12, 31).unwrap()
+    );
+}
+
+#[test]
+fn calendar_period_rejects_reporting_only_labels() {
+    assert!("FY2023".parse::<CalendarPeriod>().is_err());
+    assert!("custom range".parse::<CalendarPeriod>().is_err());
+
+    let reporting = ReportingPeriod::other("custom range").unwrap();
+    assert!(CalendarPeriod::try_from(reporting).is_err());
+
+    let reporting = ReportingPeriod::quarterly(2023, 4).unwrap();
+    assert_eq!(
+        CalendarPeriod::try_from(reporting).unwrap(),
+        CalendarPeriod::quarterly(2023, 4).unwrap()
+    );
+}
+
+#[test]
+fn period_boundaries_support_chronological_sort_keys() {
+    let late_date = calendar_date_period(2099, 1, 1);
+    let early_quarter = CalendarPeriod::quarterly(1900, 1).unwrap();
+
+    assert!(early_quarter.start_date() < late_date.start_date());
+    assert!(early_quarter.end_date() < late_date.end_date());
+}
+
+#[test]
+fn period_constructors_reject_invalid_structured_components() {
+    assert_eq!(
+        ReportingPeriod::quarterly(2023, 5).unwrap_err(),
+        DomainError::InvalidPeriodQuarter { quarter: 5 }
+    );
+    assert_eq!(
+        QuarterOfYear::new(0).unwrap_err(),
+        DomainError::InvalidPeriodQuarter { quarter: 0 }
+    );
+    assert_eq!(
+        ReportingPeriod::annual(-1).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: -1 }
+    );
+    assert_eq!(
+        ReportingPeriod::annual(10_000).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: 10_000 }
+    );
+    assert_eq!(
+        PeriodYear::new(10_000).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: 10_000 }
+    );
+    assert_eq!(
+        PeriodDate::new(NaiveDate::from_ymd_opt(10_000, 1, 1).unwrap()).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: 10_000 }
+    );
+    assert_eq!(
+        ReportingPeriod::date(NaiveDate::from_ymd_opt(10_000, 1, 1).unwrap()).unwrap_err(),
+        DomainError::InvalidPeriodYear { year: 10_000 }
+    );
 }
 
 #[test]
 fn period_helper_next_quarter() {
     // Date -> next quarter of its quarter bucket
-    let d = Period::Date(NaiveDate::from_ymd_opt(2023, 3, 31).unwrap());
+    let d = calendar_date_period(2023, 3, 31);
     assert_eq!(
         d.next_quarter(),
-        Some(Period::Quarter {
-            year: 2023,
-            quarter: 2
-        })
+        Some(CalendarPeriod::quarterly(2023, 2).unwrap())
     );
 
     // Quarter wrap
-    let q = Period::Quarter {
-        year: 2023,
-        quarter: 4,
-    };
+    let q = CalendarPeriod::quarterly(2023, 4).unwrap();
     assert_eq!(
         q.next_quarter(),
-        Some(Period::Quarter {
-            year: 2024,
-            quarter: 1
-        })
+        Some(CalendarPeriod::quarterly(2024, 1).unwrap())
     );
 
     // Year -> Q1 of next year
-    let y = Period::Year { year: 2023 };
+    let y = CalendarPeriod::annual(2023).unwrap();
     assert_eq!(
         y.next_quarter(),
-        Some(Period::Quarter {
-            year: 2024,
-            quarter: 1
-        })
+        Some(CalendarPeriod::quarterly(2024, 1).unwrap())
     );
+
+    assert_eq!(
+        CalendarPeriod::quarterly(9999, 4).unwrap().next_quarter(),
+        None
+    );
+    assert_eq!(CalendarPeriod::annual(9999).unwrap().next_quarter(), None);
 }
 
 #[test]
 fn period_helper_year_end() {
-    let d = Period::Date(NaiveDate::from_ymd_opt(2023, 6, 15).unwrap());
-    let q = Period::Quarter {
-        year: 2023,
-        quarter: 3,
-    };
-    let y = Period::Year { year: 2023 };
+    let d = calendar_date_period(2023, 6, 15);
+    let q = CalendarPeriod::quarterly(2023, 3).unwrap();
+    let y = CalendarPeriod::annual(2023).unwrap();
 
-    assert_eq!(
-        d.year_end(),
-        Some(NaiveDate::from_ymd_opt(2023, 12, 31).unwrap())
-    );
-    assert_eq!(
-        q.year_end(),
-        Some(NaiveDate::from_ymd_opt(2023, 12, 31).unwrap())
-    );
-    assert_eq!(
-        y.year_end(),
-        Some(NaiveDate::from_ymd_opt(2023, 12, 31).unwrap())
-    );
+    assert_eq!(d.year_end(), NaiveDate::from_ymd_opt(2023, 12, 31).unwrap());
+    assert_eq!(q.year_end(), NaiveDate::from_ymd_opt(2023, 12, 31).unwrap());
+    assert_eq!(y.year_end(), NaiveDate::from_ymd_opt(2023, 12, 31).unwrap());
 }
 
 #[test]
-fn period_helper_is_same_bucket_as() {
-    // Year bucket
-    let y = Period::Year { year: 2023 };
-    let d = Period::Date(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap());
-    let q = Period::Quarter {
-        year: 2023,
-        quarter: 2,
-    };
-    assert!(y.is_same_bucket_as(&Period::Year { year: 2023 }));
-    assert!(y.is_same_bucket_as(&d));
-    assert!(y.is_same_bucket_as(&q));
-    assert!(!y.is_same_bucket_as(&Period::Year { year: 2022 }));
+fn calendar_period_relationship_helpers() {
+    let year = CalendarPeriod::annual(2023).unwrap();
+    let same_year = CalendarPeriod::annual(2023).unwrap();
+    let next_year = CalendarPeriod::annual(2024).unwrap();
+    let q1 = CalendarPeriod::quarterly(2023, 1).unwrap();
+    let q2 = CalendarPeriod::quarterly(2023, 2).unwrap();
+    let q4 = CalendarPeriod::quarterly(2023, 4).unwrap();
+    let jan_1 = calendar_date_period(2023, 1, 1);
+    let mar_31 = calendar_date_period(2023, 3, 31);
+    let apr_1 = calendar_date_period(2023, 4, 1);
 
-    // Quarter bucket
-    let d_q2 = Period::Date(NaiveDate::from_ymd_opt(2023, 4, 1).unwrap());
-    let q2 = Period::Quarter {
-        year: 2023,
-        quarter: 2,
-    };
-    assert!(q2.is_same_bucket_as(&d_q2));
-    assert!(q2.is_same_bucket_as(&Period::Quarter {
-        year: 2023,
-        quarter: 2
-    }));
-    assert!(!q2.is_same_bucket_as(&Period::Quarter {
-        year: 2023,
-        quarter: 3
-    }));
+    assert!(year.overlaps(&q1));
+    assert!(q1.overlaps(&year));
+    assert!(year.overlaps(&apr_1));
+    assert!(q1.overlaps(&mar_31));
+    assert!(!q1.overlaps(&q2));
+    assert!(!q1.overlaps(&apr_1));
+    assert!(!year.overlaps(&next_year));
 
-    // Date exact
-    let d1 = Period::Date(NaiveDate::from_ymd_opt(2023, 7, 4).unwrap());
-    let d2 = Period::Date(NaiveDate::from_ymd_opt(2023, 7, 4).unwrap());
-    let d3 = Period::Date(NaiveDate::from_ymd_opt(2023, 7, 5).unwrap());
-    assert!(d1.is_same_bucket_as(&d2));
-    assert!(!d1.is_same_bucket_as(&d3));
+    assert!(year.contains(&q4));
+    assert!(year.contains(&jan_1));
+    assert!(q1.contains(&mar_31));
+    assert!(jan_1.contains(&jan_1));
+    assert!(!q1.contains(&year));
+    assert!(!jan_1.contains(&q1));
+
+    assert!(year.is_same_exact_bucket_as(&same_year));
+    assert!(jan_1.is_same_exact_bucket_as(&calendar_date_period(2023, 1, 1)));
+    assert!(!year.is_same_exact_bucket_as(&q1));
+    assert!(!year.is_same_exact_bucket_as(&jan_1));
+    assert!(!q1.is_same_exact_bucket_as(&jan_1));
 }
+
 #[test]
 fn period_other_values_uppercase() {
-    let parsed = Period::try_from("custom range".to_string()).unwrap();
+    let parsed = ReportingPeriod::try_from("custom range".to_string()).unwrap();
     assert_eq!(parsed.to_string(), "CUSTOM_RANGE");
     assert_eq!(parsed.to_string(), "CUSTOM_RANGE");
 
     let json = serde_json::to_string(&parsed).unwrap();
     assert_eq!(json, "\"CUSTOM_RANGE\"");
-    let round_trip: Period = serde_json::from_str(&json).unwrap();
+    let round_trip: ReportingPeriod = serde_json::from_str(&json).unwrap();
     assert_eq!(round_trip, parsed);
 }
 
@@ -512,20 +599,17 @@ fn period_cases() -> Vec<PeriodCase> {
     vec![
         PeriodCase {
             input: "2023Q4",
-            expected: Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
+            expected: ReportingPeriod::quarterly(2023, 4).unwrap(),
             canonical: "2023Q4",
         },
         PeriodCase {
             input: "2023",
-            expected: Period::Year { year: 2023 },
+            expected: ReportingPeriod::annual(2023).unwrap(),
             canonical: "2023",
         },
         PeriodCase {
             input: "2023-12-31",
-            expected: Period::Date(NaiveDate::from_ymd_opt(2023, 12, 31).unwrap()),
+            expected: date_period(2023, 12, 31),
             canonical: "2023-12-31",
         },
     ]

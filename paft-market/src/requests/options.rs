@@ -5,6 +5,7 @@ use paft_domain::Instrument;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 /// Request to retrieve option expiration dates for the given underlying instrument.
 pub struct OptionExpirationsRequest {
     /// Underlying instrument identifier.
@@ -12,6 +13,7 @@ pub struct OptionExpirationsRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 /// Request to retrieve an option chain for an underlying instrument and expiration date.
 pub struct OptionChainRequest {
     /// Underlying instrument identifier.

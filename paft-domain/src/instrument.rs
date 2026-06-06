@@ -2,25 +2,34 @@
 
 use super::Exchange;
 use crate::{
-    Canonical, DomainError,
+    DomainError,
     identifiers::{Figi, Isin, Symbol},
 };
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+
+paft_core::other_string_code_type!(
+    /// Provider-specific asset kind that is not modeled by [`AssetKind`].
+    pub struct OtherAssetKind for AssetKind;
+    type Error = DomainError;
+    parse(input) => input.parse::<AssetKind>();
+    invalid(input) => DomainError::InvalidAssetKindValue {
+        value: input.to_string(),
+    };
+);
 
 /// Kinds of financial instruments.
 ///
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum AssetKind {
     /// Common stock or equity-like instruments.
-    #[default]
     Equity,
     /// Cryptocurrency assets.
     Crypto,
@@ -57,12 +66,16 @@ pub enum AssetKind {
     /// Real-world assets (tokenized physical assets).
     RWA,
     /// Provider-specific asset kind not modeled as a canonical variant.
-    Other(Canonical),
+    Other(OtherAssetKind),
 }
 
 crate::string_enum_with_code!(
-    AssetKind, Other,
+    AssetKind, Other(OtherAssetKind),
     "AssetKind",
+    type Error = DomainError;
+    invalid(input) => DomainError::InvalidAssetKindValue {
+        value: input.to_string(),
+    };
     {
         "EQUITY" => AssetKind::Equity,
         "CRYPTO" => AssetKind::Crypto,
@@ -92,6 +105,16 @@ crate::string_enum_with_code!(
 crate::impl_display_via_code!(AssetKind);
 
 impl AssetKind {
+    /// Builds an unknown asset kind, rejecting tokens modeled by [`AssetKind`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`AssetKind`] variant.
+    pub fn other(input: &str) -> Result<Self, DomainError> {
+        OtherAssetKind::new(input).map(Self::Other)
+    }
+
     /// Human-readable label for displaying this asset kind.
     #[must_use]
     pub fn full_name(&self) -> Cow<'static, str> {
@@ -208,10 +231,45 @@ impl Instrument {
         })
     }
 
-    /// Returns the best available unique identifier for this instrument
+    /// Returns a stable, namespaced identity key for this instrument.
+    ///
+    /// The key includes the asset kind and identifier source so instruments that
+    /// share a raw symbol (for example, an equity and a crypto asset both named
+    /// `BTC`) do not collapse to the same key. Symbol payloads include their
+    /// byte length to avoid delimiter collisions with symbols that contain
+    /// characters such as `@`.
+    ///
+    /// This is a synthetic composite key and is always returned as an owned
+    /// [`String`]. Use [`Self::display_key`] when a compact display identifier
+    /// is needed.
+    #[must_use]
+    pub fn unique_key(&self) -> String {
+        let kind = self.kind.code();
+
+        if let Some(figi) = &self.figi {
+            return format!("{kind}|FIGI|{}", figi.as_ref());
+        }
+        if let Some(isin) = &self.isin {
+            return format!("{kind}|ISIN|{}", isin.as_ref());
+        }
+
+        let symbol = self.symbol.as_str();
+        let symbol_len = symbol.len();
+
+        if let Some(exchange) = &self.exchange {
+            return format!(
+                "{kind}|SYMBOL|{symbol_len}:{symbol}|EXCHANGE|{}",
+                exchange.code()
+            );
+        }
+
+        format!("{kind}|SYMBOL|{symbol_len}:{symbol}")
+    }
+
+    /// Returns the best available compact identifier for display
     /// (FIGI > ISIN > SYMBOL@EXCHANGE > SYMBOL).
     #[must_use]
-    pub fn unique_key(&self) -> Cow<'_, str> {
+    pub fn display_key(&self) -> Cow<'_, str> {
         if let Some(figi) = &self.figi {
             return Cow::Borrowed(figi.as_ref());
         }
@@ -227,6 +285,6 @@ impl Instrument {
 
 impl std::fmt::Display for Instrument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.unique_key())
+        write!(f, "{}", self.display_key())
     }
 }

@@ -177,11 +177,11 @@ fn validate_grouping(int_part: &str, spec: &LocalFormat) -> Result<(), MoneyErro
     }
     segments.push(current);
 
-    let repeat = spec.grouping.last().copied().unwrap_or(3);
+    let repeat = spec.grouping.last().map_or(3, |size| size.get());
     let total = segments.len();
 
     for (idx, segment) in segments.iter().rev().enumerate() {
-        let expected = spec.grouping.get(idx).copied().unwrap_or(repeat);
+        let expected = spec.grouping.get(idx).map_or(repeat, |size| size.get());
         if idx == total - 1 {
             if segment.is_empty() || segment.len() > expected {
                 return Err(MoneyError::InvalidGrouping);

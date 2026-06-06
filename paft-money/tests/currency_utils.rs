@@ -2,7 +2,8 @@
 use paft_money::Money;
 use paft_money::currency_utils::CurrencyMetadata;
 use paft_money::{
-    Currency, MinorUnitError, clear_currency_metadata, currency_metadata, set_currency_metadata,
+    Currency, MinorUnitError, clear_currency_metadata, currency_metadata,
+    override_currency_metadata, set_currency_metadata,
 };
 
 use paft_money::Locale;
@@ -21,11 +22,26 @@ fn call_set_metadata(
     )
 }
 
+fn call_override_metadata(
+    code: &str,
+    name: &str,
+    units: u8,
+) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
+    override_currency_metadata(
+        code,
+        name.to_string(),
+        units,
+        code.to_string(),
+        true,
+        Locale::EnUs,
+    )
+}
+
 #[test]
 fn test_currency_parsing_accepts_aliases_and_unknown() {
     assert_eq!(
         Currency::try_from_str("BITCOIN").unwrap(),
-        Currency::Other("BITCOIN".parse().unwrap())
+        Currency::other("BITCOIN").unwrap()
     );
     let u = Currency::try_from_str("UNKNOWN").unwrap();
     assert_eq!(u.to_string(), "UNKNOWN");
@@ -75,7 +91,36 @@ fn test_builtin_currency_metadata() {
 }
 
 #[test]
-fn test_custom_currency_metadata_updates() {
+fn test_currency_metadata_registration_rejects_invalid_token_boundaries() {
+    for code in ["$USD", "$DOGE", "CUSTOM!"] {
+        let err = call_set_metadata(code, "Invalid", 2).unwrap_err();
+        assert!(matches!(
+            err,
+            MinorUnitError::InvalidCurrencyCode { code: invalid } if invalid == code
+        ));
+
+        let err = call_override_metadata(code, "Invalid", 2).unwrap_err();
+        assert!(matches!(
+            err,
+            MinorUnitError::InvalidCurrencyCode { code: invalid } if invalid == code
+        ));
+    }
+}
+
+#[test]
+fn test_non_iso_full_name_routes_through_registry() {
+    clear_currency_metadata("XMR");
+
+    call_set_metadata("XMR", "Monero Overlay", 12).expect("same-scale display update");
+
+    assert_eq!(Currency::XMR.full_name().as_ref(), "Monero Overlay");
+    assert_eq!(Currency::XMR.decimal_places().unwrap(), 12);
+
+    clear_currency_metadata("XMR");
+}
+
+#[test]
+fn test_custom_currency_metadata_preserves_registered_scale() {
     let code = "custom_token";
 
     // Ensure no prior override
@@ -88,14 +133,71 @@ fn test_custom_currency_metadata_updates() {
     assert_eq!(currency.decimal_places().unwrap(), 9);
     assert_eq!(currency_metadata(code).unwrap().minor_units, 9);
 
-    // Updating metadata should override the precision
-    call_set_metadata(code, "Custom Token", 4).expect("update override");
+    // Updating presentation metadata with the same scale is still accepted.
+    call_set_metadata(code, "Renamed Token", 9).expect("same-scale update");
+    let currency = Currency::try_from_str(code).unwrap();
+    assert_eq!(currency.decimal_places().unwrap(), 9);
+    assert_eq!(
+        currency_metadata(code).unwrap().full_name.as_ref(),
+        "Renamed Token"
+    );
+
+    let err = call_set_metadata(code, "Custom Token", 4).unwrap_err();
+    assert!(matches!(
+        err,
+        MinorUnitError::MinorUnitsAlreadyRegistered {
+            existing: 9,
+            requested: 4,
+            ..
+        }
+    ));
+
+    clear_currency_metadata(code);
+    assert!(currency_metadata(code).is_none());
+}
+
+#[test]
+fn test_custom_currency_metadata_override_is_explicit() {
+    let code = "custom_token_override";
+    clear_currency_metadata(code);
+
+    call_set_metadata(code, "Custom Token", 9).expect("valid registration");
+    let previous = call_override_metadata(code, "Custom Token", 4).expect("explicit override");
+
+    assert_eq!(previous.unwrap().minor_units, 9);
     let currency = Currency::try_from_str(code).unwrap();
     assert_eq!(currency.decimal_places().unwrap(), 4);
     assert_eq!(currency_metadata(code).unwrap().minor_units, 4);
 
     clear_currency_metadata(code);
-    assert!(currency_metadata(code).is_none());
+}
+
+#[test]
+fn test_iso_currency_metadata_override_cannot_change_iso_scale() {
+    use iso_currency::Currency as IsoCurrency;
+
+    clear_currency_metadata("USD");
+
+    let err = call_override_metadata("USD", "Display USD", 4).unwrap_err();
+    assert!(matches!(
+        err,
+        MinorUnitError::MinorUnitsAlreadyRegistered {
+            code,
+            existing: 2,
+            requested: 4,
+        } if code == "USD"
+    ));
+
+    assert_eq!(currency_metadata("USD").unwrap().minor_units, 2);
+    assert_eq!(Currency::Iso(IsoCurrency::USD).decimal_places().unwrap(), 2);
+
+    call_override_metadata("USD", "Display USD", 2).expect("same-scale display override");
+    let metadata = currency_metadata("USD").expect("metadata present");
+    assert_eq!(metadata.full_name.as_ref(), "Display USD");
+    assert_eq!(metadata.minor_units, 2);
+    assert_eq!(Currency::Iso(IsoCurrency::USD).decimal_places().unwrap(), 2);
+
+    clear_currency_metadata("USD");
 }
 
 #[test]
@@ -178,11 +280,11 @@ fn test_custom_currency_metadata_required() {
     assert_eq!(currency.full_name().as_ref(), "Custom Token");
     assert_eq!(currency.decimal_places().unwrap(), 4);
 
-    // Updating metadata should preserve the name.
-    call_set_metadata(code, "Custom Token", 5).expect("override precision");
+    // Updating metadata with the same scale should preserve the name.
+    call_set_metadata(code, "Custom Token", 4).expect("same-scale update");
     let metadata = currency_metadata(code).expect("metadata present");
     assert_eq!(metadata.full_name.as_ref(), "Custom Token");
-    assert_eq!(metadata.minor_units, 5);
+    assert_eq!(metadata.minor_units, 4);
 
     clear_currency_metadata(code);
 }

@@ -24,6 +24,18 @@
 //! set_currency_metadata("XDR", "SDR", 6, "XDR", true, Locale::EnUs).unwrap();
 //! # }
 //! ```
+//! Once a scale is known for a code, [`set_currency_metadata`] refuses to
+//! change `minor_units`; use [`override_currency_metadata`] when a scale change
+//! is intentional. `Money` captures the resolved scale at construction, so
+//! existing values are not reinterpreted by later registry changes.
+//! Serialized `Money` values also carry this captured `minor_units` scale. On
+//! deserialization, the serialized scale is validated against the amount and is
+//! enough to reconstruct values whose custom metadata is currently absent. If
+//! metadata is present but resolves to a different scale, deserialization fails
+//! rather than silently changing equality, hashing, or arithmetic compatibility.
+//! Metadata display fields are the source of truth for non-ISO currency names
+//! and for localized formatting metadata. ISO currencies keep their ISO 4217
+//! name and, when ISO defines an exponent, their ISO minor-unit scale.
 //!
 //! Using metals/funds (recommended defaults):
 //! - Gold `XAU`: 3 or 6 decimal places are common; choose per domain needs.
@@ -45,14 +57,15 @@
 //! precision backed by big integers.
 //!
 //! The public API, serde representation (amounts encoded as strings, currencies
-//! as ISO codes), and `DataFrame` integration remain stable across backends. The
-//! primary trade-offs are performance (the `bigdecimal` backend may allocate
-//! more often) and precision (see [`MAX_DECIMAL_PRECISION`]). Minor-unit scaling
-//! always uses 64-bit integers (`10_i64.pow(scale)`) and is therefore capped
-//! at 18 decimal places — see [`MAX_MINOR_UNIT_DECIMALS`]. Beyond that, the
-//! cap-line shift would push `10^scale` outside `i64`. The minor-unit
-//! integer itself is widened to `i128` before/after scaling, while each
-//! backend still enforces its own decimal representation limits.
+//! as ISO codes, and `Money` carrying its captured `minor_units`), and
+//! `DataFrame` integration remain stable across backends. The primary trade-offs
+//! are performance (the `bigdecimal` backend may allocate more often) and
+//! precision (see [`MAX_DECIMAL_PRECISION`]). Minor-unit scaling always uses
+//! 64-bit integers (`10_i64.pow(scale)`) and is therefore capped at 18 decimal
+//! places — see [`MAX_MINOR_UNIT_DECIMALS`]. Beyond that, the cap-line shift
+//! would push `10^scale` outside `i64`. The minor-unit integer itself is widened
+//! to `i128` before/after scaling, while each backend still enforces its own
+//! decimal representation limits.
 //!
 //! # Currency value types
 //!
@@ -66,17 +79,20 @@
 //! - [`Price`]: full-precision per-unit/per-share quoted values.
 //! - [`MonetaryAmount`]: full-precision currency-denominated totals and
 //!   intermediate values before final settlement rounding.
+//! - [`QuantityAmount`]: full-precision non-negative market quantities whose
+//!   unit is supplied by surrounding context.
 //!
 //! ```rust
 //! # use paft_money::IsoCurrency;
 //! # use paft_decimal::{self as decimal, RoundingStrategy};
-//! # use paft_money::{Currency, MonetaryAmount, MoneyError, Price};
+//! # use paft_money::{Currency, MonetaryAmount, MoneyError, Price, QuantityAmount};
 //! # fn run() -> Result<(), MoneyError> {
 //! let usd = Currency::Iso(IsoCurrency::USD);
 //!
 //! // Quotes preserve provider precision beyond settlement minor units.
 //! let quote = Price::from_canonical_str("1.3578", usd.clone())?;
-//! let exact_total = quote.try_total(decimal::from_minor_units(250, 2))?;
+//! let quantity = QuantityAmount::from_decimal(decimal::from_minor_units(250, 2)).unwrap();
+//! let exact_total = quote.try_total(&quantity)?;
 //!
 //! // Intermediate totals stay exact until settlement.
 //! let adjustment = MonetaryAmount::from_canonical_str("0.0049", usd)?;
@@ -133,16 +149,23 @@
 //!
 //! # Serde
 //!
-//! Amounts serialize as strings (to avoid exponent notation); currencies serialize
-//! as their codes. Example:
+//! Amounts serialize as strings (to avoid exponent notation), currencies
+//! serialize as their codes, and `Money` serializes the captured `minor_units`
+//! scale that participates in equality, hashing, and arithmetic compatibility.
+//! Example:
 //!
 //! ```rust
 //! # use paft_money::IsoCurrency;
 //! # use paft_money::{Currency, Money};
 //! let usd = Money::from_canonical_str("12.34", Currency::Iso(IsoCurrency::USD)).unwrap();
 //! let json = serde_json::to_string(&usd).unwrap();
-//! assert_eq!(json, "{\"amount\":\"12.34\",\"currency\":\"USD\"}");
+//! assert_eq!(json, "{\"amount\":\"12.34\",\"currency\":\"USD\",\"minor_units\":2}");
 //! ```
+//!
+//! Deserialization validates the amount against serialized `minor_units`. If
+//! metadata for the currency is currently registered and resolves to a different
+//! scale, the payload is rejected; if metadata is absent for a custom/ISO-None
+//! currency, the serialized scale preserves the captured settlement semantics.
 //!
 //! # Currency metadata overlays
 //!
@@ -164,6 +187,15 @@
 //! set_currency_metadata("XDR", "SDR", 6, "XDR", true, Locale::EnUs).unwrap();
 //! # }
 //! ```
+//! Existing `Money` values retain the scale resolved at construction. Updating
+//! or clearing the process-local registry can affect future construction and
+//! formatting metadata, but not minor-unit conversion for values that already
+//! exist. Serialized `Money` values carry that retained scale as `minor_units`;
+//! conflicting current metadata is rejected at deserialization instead of
+//! silently changing the value's identity.
+//! For modeled non-ISO currencies such as `BTC`, `ETH`, and `XMR`, metadata is
+//! also the source of truth for `Currency::full_name()`. ISO currency names are
+//! resolved from ISO 4217 even if metadata is registered for formatting.
 //!
 //! # Feature flags
 //!
@@ -218,19 +250,22 @@ pub mod currency_utils;
 pub mod error;
 pub mod money;
 mod price;
+mod quantity;
 
 pub use amount::MonetaryAmount;
-pub use currency::Currency;
+pub use currency::{Currency, OtherCurrency};
 pub use currency_utils::{
     CurrencyMetadata, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS, MinorUnitError,
-    clear_currency_metadata, currency_metadata, set_currency_metadata, try_normalize_currency_code,
+    clear_currency_metadata, currency_metadata, override_currency_metadata, set_currency_metadata,
+    try_normalize_currency_code,
 };
 pub use error::{MoneyError, MoneyParseError};
 pub use locale::Locale;
 #[cfg(feature = "money-formatting")]
 pub use money::LocalizedMoney;
 pub use money::{ExchangeRate, Money};
-pub use price::Price;
+pub use price::{Price, PriceAmount};
+pub use quantity::QuantityAmount;
 
 /// Re-export `iso_currency::Currency` for convenience.
 pub use iso_currency::Currency as IsoCurrency;

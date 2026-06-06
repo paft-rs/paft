@@ -1,8 +1,8 @@
 //! Tests covering canonical/alias behavior for currencies.
 
 use iso_currency::Currency as IsoCurrency;
-use paft_money::Currency;
-use paft_utils::StringCode;
+use paft_money::{Currency, OtherCurrency};
+use paft_utils::{MAX_CANONICAL_TOKEN_LEN, StringCode};
 use std::str::FromStr;
 
 struct Case {
@@ -32,6 +32,29 @@ fn currency_other_values_uppercase_and_round_trip() {
 }
 
 #[test]
+fn other_currency_serde_uses_checked_constructor() {
+    let other = OtherCurrency::new("my token").unwrap();
+    assert_eq!(serde_json::to_string(&other).unwrap(), "\"MY_TOKEN\"");
+
+    let back: OtherCurrency = serde_json::from_str("\"my token\"").unwrap();
+    assert_eq!(back, other);
+
+    assert!(serde_json::from_str::<OtherCurrency>("\"USD\"").is_err());
+    assert!(serde_json::from_str::<OtherCurrency>("\"BTC\"").is_err());
+}
+
+#[test]
+fn currency_other_rejects_overlong_tokens() {
+    let input = "x".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+    assert!(OtherCurrency::new(&input).is_err());
+    assert!(Currency::from_str(&input).is_err());
+
+    let json = serde_json::to_string(&input).unwrap();
+    assert!(serde_json::from_str::<OtherCurrency>(&json).is_err());
+    assert!(serde_json::from_str::<Currency>(&json).is_err());
+}
+
+#[test]
 fn currency_string_code_reports_other_as_non_canonical() {
     let other = Currency::try_from_str("usd-lite").unwrap();
 
@@ -51,6 +74,36 @@ fn currency_try_from_and_serde_reject_empty() {
     ));
 
     let result: Result<Currency, _> = serde_json::from_str("\"\"");
+    assert!(result.is_err());
+}
+
+#[test]
+fn currency_rejects_malformed_modeled_codes() {
+    for input in ["$USD", "BTC!", "---USDC"] {
+        let err = Currency::try_from_str(input).unwrap_err();
+        assert!(matches!(
+            err,
+            paft_money::MoneyParseError::InvalidEnumValue { enum_name, value }
+                if enum_name == "Currency" && value == input
+        ));
+    }
+
+    let result: Result<Currency, _> = serde_json::from_str("\"USD!\"");
+    assert!(result.is_err());
+}
+
+#[test]
+fn currency_rejects_malformed_metadata_known_other_codes() {
+    for input in ["$DOGE", "SOL!", "---BNB"] {
+        let err = Currency::try_from_str(input).unwrap_err();
+        assert!(matches!(
+            err,
+            paft_money::MoneyParseError::InvalidEnumValue { enum_name, value }
+                if enum_name == "Currency" && value == input
+        ));
+    }
+
+    let result: Result<Currency, _> = serde_json::from_str("\"$DOGE\"");
     assert!(result.is_err());
 }
 

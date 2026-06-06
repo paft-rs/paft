@@ -4,6 +4,409 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-06
+
+This release is audited against the `v0.8.0` tag. It is a breaking API and
+wire-format update across the workspace.
+
+### Added
+
+- Decimal/facade: added constrained decimal newtypes
+  `NonNegativeDecimal`, `PositiveDecimal`, and `Ratio`, plus
+  `DecimalConstraintError`.
+- Decimal: added `serde::canonical_str` and `serde::option_canonical_str`
+  helpers for backend-stable decimal string wire formats.
+- Decimal: added `try_to_scaled_units` for exact no-rounding conversion from a
+  decimal value into base-10 scaled integer units.
+- Money/facade: added `PriceAmount`, a transparent contextual price-domain
+  amount for values whose currency is supplied by an enclosing market record.
+- Money/facade: added `QuantityAmount`, a transparent non-negative decimal
+  quantity amount for provider-agnostic market sizes and volumes.
+- Money/facade: added `Price::try_total_decimal` for signed or otherwise raw
+  decimal price-times-quantity totals where `QuantityAmount` is not the right
+  domain.
+- Money: added `override_currency_metadata` for explicitly replacing a
+  registered non-ISO currency scale while still rejecting conflicts with
+  ISO-defined currency exponents.
+- Domain/facade: added validated period components `PeriodYear`, `PeriodDate`,
+  and `QuarterOfYear`, including standalone serde support.
+- Domain/facade: added `CalendarPeriod` for calendar year, quarter, and date
+  boundary helpers such as `start_date`, `end_date`, `overlaps`, `contains`,
+  and `is_same_exact_bucket_as`.
+- Domain/facade: added `Horizon` and `OtherHorizon` for validated relative
+  lookback windows such as `7d`, `1mo`, and `1y`.
+- Market/facade: added `Ohlc` plus OHLC price-basis modeling types
+  `OhlcPriceBasis`, `PriceBasis`, `AdjustmentAnchor`, `AdjustmentMethod`,
+  `CorporateActionAdjustmentCause`, and `CorporateActionAdjustmentCauses`.
+- Market: added advisory normalization and validation helpers:
+  `OptionExpirationsResponse::{new_sorted, is_sorted_unique}`,
+  `GenericHistoryResponse::{is_chronologically_ordered, validate,
+  into_chronological}`, `GenericOrderBook::{is_sorted, sort_levels}`, and
+  `TimeSpec::{range, period, validate}`.
+- Fundamentals/facade: added `DataFrame` export support for `EsgSummary`,
+  including nested `scores.*` and `involvement.*` columns.
+- Market/facade: added `FromStr` parsers for closed request enums `Range`,
+  `Interval`, `NewsTab`, and `OptionSide`.
+- Facade: `paft::Error` now converts from `DecimalConstraintError`,
+  `HistoryValidationError`, and `FundamentalsError`, allowing validated domain
+  helpers to compose with `paft::prelude::Result`.
+- Facade: `paft::prelude` now re-exports `IsoCurrency` for common
+  `Currency::Iso(IsoCurrency::...)` construction.
+- Docs/examples: added a no-metadata v0.9 ergonomics example and refreshed
+  crate READMEs for contextual amounts, price basis, horizons, and constrained
+  decimals.
+- Docs: clarified the wire-compatibility policy: tagged provider/data payloads
+  remain forward-compatible, serde-flattened provider metadata collisions are
+  unsupported JSON key names rather than universally detected errors, and
+  dataframe exports namespace provider metadata under `provider.*` columns.
+- Prediction/facade: added a provider-neutral prediction-market model with
+  venue-namespaced identity, market metadata, fixed-point prices, quantities,
+  payout vectors, quotes, order books, and trade history. The public surface
+  includes `PredictionVenue`, role-specific opaque ids, `PredictionEvent`,
+  `PredictionMarket`, `BinaryMarket`, `MultiOutcomeMarket`, `ScalarMarket`,
+  `OutcomeInstrument`, `BinaryOutcomeInstruments`, `OutcomePrice`,
+  `PriceTick`, `ContractQuantity`, `NonZeroContractQuantity`, `OutcomePayout`,
+  `NonZeroOutcomePayout`, `BinarySettlement`, `BinaryPayoutVector`,
+  `PriceGrid`, `PriceBand`, `NumericRange`, `BinaryOrderBook`,
+  `OutcomeOrderBook`, `BinaryQuote`, `PredictionQuoteLevel`, and
+  `PredictionTrade`.
+- Prediction/facade: added `PredictionSeriesKey` plus
+  `BinaryMarketKey::{synthetic_yes_instrument, synthetic_no_instrument}` so
+  binary markets expose tradable YES/NO outcome instruments directly while
+  still supporting synthetic `YES`/`NO` ids for venues that do not issue
+  separate instrument ids.
+- Prediction: added exact decimal/string conversion helpers and canonical
+  decimal `Display` implementations for `OutcomePrice`, `PriceTick`,
+  `ContractQuantity`, and `OutcomePayout`.
+- Prediction: added `sort_levels()` helpers for binary and outcome order books
+  to canonicalize bid/ask level ordering in place.
+- Prediction: added validated constructors and serde boundaries for market
+  identity, binary outcome instruments, event structure cardinality,
+  market/outcome consistency, price grids, price bands, numeric ranges, and
+  open string metadata codes.
+
+### Changed
+
+- Workspace: version bumped to `0.9.0`.
+- Docs: consolidated the workspace and crate READMEs around crate-local usage,
+  standardized crate badges for Crates.io, docs.rs, and downloads, and removed
+  duplicated install/API guidance from the root README.
+- Market/fundamentals: universally constrained non-amount fields now use
+  dedicated newtypes: option implied volatility uses `NonNegativeDecimal`,
+  holder fractions use `Ratio`, and news request counts use `NonZeroU32`.
+- Market: documented `Action::Split` ratio direction as new shares per old
+  shares, so a 4-for-1 split is `numerator = 4`, `denominator = 1`.
+- Market/fundamentals: date-only financial concepts now use `NaiveDate` and
+  serialize as `YYYY-MM-DD` instead of Unix milliseconds. This includes
+  corporate action dates (`Action` now uses `date` instead of `ts`), dividend
+  calendar dates, holder/reporting dates, insider transaction dates, and
+  `ShareCount::date`.
+- Fundamentals: `InsiderTransaction::url` is now `Option<String>` so missing
+  filing URLs can be represented without sentinel strings.
+- Money: scalar arithmetic helpers now borrow decimal operands:
+  `Money::{try_mul, try_div}`, `MonetaryAmount::{try_mul, try_div}`,
+  and `Price::{try_mul, try_div}`.
+- Money: `Price::try_total` now accepts `&QuantityAmount`, keeping normal
+  price-times-quantity totals on the non-negative quantity path. Use
+  `Price::try_total_decimal` for signed/raw decimal quantity semantics.
+- Money: `set_currency_metadata` now preserves an already registered
+  minor-unit scale; callers must use `override_currency_metadata` for
+  intentional scale changes.
+- Money: `Currency::full_name()` now uses registered metadata for all non-ISO
+  currencies, including modeled variants such as `BTC`, `ETH`, and `XMR`; ISO
+  currency names remain sourced from ISO 4217.
+- Money: locale grouping specifications now use non-zero chunk sizes
+  internally, making invalid zero-width grouping patterns unrepresentable in
+  formatter/parser state.
+- Decimal/money/market/fundamentals: decimal-backed serde fields now serialize
+  through canonical strings from `paft-decimal`, independent of the active
+  decimal backend.
+- Money: JSON now includes the captured `minor_units` scale, and deserialization
+  requires it so `Money` wire values are self-contained with respect to
+  equality, hashing, minor-unit conversion, and same-currency arithmetic
+  compatibility.
+- Decimal/money/utils: backend-specific decimal cloning, checked arithmetic,
+  precision limits, and decimal128 mantissa encoding now live behind
+  `paft-decimal` APIs so downstream crates do not infer the active decimal
+  backend from their own local feature flags.
+- Market history: `HistoryResponse` now exposes `price_basis:
+  OhlcPriceBasis`, describing the returned OHLC price basis as either uniform
+  `PriceBasis` metadata or per-field open/high/low/close bases.
+- Market/fundamentals: `Action` and `Profile` now use flat tagged serde shapes
+  with a `kind` discriminator instead of externally tagged enum objects.
+- Market: standalone `TimeSpec` deserialization now rejects
+  `TimeSpec::Period` values whose `start >= end`, matching `HistoryRequest`
+  validation.
+- Market/aggregates: high-cardinality price records now carry denomination once
+  at the containing record and store contextual `PriceAmount` values for
+  candles, order-book levels, quotes, quote updates, snapshots, and option
+  quote fields. Option contracts/updates carry an explicit premium `currency`
+  so quote fields do not inherit the strike currency implicitly.
+- Market/facade: `OptionContractKey` now stores optional
+  `contract_instrument` identity as part of equality and hashing so known
+  listed contracts with the same economic terms can remain distinct.
+- Market/aggregates: book-level sizes and provider-agnostic volume fields now
+  use contextual `QuantityAmount` values so fractional crypto, FX,
+  commodities, and base/quote-volume feeds can be represented without rounding
+  or metadata side channels.
+- Market/aggregates: generic payload containers now derive `Eq` conditionally,
+  so standard no-metadata aliases such as `Quote`, `HistoryResponse`, and
+  `Snapshot` implement `Eq` while metadata payloads that only implement
+  `PartialEq` remain usable.
+- Market: nested generic metadata containers now use separate type parameters
+  for container-level and child-level provider payloads, so response metadata,
+  row metadata, and leaf metadata no longer have to share one Rust type.
+- Domain/facade: `Instrument::unique_key()` now emits a kind-aware,
+  source-namespaced identity key; new `Instrument::display_key()` preserves the
+  compact FIGI/ISIN/SYMBOL@EXCHANGE/SYMBOL display chain.
+- Domain/facade: `Instrument::unique_key()` now returns `String` instead of
+  `Cow<'_, str>` because the namespaced identity key is always a synthetic
+  composite.
+- Domain: `Isin` and `Figi` now use inline `SmolStr` storage instead of heap
+  `String` storage for their fixed 12-byte identifier codes.
+- Domain/facade: `Period` was split into `ReportingPeriod` for fiscal/provider
+  labels and `CalendarPeriod` for date-boundary logic. Structured period
+  variants now store validated `PeriodYear`, `QuarterOfYear`, and
+  `PeriodDate` components.
+- Domain/facade: replaced the old ambiguous `Period::is_same_bucket_as`
+  relationship helper with explicit `CalendarPeriod::overlaps`, `contains`, and
+  `is_same_exact_bucket_as`.
+- Fundamentals/facade: `EarningsYear::year` now uses the validated
+  `PeriodYear` newtype instead of raw `i32`.
+- Domain/fundamentals/facade: fields backed by `PeriodYear` serialize as
+  canonical four-digit strings, including `EarningsYear::year`; deserialization
+  still accepts integer years and normalizes them on output.
+- Fundamentals/facade: EPS trend and revision historical points now use
+  `Horizon` for lookback windows instead of overloading `ReportingPeriod`.
+- Domain/money/fundamentals/facade: extensible enum `Other` variants now use
+  enum-specific unknown-code wrappers (`OtherCurrency`, `OtherExchange`,
+  `OtherAssetKind`, `OtherMarketState`, `OtherPeriod`,
+  `OtherRecommendationGrade`, `OtherRecommendationAction`,
+  `OtherTransactionType`, `OtherInsiderPosition`, and `OtherFundKind`) instead
+  of raw `Canonical` payloads.
+- Domain/facade: `MarketState::full_name()` now returns `Cow<'static, str>` so
+  provider-specific `OtherMarketState` values can be displayed without leaking
+  borrowed storage assumptions.
+- Domain/fundamentals/facade: enum parsing APIs now expose crate-level domain
+  errors instead of `paft_core::PaftError`; domain enums use `DomainError`, and
+  fundamentals enums use the new `FundamentalsError` surfaced by `paft::Error`.
+- Docs: standalone guide material was folded into the workspace and crate
+  READMEs so crate-local API guidance stays next to the code it documents.
+
+### Fixed
+
+- Facade docs: gated the feature-dependent quickstart doctest so
+  `cargo test -p paft --no-default-features --doc` does not compile imports that
+  require `domain` and `market`.
+- Facade examples: aligned the README example list with the Cargo example
+  targets, including `extensible_enums` and `nested_metadata_propagation`.
+- Docs: corrected the facade README identifier serde wording to describe the
+  manual plain-string implementations instead of `#[serde(transparent)]`.
+- Docs: corrected snapshot, history-period, and search-response comments to
+  avoid overstating guarantees.
+- Core/domain/money/fundamentals: public enum-specific `Other*` wrappers now
+  implement serde directly and validate deserialized strings through their
+  checked constructors, so modeled codes remain rejected.
+- Feature matrix: `paft-aggregates/dataframe` now explicitly enables
+  Polars datetime support for `Snapshot::as_of`, and the `v09_ergonomics`
+  example declares the facade features it imports.
+- Decimal: `checked_div` now rejects zero divisors under the `bigdecimal`
+  backend, `parse_decimal` validates a backend-stable plain decimal grammar,
+  and canonical decimal rendering normalizes signed zero to `0`.
+- Decimal: `parse_decimal` now rejects duplicate explicit sign prefixes such as
+  `+-1` and `++1` instead of accepting them after leading-plus normalization.
+- Dataframe: `Decimal128Encode` now rejects target scales above Polars decimal
+  precision and uses checked exponentiation when rescaling mantissas.
+- Prediction: decimal constructors for fixed-point price, quantity, and payout
+  types now convert through exact scaled units instead of formatting and parsing
+  canonical decimal strings on the success path.
+- Market requests: `HistoryRequest` and `SearchRequest` JSON deserialization
+  now rejects unknown top-level fields instead of silently ignoring request
+  typos.
+- Market requests/responses: `NewsRequest`, `OptionExpirationsRequest`,
+  `OptionChainRequest`, and `HistoryMeta` JSON deserialization now rejects
+  unknown fields, keeping semantic wire shapes aligned with the strict request
+  policy.
+- Market requests: `SearchRequest` now trims accepted `lang`/`region` values
+  and rejects empty or whitespace-only values through both builder and serde
+  construction paths.
+- Market/facade: `SearchRequest` now stores result limits as
+  `Option<std::num::NonZeroU32>` and validates builder/deserialized limits from
+  `u32`, avoiding platform-dependent `usize` in serialized request models.
+- Market requests: `HistoryFlags` now serializes as an explicit `u8` bitset,
+  and deserialization rejects unknown flag bits instead of retaining unmodeled
+  request behavior.
+- Money: localized formatting now rejects fraction digit requests above the
+  active decimal backend precision instead of attempting unbounded zero padding.
+- Money: localized parsing now delegates to `Money::new_exact`, encoding its
+  no-implicit-rounding contract at construction.
+- Money: `Money` and `ExchangeRate` JSON deserialization now rejects unknown
+  top-level fields instead of silently ignoring stale wire payloads.
+- Money: existing `Money` values now capture their resolved minor-unit scale,
+  so later custom metadata changes or clears cannot reinterpret
+  `as_minor_units()` or same-currency arithmetic.
+- Money: deserialization now validates the serialized `minor_units` scale and
+  rejects payloads when currently registered currency metadata conflicts,
+  instead of recomputing the scale from process-local metadata and silently
+  changing the value identity.
+- Money: `as_minor_units()` now rejects non-integral scaled decimals before
+  converting to `i128`.
+- Decimal feature matrix: crates that import `paft_decimal::Decimal` now compile
+  correctly when another package in the dependency graph enables
+  `paft-decimal/bigdecimal` without enabling each downstream crate's local
+  `bigdecimal` feature.
+- Domain: structured `ReportingPeriod` values can no longer expose invalid public
+  states such as quarter 5 or date/period years outside `0..=9999`, and low
+  years now emit four-digit canonical codes so display/serde round trips
+  preserve identity.
+- Domain: `ReportingPeriod` parsing now rejects malformed inputs whose
+  canonical fallback would become a modeled period token, such as `-2023Q4`,
+  instead of accepting them as valid structured values.
+- Domain/money/fundamentals: string enum parsers now reject malformed inputs
+  whose canonicalized form would resolve to a modeled value, such as `$USD`,
+  `---NYSE`, or `CLOSED!`.
+- Money: `Currency` parsing and metadata registration now require valid token
+  boundaries for every code, so malformed metadata-known open currencies such
+  as `$DOGE` no longer normalize to `DOGE`.
+- Money docs: public `from_scaled_units` messages now match decimal-backend
+  behavior.
+- Domain/money/fundamentals: manually constructed extensible enum `Other`
+  payloads can no longer use tokens already modeled by the owning enum,
+  preserving serde identity for values created through public constructors.
+- Utils/core/domain/money/fundamentals: canonical `Other` enum tokens now reject
+  canonical forms longer than `MAX_CANONICAL_TOKEN_LEN` (256 bytes), preventing
+  unbounded unknown-token storage and round-tripping from untrusted inputs.
+
+### Breaking Changes
+
+- Prediction/facade: the v0.8 Polymarket-shaped `EventID`/`OutcomeID`,
+  `PredictionInstrument`, `Market`, and `Token` surface was replaced by the
+  provider-neutral, venue-namespaced model. Use role-specific ids and keys such
+  as `PredictionEventId`, `PredictionMarketId`, `PredictionOutcomeId`,
+  `PredictionSeriesId`, `PredictionEventKey`, `PredictionMarketKey`,
+  `BinaryMarketKey`, `PredictionSeriesKey`, and `OutcomeInstrument`.
+- Fundamentals/facade: canonical string output for
+  `RecommendationAction::Initiate` changed from `INIT` to `INITIATE`, and
+  `InsiderPosition::VicePresident` changed from `VP` to `VICE_PRESIDENT`; the old
+  short forms remain accepted aliases.
+- Domain/fundamentals/facade: enum `FromStr`, `TryFrom<String>`,
+  `try_from_str`, and `other` constructors now return crate-level errors:
+  domain enum APIs return `DomainError`, fundamentals enum APIs return
+  `FundamentalsError`, and facade callers can compose fundamentals parse
+  failures through `paft::Error`.
+- Domain/facade: `MarketState::Other(Canonical)` is now
+  `MarketState::Other(OtherMarketState)`, and `MarketState::full_name()` now
+  returns `Cow<'static, str>` instead of `&str`.
+- Market/facade: `BookLevel::size` now uses `Option<QuantityAmount>`;
+  `OptionContract::implied_volatility` and `OptionUpdate::implied_volatility`
+  now use `Option<NonNegativeDecimal>`. `NewsRequest::count` now uses
+  `std::num::NonZeroU32`.
+- Market/facade: `SearchRequestBuilder::limit` now accepts `u32`,
+  `SearchRequest::limit()` returns `Option<std::num::NonZeroU32>`, and
+  `MarketError::InvalidSearchLimit` carries `u32` instead of `usize`.
+- Fundamentals/facade: `MajorHolder::value` now uses `Ratio`, and
+  `InstitutionalHolder::pct_held` now uses `Option<Ratio>`.
+- Fundamentals/facade: `InsiderTransaction` struct literals and consumers must
+  handle `url: Option<String>` instead of `url: String`.
+- Money/facade: callers of non-panicking scalar arithmetic helpers must pass
+  `&Decimal` instead of `Decimal`.
+- Money/facade: callers of `Price::try_total` must pass `&QuantityAmount`
+  instead of `&Decimal`; use `Price::try_total_decimal` for signed/raw decimal
+  quantities.
+- Money/facade: `set_currency_metadata` no longer changes `minor_units` for a
+  code with a known scale; use `override_currency_metadata` for explicit
+  replacement.
+- Domain/money/fundamentals/facade: extensible enum constructors, parsers, and
+  serde now reject unknown `Other` tokens whose canonical form exceeds 256 bytes.
+- Decimal/money/market/fundamentals: decimal-backed JSON fields now emit
+  canonical strings without gratuitous trailing zeroes, so values such as
+  `"12.340"` serialize as `"12.34"` regardless of backend.
+- Market/facade: `HistoryResponse::adjusted: bool` was replaced by
+  `HistoryResponse::price_basis: OhlcPriceBasis`; update struct literals and
+  JSON payloads to describe returned OHLC values with `PriceBasis` variants
+  such as `Raw`, `ProviderAdjusted`, `CorporateActionAdjusted`, or
+  `ContractRollAdjusted`; known corporate-action adjustments carry a non-empty
+  `CorporateActionAdjustmentCauses` set aligned with the modeled `Action`
+  classes.
+- Market/facade: history request adjustment preference APIs were renamed from
+  `HistoryFlags::AUTO_ADJUST`, `HistoryRequestBuilder::auto_adjust`, and
+  `HistoryRequest::auto_adjust` to `HistoryFlags::PREFER_ADJUSTED_PRICES`,
+  `HistoryRequestBuilder::prefer_adjusted_prices`, and
+  `HistoryRequest::prefer_adjusted_prices`.
+- Market/facade: history request missing-slot APIs were renamed from
+  `HistoryFlags::KEEPNA`, `HistoryRequestBuilder::keepna`, and
+  `HistoryRequest::keepna` to `HistoryFlags::KEEP_MISSING`,
+  `HistoryRequestBuilder::keep_missing`, and `HistoryRequest::keep_missing`.
+  The serialized flag bit is unchanged.
+- Market/facade: nested metadata containers gained independent child metadata
+  type parameters. Final signatures include
+  `GenericHistoryResponse<R, C>`, `GenericOptionChain<R, C>`,
+  `GenericDownloadEntry<E, H, C>`, `GenericDownloadResponse<R, E, H, C>`,
+  `GenericCandleUpdate<U, C>`, `GenericOrderBook<B, L>`,
+  `GenericQuote<Q, L>`, and `GenericSearchResponse<R, S>`, with child row or
+  leaf metadata defaulting to `()`.
+- Market/fundamentals: `Action` and `Profile` JSON moved from externally tagged
+  enum objects to flat tagged payloads with `kind`; fund profiles now put the
+  fund type in `fund_kind` so it does not collide with the discriminator.
+- Domain/facade: `Period` was replaced by `ReportingPeriod` for
+  fiscal/provider labels and `CalendarPeriod` for calendar boundary logic.
+  `ReportingPeriod::Quarter { year, quarter }`,
+  `ReportingPeriod::Year { year }`, and `ReportingPeriod::Date(date)` now
+  require validated component newtypes instead of raw integers or `NaiveDate`.
+  Existing reporting literals should move to
+  `ReportingPeriod::quarterly(year, quarter)?`,
+  `ReportingPeriod::annual(year)?`, or `ReportingPeriod::date(date)?`.
+- Fundamentals/facade: `EarningsYear::year` now uses `PeriodYear`; construct
+  with `EarningsYear::new(year)?` or `PeriodYear::new(year)?` in struct
+  literals. `EarningsYear` no longer implements `Default`.
+- Market/facade: `Candle` now has `currency: Currency` and flattened
+  `ohlc: Ohlc` `PriceAmount` values instead of independent `Price` fields for
+  `open`, `high`, `low`, and `close`; `close_unadj` is now
+  `Option<PriceAmount>`.
+- Market/facade: `OrderBook`, `Quote`, `QuoteUpdate`, and aggregate `Snapshot`
+  now require a record-level `currency`; their contained price fields use
+  `PriceAmount`.
+- Market/facade: `Candle::volume`, `Quote::day_volume`,
+  `QuoteUpdate::volume`, and `Snapshot::volume` now use
+  `Option<QuantityAmount>` instead of `Option<u64>`. `QuoteUpdate::volume` is
+  a cumulative provider-defined session/window snapshot, not a per-update
+  delta.
+- Market/facade: option contract/update quote fields (`price`, `bid`, `ask`,
+  and `last_price`) now use `PriceAmount`, and option contracts/updates now
+  require `currency: Currency` for those premium amounts.
+  `OptionContractKey::strike` remains a standalone `Price`.
+- Market/facade: `contract_instrument` moved from `OptionContract` and
+  `OptionUpdate` into `OptionContractKey`; JSON remains flattened at the
+  contract/update object level, but Rust callers should use
+  `contract.key.contract_instrument` and
+  `OptionContractKey::with_contract_instrument(...)`.
+- Domain/facade: `Instrument::unique_key()` no longer returns bare FIGI, ISIN,
+  `SYMBOL@EXCHANGE`, or `SYMBOL` strings. It now includes asset kind and
+  identifier source, e.g. `EQUITY|SYMBOL|4:AAPL` or
+  `CRYPTO|SYMBOL|3:BTC`, so symbol-equivalent instruments from different asset
+  classes cannot collide. Use `Instrument::display_key()` when the old compact
+  display format is desired.
+- Domain/fundamentals/facade: removed `Default` from `Symbol`, `Exchange`,
+  `AssetKind`, and `FundKind` because their old defaults (`DEFAULT`, `NASDAQ`,
+  `EQUITY`, and `ETF`) looked like real financial identity data.
+- Domain/facade: calendar boundary helpers and `Ord`/`PartialOrd` from the old
+  `Period` API were not carried over to `ReportingPeriod`; callers must choose
+  `CalendarPeriod` for calendar boundaries or a provider-specific structural
+  sort key for fiscal labels.
+- Fundamentals/facade: `TrendPoint::period` and `RevisionPoint::period` were
+  renamed to `horizon` and now use `Horizon`; helper methods were renamed from
+  `find_by_period*`/`available_periods` to
+  `find_by_horizon*`/`available_horizons`.
+- Fundamentals/facade: removed
+  `EpsRevisions::{total_up_revisions, total_down_revisions, net_revisions}`;
+  revision horizons are overlapping lookbacks, not disjoint buckets. Select a
+  concrete `RevisionPoint` before using `RevisionPoint::total_revisions` or
+  `RevisionPoint::net_revisions`.
+- Domain/money/fundamentals/facade: public `Other(Canonical)` enum payloads were
+  replaced by typed wrappers. Use `Type::other("TOKEN")?`,
+  `OtherType::new("TOKEN")?`, or the existing `FromStr`/serde parsers instead
+  of constructing `Type::Other(Canonical::try_new(...).unwrap())` directly.
+
 ## [0.8.0] - 2026-05-27
 
 This release is audited against the `v0.7.1` tag. It is a breaking API and
@@ -578,7 +981,8 @@ This release tightens identifier validation across the entire workspace and intr
 
 - Initial public release.
 
-[Unreleased]: https://github.com/paft-rs/paft/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/paft-rs/paft/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/paft-rs/paft/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/paft-rs/paft/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/paft-rs/paft/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/paft-rs/paft/compare/v0.6.0...v0.7.0

@@ -15,10 +15,52 @@ pub enum DomainError {
         format: String,
     },
 
+    /// Invalid structured period year.
+    #[error("Invalid period year: {year} - expected a year in 0..=9999")]
+    InvalidPeriodYear {
+        /// The invalid structured period year.
+        year: i32,
+    },
+
+    /// Invalid structured period quarter.
+    #[error("Invalid period quarter: {quarter} - expected a quarter in 1..=4")]
+    InvalidPeriodQuarter {
+        /// The invalid structured period quarter.
+        quarter: u8,
+    },
+
+    /// Invalid horizon format provided for parsing.
+    #[error("Invalid horizon format: '{format}' - expected forms like '7d', '1mo', or '1y'")]
+    InvalidHorizonFormat {
+        /// The invalid horizon string that could not be parsed.
+        format: String,
+    },
+
+    /// Invalid horizon count.
+    #[error("Invalid horizon count: {count} - expected a non-zero positive integer")]
+    InvalidHorizonCount {
+        /// The invalid horizon count.
+        count: u32,
+    },
+
     /// Invalid exchange token encountered while parsing.
     #[error("Invalid exchange value: '{value}'")]
     InvalidExchangeValue {
         /// The invalid exchange token.
+        value: String,
+    },
+
+    /// Invalid asset kind token encountered while parsing.
+    #[error("Invalid asset kind value: '{value}'")]
+    InvalidAssetKindValue {
+        /// The invalid asset kind token.
+        value: String,
+    },
+
+    /// Invalid market state token encountered while parsing.
+    #[error("Invalid market state value: '{value}'")]
+    InvalidMarketStateValue {
+        /// The invalid market state token.
         value: String,
     },
 

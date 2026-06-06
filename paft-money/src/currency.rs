@@ -2,7 +2,7 @@
 
 use std::{borrow::Cow, str::FromStr};
 
-use paft_utils::{Canonical, StringCode, canonicalize};
+use paft_utils::{Canonical, StringCode, has_canonical_token_boundaries};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::IsoCurrency;
@@ -10,6 +10,79 @@ use crate::currency_utils::{MAX_MINOR_UNIT_DECIMALS, currency_metadata};
 use crate::error::{MoneyError, MoneyParseError};
 #[cfg(feature = "money-formatting")]
 use crate::locale::Locale;
+
+/// Provider-specific currency code that is not modeled by [`Currency`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct OtherCurrency(Canonical);
+
+impl OtherCurrency {
+    /// Builds an unknown currency code, rejecting tokens modeled by [`Currency`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty, cannot be canonicalized, exceeds
+    /// the canonical token length cap, has invalid token boundaries, or parses
+    /// to a modeled [`Currency`] variant.
+    pub fn new(input: &str) -> Result<Self, MoneyParseError> {
+        match Currency::try_from_str(input)? {
+            Currency::Other(code) => Ok(code),
+            _ => Err(MoneyParseError::InvalidEnumValue {
+                enum_name: "Currency",
+                value: input.to_string(),
+            }),
+        }
+    }
+
+    /// Returns this unknown currency's canonical code.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        self.0.as_ref()
+    }
+
+    #[doc(hidden)]
+    pub(crate) const fn from_canonical_unchecked(code: Canonical) -> Self {
+        Self(code)
+    }
+}
+
+impl AsRef<str> for OtherCurrency {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl FromStr for OtherCurrency {
+    type Err = MoneyParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::new(input)
+    }
+}
+
+impl std::fmt::Display for OtherCurrency {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for OtherCurrency {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for OtherCurrency {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Self::new(&raw).map_err(serde::de::Error::custom)
+    }
+}
 
 /// Currency enumeration with major currencies and extensible fallback.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -28,16 +101,27 @@ pub enum Currency {
     /// USDT
     USDT,
     /// Unknown or provider-specific currency
-    Other(Canonical),
+    Other(OtherCurrency),
 }
 
 impl Currency {
     /// Attempts to parse a currency from the provided string, enforcing canonical aliases.
     ///
     /// # Errors
-    /// Returns `MoneyParseError::InvalidEnumValue` when the input is empty or cannot be canonicalized.
+    /// Returns `MoneyParseError::InvalidEnumValue` when the input is empty,
+    /// cannot be canonicalized, or has invalid token boundaries.
     pub fn try_from_str(input: &str) -> Result<Self, MoneyParseError> {
         Self::from_str(input)
+    }
+
+    /// Builds an unknown currency value, rejecting tokens modeled by [`Currency`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty, cannot be canonicalized, has
+    /// invalid token boundaries, or parses to a modeled [`Currency`] variant.
+    pub fn other(input: &str) -> Result<Self, MoneyParseError> {
+        OtherCurrency::new(input).map(Self::Other)
     }
 
     /// Returns true if this is a major reserve currency.
@@ -87,19 +171,20 @@ impl Currency {
     }
 
     /// Returns the human-readable name for this currency.
+    ///
+    /// ISO currencies use the canonical ISO 4217 name. Non-ISO currencies use
+    /// the metadata registry, so display-name overlays affect modeled non-ISO
+    /// variants and `Other` codes consistently.
     #[must_use]
     pub fn full_name(&self) -> Cow<'static, str> {
         match self {
             Self::Iso(iso) => Cow::Owned(iso.name().to_string()),
-            Self::BTC => Cow::Borrowed("Bitcoin"),
-            Self::ETH => Cow::Borrowed("Ethereum"),
-            Self::XMR => Cow::Borrowed("Monero"),
-            Self::USDC => Cow::Borrowed("USDC"),
-            Self::USDT => Cow::Borrowed("USDT"),
-            Self::Other(code) => currency_metadata(code.as_ref()).map_or_else(
-                || Cow::Owned(code.as_ref().to_string()),
-                |meta| meta.full_name,
-            ),
+            Self::BTC | Self::ETH | Self::XMR | Self::USDC | Self::USDT | Self::Other(_) => {
+                currency_metadata(self.code()).map_or_else(
+                    || Cow::Owned(self.code().to_string()),
+                    |meta| meta.full_name,
+                )
+            }
         }
     }
 
@@ -211,33 +296,40 @@ impl FromStr for Currency {
                 value: input.to_string(),
             });
         }
-        let token = canonicalize(trimmed);
-        let canon = token.as_ref();
+        if !has_canonical_token_boundaries(trimmed) {
+            return Err(MoneyParseError::InvalidEnumValue {
+                enum_name: "Currency",
+                value: input.to_string(),
+            });
+        }
+        let canonical =
+            Canonical::try_new(trimmed).map_err(|_| MoneyParseError::InvalidEnumValue {
+                enum_name: "Currency",
+                value: input.to_string(),
+            })?;
+        let canon = canonical.as_ref();
 
-        if canon == "BTC" {
-            return Ok(Self::BTC);
-        }
-        if canon == "ETH" {
-            return Ok(Self::ETH);
-        }
-        if canon == "XMR" {
-            return Ok(Self::XMR);
-        }
-        if canon == "USDC" {
-            return Ok(Self::USDC);
-        }
-        if canon == "USDT" {
-            return Ok(Self::USDT);
-        }
-        if let Some(iso) = IsoCurrency::from_code(canon) {
-            return Ok(Self::Iso(iso));
+        let known = if canon == "BTC" {
+            Some(Self::BTC)
+        } else if canon == "ETH" {
+            Some(Self::ETH)
+        } else if canon == "XMR" {
+            Some(Self::XMR)
+        } else if canon == "USDC" {
+            Some(Self::USDC)
+        } else if canon == "USDT" {
+            Some(Self::USDT)
+        } else {
+            IsoCurrency::from_code(canon).map(Self::Iso)
+        };
+
+        if let Some(currency) = known {
+            return Ok(currency);
         }
 
-        let other = Canonical::try_new(trimmed).map_err(|_| MoneyParseError::InvalidEnumValue {
-            enum_name: "Currency",
-            value: input.to_string(),
-        })?;
-        Ok(Self::Other(other))
+        Ok(Self::Other(OtherCurrency::from_canonical_unchecked(
+            canonical,
+        )))
     }
 }
 

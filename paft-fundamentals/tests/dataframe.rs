@@ -1,15 +1,15 @@
 #![cfg(feature = "dataframe")]
-use chrono::{TimeZone, Utc};
-use paft_decimal::Decimal;
-use paft_domain::{Isin, Period};
+use chrono::{NaiveDate, TimeZone, Utc};
+use paft_decimal::{Decimal, Ratio};
+use paft_domain::{Horizon, Isin, PeriodYear, ReportingPeriod};
 use paft_fundamentals::{
     Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
     EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
-    EpsRevisions, EpsTrend, EsgInvolvement, EsgScores, FundKind, FundProfile, IncomeStatementRow,
-    InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, KeyStatistics,
-    MajorHolder, NetSharePurchaseActivity, PriceTarget, Profile, RecommendationAction,
-    RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
-    ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
+    EpsRevisions, EpsTrend, EsgInvolvement, EsgScores, EsgSummary, FundKind, FundProfile,
+    IncomeStatementRow, InsiderPosition, InsiderRosterHolder, InsiderTransaction,
+    InstitutionalHolder, KeyStatistics, MajorHolder, NetSharePurchaseActivity, PriceTarget,
+    Profile, RecommendationAction, RecommendationGrade, RecommendationRow, RecommendationSummary,
+    RevenueEstimate, RevisionPoint, ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
 };
 use paft_money::{IsoCurrency, Money, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
@@ -33,31 +33,33 @@ fn usd_price(amount: i64) -> Price {
 fn dec(value: &str) -> Decimal {
     Decimal::from_str(value).unwrap()
 }
+
+fn ratio(value: &str) -> Ratio {
+    Ratio::new(dec(value)).unwrap()
+}
 fn sample_ts(secs: i64) -> chrono::DateTime<Utc> {
     Utc.timestamp_opt(secs, 0).unwrap()
+}
+
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, day).unwrap()
 }
 
 #[test]
 fn earnings_to_dataframe() {
     let earnings = Earnings {
         yearly: vec![EarningsYear {
-            year: 2024,
+            year: PeriodYear::new(2024).unwrap(),
             revenue: Some(usd(1200)),
             earnings: Some(usd(450)),
         }],
         quarterly: vec![EarningsQuarter {
-            period: Period::Quarter {
-                year: 2024,
-                quarter: 1,
-            },
+            period: ReportingPeriod::quarterly(2024, 1).unwrap(),
             revenue: Some(usd(300)),
             earnings: Some(usd(110)),
         }],
         quarterly_eps: vec![EarningsQuarterEps {
-            period: Period::Quarter {
-                year: 2024,
-                quarter: 1,
-            },
+            period: ReportingPeriod::quarterly(2024, 1).unwrap(),
             actual: Some(usd_price(2)),
             estimate: Some(usd_price(1)),
         }],
@@ -70,7 +72,7 @@ fn earnings_to_dataframe() {
 #[test]
 fn earnings_year_to_dataframe() {
     let e = EarningsYear {
-        year: 2024,
+        year: PeriodYear::new(2024).unwrap(),
         revenue: None,
         earnings: Some(usd(10)),
     };
@@ -81,10 +83,7 @@ fn earnings_year_to_dataframe() {
 #[test]
 fn earnings_quarter_to_dataframe() {
     let quarter = EarningsQuarter {
-        period: Period::Quarter {
-            year: 2024,
-            quarter: 2,
-        },
+        period: ReportingPeriod::quarterly(2024, 2).unwrap(),
         revenue: Some(usd(250)),
         earnings: Some(usd(75)),
     };
@@ -96,10 +95,7 @@ fn earnings_quarter_to_dataframe() {
 #[test]
 fn earnings_quarter_eps_to_dataframe() {
     let eps = EarningsQuarterEps {
-        period: Period::Quarter {
-            year: 2024,
-            quarter: 2,
-        },
+        period: ReportingPeriod::quarterly(2024, 2).unwrap(),
         actual: Some(usd_price(3)),
         estimate: Some(usd_price(2)),
     };
@@ -124,7 +120,7 @@ fn price_target_to_dataframe() {
 #[test]
 fn recommendation_row_to_dataframe() {
     let r = RecommendationRow {
-        period: Period::Year { year: 2024 },
+        period: ReportingPeriod::annual(2024).unwrap(),
         strong_buy: Some(5),
         buy: Some(7),
         hold: Some(3),
@@ -138,10 +134,7 @@ fn recommendation_row_to_dataframe() {
 #[test]
 fn recommendation_summary_to_dataframe() {
     let summary = RecommendationSummary {
-        latest_period: Some(Period::Quarter {
-            year: 2024,
-            quarter: 2,
-        }),
+        latest_period: Some(ReportingPeriod::quarterly(2024, 2).unwrap()),
         strong_buy: Some(5),
         buy: Some(7),
         hold: Some(3),
@@ -216,13 +209,7 @@ fn revenue_estimate_to_dataframe() {
 
 #[test]
 fn trend_point_to_dataframe() {
-    let point = TrendPoint::new(
-        Period::Quarter {
-            year: 2023,
-            quarter: 4,
-        },
-        usd_price(2),
-    );
+    let point = TrendPoint::new(Horizon::months(3).unwrap(), usd_price(2));
 
     let df = point.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -232,7 +219,7 @@ fn trend_point_to_dataframe() {
 fn eps_trend_to_dataframe() {
     let trend = EpsTrend {
         current: Some(usd_price(3)),
-        historical: vec![TrendPoint::new(Period::Year { year: 2022 }, usd_price(2))],
+        historical: vec![TrendPoint::new(Horizon::years(1).unwrap(), usd_price(2))],
     };
 
     let df = trend.to_dataframe().unwrap();
@@ -241,14 +228,7 @@ fn eps_trend_to_dataframe() {
 
 #[test]
 fn revision_point_to_dataframe() {
-    let point = RevisionPoint::new(
-        Period::Quarter {
-            year: 2023,
-            quarter: 4,
-        },
-        4,
-        1,
-    );
+    let point = RevisionPoint::new(Horizon::months(3).unwrap(), 4, 1);
 
     let df = point.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -257,7 +237,7 @@ fn revision_point_to_dataframe() {
 #[test]
 fn eps_revisions_to_dataframe() {
     let revisions = EpsRevisions {
-        historical: vec![RevisionPoint::new(Period::Year { year: 2023 }, 5, 2)],
+        historical: vec![RevisionPoint::new(Horizon::days(30).unwrap(), 5, 2)],
     };
 
     let df = revisions.to_dataframe().unwrap();
@@ -284,30 +264,14 @@ fn earnings_trend_row_to_dataframe() {
     };
     let eps_trend = EpsTrend {
         current: Some(usd_price(3)),
-        historical: vec![TrendPoint::new(
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
-            usd_price(2),
-        )],
+        historical: vec![TrendPoint::new(Horizon::months(3).unwrap(), usd_price(2))],
     };
     let eps_revisions = EpsRevisions {
-        historical: vec![RevisionPoint::new(
-            Period::Quarter {
-                year: 2023,
-                quarter: 4,
-            },
-            4,
-            1,
-        )],
+        historical: vec![RevisionPoint::new(Horizon::months(3).unwrap(), 4, 1)],
     };
 
     let row = EarningsTrendRow {
-        period: Period::Quarter {
-            year: 2024,
-            quarter: 1,
-        },
+        period: ReportingPeriod::quarterly(2024, 1).unwrap(),
         growth: Some(dec("0.12")),
         earnings_estimate,
         revenue_estimate,
@@ -322,7 +286,7 @@ fn earnings_trend_row_to_dataframe() {
 #[test]
 fn statements_row_to_dataframe() {
     let row = IncomeStatementRow {
-        period: Period::Year { year: 2024 },
+        period: ReportingPeriod::annual(2024).unwrap(),
         total_revenue: None,
         gross_profit: None,
         operating_income: None,
@@ -338,7 +302,7 @@ fn statements_row_to_dataframe() {
 #[test]
 fn balance_sheet_row_to_dataframe() {
     let row = BalanceSheetRow {
-        period: Period::Year { year: 2024 },
+        period: ReportingPeriod::annual(2024).unwrap(),
         total_assets: Some(usd(5_000)),
         total_liabilities: Some(usd(3_000)),
         total_equity: Some(usd(2_000)),
@@ -362,7 +326,7 @@ fn balance_sheet_row_to_dataframe() {
 #[test]
 fn cashflow_row_to_dataframe() {
     let row = CashflowRow {
-        period: Period::Year { year: 2024 },
+        period: ReportingPeriod::annual(2024).unwrap(),
         operating_cashflow: Some(usd(1_200)),
         capital_expenditures: Some(usd(300)),
         free_cash_flow: Some(usd(900)),
@@ -378,8 +342,8 @@ fn cashflow_row_to_dataframe() {
 fn calendar_to_dataframe() {
     let calendar = Calendar {
         earnings_dates: vec![sample_ts(1_700_000_000)],
-        ex_dividend_date: Some(sample_ts(1_700_086_400)),
-        dividend_payment_date: Some(sample_ts(1_700_172_800)),
+        ex_dividend_date: Some(date(2023, 11, 15)),
+        dividend_payment_date: Some(date(2023, 11, 16)),
     };
 
     let df = calendar.to_dataframe().unwrap();
@@ -397,7 +361,7 @@ fn key_statistics_to_dataframe() {
         dividend_per_share_forward: Some(usd_price(1)),
         dividend_yield_trailing: Some(dec("0.0050")),
         dividend_yield_forward: Some(dec("0.0055")),
-        ex_dividend_date: Some(sample_ts(1_700_086_400)),
+        ex_dividend_date: Some(date(2023, 11, 15)),
         fifty_two_week_high: Some(usd_price(200)),
         fifty_two_week_low: Some(usd_price(120)),
         average_daily_volume_3m: Some(55_000_000),
@@ -418,7 +382,7 @@ fn key_statistics_default_to_dataframe() {
 fn major_holder_to_dataframe() {
     let holder = MajorHolder {
         category: "% Held by Insiders".to_string(),
-        value: dec("0.255"),
+        value: ratio("0.255"),
     };
 
     let df = holder.to_dataframe().unwrap();
@@ -430,8 +394,8 @@ fn institutional_holder_to_dataframe() {
     let holder = InstitutionalHolder {
         holder: "Example Fund".to_string(),
         shares: Some(10_000),
-        date_reported: sample_ts(1_600_000_000),
-        pct_held: Some(dec("0.12")),
+        date_reported: date(2020, 9, 13),
+        pct_held: Some(ratio("0.12")),
         value: Some(usd(1_200)),
     };
 
@@ -447,8 +411,8 @@ fn insider_transaction_to_dataframe() {
         transaction_type: TransactionType::Buy,
         shares: Some(1_500),
         value: Some(usd(200)),
-        transaction_date: sample_ts(1_650_000_000),
-        url: "https://example.com/filing".to_string(),
+        transaction_date: date(2022, 4, 15),
+        url: Some("https://example.com/filing".to_string()),
     };
 
     let df = transaction.to_dataframe().unwrap();
@@ -461,9 +425,9 @@ fn insider_roster_holder_to_dataframe() {
         name: "John Smith".to_string(),
         position: InsiderPosition::Officer,
         most_recent_transaction: TransactionType::Sell,
-        latest_transaction_date: sample_ts(1_660_000_000),
+        latest_transaction_date: date(2022, 8, 8),
         shares_owned_directly: Some(5_000),
-        position_direct_date: sample_ts(1_659_000_000),
+        position_direct_date: date(2022, 7, 27),
     };
 
     let df = holder.to_dataframe().unwrap();
@@ -473,10 +437,7 @@ fn insider_roster_holder_to_dataframe() {
 #[test]
 fn net_share_purchase_activity_to_dataframe() {
     let activity = NetSharePurchaseActivity {
-        period: Period::Quarter {
-            year: 2023,
-            quarter: 4,
-        },
+        period: ReportingPeriod::quarterly(2023, 4).unwrap(),
         buy_shares: Some(2_000),
         buy_count: Some(10),
         sell_shares: Some(1_500),
@@ -538,7 +499,7 @@ fn fund_profile_to_dataframe() {
 #[test]
 fn share_count_to_dataframe() {
     let shares = ShareCount {
-        date: sample_ts(1_600_000_000),
+        date: date(2020, 9, 13),
         shares: 1_000_000,
     };
 
@@ -573,6 +534,34 @@ fn esg_involvement_vec_to_dataframe() {
 
     let df = involvement.as_slice().to_dataframe().unwrap();
     assert_eq!(df.height(), 2);
+}
+
+#[test]
+fn esg_summary_to_dataframe() {
+    let summary = EsgSummary {
+        scores: Some(EsgScores {
+            environmental: Some(dec("55.0")),
+            social: Some(dec("60.5")),
+            governance: Some(dec("70.2")),
+        }),
+        involvement: vec![
+            EsgInvolvement {
+                category: "Thermal Coal".to_string(),
+                score: Some(dec("0.1")),
+            },
+            EsgInvolvement {
+                category: "Renewables".to_string(),
+                score: Some(dec("0.8")),
+            },
+        ],
+    };
+
+    let df = summary.to_dataframe().unwrap();
+    assert_eq!(df.height(), 1);
+    let columns = df.get_column_names();
+    assert!(columns.iter().any(|c| c.as_str() == "scores.environmental"));
+    assert!(columns.iter().any(|c| c.as_str() == "involvement.category"));
+    assert!(columns.iter().any(|c| c.as_str() == "involvement.score"));
 }
 
 #[test]

@@ -31,6 +31,20 @@ pub enum MoneyError {
         /// The actual currency found.
         found: Currency,
     },
+    /// Occurs when two `Money` values, or a serialized `Money` payload and
+    /// current metadata, carry the same currency code with different
+    /// minor-unit scales.
+    #[error(
+        "minor-unit scale mismatch for {currency}: expected {expected_scale}, found {found_scale}"
+    )]
+    MinorUnitMismatch {
+        /// The currency whose scale differs.
+        currency: Currency,
+        /// The scale carried by the left-hand value or current metadata.
+        expected_scale: u8,
+        /// The scale carried by the right-hand value or serialized payload.
+        found_scale: u8,
+    },
     /// Occurs when converting a Money amount to cents fails due to overflow or precision issues.
     #[error("could not convert amount to minor units")]
     ConversionError,
@@ -64,11 +78,11 @@ pub enum MoneyError {
     /// Occurs when parsing a decimal amount fails.
     #[error("invalid decimal")]
     InvalidDecimal,
-    /// Occurs when an amount cannot be represented exactly at the currency's
-    /// scale. Returned by [`crate::Money::new_exact`] (and therefore by
-    /// [`crate::Money::from_canonical_str`] and serde deserialization) when
-    /// the supplied value carries more fractional precision than the
-    /// currency's `decimal_places()`.
+    /// Occurs when an amount cannot be represented exactly at the applicable
+    /// minor-unit scale. Returned by [`crate::Money::new_exact`] (and therefore
+    /// by [`crate::Money::from_canonical_str`]) when the supplied value carries
+    /// more fractional precision than the currency's `decimal_places()`, and
+    /// by serde deserialization when it exceeds the serialized `minor_units`.
     #[error(
         "precision exceeded for {currency_code}: max scale {max_scale}, actual scale {actual_scale}"
     )]
@@ -100,6 +114,16 @@ pub enum MoneyError {
         digits: usize,
         /// Expected exponent for the currency.
         exponent: u8,
+    },
+    /// Occurs when localized formatting requests more fractional digits than
+    /// the active decimal backend supports.
+    #[cfg(feature = "money-formatting")]
+    #[error("format fraction digits {actual_fraction_digits} exceed maximum {max_fraction_digits}")]
+    FormatPrecisionExceeded {
+        /// Requested display fractional digits.
+        actual_fraction_digits: u32,
+        /// Maximum display fractional digits supported by this build.
+        max_fraction_digits: u32,
     },
     /// Occurs when attempting to use an unsupported locale for formatting or parsing.
     #[cfg(feature = "money-formatting")]

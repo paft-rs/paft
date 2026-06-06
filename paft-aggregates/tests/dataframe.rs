@@ -3,11 +3,19 @@ use chrono::{TimeZone, Utc};
 use paft_aggregates::Snapshot;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
-use paft_money::{Currency, IsoCurrency, Price};
+use paft_money::{Currency, IsoCurrency, PriceAmount, QuantityAmount};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
-fn usd(amount: i64) -> Price {
-    Price::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
+const fn usd() -> Currency {
+    Currency::Iso(IsoCurrency::USD)
+}
+
+fn amount(value: i64) -> PriceAmount {
+    PriceAmount::new(Decimal::from(value))
+}
+
+fn quantity(value: i64) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from(value)).unwrap()
 }
 
 #[test]
@@ -22,12 +30,13 @@ fn snapshot_to_dataframe() {
         name: Some("Apple Inc.".to_string()),
         market_state: Some(MarketState::Regular),
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
-        last: Some(usd(150)),
-        previous_close: Some(usd(145)),
-        open: Some(usd(148)),
-        day_high: Some(usd(151)),
-        day_low: Some(usd(147)),
-        volume: Some(1_234_567),
+        currency: usd(),
+        last: Some(amount(150)),
+        previous_close: Some(amount(145)),
+        open: Some(amount(148)),
+        day_high: Some(amount(151)),
+        day_low: Some(amount(147)),
+        volume: Some(quantity(1_234_567)),
 
         provider: (),
     };
@@ -48,12 +57,13 @@ fn snapshot_vec_to_dataframe() {
         name: Some("Apple Inc.".to_string()),
         market_state: Some(MarketState::Regular),
         as_of: Some(Utc.timestamp_opt(1_700_000_000, 0).unwrap()),
-        last: Some(usd(150)),
-        previous_close: Some(usd(145)),
-        open: Some(usd(148)),
-        day_high: Some(usd(151)),
-        day_low: Some(usd(147)),
-        volume: Some(1_000_000),
+        currency: usd(),
+        last: Some(amount(150)),
+        previous_close: Some(amount(145)),
+        open: Some(amount(148)),
+        day_high: Some(amount(151)),
+        day_low: Some(amount(147)),
+        volume: Some(quantity(1_000_000)),
 
         provider: (),
     };

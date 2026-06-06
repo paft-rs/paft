@@ -1,5 +1,6 @@
 //! Historical data request types and helpers.
 use std::fmt::Display;
+use std::str::FromStr;
 
 use bitflags::bitflags;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -123,6 +124,17 @@ impl Display for Range {
     }
 }
 
+impl FromStr for Range {
+    type Err = MarketError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::from_code(value).ok_or_else(|| MarketError::InvalidEnumValue {
+            enum_name: "Range",
+            value: value.to_string(),
+        })
+    }
+}
+
 impl Serialize for Range {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -230,6 +242,17 @@ pub enum Interval {
 impl Display for Interval {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str((*self).code())
+    }
+}
+
+impl FromStr for Interval {
+    type Err = MarketError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::from_code(value).ok_or_else(|| MarketError::InvalidEnumValue {
+            enum_name: "Interval",
+            value: value.to_string(),
+        })
     }
 }
 
@@ -438,24 +461,49 @@ impl<'de> Deserialize<'de> for Interval {
 
 bitflags! {
     /// Flags to control additional behaviors in history requests.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    #[serde(transparent)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct HistoryFlags: u8 {
         /// Include pre/post market sessions if supported.
         const INCLUDE_PREPOST = 0b0001;
         /// Include corporate actions (dividends/splits) in the response if supported.
         const INCLUDE_ACTIONS = 0b0010;
-        /// Prefer adjusted close for equities when provider supports it.
-        const AUTO_ADJUST = 0b0100;
+        /// Prefer provider-adjusted prices when the provider supports them.
+        const PREFER_ADJUSTED_PRICES = 0b0100;
         /// Keep missing candle slots as placeholders depending on consumer.
-        const KEEPNA = 0b1000;
+        const KEEP_MISSING = 0b1000;
+    }
+}
+
+impl Serialize for HistoryFlags {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u8(self.bits())
+    }
+}
+
+impl<'de> Deserialize<'de> for HistoryFlags {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let bits = u8::deserialize(deserializer)?;
+        Self::from_bits(bits).ok_or_else(|| {
+            serde::de::Error::custom(format!("unknown HistoryFlags bits: 0b{bits:08b}"))
+        })
     }
 }
 
 /// Time specification for historical data requests.
 ///
 /// This enum ensures that only one time specification method is used at a time,
-/// making invalid states unrepresentable at compile time.
+/// making range-vs-period exclusivity unrepresentable at compile time.
+///
+/// Direct enum construction can still build a `Period` whose `start >= end`.
+/// Use [`TimeSpec::period`] or [`TimeSpec::validate`] when constructing or
+/// accepting a standalone `TimeSpec`. [`HistoryRequestBuilder::build`] and
+/// `TimeSpec` deserialization also perform this validation.
 ///
 /// Serializes as explicitly tagged JSON:
 /// `{ "kind": "range", "range": "6mo" }` or
@@ -473,6 +521,46 @@ pub enum TimeSpec {
         /// End timestamp for the period.
         end: DateTime<Utc>,
     },
+}
+
+impl TimeSpec {
+    /// Build a logical range time specification.
+    #[must_use]
+    pub const fn range(range: Range) -> Self {
+        Self::Range(range)
+    }
+
+    /// Build a validated explicit period time specification.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MarketError::InvalidPeriod`] when `start >= end`.
+    pub fn period(start: DateTime<Utc>, end: DateTime<Utc>) -> Result<Self, MarketError> {
+        let time_spec = Self::Period { start, end };
+        time_spec.validate()?;
+        Ok(time_spec)
+    }
+
+    /// Validate standalone `TimeSpec` invariants.
+    ///
+    /// `TimeSpec::Range` is always valid. `TimeSpec::Period` must have
+    /// `start < end`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MarketError::InvalidPeriod`] when a period has `start >= end`.
+    pub fn validate(&self) -> Result<(), MarketError> {
+        if let Self::Period { start, end } = self
+            && start >= end
+        {
+            return Err(MarketError::InvalidPeriod {
+                start: start.timestamp_millis(),
+                end: end.timestamp_millis(),
+            });
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -511,10 +599,12 @@ impl<'de> Deserialize<'de> for TimeSpec {
     where
         D: Deserializer<'de>,
     {
-        Ok(match TimeSpecWire::deserialize(deserializer)? {
-            TimeSpecWire::Range { range } => Self::Range(range),
-            TimeSpecWire::Period { start, end } => Self::Period { start, end },
-        })
+        match TimeSpecWire::deserialize(deserializer)? {
+            TimeSpecWire::Range { range } => Ok(Self::Range(range)),
+            TimeSpecWire::Period { start, end } => {
+                Self::period(start, end).map_err(serde::de::Error::custom)
+            }
+        }
     }
 }
 
@@ -542,6 +632,7 @@ pub struct HistoryRequest {
 /// Matches the serialized wire shape, then routes through
 /// [`HistoryRequestBuilder::build`] so period validation cannot be skipped.
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct HistoryRequestShadow {
     time_spec: TimeSpec,
     interval: Interval,
@@ -581,7 +672,7 @@ impl HistoryRequestBuilder {
         Self {
             time_spec: TimeSpec::Range(Range::M6),
             interval: Interval::D1,
-            flags: HistoryFlags::INCLUDE_ACTIONS | HistoryFlags::AUTO_ADJUST,
+            flags: HistoryFlags::INCLUDE_ACTIONS | HistoryFlags::PREFER_ADJUSTED_PRICES,
         }
     }
 
@@ -593,6 +684,9 @@ impl HistoryRequestBuilder {
     }
 
     /// Set the explicit period with start and end timestamps.
+    ///
+    /// Validation is deferred until [`Self::build`]. Use [`TimeSpec::period`]
+    /// when constructing a standalone validated time specification.
     #[must_use]
     pub const fn period(mut self, start: DateTime<Utc>, end: DateTime<Utc>) -> Self {
         self.time_spec = TimeSpec::Period { start, end };
@@ -628,24 +722,24 @@ impl HistoryRequestBuilder {
         self
     }
 
-    /// Set whether to prefer adjusted close prices.
+    /// Set whether to prefer provider-adjusted prices when supported.
     #[must_use]
-    pub fn auto_adjust(mut self, adjust: bool) -> Self {
-        if adjust {
-            self.flags.insert(HistoryFlags::AUTO_ADJUST);
+    pub fn prefer_adjusted_prices(mut self, prefer: bool) -> Self {
+        if prefer {
+            self.flags.insert(HistoryFlags::PREFER_ADJUSTED_PRICES);
         } else {
-            self.flags.remove(HistoryFlags::AUTO_ADJUST);
+            self.flags.remove(HistoryFlags::PREFER_ADJUSTED_PRICES);
         }
         self
     }
 
     /// Set whether to keep missing candle slots.
     #[must_use]
-    pub fn keepna(mut self, keep: bool) -> Self {
+    pub fn keep_missing(mut self, keep: bool) -> Self {
         if keep {
-            self.flags.insert(HistoryFlags::KEEPNA);
+            self.flags.insert(HistoryFlags::KEEP_MISSING);
         } else {
-            self.flags.remove(HistoryFlags::KEEPNA);
+            self.flags.remove(HistoryFlags::KEEP_MISSING);
         }
         self
     }
@@ -659,15 +753,7 @@ impl HistoryRequestBuilder {
     /// Returns `MarketError::InvalidPeriod` when a `Period { start, end }` has `start >= end`.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn build(self) -> Result<HistoryRequest, MarketError> {
-        // Validate period constraints
-        if let TimeSpec::Period { start, end } = &self.time_spec
-            && start >= end
-        {
-            return Err(MarketError::InvalidPeriod {
-                start: start.timestamp_millis(),
-                end: end.timestamp_millis(),
-            });
-        }
+        self.time_spec.validate()?;
 
         Ok(HistoryRequest {
             time_spec: self.time_spec,
@@ -700,7 +786,8 @@ impl HistoryRequest {
         Self::builder().range(range).interval(interval).build()
     }
 
-    /// Build a request using an explicit `[start, end)` epoch-second period and `interval`.
+    /// Build a request using explicit UTC `DateTime` bounds (`[start, end)`)
+    /// and `interval`.
     ///
     /// This is a convenience method that uses the builder pattern internally.
     ///
@@ -759,15 +846,15 @@ impl HistoryRequest {
         self.flags.contains(HistoryFlags::INCLUDE_ACTIONS)
     }
 
-    /// Get whether auto-adjust is enabled.
+    /// Get whether provider-adjusted prices are preferred when supported.
     #[must_use]
-    pub const fn auto_adjust(&self) -> bool {
-        self.flags.contains(HistoryFlags::AUTO_ADJUST)
+    pub const fn prefer_adjusted_prices(&self) -> bool {
+        self.flags.contains(HistoryFlags::PREFER_ADJUSTED_PRICES)
     }
 
     /// Get whether missing values are kept.
     #[must_use]
-    pub const fn keepna(&self) -> bool {
-        self.flags.contains(HistoryFlags::KEEPNA)
+    pub const fn keep_missing(&self) -> bool {
+        self.flags.contains(HistoryFlags::KEEP_MISSING)
     }
 }

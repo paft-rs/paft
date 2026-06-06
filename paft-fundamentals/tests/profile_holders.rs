@@ -1,9 +1,14 @@
+use chrono::NaiveDate;
 use paft_decimal::Decimal;
 use paft_domain::Isin;
 use paft_fundamentals::profile::{Address, CompanyProfile, FundKind, FundProfile, Profile};
 use paft_money::{Currency, IsoCurrency, Money};
-use serde_json::{from_str, to_string};
+use serde_json::{from_str, json, to_string, to_value};
 use std::str::FromStr;
+
+const fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, day).unwrap()
+}
 
 #[test]
 fn profile_isin_accessor() {
@@ -28,6 +33,85 @@ fn profile_isin_accessor() {
 }
 
 #[test]
+fn profile_company_uses_tagged_serde_shape() {
+    let profile = Profile::Company(CompanyProfile {
+        name: "ACME".into(),
+        sector: Some("Industrials".into()),
+        industry: None,
+        website: Some("https://example.com".into()),
+        address: None,
+        summary: None,
+        isin: Some(Isin::new("US0378331005").unwrap()),
+    });
+
+    let value = to_value(&profile).unwrap();
+    assert_eq!(
+        value,
+        json!({
+            "kind": "company",
+            "name": "ACME",
+            "sector": "Industrials",
+            "industry": null,
+            "website": "https://example.com",
+            "address": null,
+            "summary": null,
+            "isin": "US0378331005",
+        })
+    );
+
+    let deserialized: Profile = serde_json::from_value(value).unwrap();
+    assert_eq!(profile, deserialized);
+}
+
+#[test]
+fn profile_fund_uses_tagged_serde_shape() {
+    let profile = Profile::Fund(FundProfile {
+        name: "Index".into(),
+        family: None,
+        kind: FundKind::Etf,
+        isin: None,
+    });
+
+    let value = to_value(&profile).unwrap();
+    assert_eq!(
+        value,
+        json!({
+            "kind": "fund",
+            "name": "Index",
+            "family": null,
+            "fund_kind": "ETF",
+            "isin": null,
+        })
+    );
+
+    let deserialized: Profile = serde_json::from_value(value).unwrap();
+    assert_eq!(profile, deserialized);
+}
+
+#[test]
+fn profile_ignores_unknown_fields() {
+    let value = json!({
+        "kind": "fund",
+        "name": "Index",
+        "family": null,
+        "fund_kind": "ETF",
+        "isin": null,
+        "provider_field": true,
+    });
+
+    let profile = serde_json::from_value::<Profile>(value).unwrap();
+    assert_eq!(
+        profile,
+        Profile::Fund(FundProfile {
+            name: "Index".into(),
+            family: None,
+            kind: FundKind::Etf,
+            isin: None,
+        })
+    );
+}
+
+#[test]
 fn address_serde_roundtrip() {
     let addr = Address {
         street1: Some("1 Main".into()),
@@ -43,7 +127,7 @@ fn address_serde_roundtrip() {
 }
 
 #[test]
-fn insider_transaction_serde_with_enums_and_timestamps() {
+fn insider_transaction_serde_with_enums_and_calendar_date() {
     let tx = paft_fundamentals::holders::InsiderTransaction {
         insider: "John Doe".to_string(),
         position: paft_fundamentals::holders::InsiderPosition::Officer,
@@ -56,11 +140,30 @@ fn insider_transaction_serde_with_enums_and_timestamps() {
             )
             .unwrap(),
         ),
-        transaction_date: chrono::DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
-        url: "https://example.com".into(),
+        transaction_date: date(2022, 1, 1),
+        url: Some("https://example.com".into()),
     };
 
     let json = serde_json::to_string(&tx).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(value["transaction_date"], serde_json::json!("2022-01-01"));
     let back: paft_fundamentals::holders::InsiderTransaction = serde_json::from_str(&json).unwrap();
     assert_eq!(tx, back);
+}
+
+#[test]
+fn insider_transaction_url_can_be_missing() {
+    let json = r#"{
+        "insider": "John Doe",
+        "position": "Officer",
+        "transaction_type": "Buy",
+        "shares": 1000,
+        "value": null,
+        "transaction_date": "2022-01-01"
+    }"#;
+
+    let transaction: paft_fundamentals::holders::InsiderTransaction =
+        serde_json::from_str(json).unwrap();
+
+    assert_eq!(transaction.url, None);
 }

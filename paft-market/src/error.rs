@@ -12,7 +12,14 @@ pub enum MarketError {
 
     /// Search limit must be greater than 0.
     #[error("Search limit must be greater than 0, but was {0}")]
-    InvalidSearchLimit(usize),
+    InvalidSearchLimit(u32),
+
+    /// Search locale fields must not be empty when provided.
+    #[error("Search {field} must not be empty when provided")]
+    EmptySearchLocaleField {
+        /// The locale field that was empty.
+        field: &'static str,
+    },
 
     /// `HistoryRequest`: 'period' start must be before end.
     #[error("HistoryRequest: 'period' start ({start}) must be before end ({end})")]
@@ -21,5 +28,14 @@ pub enum MarketError {
         start: i64,
         /// End timestamp (milliseconds since epoch).
         end: i64,
+    },
+
+    /// String value did not match any modeled closed market enum code.
+    #[error("{enum_name}: invalid enum value '{value}'")]
+    InvalidEnumValue {
+        /// Enum type that rejected the value.
+        enum_name: &'static str,
+        /// Rejected input value.
+        value: String,
     },
 }

@@ -18,11 +18,14 @@ workspace = true
 
 [dependencies]
 rust_decimal = { workspace = true }
+serde = { workspace = true }
 bigdecimal = { workspace = true, optional = true }
 num-traits = { workspace = true, optional = true }
 num-bigint = { workspace = true, optional = true }
 
+[dev-dependencies]
+serde_json = { workspace = true }
+
 [features]
 default = []
 bigdecimal = ["dep:bigdecimal", "dep:num-traits", "dep:num-bigint"]
-

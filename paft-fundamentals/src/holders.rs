@@ -3,14 +3,25 @@
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_core::error::PaftError;
-use paft_decimal::Decimal;
-use paft_domain::Canonical;
-use paft_domain::Period;
+use paft_decimal::{Decimal, Ratio};
+use paft_domain::ReportingPeriod;
 use paft_money::Money;
+
+use crate::FundamentalsError;
+
+paft_core::other_string_code_type!(
+    /// Provider-specific transaction type not modeled by [`TransactionType`].
+    pub struct OtherTransactionType for TransactionType;
+    type Error = FundamentalsError;
+    parse(input) => TransactionType::from_str(input);
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "TransactionType",
+        value: input.to_string(),
+    };
+);
 
 /// Transaction types for insider activities with canonical variants and extensible fallback.
 ///
@@ -20,7 +31,7 @@ use paft_money::Money;
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -39,23 +50,37 @@ pub enum TransactionType {
     /// Conversion of securities
     Conversion,
     /// Unknown or provider-specific transaction type
-    Other(Canonical),
+    Other(OtherTransactionType),
 }
 
 impl TransactionType {
     /// Attempts to parse a transaction type, uppercasing unknown inputs into `Other`.
     ///
     /// # Errors
-    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    /// Returns `FundamentalsError::InvalidEnumValue` when `input` is empty/whitespace.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+    pub fn try_from_str(input: &str) -> Result<Self, FundamentalsError> {
         Self::from_str(input)
+    }
+
+    /// Builds an unknown transaction type, rejecting modeled types and aliases.
+    ///
+    /// # Errors
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`TransactionType`] variant.
+    pub fn other(input: &str) -> Result<Self, FundamentalsError> {
+        OtherTransactionType::new(input).map(Self::Other)
     }
 }
 
 // Centralized code() and string impls via macro
 paft_core::string_enum_with_code!(
-    TransactionType, Other, "TransactionType",
+    TransactionType, Other(OtherTransactionType), "TransactionType",
+    type Error = FundamentalsError;
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "TransactionType",
+        value: input.to_string(),
+    };
     {
         "BUY" => TransactionType::Buy,
         "SELL" => TransactionType::Sell,
@@ -79,6 +104,17 @@ paft_core::string_enum_with_code!(
 // Display equals code for these enums
 paft_core::impl_display_via_code!(TransactionType);
 
+paft_core::other_string_code_type!(
+    /// Provider-specific insider position not modeled by [`InsiderPosition`].
+    pub struct OtherInsiderPosition for InsiderPosition;
+    type Error = FundamentalsError;
+    parse(input) => InsiderPosition::from_str(input);
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "InsiderPosition",
+        value: input.to_string(),
+    };
+);
+
 /// Insider positions in a company with canonical variants and extensible fallback.
 ///
 /// This enum provides type-safe handling of insider positions while gracefully
@@ -87,7 +123,7 @@ paft_core::impl_display_via_code!(TransactionType);
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -116,23 +152,37 @@ pub enum InsiderPosition {
     /// Treasurer
     Treasurer,
     /// Unknown or provider-specific position
-    Other(Canonical),
+    Other(OtherInsiderPosition),
 }
 
 impl InsiderPosition {
     /// Attempts to parse an insider position, uppercasing unknown inputs into `Other`.
     ///
     /// # Errors
-    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    /// Returns `FundamentalsError::InvalidEnumValue` when `input` is empty/whitespace.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+    pub fn try_from_str(input: &str) -> Result<Self, FundamentalsError> {
         Self::from_str(input)
+    }
+
+    /// Builds an unknown insider position, rejecting modeled positions and aliases.
+    ///
+    /// # Errors
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`InsiderPosition`] variant.
+    pub fn other(input: &str) -> Result<Self, FundamentalsError> {
+        OtherInsiderPosition::new(input).map(Self::Other)
     }
 }
 
 // Centralized code() and string impls via macro
 paft_core::string_enum_with_code!(
-    InsiderPosition, Other, "InsiderPosition",
+    InsiderPosition, Other(OtherInsiderPosition), "InsiderPosition",
+    type Error = FundamentalsError;
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "InsiderPosition",
+        value: input.to_string(),
+    };
     {
         "OFFICER" => InsiderPosition::Officer,
         "DIRECTOR" => InsiderPosition::Director,
@@ -142,7 +192,7 @@ paft_core::string_enum_with_code!(
         "COO" => InsiderPosition::Coo,
         "CTO" => InsiderPosition::Cto,
         "PRESIDENT" => InsiderPosition::President,
-        "VP" => InsiderPosition::VicePresident,
+        "VICE_PRESIDENT" => InsiderPosition::VicePresident,
         "SECRETARY" => InsiderPosition::Secretary,
         "TREASURER" => InsiderPosition::Treasurer
     },
@@ -155,7 +205,7 @@ paft_core::string_enum_with_code!(
         "CHIEF_FINANCIAL_OFFICER" => InsiderPosition::Cfo,
         "CHIEF_OPERATING_OFFICER" => InsiderPosition::Coo,
         "CHIEF_TECHNOLOGY_OFFICER" => InsiderPosition::Cto,
-        "VICE_PRESIDENT" => InsiderPosition::VicePresident
+        "VP" => InsiderPosition::VicePresident
     }
 );
 
@@ -168,7 +218,8 @@ pub struct MajorHolder {
     /// The category of the holder (e.g., "% of Shares Held by All Insider").
     pub category: String,
     /// The value associated with the category as a numeric fraction (e.g., 0.255 for 25.5%).
-    pub value: Decimal,
+    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
+    pub value: Ratio,
 }
 
 /// Represents a single institutional or mutual fund holder.
@@ -179,11 +230,11 @@ pub struct InstitutionalHolder {
     pub holder: String,
     /// The number of shares held.
     pub shares: Option<u64>,
-    /// The date of the last reported position as a Unix timestamp in milliseconds.
-    #[serde(with = "chrono::serde::ts_milliseconds")]
-    pub date_reported: DateTime<Utc>,
+    /// The calendar date of the last reported position.
+    pub date_reported: NaiveDate,
     /// The percentage of the company's outstanding shares held by this entity.
-    pub pct_held: Option<Decimal>,
+    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
+    pub pct_held: Option<Ratio>,
     /// The market value of the shares held.
     pub value: Option<Money>,
 }
@@ -204,11 +255,10 @@ pub struct InsiderTransaction {
     pub shares: Option<u64>,
     /// The total value of the transaction.
     pub value: Option<Money>,
-    /// The transaction date as a Unix timestamp in milliseconds.
-    #[serde(with = "chrono::serde::ts_milliseconds")]
-    pub transaction_date: DateTime<Utc>,
+    /// The transaction calendar date.
+    pub transaction_date: NaiveDate,
     /// A URL to the source filing for the transaction, if available.
-    pub url: String,
+    pub url: Option<String>,
 }
 
 /// Represents a single insider on the company's roster.
@@ -223,23 +273,21 @@ pub struct InsiderRosterHolder {
     /// A description of the most recent transaction made by this insider.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub most_recent_transaction: TransactionType,
-    /// The date of the latest transaction as a Unix timestamp in milliseconds.
-    #[serde(with = "chrono::serde::ts_milliseconds")]
-    pub latest_transaction_date: DateTime<Utc>,
+    /// The calendar date of the latest transaction.
+    pub latest_transaction_date: NaiveDate,
     /// The number of shares owned directly by the insider.
     pub shares_owned_directly: Option<u64>,
-    /// The date of the direct ownership filing as a Unix timestamp in milliseconds.
-    #[serde(with = "chrono::serde::ts_milliseconds")]
-    pub position_direct_date: DateTime<Utc>,
+    /// The calendar date of the direct ownership filing.
+    pub position_direct_date: NaiveDate,
 }
 
 /// A summary of net share purchase activity by insiders over a specific period.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct NetSharePurchaseActivity {
-    /// The period the summary covers (e.g., `Period::Quarter { year: 2023, quarter: 4 }`).
+    /// The period the summary covers (e.g., `ReportingPeriod::quarterly(2023, 4)?`).
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub period: Period,
+    pub period: ReportingPeriod,
     /// The total number of shares purchased by insiders.
     pub buy_shares: Option<u64>,
     /// The number of separate buy transactions.
@@ -255,5 +303,6 @@ pub struct NetSharePurchaseActivity {
     /// The total number of shares held by all insiders.
     pub total_insider_shares: Option<u64>,
     /// The net shares purchased/sold as a percentage of total insider shares.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub net_percent_insider_shares: Option<Decimal>,
 }

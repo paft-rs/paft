@@ -12,7 +12,7 @@
 
 #![allow(clippy::items_after_statements)]
 
-use paft_core::__utils::{Canonical, StringCode};
+use paft_core::__utils::{Canonical, MAX_CANONICAL_TOKEN_LEN, StringCode};
 use paft_core::PaftError;
 
 // ---------- Closed enum ----------
@@ -76,6 +76,20 @@ fn closed_unknown_value_is_rejected() {
         PaftError::InvalidEnumValue { enum_name, value }
             if enum_name == "Side" && value == "hold"
     ));
+}
+
+#[test]
+fn closed_rejects_malformed_input_that_canonicalizes_to_known_value() {
+    for input in ["$BUY", "---SELL", "BUY!"] {
+        let err = input.parse::<Side>().unwrap_err();
+        assert!(matches!(
+            err,
+            PaftError::InvalidEnumValue { enum_name, value }
+                if enum_name == "Side" && value == input
+        ));
+    }
+
+    assert!(serde_json::from_str::<Side>("\"SELL!\"").is_err());
 }
 
 #[test]
@@ -205,6 +219,20 @@ fn open_empty_input_is_rejected() {
 }
 
 #[test]
+fn open_rejects_malformed_input_that_canonicalizes_to_known_value() {
+    for input in ["$NASDAQ", "---NYSE", "BIG_BOARD!"] {
+        let err = input.parse::<Venue>().unwrap_err();
+        assert!(matches!(
+            err,
+            PaftError::InvalidEnumValue { enum_name, value }
+                if enum_name == "Venue" && value == input
+        ));
+    }
+
+    assert!(serde_json::from_str::<Venue>("\"NYSE!\"").is_err());
+}
+
+#[test]
 fn open_input_canonicalising_to_empty_is_rejected_not_other() {
     // "!!!" canonicalises to "" → must be rejected via Canonical::try_new,
     // never produce Other(Canonical("")).
@@ -221,6 +249,19 @@ fn open_input_canonicalising_to_empty_is_rejected_not_other() {
         PaftError::InvalidEnumValue { enum_name, value }
             if enum_name == "Venue" && value == "---"
     ));
+}
+
+#[test]
+fn open_unknown_input_over_token_cap_is_rejected_not_other() {
+    let input = "x".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+    let err = input.parse::<Venue>().unwrap_err();
+    assert!(matches!(
+        err,
+        PaftError::InvalidEnumValue { enum_name, value }
+            if enum_name == "Venue" && value == input
+    ));
+
+    assert!(serde_json::from_str::<Venue>(&format!("\"{input}\"")).is_err());
 }
 
 #[test]
@@ -244,6 +285,51 @@ fn open_string_code_trait_reports_canonical_correctly() {
     assert!(is_canon(&Venue::Nasdaq));
     let other: Venue = "weird".parse().unwrap();
     assert!(!is_canon(&other));
+}
+
+// ---------- Enum-specific Other wrapper ----------
+
+paft_core::other_string_code_type!(
+    /// Provider-specific venue code that is not modeled by [`ListingVenue`].
+    struct OtherListingVenue for ListingVenue;
+    type Error = PaftError;
+    parse(input) => input.parse::<ListingVenue>();
+    invalid(input) => PaftError::InvalidEnumValue {
+        enum_name: "ListingVenue",
+        value: input.to_string(),
+    };
+);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum ListingVenue {
+    Primary,
+    Other(OtherListingVenue),
+}
+
+paft_core::string_enum_with_code!(
+    ListingVenue, Other(OtherListingVenue), "ListingVenue",
+    { "PRIMARY" => ListingVenue::Primary },
+    { "MAIN" => ListingVenue::Primary }
+);
+paft_core::impl_display_via_code!(ListingVenue);
+
+#[test]
+fn other_string_code_wrapper_serde_uses_checked_constructor() {
+    let other = OtherListingVenue::new("dark pool").unwrap();
+    assert_eq!(serde_json::to_string(&other).unwrap(), "\"DARK_POOL\"");
+
+    let back: OtherListingVenue = serde_json::from_str("\"dark pool\"").unwrap();
+    assert_eq!(back, other);
+
+    assert!(serde_json::from_str::<OtherListingVenue>("\"PRIMARY\"").is_err());
+    assert!(serde_json::from_str::<OtherListingVenue>("\"main\"").is_err());
+}
+
+#[test]
+fn other_string_code_wrapper_rejects_over_token_cap() {
+    let input = "x".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+    assert!(OtherListingVenue::new(&input).is_err());
+    assert!(serde_json::from_str::<OtherListingVenue>(&format!("\"{input}\"")).is_err());
 }
 
 // ---------- Macro hygiene smoke test ----------

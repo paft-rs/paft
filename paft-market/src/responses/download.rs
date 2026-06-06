@@ -1,63 +1,59 @@
 //! Bulk download response types.
 
-// `Eq` is intentionally NOT derived on the generic payload types: the
-// metadata payload `M` is meant to accept user types that don't satisfy
-// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 use serde::{Deserialize, Serialize};
 
 use crate::responses::history::GenericHistoryResponse;
 use paft_domain::{Instrument, Symbol};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// A single instrument-scoped history entry within a bulk download.
 ///
-/// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation and propagated into the inner history
-/// response. Use the [`DownloadEntry`] alias for the standard shape
-/// (no extra metadata).
+/// Generic over an entry-level provider metadata payload `E`, which is
+/// flattened into the serialized representation, plus history-response and
+/// candle metadata payloads. Use the [`DownloadEntry`] alias for the standard
+/// shape (no extra metadata).
 ///
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-pub struct GenericDownloadEntry<M = ()> {
+pub struct GenericDownloadEntry<E = (), H = (), C = ()> {
     /// Full instrument identity (symbol, kind, optional identifiers/venue).
     pub instrument: Instrument,
-    /// Full `HistoryResponse` (candles, actions, adjusted, meta).
-    pub history: GenericHistoryResponse<M>,
+    /// Full `HistoryResponse` (candles, actions, price basis, meta).
+    pub history: GenericHistoryResponse<H, C>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
-    pub provider: M,
+    pub provider: E,
 }
 
 /// Standard `DownloadEntry` with no extra provider metadata.
-pub type DownloadEntry = GenericDownloadEntry<()>;
+pub type DownloadEntry = GenericDownloadEntry<(), (), ()>;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Aggregated bulk-download response as an array of instrument-keyed entries.
 ///
-/// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation and propagated into each entry. Use the
-/// [`DownloadResponse`] alias for the standard shape (no extra metadata).
+/// Generic over a response-level provider metadata payload `R`, which is
+/// flattened into the serialized representation, plus entry, history-response,
+/// and candle metadata payloads. Use the [`DownloadResponse`] alias for the
+/// standard shape (no extra metadata).
 ///
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-pub struct GenericDownloadResponse<M = ()> {
+pub struct GenericDownloadResponse<R = (), E = (), H = (), C = ()> {
     /// Entries keyed by full `Instrument` identity.
-    pub entries: Vec<GenericDownloadEntry<M>>,
+    pub entries: Vec<GenericDownloadEntry<E, H, C>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
-    pub provider: M,
+    pub provider: R,
 }
 
 /// Standard `DownloadResponse` with no extra provider metadata.
-pub type DownloadResponse = GenericDownloadResponse<()>;
+pub type DownloadResponse = GenericDownloadResponse<(), (), (), ()>;
 
-impl<M> GenericDownloadResponse<M> {
-    /// Zero-copy iterator over entries as (&Instrument, &`GenericHistoryResponse<M>`).
-    pub fn iter(&self) -> impl Iterator<Item = (&Instrument, &GenericHistoryResponse<M>)> + '_ {
+impl<R, E, H, C> GenericDownloadResponse<R, E, H, C> {
+    /// Zero-copy iterator over entries as (&Instrument, &`GenericHistoryResponse<H, C>`).
+    pub fn iter(&self) -> impl Iterator<Item = (&Instrument, &GenericHistoryResponse<H, C>)> + '_ {
         self.entries
             .iter()
             .map(|entry| (&entry.instrument, &entry.history))
@@ -66,7 +62,7 @@ impl<M> GenericDownloadResponse<M> {
     /// Zero-copy iterator exposing a symbol-centric view (duplicates may exist).
     pub fn iter_by_symbol(
         &self,
-    ) -> impl Iterator<Item = (&Symbol, &GenericHistoryResponse<M>)> + '_ {
+    ) -> impl Iterator<Item = (&Symbol, &GenericHistoryResponse<H, C>)> + '_ {
         self.entries
             .iter()
             .map(|entry| (&entry.instrument.symbol, &entry.history))

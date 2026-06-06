@@ -1,5 +1,8 @@
 use paft_domain::AssetKind;
-use paft_market::{HistoryRequest, Interval, NewsRequest, NewsTab, Range, SearchRequest, TimeSpec};
+use paft_market::{
+    HistoryRequest, Interval, MarketError, NewsRequest, NewsTab, Range, SearchRequest, TimeSpec,
+};
+use std::num::NonZeroU32;
 
 #[test]
 fn search_request_serialization() {
@@ -8,9 +11,12 @@ fn search_request_serialization() {
         .limit(10)
         .build()
         .unwrap();
+    assert_eq!(request.limit(), NonZeroU32::new(10));
 
-    let json = serde_json::to_string(&request).unwrap();
-    let deserialized: SearchRequest = serde_json::from_str(&json).unwrap();
+    let value = serde_json::to_value(&request).unwrap();
+    assert_eq!(value["limit"], serde_json::json!(10));
+
+    let deserialized: SearchRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
 }
 
@@ -26,7 +32,7 @@ fn search_request_minimal() {
 #[test]
 fn news_request_serialization() {
     let request = NewsRequest {
-        count: 25,
+        count: NonZeroU32::new(25).unwrap(),
         tab: NewsTab::PressReleases,
     };
 
@@ -45,6 +51,27 @@ fn news_request_serialization() {
 }
 
 #[test]
+fn news_request_rejects_zero_count() {
+    let value = serde_json::json!({
+        "count": 0,
+        "tab": "NEWS"
+    });
+
+    assert!(serde_json::from_value::<NewsRequest>(value).is_err());
+}
+
+#[test]
+fn news_request_deserialization_unknown_field_rejected() {
+    let mut value = serde_json::to_value(NewsRequest::default()).unwrap();
+    value
+        .as_object_mut()
+        .expect("news request serializes as an object")
+        .insert("coutn".to_owned(), serde_json::json!(25));
+
+    assert!(serde_json::from_value::<NewsRequest>(value).is_err());
+}
+
+#[test]
 fn news_tab_serialization() {
     let tabs = [
         (NewsTab::News, "NEWS"),
@@ -55,11 +82,25 @@ fn news_tab_serialization() {
     for (tab, code) in tabs {
         assert_eq!(tab.code(), code);
         assert_eq!(tab.to_string(), code);
+        assert_eq!(code.parse::<NewsTab>().unwrap(), tab);
         assert_eq!(serde_json::to_value(tab).unwrap(), serde_json::json!(code));
 
         let deserialized: NewsTab = serde_json::from_value(serde_json::json!(code)).unwrap();
         assert_eq!(tab, deserialized);
     }
+}
+
+#[test]
+fn news_tab_from_str_rejects_unknown_code() {
+    let err = "PRESS".parse::<NewsTab>().unwrap_err();
+
+    assert!(matches!(
+        err,
+        MarketError::InvalidEnumValue {
+            enum_name: "NewsTab",
+            value,
+        } if value == "PRESS"
+    ));
 }
 
 #[test]
@@ -69,7 +110,7 @@ fn history_request_serialization() {
         .interval(Interval::D1)
         .include_prepost(true)
         .include_actions(true)
-        .auto_adjust(false)
+        .prefer_adjusted_prices(false)
         .build()
         .unwrap();
 
@@ -82,6 +123,7 @@ fn history_request_serialization() {
         })
     );
     assert_eq!(value["interval"], serde_json::json!("1d"));
+    assert_eq!(value["flags"], serde_json::json!(3));
 
     let deserialized: HistoryRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
@@ -89,7 +131,7 @@ fn history_request_serialization() {
 
 #[test]
 fn time_spec_range_uses_explicit_kind_wire_shape() {
-    let time_spec = TimeSpec::Range(Range::M6);
+    let time_spec = TimeSpec::range(Range::M6);
 
     let value = serde_json::to_value(&time_spec).unwrap();
 
@@ -117,8 +159,8 @@ fn history_request_with_period() {
         .interval(Interval::D1)
         .include_prepost(false)
         .include_actions(false)
-        .auto_adjust(true)
-        .keepna(true)
+        .prefer_adjusted_prices(true)
+        .keep_missing(true)
         .build()
         .unwrap();
 
@@ -134,16 +176,18 @@ fn history_request_with_period() {
 
     let deserialized: HistoryRequest = serde_json::from_value(value).unwrap();
     assert_eq!(request, deserialized);
+    assert!(deserialized.keep_missing());
 }
 
 #[test]
 fn time_spec_period_uses_epoch_millisecond_wire_shape() {
     use chrono::DateTime;
 
-    let time_spec = TimeSpec::Period {
-        start: DateTime::from_timestamp(1_716_595_200, 123_000_000).unwrap(),
-        end: DateTime::from_timestamp(1_719_187_200, 456_000_000).unwrap(),
-    };
+    let time_spec = TimeSpec::period(
+        DateTime::from_timestamp(1_716_595_200, 123_000_000).unwrap(),
+        DateTime::from_timestamp(1_719_187_200, 456_000_000).unwrap(),
+    )
+    .unwrap();
 
     let value = serde_json::to_value(&time_spec).unwrap();
 
@@ -158,6 +202,46 @@ fn time_spec_period_uses_epoch_millisecond_wire_shape() {
 
     let deserialized: TimeSpec = serde_json::from_value(value).unwrap();
     assert_eq!(time_spec, deserialized);
+}
+
+#[test]
+fn time_spec_period_constructor_rejects_invalid_bounds() {
+    use chrono::DateTime;
+
+    let start = DateTime::from_timestamp(2_000, 0).unwrap();
+    let end = DateTime::from_timestamp(1_000, 0).unwrap();
+
+    let err = TimeSpec::period(start, end).unwrap_err();
+    assert!(matches!(
+        err,
+        paft_market::MarketError::InvalidPeriod {
+            start: 2_000_000,
+            end: 1_000_000,
+        }
+    ));
+}
+
+#[test]
+fn time_spec_validate_detects_directly_constructed_invalid_period() {
+    use chrono::DateTime;
+
+    let time_spec = TimeSpec::Period {
+        start: DateTime::from_timestamp(1_000, 0).unwrap(),
+        end: DateTime::from_timestamp(1_000, 0).unwrap(),
+    };
+
+    assert!(time_spec.validate().is_err());
+}
+
+#[test]
+fn time_spec_deserialization_rejects_invalid_period() {
+    let value = serde_json::json!({
+        "kind": "period",
+        "start": 2_000_000,
+        "end": 1_000_000
+    });
+
+    assert!(serde_json::from_value::<TimeSpec>(value).is_err());
 }
 
 #[test]
@@ -203,6 +287,7 @@ fn interval_serialization() {
     for (interval, code) in intervals {
         assert_eq!(interval.code(), code);
         assert_eq!(interval.to_string(), code);
+        assert_eq!(code.parse::<Interval>().unwrap(), interval);
         assert_eq!(
             serde_json::to_value(interval).unwrap(),
             serde_json::json!(code)
@@ -211,6 +296,19 @@ fn interval_serialization() {
         let deserialized: Interval = serde_json::from_value(serde_json::json!(code)).unwrap();
         assert_eq!(interval, deserialized);
     }
+}
+
+#[test]
+fn interval_from_str_rejects_unknown_code() {
+    let err = "1week".parse::<Interval>().unwrap_err();
+
+    assert!(matches!(
+        err,
+        MarketError::InvalidEnumValue {
+            enum_name: "Interval",
+            value,
+        } if value == "1week"
+    ));
 }
 
 #[test]
@@ -243,6 +341,7 @@ fn range_serialization() {
     for (range, code) in ranges {
         assert_eq!(range.code(), code);
         assert_eq!(range.to_string(), code);
+        assert_eq!(code.parse::<Range>().unwrap(), range);
         assert_eq!(
             serde_json::to_value(range).unwrap(),
             serde_json::json!(code)
@@ -251,4 +350,17 @@ fn range_serialization() {
         let deserialized: Range = serde_json::from_value(serde_json::json!(code)).unwrap();
         assert_eq!(range, deserialized);
     }
+}
+
+#[test]
+fn range_from_str_rejects_unknown_code() {
+    let err = "all".parse::<Range>().unwrap_err();
+
+    assert!(matches!(
+        err,
+        MarketError::InvalidEnumValue {
+            enum_name: "Range",
+            value,
+        } if value == "all"
+    ));
 }

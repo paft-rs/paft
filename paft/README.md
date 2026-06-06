@@ -1,265 +1,186 @@
-# paft
+paft
+====
 
-**P**rovider **A**gnostic **F**inancial **T**ypes for Rust
+Facade crate for Provider Agnostic Financial Types.
 
 [![Crates.io](https://img.shields.io/crates/v/paft)](https://crates.io/crates/paft)
 [![Docs.rs](https://docs.rs/paft/badge.svg)](https://docs.rs/paft)
-[![CI](https://github.com/paft-rs/paft/actions/workflows/ci.yml/badge.svg)](https://github.com/paft-rs/paft/actions/workflows/ci.yml)
 [![Downloads](https://img.shields.io/crates/d/paft)](https://crates.io/crates/paft)
-[![License](https://img.shields.io/crates/l/paft)](../LICENSE)
 
-Standardized Rust types for financial data that work with any provider—Yahoo Finance, Bloomberg, Alpha Vantage, and more.
+Use this crate when you want one dependency that re-exports the paft workspace:
+money and decimal primitives, domain identifiers, market data, fundamentals,
+optional aggregate snapshots, optional prediction-market types, and a unified
+`paft::Error` / `paft::Result`.
 
-> 🌟 **Ecosystem Overview**: For the bigger picture, vision, and contributor guidance, see the [workspace README](https://github.com/paft-rs/paft/blob/main/README.md).
+- `paft::prelude` imports the common public types enabled by your features
+- `paft::money` exposes currency, money, price, and quantity primitives
+- `paft::domain`, `paft::market`, and `paft::fundamentals` are enabled by default
+- `paft::aggregates`, `paft::prediction`, and `paft::dataframe` are feature-gated
+- `paft::Decimal` follows the active decimal backend
 
-## Quick Install
+Install
+-------
 
-```toml
-[dependencies]
-# Basic installation with default feature set (domain + market + fundamentals)
-paft = "0.8.0"
-
-# Or, add optional analysis helpers (Polars DataFrame support)
-paft = { version = "0.8.0", features = ["dataframe"] }
-
-# Or, opt into the aggregates snapshot model as well
-paft = { version = "0.8.0", features = ["aggregates"] }
-
-# Or, enable the full bundle of features
-paft = { version = "0.8.0", features = ["full"] }
-
-# Or, customize your installation
-paft = { version = "0.8.0", default-features = false, features = ["fundamentals", "dataframe"] }
-
-# Switch the money backend to BigDecimal (default is rust_decimal)
-paft = { version = "0.8.0", features = ["bigdecimal"] }
-```
-
-## Feature Flags
-
-All features are optional—disable the defaults (`default-features = false`) and opt back into what you need.
-
-- `domain` *(default)*: exposes instrument, exchange, period, and other domain models.
-- `market` *(default, enables `domain`)*: markets and history types such as `Quote`, `Candle`, and `HistoryRequest`.
-- `fundamentals` *(default, enables `domain`)*: fundamentals, ESG, and ownership data structures.
-- `aggregates`: exposes the `Snapshot` aggregated instrument-snapshot model.
-- `bigdecimal`: swaps the money backend to `BigDecimal` when you require arbitrary precision.
-- `dataframe`: forwards DataFrame support from `paft-utils`, providing `ToDataFrame`/`ToDataFrameVec`.
-- `prediction`: prediction market data models (`Market`, `Token`).
-- `full`: convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, `prediction`, and `dataframe`.
-- `panicking-money-ops`: re-enables `Money` arithmetic operators that panic on mismatched currencies (see below).
-- `money-formatting`: forwards to `paft-money/money-formatting` for locale-aware formatting and parsing APIs.
-- `tracing`: enables lightweight instrumentation spans in selected constructors and validators for `paft-domain`, `paft-money`, `paft-market`, and `paft-fundamentals`; zero-cost when disabled.
-
-## Migration Notes
-
-- `Instrument` is a flat struct (`symbol`, `exchange`, `figi`, `isin`, `kind`); `IdentifierScheme`, `SecurityId`, and `PredictionID` are gone. Construct with the `from_*` helpers or a struct literal; access identifier fields directly (e.g. `inst.figi.as_ref()`). Prediction-market outcomes now live in `paft-prediction` as `PredictionInstrument`.
-- `Instrument::figi` and `Instrument::isin` are typed `Option<Figi>` / `Option<Isin>`. Construct with `Figi::new("...")` and `Isin::new("...")`. When you need `&str`, use helpers like `inst.figi.as_ref().map(AsRef::as_ref)`.
-- `CompanyProfile::isin` and `FundProfile::isin` now store `Option<Isin>`; update struct literals to pass `Isin::new(..)?` and adjust deserialization expectations accordingly.
-- `Isin::new` and `Figi::new` now always enforce checksum validation. If you previously relied on lenient mode, strip placeholders or keep them in `Symbol` fields instead.
-- The new identifier newtypes are `#[serde(transparent)]`, so existing JSON payloads continue to operate with plain strings while now enforcing checksum validation at the boundary.
-- `paft-aggregates` no longer ships `FastInfo`/`Info`. Use `Snapshot` for strictly instant-in-time market data — fundamentals/analyst/ESG fields that lived on `Info` belong in the `paft-fundamentals` types.
-
-## What's Included
-
-### Core Types
-
-- **Instruments**: `Instrument` (flat struct: `symbol`, `exchange`, `figi`, `isin`, `kind`), `AssetKind`
-- **Market Data**: `Quote`, `Candle`, `HistoryResponse`, `MarketState`
-- **Fundamentals**: Financial statements, earnings, analyst ratings, and trend/revision helper rows
-- **Options**: `OptionContractKey`, `OptionSide`, `OptionContract`, `OptionGreeks`, `OptionChain`, `OptionUpdate`, `OptionExpirationsResponse`
-- **News & Search**: `NewsArticle`, `NewsRequest`, `NewsTab`, `SearchRequest`, `SearchResult`
-- **ESG & Holders**: ESG scores, institutional holdings
-- **Aggregates** (feature `aggregates`): `Snapshot` instrument snapshots
-- **Prediction Markets** (feature `prediction`): `Market`, `Token`
-
-### Key Features
-
-- **Hierarchical Identifiers**: FIGI → ISIN → Symbol@Exchange → Symbol priority
-- **Extensible Enums**: Graceful handling of unknown provider values
-- **DataFrame Integration**: Optional Polars support with `ToDataFrame` trait  
-- **Full Serialization**: serde support for JSON, CSV, and other formats
-
-## Quick Start
-
-### Basic Usage
-
-```rust
-use paft::prelude::*;
-use paft::money::IsoCurrency;
-
-// Create instruments with different levels of identification
-let apple = {
-    // Prefer global IDs when available (FIGI > ISIN > Symbol@Exchange > Symbol)
-    let symbol = Symbol::new("AAPL").unwrap();
-    Instrument::from_figi("BBG000B9XRY4", symbol, AssetKind::Equity).unwrap()
-};
-
-let bitcoin = Instrument::from_symbol("BTC-USD", AssetKind::Crypto)
-    .expect("valid crypto symbol");
-
-// Create market data. `Quote` carries the full `Instrument`, plus today's
-// volume, optional snapshot time, and a provider-metadata escape hatch
-// (use `()` for "no metadata").
-let quote = Quote {
-    instrument: apple.clone(),
-    name: Some("Apple Inc.".to_string()),
-    price: Some(Price::from_canonical_str("190.12", Currency::Iso(IsoCurrency::USD)).unwrap()),
-    bid: None,
-    ask: None,
-    previous_close: Some(Price::from_canonical_str("189.96", Currency::Iso(IsoCurrency::USD)).unwrap()),
-    day_volume: Some(78_900_000),
-    market_state: Some(MarketState::Regular),
-    as_of: None,
-    provider: (),
-};
-```
-
-### Hierarchical Identifiers
-
-```rust
-// Automatic prioritization: FIGI > ISIN > Symbol@Exchange > Symbol
-println!("{}", apple.unique_key());   // "BBG000B9XRY4" (uses FIGI)
-println!("{}", bitcoin.unique_key()); // "BTC-USD" (uses symbol)
-
-// Check identification levels — fields are public on the flat struct.
-if apple.figi.is_some() || apple.isin.is_some() {
-    println!("Has FIGI or ISIN - works across all providers");
-}
-
-// Access specific identifiers
-if let Some(figi) = apple.figi.as_ref() {
-    println!("FIGI: {}", figi);
-}
-```
-
-### Historical Data
-
-```rust
-use paft::prelude::*;
-
-// Request 6 months of daily data (validated in constructor)
-let request = HistoryRequest::try_from_range(Range::M6, Interval::D1).unwrap();
-```
-
-### DataFrame Integration
-
-Enable DataFrame support for analysis:
+Most applications should start with the default feature set:
 
 ```toml
 [dependencies]
-paft = { version = "0.8.0", features = ["dataframe"] }
+paft = "0.9.0"
+```
+
+The default features are `domain`, `market`, and `fundamentals`. For a smaller
+dependency, disable defaults and opt into only what you use:
+
+```toml
+[dependencies]
+paft = { version = "0.9.0", default-features = false, features = ["domain"] }
+```
+
+Add one or more optional features to the default set:
+
+```toml
+[dependencies]
+paft = { version = "0.9.0", features = ["aggregates", "prediction", "dataframe"] }
+```
+
+Use `full` when you want every domain crate plus DataFrame support:
+
+```toml
+[dependencies]
+paft = { version = "0.9.0", features = ["full"] }
+```
+
+Use `bigdecimal` when you need an arbitrary-precision decimal backend:
+
+```toml
+[dependencies]
+paft = { version = "0.9.0", features = ["bigdecimal"] }
+```
+
+Features
+--------
+
+- `domain` (default): instruments, exchanges, identifiers, periods, horizons, and market state
+- `market` (default, enables `domain`): quotes, history, options, order books, news, search, downloads, and request builders
+- `fundamentals` (default, enables `domain`): profiles, statements, analysis rows, holders, ESG, and key statistics
+- `aggregates` (enables `domain`): `Snapshot` instrument snapshots
+- `prediction`: prediction-market venue/id, event/market metadata, fixed-point price, book, quote, and trade types
+- `dataframe`: Polars DataFrame traits and implementations for enabled paft types
+- `bigdecimal`: switch the shared decimal backend from `rust_decimal` to `bigdecimal`
+- `money-formatting`: locale-aware `Money` formatting and strict parsing APIs
+- `panicking-money-ops`: opt in to `Money` arithmetic operators that panic on invalid operations
+- `tracing`: lightweight instrumentation in selected constructors and validators
+- `full`: convenience bundle for `domain`, `market`, `fundamentals`, `aggregates`, `prediction`, and `dataframe`
+
+Quickstart
+----------
+
+```rust
+use paft::prelude::*;
+
+fn run() -> Result<()> {
+    let instrument =
+        Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)?;
+    let currency = Currency::Iso(IsoCurrency::USD);
+
+    let mut quote = Quote::new(instrument.clone(), currency.clone());
+    quote.name = Some("Apple Inc.".to_string());
+    quote.price = Some(PriceAmount::new(Decimal::from(19012) / Decimal::from(100)));
+    quote.day_volume = Some(QuantityAmount::from_decimal(Decimal::from(78_900_000))?);
+    quote.market_state = Some(MarketState::Regular);
+
+    assert_eq!(quote.instrument.display_key(), "AAPL@NASDAQ");
+
+    let request = HistoryRequest::builder()
+        .range(Range::M6)
+        .interval(Interval::D1)
+        .prefer_adjusted_prices(true)
+        .build()?;
+
+    assert_eq!(request.interval(), Interval::D1);
+    assert!(request.prefer_adjusted_prices());
+
+    Ok(())
+}
+
+run().unwrap();
+```
+
+Global security identifiers are strongly typed. Use the flat `Instrument`
+fields when FIGI or ISIN data is available:
+
+```rust
+use paft::prelude::*;
+
+let instrument = Instrument {
+    symbol: Symbol::new("AAPL").unwrap(),
+    exchange: Some(Exchange::NASDAQ),
+    figi: Some(Figi::new("BBG000B9XRY4").unwrap()),
+    isin: Some(Isin::new("US0378331005").unwrap()),
+    kind: AssetKind::Equity,
+};
+
+assert_eq!(instrument.unique_key(), "EQUITY|FIGI|BBG000B9XRY4");
+assert_eq!(instrument.display_key(), "BBG000B9XRY4");
+```
+
+DataFrame support
+-----------------
+
+Enable the `dataframe` feature and import the traits from the facade prelude:
+
+```toml
+[dependencies]
+paft = { version = "0.9.0", features = ["dataframe"] }
 ```
 
 ```rust
 use paft::prelude::*;
 
-let quotes = vec![quote1, quote2, quote3];
+let quotes = vec![quote];
 let df = quotes.to_dataframe()?;
-if let Some(avg) = df.column("price.amount")?.as_materialized_series().mean() {
-    println!("Average price: {avg:.2}");
-}
-
-// Money-like fields are flattened into paired amount/currency columns such as
-// `price.amount` and `price.currency`.
 ```
 
-### Locale-aware money formatting and parsing
+Contextual price fields flatten into amount columns such as `price.amount`;
+the containing record carries denomination in its `currency` column. Provider
+metadata columns are namespaced under `provider.*`.
 
-Enable the `money-formatting` feature to opt into locale-aware `Display` and strict parsing:
+Money formatting
+----------------
+
+Enable `money-formatting` when you need localized presentation or strict
+locale-aware parsing. Canonical `Display` remains stable as `"<amount> <CODE>"`.
 
 ```toml
 [dependencies]
-paft = { version = "0.8.0", features = ["money-formatting"] }
+paft = { version = "0.9.0", features = ["money-formatting"] }
 ```
 
 ```rust
-use paft::money::{Currency, IsoCurrency, Money, Locale};
+use paft::prelude::{Currency, IsoCurrency, Locale, Money};
 
-let m = Money::from_canonical_str("1234.56", Currency::Iso(IsoCurrency::USD))?;
-let us = m.format_with_locale(Locale::EnUs)?;
-let de = m.format_with_locale(Locale::EnEu)?;
-assert_eq!(us, "$1,234.56");
-assert_eq!(de, "$1.234,56");
+let usd = Currency::Iso(IsoCurrency::USD);
+let money = Money::from_canonical_str("1234.56", usd.clone())?;
 
-// Strict parsing
-let parsed = Money::from_str_locale("$1,234.56", Currency::Iso(IsoCurrency::USD), Locale::EnUs)?;
+assert_eq!(money.format(), "1234.56 USD");
+assert_eq!(money.format_with_locale(Locale::EnUs)?, "$1,234.56");
+
+let parsed = Money::from_str_locale("$1,234.56", usd, Locale::EnUs)?;
+assert_eq!(parsed, money);
 ```
 
-### Money operators and safety
+Examples
+--------
 
-By default, `Money` arithmetic operators (`+`, `-`, `/`, `*`) that would
-panic on invalid input are disabled. Use the safe methods instead:
+- [`examples/v09_ergonomics.rs`](examples/v09_ergonomics.rs): default facade usage without provider metadata
+- [`examples/provider_metadata.rs`](examples/provider_metadata.rs): generic provider metadata payloads
+- [`examples/metadata_dataframe.rs`](examples/metadata_dataframe.rs): DataFrame export with provider metadata
+- [`examples/nested_metadata_propagation.rs`](examples/nested_metadata_propagation.rs): independent provider metadata at each nested layer
+- [`examples/extensible_enums.rs`](examples/extensible_enums.rs): unknown provider tokens and typed `Other` wrappers
 
-```rust
-let sum = a.try_add(&b)?;
-let diff = a.try_sub(&b)?;
-let half = a.try_div(Decimal::from(2))?;
-```
+Links
+-----
 
-If you explicitly want the ergonomic panicking operators, enable the
-`panicking-money-ops` feature via the `paft` facade (it forwards to `paft-money`):
-
-```toml
-[dependencies]
-paft = { version = "0.8.0", features = ["panicking-money-ops"] }
-```
-
-Note: This feature is opt-in and enables the `+`, `-`, `*`, and `/` operators to
-panic on currency mismatch, division by zero, or conversion/metadata failures.
-Prefer `try_*` methods in most apps.
-
-For ergonomics in math-heavy code, you may enable this only when you control
-the data end to end (e.g., internal pipelines with strict invariants) and are
-absolutely sure all arithmetic uses matching currencies. For external or
-untrusted data, keep this feature disabled and use the `try_*` APIs.
-
-## Handling Unknown Values
-
-paft uses extensible enums with `Other(Canonical)` variants to gracefully handle unknown provider values:
-
-```rust
-use paft::money::IsoCurrency;
-use paft::prelude::*;
-
-// Handle unknown currencies from providers
-match currency {
-    Currency::Iso(IsoCurrency::USD) => "US Dollar",
-    Currency::Iso(IsoCurrency::EUR) => "Euro",
-    Currency::BTC => "Bitcoin",
-    Currency::Other(code) => match code.as_ref() {
-        "XBT" => "Bitcoin alias",
-        _ => "Unknown currency",
-    },
-    _ => "Known currency",
-}
-
-// Same pattern for exchanges, asset types, market states, etc.
-let exchange: Exchange = "DARK_POOL_X".parse().unwrap(); // Unknown exchange handled via Other
-
-let market_state: MarketState = "DELAYED".parse().unwrap();
-assert_eq!(market_state.to_string(), "DELAYED");
-assert!(!market_state.is_trading());
-```
-
-This pattern ensures your code never breaks when providers return new or unexpected values.
-
-## Canonical Codes vs Human Labels
-
-Enums ship with three complementary string representations:
-
-- **Wire**: `code()` returns the canonical token used in APIs and serialization.
-- **Display**: `to_string()` mirrors `code()` so logging and dataframes stay consistent.
-- **Human**: Opt-in helpers such as `Currency::full_name()`, `AssetKind::full_name()`, and `MarketState::full_name()` provide sentence-case labels for UI surfaces.
-
-Keep the rule of thumb: *wire = code = Display; human prose = explicit helper*.
-
-### More Details
-
-- **[Extensible Enums Guide](docs/EXTENSIBLE_ENUMS.md)**: Complete documentation and examples
-- **[Best Practices](docs/BEST_PRACTICES.md)**: Guidelines for library authors and consumers  
-- **[Working Examples](examples/)**: See extensible enums in action
-
-## License
-
-MIT License. See [LICENSE](../LICENSE) for details.
+- API docs: https://docs.rs/paft
+- Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
+- License: [LICENSE](../LICENSE)

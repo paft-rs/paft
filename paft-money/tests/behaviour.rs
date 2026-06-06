@@ -73,8 +73,8 @@ fn money_arithmetic_same_currency() {
 
     assert_eq!(a.try_add(&b).unwrap().amount(), dec("12.5"));
     assert_eq!(a.try_sub(&b).unwrap().amount(), dec("7.5"));
-    assert_eq!(a.try_mul(dec("1.1")).unwrap().amount(), dec("11.0"));
-    assert_eq!(a.try_div(dec("2")).unwrap().amount(), dec("5"));
+    assert_eq!(a.try_mul(&dec("1.1")).unwrap().amount(), dec("11.0"));
+    assert_eq!(a.try_div(&dec("2")).unwrap().amount(), dec("5"));
 }
 
 #[test]
@@ -163,13 +163,16 @@ fn exchange_rate_conversion_handles_boundary_scales() {
 fn serde_roundtrips_money_and_exchange_rate() {
     let money = Money::from_canonical_str("123.45", usd()).unwrap();
     let value = to_value(&money).unwrap();
-    assert_eq!(value, json!({"amount": "123.45", "currency": "USD"}));
+    assert_eq!(
+        value,
+        json!({"amount": "123.45", "currency": "USD", "minor_units": 2})
+    );
     let parsed: Money = from_value(value).unwrap();
     assert_eq!(parsed, money);
 
     let rate = ExchangeRate::new(usd(), jpy(), dec("110.0")).unwrap();
     let value = to_value(&rate).unwrap();
-    assert_eq!(value["rate"], json!("110.0"));
+    assert_eq!(value["rate"], json!("110"));
     let parsed: ExchangeRate = from_value(value).unwrap();
     assert_eq!(parsed, rate);
 }

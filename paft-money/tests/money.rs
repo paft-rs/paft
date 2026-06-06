@@ -1,6 +1,9 @@
 use iso_currency::Currency as IsoCurrency;
 use paft_decimal::{Decimal, RoundingStrategy};
-use paft_money::{Currency, ExchangeRate, Money};
+use paft_money::{
+    Currency, ExchangeRate, Locale, Money, clear_currency_metadata, override_currency_metadata,
+    set_currency_metadata,
+};
 use std::str::FromStr;
 
 #[cfg(feature = "dataframe")]
@@ -45,11 +48,11 @@ mod panicking_ops_tests {
         let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
 
         // Multiplication
-        let doubled = usd_100.try_mul(Decimal::from(2)).unwrap();
+        let doubled = usd_100.try_mul(&Decimal::from(2)).unwrap();
         assert_eq!(doubled.amount(), Decimal::from(200));
         assert_eq!(doubled.currency(), &Currency::Iso(IsoCurrency::USD));
 
-        let try_tripled = usd_100.try_mul(Decimal::from(3)).unwrap();
+        let try_tripled = usd_100.try_mul(&Decimal::from(3)).unwrap();
         assert_eq!(try_tripled.amount(), Decimal::from(300));
         assert_eq!(try_tripled.currency(), &Currency::Iso(IsoCurrency::USD));
 
@@ -138,8 +141,8 @@ mod non_panicking_default_tests {
     #[test]
     fn test_non_panicking_division_uses_try_div() {
         let usd_100 = Money::new(Decimal::from(100), Currency::Iso(IsoCurrency::USD)).unwrap();
-        assert!(usd_100.try_div(Decimal::from(0)).is_err());
-        let ok = usd_100.try_div(Decimal::from(2)).unwrap();
+        assert!(usd_100.try_div(&Decimal::from(0)).is_err());
+        let ok = usd_100.try_div(&Decimal::from(2)).unwrap();
         assert_eq!(ok.amount(), Decimal::from(50));
         assert_eq!(ok.currency(), &Currency::Iso(IsoCurrency::USD));
     }
@@ -198,6 +201,58 @@ fn test_as_minor_units_basic() {
     )
     .unwrap();
     assert_eq!(usd_123_45.as_minor_units().unwrap(), 12345i128);
+}
+
+fn set_test_metadata(code: &str, minor_units: u8) {
+    set_currency_metadata(code, code, minor_units, code, true, Locale::EnUs).unwrap();
+}
+
+fn override_test_metadata(code: &str, minor_units: u8) {
+    override_currency_metadata(code, code, minor_units, code, true, Locale::EnUs).unwrap();
+}
+
+#[test]
+fn money_as_minor_units_uses_captured_scale_after_metadata_override_and_clear() {
+    let code = "money_scale_freeze";
+    clear_currency_metadata(code);
+    set_test_metadata(code, 3);
+
+    let currency = Currency::other(code).unwrap();
+    let money = Money::from_canonical_str("1.234", currency.clone()).unwrap();
+    assert_eq!(money.minor_units(), 3);
+
+    override_test_metadata(code, 2);
+    assert_eq!(currency.decimal_places().unwrap(), 2);
+    assert_eq!(money.as_minor_units().unwrap(), 1234);
+
+    clear_currency_metadata(code);
+    assert!(currency.decimal_places().is_err());
+    assert_eq!(money.as_minor_units().unwrap(), 1234);
+}
+
+#[test]
+fn money_arithmetic_rejects_same_currency_with_different_captured_scales() {
+    let code = "money_scale_mismatch";
+    clear_currency_metadata(code);
+    set_test_metadata(code, 3);
+
+    let currency = Currency::other(code).unwrap();
+    let old_scale = Money::from_canonical_str("1.234", currency.clone()).unwrap();
+
+    override_test_metadata(code, 2);
+    let new_scale = Money::from_canonical_str("1.23", currency).unwrap();
+
+    let err = old_scale.try_add(&new_scale).unwrap_err();
+    assert!(matches!(
+        err,
+        paft_money::MoneyError::MinorUnitMismatch {
+            expected_scale: 3,
+            found_scale: 2,
+            ..
+        }
+    ));
+
+    clear_currency_metadata(code);
 }
 
 #[test]
@@ -490,10 +545,10 @@ fn money_hash_eq_consistency_across_scales() {
 #[test]
 fn money_serde_rejects_overprecise_amount() {
     // Bypass the Money struct's own constructors and feed serde a value
-    // whose scale exceeds USD's exponent. Without the custom Deserialize
-    // impl this would silently produce a malformed Money; with it, serde
-    // returns an error.
-    let raw = "{\"amount\":\"1.234\",\"currency\":\"USD\"}";
+    // whose scale exceeds the captured minor-unit scale. Without the custom
+    // Deserialize impl this would silently produce a malformed Money; with it,
+    // serde returns an error.
+    let raw = "{\"amount\":\"1.234\",\"currency\":\"USD\",\"minor_units\":2}";
     let err = serde_json::from_str::<Money>(raw).unwrap_err();
     assert!(
         err.to_string().contains("precision exceeded"),
@@ -503,10 +558,65 @@ fn money_serde_rejects_overprecise_amount() {
 
 #[test]
 fn money_serde_accepts_trailing_zero_amount() {
-    let raw = "{\"amount\":\"1.230\",\"currency\":\"USD\"}";
+    let raw = "{\"amount\":\"1.230\",\"currency\":\"USD\",\"minor_units\":2}";
     let money: Money = serde_json::from_str(raw).unwrap();
     let expected = Money::from_canonical_str("1.23", Currency::Iso(IsoCurrency::USD)).unwrap();
     assert_eq!(money, expected);
+}
+
+#[test]
+fn money_serde_preserves_captured_scale_without_current_metadata() {
+    let code = "money_serde_freeze";
+    clear_currency_metadata(code);
+    set_test_metadata(code, 3);
+
+    let currency = Currency::other(code).unwrap();
+    let original = Money::from_canonical_str("1.234", currency.clone()).unwrap();
+    let json = serde_json::to_string(&original).unwrap();
+
+    clear_currency_metadata(code);
+    assert!(currency.decimal_places().is_err());
+
+    let decoded: Money = serde_json::from_str(&json).unwrap();
+    assert_eq!(decoded, original);
+    assert_eq!(decoded.minor_units(), 3);
+    assert_eq!(decoded.as_minor_units().unwrap(), 1234);
+}
+
+#[test]
+fn money_serde_rejects_current_metadata_scale_conflict() {
+    let code = "money_serde_conflict";
+    clear_currency_metadata(code);
+    set_test_metadata(code, 2);
+
+    let raw = "{\"amount\":\"1.23\",\"currency\":\"MONEY_SERDE_CONFLICT\",\"minor_units\":3}";
+    let err = serde_json::from_str::<Money>(raw).unwrap_err();
+    assert!(
+        err.to_string().contains("minor-unit scale mismatch"),
+        "unexpected error: {err}"
+    );
+
+    clear_currency_metadata(code);
+}
+
+#[test]
+fn money_serde_rejects_missing_minor_units() {
+    let raw = "{\"amount\":\"12.34\",\"currency\":\"USD\"}";
+    let err = serde_json::from_str::<Money>(raw).unwrap_err();
+    assert!(
+        err.to_string().contains("missing field `minor_units`"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn money_serde_rejects_unknown_fields() {
+    let raw = "{\"amount\":\"12.34\",\"currency\":\"USD\",\"minor_units\":2,\"extra\":true}";
+    let err = serde_json::from_str::<Money>(raw).unwrap_err();
+    assert!(
+        err.to_string().contains("unknown field `extra`"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]
@@ -578,6 +688,16 @@ fn exchange_rate_serde_rejects_invalid_payload() {
 }
 
 #[test]
+fn exchange_rate_serde_rejects_unknown_fields() {
+    let raw = "{\"from\":\"USD\",\"to\":\"EUR\",\"rate\":\"0.9\",\"source\":\"provider\"}";
+    let err = serde_json::from_str::<ExchangeRate>(raw).unwrap_err();
+    assert!(
+        err.to_string().contains("unknown field `source`"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
 fn exchange_rate_serde_accepts_valid_payload() {
     let raw = "{\"from\":\"USD\",\"to\":\"EUR\",\"rate\":\"0.9\"}";
     let parsed: ExchangeRate = serde_json::from_str(raw).unwrap();
@@ -593,7 +713,7 @@ fn money_try_div_returns_error_on_decimal_overflow() {
     let money = Money::new_exact(Decimal::MAX, currency.clone()).unwrap();
     let divisor = Decimal::from_str("0.1").unwrap();
 
-    let err = money.try_div(divisor).unwrap_err();
+    let err = money.try_div(&divisor).unwrap_err();
     assert!(matches!(err, paft_money::MoneyError::ConversionError));
 
     let divisor_money = Money::new_exact(Decimal::from_str("0.1").unwrap(), currency).unwrap();

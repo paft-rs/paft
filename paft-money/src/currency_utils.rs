@@ -1,18 +1,18 @@
 //! Utilities and helpers for working with `Currency` values.
 //!
-//! This module also provides the metadata overlay registry used when ISO 4217 is
-//! silent about a currency's minor-unit exponent (e.g., metals like `XAU`, funds
-//! like `XDR`). Use [`set_currency_metadata`] to register a name and decimal
-//! places for such currencies so that [`Currency::decimal_places`](crate::currency::Currency::decimal_places)
-//! can resolve a scale. If no overlay exists, money operations that require a
-//! scale will return `MoneyError::MetadataNotFound`.
+//! This module also provides the metadata overlay registry used by non-ISO
+//! currency display fields and by currencies whose scale is not fully described
+//! by ISO 4217. If ISO defines a minor-unit exponent, that exponent remains the
+//! scale source of truth; otherwise `Currency::decimal_places`
+//! consults metadata. If no metadata exists for a currency that needs it, money
+//! operations that require a scale return `MoneyError::MetadataNotFound`.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use paft_utils::{Canonical, canonicalize};
+use paft_utils::canonicalize;
 
 use crate::currency::Currency;
 use crate::error::MoneyParseError;
@@ -22,18 +22,14 @@ use crate::locale::Locale;
 ///
 /// * With the default `rust_decimal` backend this reflects the 28 fractional digits that
 ///   `rust_decimal::Decimal` can represent safely.
-#[cfg(not(feature = "bigdecimal"))]
-pub const MAX_DECIMAL_PRECISION: u8 = 28;
-/// Maximum precision supported by the active decimal backend for safe scaling operations.
-#[cfg(feature = "bigdecimal")]
-pub const MAX_DECIMAL_PRECISION: u8 = u8::MAX;
+pub const MAX_DECIMAL_PRECISION: u8 = paft_decimal::MAX_DECIMAL_PRECISION;
 /// Maximum precision that can be converted into an `i64` minor-unit scale (10^18).
 ///
 /// This is bounded by `10_i64.pow(scale)` fitting into an `i64`, ensuring minor-unit
 /// conversions remain safe regardless of backend precision.
 pub const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
 
-/// Metadata describing additional information for custom currencies.
+/// Metadata describing display and scale information for currency codes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CurrencyMetadata {
     /// Human-readable name for the currency.
@@ -67,6 +63,15 @@ pub enum MinorUnitError {
         /// Requested fractional digits.
         decimals: u8,
     },
+    /// Metadata for this code already has a different registered minor-unit scale.
+    MinorUnitsAlreadyRegistered {
+        /// Canonical currency code.
+        code: String,
+        /// Currently registered minor-unit scale.
+        existing: u8,
+        /// Requested replacement scale.
+        requested: u8,
+    },
 }
 
 impl fmt::Display for MinorUnitError {
@@ -82,6 +87,14 @@ impl fmt::Display for MinorUnitError {
             Self::ExceedsMinorUnitScale { decimals } => write!(
                 f,
                 "decimal precision {decimals} exceeds minor-unit scaling limit of {MAX_MINOR_UNIT_DECIMALS}"
+            ),
+            Self::MinorUnitsAlreadyRegistered {
+                code,
+                existing,
+                requested,
+            } => write!(
+                f,
+                "minor-unit scale for {code} is already registered as {existing}; requested {requested}"
             ),
         }
     }
@@ -195,11 +208,110 @@ pub fn try_normalize_currency_code(code: &str) -> Result<Currency, MoneyParseErr
     Currency::try_from_str(code)
 }
 
+fn validate_minor_units(minor_units: u8) -> Result<(), MinorUnitError> {
+    if minor_units > paft_decimal::max_decimal_precision() {
+        return Err(MinorUnitError::ExceedsDecimalPrecision {
+            decimals: minor_units,
+        });
+    }
+    if minor_units > MAX_MINOR_UNIT_DECIMALS {
+        return Err(MinorUnitError::ExceedsMinorUnitScale {
+            decimals: minor_units,
+        });
+    }
+    Ok(())
+}
+
+fn iso_minor_units(canonical: &str) -> Option<u8> {
+    iso_currency::Currency::from_code(canonical)
+        .and_then(iso_currency::Currency::exponent)
+        .and_then(|exp| u8::try_from(exp).ok())
+}
+
+fn registered_minor_units(
+    canonical: &str,
+    custom: &HashMap<String, CurrencyMetadata>,
+) -> Option<u8> {
+    if let Some(exp) = iso_minor_units(canonical) {
+        return Some(exp);
+    }
+    custom
+        .get(canonical)
+        .map(|meta| meta.minor_units)
+        .or_else(|| BUILTIN_METADATA.get(canonical).map(|meta| meta.minor_units))
+}
+
+fn make_metadata(
+    full_name: impl Into<String>,
+    minor_units: u8,
+    symbol: impl Into<String>,
+    symbol_first: bool,
+    default_locale: Locale,
+) -> CurrencyMetadata {
+    CurrencyMetadata {
+        full_name: Cow::Owned(full_name.into()),
+        minor_units,
+        symbol: Cow::Owned(symbol.into()),
+        symbol_first,
+        default_locale,
+    }
+}
+
+fn insert_currency_metadata(
+    code: &str,
+    full_name: impl Into<String>,
+    minor_units: u8,
+    symbol: impl Into<String>,
+    symbol_first: bool,
+    default_locale: Locale,
+    allow_scale_override: bool,
+) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
+    let canonical = Currency::try_from_str(code)
+        .map(|currency| currency.code().to_string())
+        .map_err(|_| MinorUnitError::InvalidCurrencyCode {
+            code: code.to_string(),
+        })?;
+    validate_minor_units(minor_units)?;
+
+    let metadata = make_metadata(full_name, minor_units, symbol, symbol_first, default_locale);
+    let mut custom = write_custom_metadata();
+
+    if let Some(existing) = iso_minor_units(canonical.as_ref())
+        && existing != minor_units
+    {
+        return Err(MinorUnitError::MinorUnitsAlreadyRegistered {
+            code: canonical.clone(),
+            existing,
+            requested: minor_units,
+        });
+    }
+
+    if !allow_scale_override
+        && let Some(existing) = registered_minor_units(canonical.as_ref(), &custom)
+        && existing != minor_units
+    {
+        return Err(MinorUnitError::MinorUnitsAlreadyRegistered {
+            code: canonical.clone(),
+            existing,
+            requested: minor_units,
+        });
+    }
+
+    Ok(custom.insert(canonical, metadata))
+}
+
 /// Registers metadata for a custom currency.
 ///
+/// If a minor-unit scale is already known for `code` (from ISO 4217, built-in
+/// metadata, or an earlier custom registration), this function only accepts
+/// the same `minor_units` value. Use [`override_currency_metadata`] when a
+/// scale change is intentional.
+///
 /// # Errors
-/// Returns a `MinorUnitError` when the currency code cannot be canonicalized
-/// to a non-empty token or when the requested precision exceeds supported limits.
+/// Returns a `MinorUnitError` when the currency code cannot be parsed as a
+/// currency token with valid boundaries, when the requested precision exceeds
+/// supported limits, or when `minor_units` attempts to change a registered
+/// scale.
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(full_name, symbol), err)
@@ -212,33 +324,52 @@ pub fn set_currency_metadata(
     symbol_first: bool,
     default_locale: Locale,
 ) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
-    let canonical = Canonical::try_new(code).map_err(|_| MinorUnitError::InvalidCurrencyCode {
-        code: code.to_string(),
-    })?;
-
-    #[cfg(not(feature = "bigdecimal"))]
-    if minor_units > MAX_DECIMAL_PRECISION {
-        return Err(MinorUnitError::ExceedsDecimalPrecision {
-            decimals: minor_units,
-        });
-    }
-    if minor_units > MAX_MINOR_UNIT_DECIMALS {
-        return Err(MinorUnitError::ExceedsMinorUnitScale {
-            decimals: minor_units,
-        });
-    }
-
-    let full_name: String = full_name.into();
-    let symbol: String = symbol.into();
-    let metadata = CurrencyMetadata {
-        full_name: Cow::Owned(full_name),
+    insert_currency_metadata(
+        code,
+        full_name,
         minor_units,
-        symbol: Cow::Owned(symbol),
+        symbol,
         symbol_first,
         default_locale,
-    };
+        false,
+    )
+}
 
-    Ok(write_custom_metadata().insert(canonical.into_inner(), metadata))
+/// Replaces metadata for a currency, including its minor-unit scale when ISO
+/// 4217 does not already define one.
+///
+/// Prefer [`set_currency_metadata`] for normal registration. This function is
+/// deliberately named as an override because changing a scale can make new
+/// `Money` values for the same currency code use a different settlement
+/// exponent than existing values. For ISO currencies with a registered
+/// exponent, display metadata can be replaced but `minor_units` must match the
+/// ISO scale.
+///
+/// # Errors
+/// Returns a `MinorUnitError` when the currency code cannot be parsed as a
+/// currency token with valid boundaries, when the requested precision exceeds
+/// supported limits, or when `minor_units` conflicts with an ISO-defined scale.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(level = "debug", skip(full_name, symbol), err)
+)]
+pub fn override_currency_metadata(
+    code: &str,
+    full_name: impl Into<String>,
+    minor_units: u8,
+    symbol: impl Into<String>,
+    symbol_first: bool,
+    default_locale: Locale,
+) -> Result<Option<CurrencyMetadata>, MinorUnitError> {
+    insert_currency_metadata(
+        code,
+        full_name,
+        minor_units,
+        symbol,
+        symbol_first,
+        default_locale,
+        true,
+    )
 }
 
 /// Retrieves metadata for a custom currency, if registered.

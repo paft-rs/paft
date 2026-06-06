@@ -20,7 +20,7 @@ chrono = { workspace = true, features = ["serde"] }
 paft-domain = { workspace = true }
 paft-money  = { workspace = true }
 paft-utils = { workspace = true, optional = true }
-polars = { workspace = true, optional = true }
+polars = { workspace = true, optional = true, features = ["dtype-datetime"] }
 df-derive-macros = { workspace = true, optional = true }
 
 [features]

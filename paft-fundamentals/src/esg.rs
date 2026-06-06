@@ -13,6 +13,7 @@ pub struct EsgInvolvement {
     /// Involvement category.
     pub category: String,
     /// Provider-specific involvement score or flag.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub score: Option<Decimal>,
 }
 
@@ -21,14 +22,18 @@ pub struct EsgInvolvement {
 /// ESG scores summary.
 pub struct EsgScores {
     /// Environmental score.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub environmental: Option<Decimal>,
     /// Social score.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub social: Option<Decimal>,
     /// Governance score.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub governance: Option<Decimal>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// ESG summary including scores and involvement details.
 pub struct EsgSummary {
     /// Optional aggregate scores.

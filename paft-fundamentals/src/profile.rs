@@ -1,15 +1,27 @@
 //! Profile-related types under `paft_fundamentals::profile`.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_core::error::PaftError;
-use paft_domain::{Canonical, Isin};
+use paft_domain::Isin;
 #[cfg(feature = "dataframe")]
 use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
+
+use crate::FundamentalsError;
+
+paft_core::other_string_code_type!(
+    /// Provider-specific fund kind not modeled by [`FundKind`].
+    pub struct OtherFundKind for FundKind;
+    type Error = FundamentalsError;
+    parse(input) => FundKind::from_str(input);
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "FundKind",
+        value: input.to_string(),
+    };
+);
 
 /// Fund types with canonical variants and extensible fallback.
 ///
@@ -19,14 +31,13 @@ use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum FundKind {
     /// Exchange-Traded Fund
-    #[default]
     Etf,
     /// Mutual Fund
     MutualFund,
@@ -43,23 +54,37 @@ pub enum FundKind {
     /// Unit Investment Trust
     UnitInvestmentTrust,
     /// Unknown or provider-specific fund type
-    Other(Canonical),
+    Other(OtherFundKind),
 }
 
 impl FundKind {
     /// Attempts to parse a fund kind, uppercasing unknown inputs into `Other`.
     ///
     /// # Errors
-    /// Returns `PaftError::InvalidEnumValue` when `input` is empty/whitespace.
+    /// Returns `FundamentalsError::InvalidEnumValue` when `input` is empty/whitespace.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn try_from_str(input: &str) -> Result<Self, PaftError> {
+    pub fn try_from_str(input: &str) -> Result<Self, FundamentalsError> {
         Self::from_str(input)
+    }
+
+    /// Builds an unknown fund kind, rejecting modeled fund kinds and aliases.
+    ///
+    /// # Errors
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`FundKind`] variant.
+    pub fn other(input: &str) -> Result<Self, FundamentalsError> {
+        OtherFundKind::new(input).map(Self::Other)
     }
 }
 
 // Centralized string impls via macro
 paft_core::string_enum_with_code!(
-    FundKind, Other, "FundKind",
+    FundKind, Other(OtherFundKind), "FundKind",
+    type Error = FundamentalsError;
+    invalid(input) => FundamentalsError::InvalidEnumValue {
+        enum_name: "FundKind",
+        value: input.to_string(),
+    };
     {
         "ETF" => FundKind::Etf,
         "MUTUAL_FUND" => FundKind::MutualFund,
@@ -139,13 +164,113 @@ pub struct FundProfile {
 }
 
 /// Union of supported profile kinds.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// Serde uses a flat tagged shape with a `kind` discriminator. Fund profiles
+/// use `fund_kind` on the wire to avoid colliding with the discriminator.
+/// This is a tagged data payload, not a strict semantic metadata shape:
+/// deserialization intentionally ignores unmodeled provider fields.
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Profile {
     /// Company profile.
     Company(CompanyProfile),
     /// Fund profile.
     Fund(FundProfile),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum ProfileWire {
+    Company {
+        name: String,
+        sector: Option<String>,
+        industry: Option<String>,
+        website: Option<String>,
+        address: Option<Address>,
+        summary: Option<String>,
+        isin: Option<Isin>,
+    },
+    Fund {
+        name: String,
+        family: Option<String>,
+        fund_kind: FundKind,
+        isin: Option<Isin>,
+    },
+}
+
+impl From<&Profile> for ProfileWire {
+    fn from(profile: &Profile) -> Self {
+        match profile {
+            Profile::Company(company) => Self::Company {
+                name: company.name.clone(),
+                sector: company.sector.clone(),
+                industry: company.industry.clone(),
+                website: company.website.clone(),
+                address: company.address.clone(),
+                summary: company.summary.clone(),
+                isin: company.isin.clone(),
+            },
+            Profile::Fund(fund) => Self::Fund {
+                name: fund.name.clone(),
+                family: fund.family.clone(),
+                fund_kind: fund.kind.clone(),
+                isin: fund.isin.clone(),
+            },
+        }
+    }
+}
+
+impl From<ProfileWire> for Profile {
+    fn from(wire: ProfileWire) -> Self {
+        match wire {
+            ProfileWire::Company {
+                name,
+                sector,
+                industry,
+                website,
+                address,
+                summary,
+                isin,
+            } => Self::Company(CompanyProfile {
+                name,
+                sector,
+                industry,
+                website,
+                address,
+                summary,
+                isin,
+            }),
+            ProfileWire::Fund {
+                name,
+                family,
+                fund_kind,
+                isin,
+            } => Self::Fund(FundProfile {
+                name,
+                family,
+                kind: fund_kind,
+                isin,
+            }),
+        }
+    }
+}
+
+impl Serialize for Profile {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        ProfileWire::from(self).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Profile {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(Self::from(ProfileWire::deserialize(deserializer)?))
+    }
 }
 
 impl Profile {
@@ -236,9 +361,8 @@ impl Columnar for Profile {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct ShareCount {
-    /// The timestamp for the data point.
-    #[serde(with = "chrono::serde::ts_milliseconds")]
-    pub date: DateTime<Utc>,
+    /// The calendar date for the data point.
+    pub date: NaiveDate,
     /// The number of shares outstanding.
     pub shares: u64,
 }

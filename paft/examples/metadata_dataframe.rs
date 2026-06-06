@@ -33,10 +33,12 @@
 
 use chrono::{DateTime, Utc};
 use paft::market::quote::{GenericQuote, Quote};
-use paft::market::responses::history::{GenericCandle, GenericHistoryResponse};
-use paft::money::IsoCurrency;
+use paft::market::responses::history::{
+    GenericCandle, GenericHistoryResponse, Ohlc, OhlcPriceBasis, PriceBasis,
+};
 use paft::prelude::{
-    AssetKind, Currency, Exchange, Instrument, MarketState, Price, ToDataFrame, ToDataFrameVec,
+    AssetKind, Currency, Exchange, Instrument, IsoCurrency, MarketState, PriceAmount,
+    QuantityAmount, ToDataFrame, ToDataFrameVec,
 };
 use paft::{Decimal, Result};
 use serde::{Deserialize, Serialize};
@@ -44,7 +46,7 @@ use serde::{Deserialize, Serialize};
 /// Minimal HFT metadata struct that itself derives `ToDataFrame`. Each field
 /// becomes its own column in the resulting `DataFrame` (under a `provider.`
 /// prefix when nested inside a bigger payload — `provider` is the field name
-/// used by the parent `GenericQuote<M>` / `GenericCandle<M>` etc.).
+/// used by the parent `GenericQuote<Q, L>` / `GenericCandle<M>` etc.).
 ///
 /// Custom payload structs should derive dataframe support through
 /// `df-derive` directly and target paft's runtime traits.
@@ -82,9 +84,10 @@ fn standard_quote_schema() -> Result<()> {
             AssetKind::Equity,
         )?,
         name: Some("Apple Inc.".to_string()),
+        currency: usd(),
         price: Some(price(150)),
         previous_close: Some(price(147)),
-        day_volume: Some(78_900_000),
+        day_volume: Some(quantity(78_900_000)),
         market_state: Some(MarketState::Regular),
         as_of: None,
         bid: None,
@@ -110,9 +113,10 @@ fn enriched_quote_dataframe() -> Result<()> {
                 AssetKind::Equity,
             )?,
             name: Some("Apple Inc.".to_string()),
+            currency: usd(),
             price: Some(price(150)),
             previous_close: Some(price(147)),
-            day_volume: Some(78_900_000),
+            day_volume: Some(quantity(78_900_000)),
             market_state: Some(MarketState::Regular),
             as_of: None,
             bid: None,
@@ -130,9 +134,10 @@ fn enriched_quote_dataframe() -> Result<()> {
                 AssetKind::Equity,
             )?,
             name: Some("Microsoft".to_string()),
+            currency: usd(),
             price: Some(price(420)),
             previous_close: Some(price(418)),
-            day_volume: Some(20_000_000),
+            day_volume: Some(quantity(20_000_000)),
             market_state: Some(MarketState::Regular),
             as_of: None,
             bid: None,
@@ -152,23 +157,20 @@ fn enriched_quote_dataframe() -> Result<()> {
     Ok(())
 }
 
-/// `M` flows down into `Vec<GenericCandle<M>>` too. Every candle row gets
+/// History responses can choose metadata independently at the response and
+/// candle levels. Here the response uses `()` while every candle row gets
 /// its own `provider.*` columns automatically.
 fn history_dataframe() -> Result<()> {
-    let response: GenericHistoryResponse<HftMeta> = GenericHistoryResponse {
+    let response: GenericHistoryResponse<(), HftMeta> = GenericHistoryResponse {
         candles: vec![
             mk_candle(1_700_000_000, 150, 152, 149, 151, 1),
             mk_candle(1_700_000_060, 151, 153, 150, 152, 2),
             mk_candle(1_700_000_120, 152, 154, 151, 153, 3),
         ],
         actions: vec![],
-        adjusted: true,
+        price_basis: OhlcPriceBasis::uniform(PriceBasis::provider_latest_adjusted()),
         meta: None,
-        provider: HftMeta {
-            rx_ns: 1_700_000_000_000_000_000,
-            seq: 0,
-            venue: "AAPL_BARS".into(),
-        },
+        provider: (),
     };
 
     let df = response.candles.as_slice().to_dataframe().unwrap();
@@ -188,12 +190,10 @@ fn mk_candle(
 ) -> GenericCandle<HftMeta> {
     GenericCandle {
         ts: ts(ts_secs),
-        open: price(open),
-        high: price(high),
-        low: price(low),
-        close: price(close),
+        currency: usd(),
+        ohlc: Ohlc::new(price(open), price(high), price(low), price(close)),
         close_unadj: None,
-        volume: Some(1_000),
+        volume: Some(quantity(1_000)),
         provider: HftMeta {
             rx_ns: 1_700_000_000_000_000_000 + seq,
             seq,
@@ -202,8 +202,16 @@ fn mk_candle(
     }
 }
 
-fn price(units: i64) -> Price {
-    Price::new(Decimal::from(units), Currency::Iso(IsoCurrency::USD))
+fn price(units: i64) -> PriceAmount {
+    PriceAmount::new(Decimal::from(units))
+}
+
+fn quantity(units: i64) -> QuantityAmount {
+    QuantityAmount::from_decimal(Decimal::from(units)).unwrap()
+}
+
+const fn usd() -> Currency {
+    Currency::Iso(IsoCurrency::USD)
 }
 
 const fn ts(secs: i64) -> DateTime<Utc> {

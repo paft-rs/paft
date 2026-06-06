@@ -83,6 +83,14 @@ polars = { workspace = true, features = ["dtype-datetime", "dtype-decimal"] }
 polars-arrow = { workspace = true }
 
 [[example]]
+name = "v09_ergonomics"
+required-features = ["market", "fundamentals"]
+
+[[example]]
+name = "provider_metadata"
+required-features = ["full"]
+
+[[example]]
 name = "metadata_dataframe"
 required-features = ["full"]
 
@@ -91,7 +99,7 @@ name = "nested_metadata_propagation"
 required-features = ["full"]
 
 [[example]]
-name = "provider_metadata"
+name = "extensible_enums"
 required-features = ["full"]
 
 [package.metadata.docs.rs]

@@ -6,18 +6,23 @@
 // Re-export core types via namespaced modules
 #[cfg(feature = "domain")]
 pub use crate::domain::{
-    AssetKind, Canonical, Exchange, Figi, Instrument, Isin, MarketState, Period, StringCode,
-    Symbol, canonicalize,
+    AssetKind, CalendarPeriod, Canonical, Exchange, Figi, Horizon, Instrument, Isin, MarketState,
+    OtherAssetKind, OtherExchange, OtherHorizon, OtherMarketState, OtherPeriod, PeriodDate,
+    PeriodYear, QuarterOfYear, ReportingPeriod, StringCode, Symbol, canonicalize,
 };
 #[cfg(feature = "money-formatting")]
 pub use crate::money::LocalizedMoney;
 pub use crate::money::{
-    Currency, CurrencyMetadata, Locale, MAX_DECIMAL_PRECISION, MAX_MINOR_UNIT_DECIMALS,
-    MonetaryAmount, Price, clear_currency_metadata, currency_metadata, set_currency_metadata,
+    Currency, CurrencyMetadata, IsoCurrency, Locale, MAX_DECIMAL_PRECISION,
+    MAX_MINOR_UNIT_DECIMALS, MonetaryAmount, OtherCurrency, Price, PriceAmount, QuantityAmount,
+    clear_currency_metadata, currency_metadata, override_currency_metadata, set_currency_metadata,
     try_normalize_currency_code,
 };
 pub use crate::money::{ExchangeRate, Money};
-pub use crate::{Decimal, Error, Result, RoundingStrategy};
+pub use crate::{
+    Decimal, DecimalConstraintError, Error, MAX_CANONICAL_TOKEN_LEN, NonNegativeDecimal,
+    PositiveDecimal, Ratio, Result, RoundingStrategy,
+};
 
 // Re-export dataframe traits
 #[cfg(feature = "dataframe")]
@@ -25,22 +30,25 @@ pub use paft_utils::dataframe::{Decimal128Encode, ToDataFrame, ToDataFrameVec};
 
 // Re-export fundamentals types (flattened via namespace)
 #[cfg(feature = "fundamentals")]
+pub use crate::fundamentals::FundamentalsError;
+#[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::analysis::{
     AnalysisSummary, Earnings, EarningsEstimate, EarningsQuarter, EarningsQuarterEps,
-    EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, PriceTarget, RecommendationAction,
-    RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint,
-    TrendPoint, UpgradeDowngradeRow,
+    EarningsTrendRow, EarningsYear, EpsRevisions, EpsTrend, OtherRecommendationAction,
+    OtherRecommendationGrade, PriceTarget, RecommendationAction, RecommendationGrade,
+    RecommendationRow, RecommendationSummary, RevenueEstimate, RevisionPoint, TrendPoint,
+    UpgradeDowngradeRow,
 };
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::esg::{EsgInvolvement, EsgScores, EsgSummary};
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::holders::{
     InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, MajorHolder,
-    NetSharePurchaseActivity, TransactionType,
+    NetSharePurchaseActivity, OtherInsiderPosition, OtherTransactionType, TransactionType,
 };
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::profile::{
-    Address, CompanyProfile, FundKind, FundProfile, Profile, ShareCount,
+    Address, CompanyProfile, FundKind, FundProfile, OtherFundKind, Profile, ShareCount,
 };
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::statements::{
@@ -52,14 +60,16 @@ pub use crate::fundamentals::statistics::KeyStatistics;
 // Re-export market types (flattened via namespace)
 #[cfg(feature = "market")]
 pub use crate::market::{
-    Action, BookLevel, Candle, CandleUpdate, DownloadEntry, DownloadResponse, GenericBookLevel,
-    GenericCandle, GenericCandleUpdate, GenericDownloadEntry, GenericDownloadResponse,
-    GenericHistoryResponse, GenericNewsArticle, GenericOptionChain, GenericOptionContract,
-    GenericOptionUpdate, GenericOrderBook, GenericQuote, GenericQuoteUpdate, GenericSearchResponse,
-    GenericSearchResult, HistoryFlags, HistoryMeta, HistoryRequest, HistoryRequestBuilder,
-    HistoryResponse, Interval, NewsArticle, NewsRequest, NewsTab, OptionChain, OptionChainRequest,
-    OptionContract, OptionContractKey, OptionExpirationsRequest, OptionExpirationsResponse,
-    OptionGreeks, OptionSide, OptionUpdate, OrderBook, Quote, QuoteUpdate, Range, SearchRequest,
+    Action, AdjustmentAnchor, AdjustmentMethod, BookLevel, Candle, CandleUpdate,
+    CorporateActionAdjustmentCause, CorporateActionAdjustmentCauses, DownloadEntry,
+    DownloadResponse, GenericBookLevel, GenericCandle, GenericCandleUpdate, GenericDownloadEntry,
+    GenericDownloadResponse, GenericHistoryResponse, GenericNewsArticle, GenericOptionChain,
+    GenericOptionContract, GenericOptionUpdate, GenericOrderBook, GenericQuote, GenericQuoteUpdate,
+    GenericSearchResponse, GenericSearchResult, HistoryFlags, HistoryMeta, HistoryRequest,
+    HistoryRequestBuilder, HistoryResponse, HistoryValidationError, Interval, NewsArticle,
+    NewsRequest, NewsTab, Ohlc, OhlcPriceBasis, OptionChain, OptionChainRequest, OptionContract,
+    OptionContractKey, OptionExpirationsRequest, OptionExpirationsResponse, OptionGreeks,
+    OptionSide, OptionUpdate, OrderBook, PriceBasis, Quote, QuoteUpdate, Range, SearchRequest,
     SearchRequestBuilder, SearchResponse, SearchResult, TimeSpec,
 };
 
@@ -68,4 +78,13 @@ pub use crate::market::{
 pub use crate::aggregates::{GenericSnapshot, Snapshot};
 
 #[cfg(feature = "prediction")]
-pub use crate::prediction::{EventID, Market, OutcomeID, PredictionInstrument, Token};
+pub use crate::prediction::{
+    BinaryMarket, BinaryMarketKey, BinaryOrderBook, BinaryOrderDirection, BinaryOutcome,
+    BinaryOutcomeInstruments, BinaryPayoutVector, BinaryQuote, BinarySettlement, BookSide,
+    ClaimDescriptor, ContractQuantity, EventStructure, NonZeroContractQuantity,
+    NonZeroOutcomePayout, OutcomeInstrument, OutcomeOrderBook, OutcomePayout, OutcomePrice,
+    PredictionBookLevel, PredictionError, PredictionEvent, PredictionEventId, PredictionEventKey,
+    PredictionMarket, PredictionMarketId, PredictionMarketKey, PredictionMarketStatus,
+    PredictionOutcomeId, PredictionQuoteLevel, PredictionSeriesId, PredictionSeriesKey,
+    PredictionTrade, PredictionVenue, PriceGrid, PriceTick, TradeAction,
+};

@@ -1,7 +1,15 @@
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
 use paft_market::market::quote::Quote;
-use paft_money::{Currency, IsoCurrency, Price};
+use paft_money::{Currency, IsoCurrency, PriceAmount};
+
+const fn usd() -> Currency {
+    Currency::Iso(IsoCurrency::USD)
+}
+
+fn amount(value: impl Into<Decimal>) -> PriceAmount {
+    PriceAmount::new(value.into())
+}
 
 #[must_use]
 /// Builds a sample quote for testing.
@@ -17,14 +25,9 @@ pub fn build_quote() -> paft_market::market::quote::Quote {
         )
         .unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Price::new(
-            Decimal::from(150),
-            Currency::Iso(IsoCurrency::USD),
-        )),
-        previous_close: Some(Price::new(
-            Decimal::from(147),
-            Currency::Iso(IsoCurrency::USD),
-        )),
+        currency: usd(),
+        price: Some(amount(150)),
+        previous_close: Some(amount(147)),
         day_volume: None,
         market_state: Some(MarketState::Regular),
         as_of: None,
@@ -44,14 +47,9 @@ fn quote_construction_smoke() {
         )
         .unwrap(),
         name: Some("Apple Inc.".to_string()),
-        price: Some(Price::new(
-            Decimal::from(150),
-            Currency::Iso(IsoCurrency::USD),
-        )),
-        previous_close: Some(Price::new(
-            Decimal::from(1475) / Decimal::from(10),
-            Currency::Iso(IsoCurrency::USD),
-        )),
+        currency: usd(),
+        price: Some(amount(150)),
+        previous_close: Some(PriceAmount::new(Decimal::from(1475) / Decimal::from(10))),
         day_volume: None,
         market_state: Some(MarketState::Regular),
         as_of: None,
@@ -59,5 +57,8 @@ fn quote_construction_smoke() {
         ask: None,
         provider: (),
     };
-    assert_eq!(quote.instrument.unique_key().as_ref(), "AAPL@NASDAQ");
+    assert_eq!(
+        quote.instrument.unique_key(),
+        "EQUITY|SYMBOL|4:AAPL|EXCHANGE|NASDAQ"
+    );
 }

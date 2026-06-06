@@ -5,7 +5,7 @@ use iso_currency::Currency as IsoCurrency;
 use serde_json::{Value, json};
 
 use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
-use paft_money::{Currency, MonetaryAmount, Money, MoneyError, Price};
+use paft_money::{Currency, MonetaryAmount, Money, MoneyError, Price, PriceAmount, QuantityAmount};
 
 const fn usd() -> Currency {
     Currency::Iso(IsoCurrency::USD)
@@ -132,16 +132,16 @@ fn monetary_amount_arithmetic_checks_currency() {
         }
     );
 
-    let scaled = usd_amount.try_mul(parse_decimal("2")).unwrap();
+    let scaled = usd_amount.try_mul(&parse_decimal("2")).unwrap();
     assert_eq!(scaled.amount(), parse_decimal("20.0"));
     assert_eq!(scaled.currency(), &usd());
 
-    let halved = scaled.try_div(parse_decimal("4")).unwrap();
+    let halved = scaled.try_div(&parse_decimal("4")).unwrap();
     assert_eq!(halved.amount(), parse_decimal("5"));
     assert_eq!(halved.currency(), &usd());
 
     assert_eq!(
-        usd_amount.try_div(decimal::zero()).unwrap_err(),
+        usd_amount.try_div(&decimal::zero()).unwrap_err(),
         MoneyError::DivisionByZero
     );
 }
@@ -155,7 +155,7 @@ fn monetary_amount_serde_roundtrip() {
     assert_eq!(
         value_amount,
         json!({
-            "amount": "12.340",
+            "amount": "12.34",
             "currency": "USD",
         })
     );
@@ -223,6 +223,84 @@ fn price_serde_accepts_over_minor_unit_precision() {
 }
 
 #[test]
+fn price_amount_is_contextual_decimal() {
+    let amount = PriceAmount::new(parse_decimal("1.35780"));
+
+    assert_eq!(amount.as_decimal(), &parse_decimal("1.35780"));
+    assert_eq!(amount.to_string(), "1.3578");
+    assert_eq!(
+        amount.with_currency(usd()),
+        Price::new(parse_decimal("1.35780"), usd())
+    );
+    assert_eq!(amount.into_inner(), parse_decimal("1.35780"));
+}
+
+#[test]
+fn price_amount_serde_is_transparent() {
+    let amount = PriceAmount::new(parse_decimal("1.35780"));
+
+    assert_eq!(serde_json::to_value(amount).unwrap(), json!("1.3578"));
+
+    let decoded: PriceAmount = serde_json::from_value(json!("1.3578")).unwrap();
+    assert_eq!(decoded.as_decimal(), &parse_decimal("1.3578"));
+}
+
+#[test]
+fn price_amount_hash_uses_canonical_decimal() {
+    let amount = PriceAmount::new(parse_decimal("10.0"));
+    let amount_again = PriceAmount::new(parse_decimal("10.00"));
+
+    let mut hasher_a = DefaultHasher::new();
+    amount.hash(&mut hasher_a);
+
+    let mut hasher_b = DefaultHasher::new();
+    amount_again.hash(&mut hasher_b);
+
+    assert_eq!(hasher_a.finish(), hasher_b.finish());
+}
+
+#[test]
+fn quantity_amount_is_non_negative_contextual_decimal() {
+    let quantity = QuantityAmount::from_decimal(parse_decimal("0.000001")).unwrap();
+
+    assert_eq!(quantity.as_decimal(), &parse_decimal("0.000001"));
+    assert_eq!(quantity.to_string(), "0.000001");
+    assert_eq!(
+        quantity.into_inner().as_decimal(),
+        &parse_decimal("0.000001")
+    );
+
+    let err = QuantityAmount::from_decimal(parse_decimal("-0.1")).unwrap_err();
+    assert_eq!(err.type_name(), "NonNegativeDecimal");
+}
+
+#[test]
+fn quantity_amount_serde_is_transparent() {
+    let quantity = QuantityAmount::from_decimal(parse_decimal("123.4560")).unwrap();
+
+    assert_eq!(quantity.to_string(), "123.456");
+    assert_eq!(serde_json::to_value(quantity).unwrap(), json!("123.456"));
+
+    let decoded: QuantityAmount = serde_json::from_value(json!("123.456")).unwrap();
+    assert_eq!(decoded.as_decimal(), &parse_decimal("123.456"));
+    assert!(serde_json::from_value::<QuantityAmount>(json!("-1")).is_err());
+}
+
+#[test]
+fn quantity_amount_hash_uses_canonical_decimal() {
+    let quantity = QuantityAmount::from_decimal(parse_decimal("10.0")).unwrap();
+    let quantity_again = QuantityAmount::from_decimal(parse_decimal("10.00")).unwrap();
+
+    let mut hasher_a = DefaultHasher::new();
+    quantity.hash(&mut hasher_a);
+
+    let mut hasher_b = DefaultHasher::new();
+    quantity_again.hash(&mut hasher_b);
+
+    assert_eq!(hasher_a.finish(), hasher_b.finish());
+}
+
+#[test]
 fn price_arithmetic_checks_currency() {
     let lhs = Price::from_canonical_str("10.125", usd()).unwrap();
     let rhs = Price::from_canonical_str("0.875", usd()).unwrap();
@@ -238,11 +316,11 @@ fn price_arithmetic_checks_currency() {
         }
     );
     assert_eq!(
-        lhs.try_mul(parse_decimal("2")).unwrap().amount(),
+        lhs.try_mul(&parse_decimal("2")).unwrap().amount(),
         parse_decimal("20.250")
     );
     assert_eq!(
-        lhs.try_div(parse_decimal("2")).unwrap().amount(),
+        lhs.try_div(&parse_decimal("2")).unwrap().amount(),
         parse_decimal("5.0625")
     );
 }
@@ -250,8 +328,18 @@ fn price_arithmetic_checks_currency() {
 #[test]
 fn price_total_returns_monetary_amount() {
     let price = Price::from_canonical_str("182.345678", usd()).unwrap();
-    let total = price.try_total(parse_decimal("4.91")).unwrap();
+    let quantity = QuantityAmount::from_decimal(parse_decimal("4.91")).unwrap();
+    let total = price.try_total(&quantity).unwrap();
 
     assert_eq!(total.currency(), &usd());
     assert_eq!(total.amount(), parse_decimal("895.31727898"));
+}
+
+#[test]
+fn price_total_decimal_is_signed_escape_hatch() {
+    let price = Price::from_canonical_str("182.345678", usd()).unwrap();
+    let total = price.try_total_decimal(&parse_decimal("-4.91")).unwrap();
+
+    assert_eq!(total.currency(), &usd());
+    assert_eq!(total.amount(), parse_decimal("-895.31727898"));
 }

@@ -1,6 +1,6 @@
 #![cfg(feature = "dataframe")]
 use paft_domain::{
-    Canonical, Exchange, Figi, Isin,
+    Exchange, Figi, Isin,
     instrument::{AssetKind, Instrument},
 };
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
@@ -20,7 +20,7 @@ fn instruments_vec_to_dataframe() {
         Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity).unwrap(),
         Instrument::from_symbol_and_exchange(
             "EURUSD=X",
-            Exchange::Other(Canonical::try_new("FX").unwrap()),
+            Exchange::other("FX").unwrap(),
             AssetKind::Forex,
         )
         .unwrap(),
@@ -53,7 +53,7 @@ fn instruments_columnar_round_trips_string_cell_values() {
     let row1 = {
         let mut i = Instrument::from_symbol_and_exchange(
             "EURUSD=X",
-            Exchange::Other(Canonical::try_new("FX").unwrap()),
+            Exchange::other("FX").unwrap(),
             AssetKind::Forex,
         )
         .unwrap();

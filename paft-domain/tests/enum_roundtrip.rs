@@ -1,5 +1,8 @@
-use paft_domain::{AssetKind, DomainError, Exchange, MarketState, Period};
-use paft_money::Currency;
+use paft_domain::{
+    AssetKind, DomainError, Exchange, Horizon, MAX_CANONICAL_TOKEN_LEN, MarketState,
+    OtherAssetKind, OtherExchange, OtherHorizon, OtherMarketState, OtherPeriod, ReportingPeriod,
+};
+use paft_money::{Currency, OtherCurrency};
 use std::str::FromStr;
 
 fn assert_display_parse_display_idempotent<T, E>(token: &str)
@@ -32,17 +35,24 @@ fn other_roundtrip_is_stable_for_core_enums() {
     let other_asset = AssetKind::from_str("structured note").unwrap();
     assert_eq!(other_asset.to_string(), "STRUCTURED_NOTE");
 
-    // Period
-    assert_display_parse_display_idempotent::<Period, _>("2023Q4");
-    assert_display_parse_display_idempotent::<Period, _>("2023-12-31");
-    assert_display_parse_display_idempotent::<Period, _>("FY2023"); // normalizes to 2023
-    let other_period = Period::from_str("custom range").unwrap();
+    // ReportingPeriod
+    assert_display_parse_display_idempotent::<ReportingPeriod, _>("2023Q4");
+    assert_display_parse_display_idempotent::<ReportingPeriod, _>("2023-12-31");
+    assert_display_parse_display_idempotent::<ReportingPeriod, _>("FY2023"); // normalizes to 2023
+    let other_period = ReportingPeriod::from_str("custom range").unwrap();
     assert_eq!(other_period.to_string(), "CUSTOM_RANGE");
+
+    // Horizon
+    assert_display_parse_display_idempotent::<Horizon, _>("7d");
+    assert_display_parse_display_idempotent::<Horizon, _>("1mo");
+    assert_display_parse_display_idempotent::<Horizon, _>("1y");
+    let other_horizon = Horizon::from_str("provider range").unwrap();
+    assert_eq!(other_horizon.to_string(), "PROVIDER_RANGE");
 
     // MarketState
     assert_display_parse_display_idempotent::<MarketState, _>("REGULAR");
-    let other_state = MarketState::from_str("delayed").unwrap();
-    assert_eq!(other_state.to_string(), "DELAYED");
+    let other_market_state = MarketState::from_str("pre-pre").unwrap();
+    assert_eq!(other_market_state.to_string(), "PRE_PRE");
 }
 
 #[test]
@@ -62,8 +72,8 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
         let err = AssetKind::from_str(input).unwrap_err();
         assert!(matches!(
             err,
-            paft_core::PaftError::InvalidEnumValue { enum_name, value }
-                if enum_name == "AssetKind" && value.as_str() == *input
+            DomainError::InvalidAssetKindValue { value }
+                if value.as_str() == *input
         ));
 
         // Exchange
@@ -79,8 +89,8 @@ fn rejects_inputs_that_canonicalize_to_empty_core_enums() {
         let err = MarketState::from_str(input).unwrap_err();
         assert!(matches!(
             err,
-            paft_core::PaftError::InvalidEnumValue { enum_name, value }
-                if enum_name == "MarketState" && value.as_str() == *input
+            DomainError::InvalidMarketStateValue { value }
+                if value.as_str() == *input
         ));
     }
 }
@@ -98,6 +108,49 @@ fn display_matches_wire_codes_for_core_enums() {
 
     let state = MarketState::Regular;
     assert_eq!(state.to_string(), state.code());
+}
+
+#[test]
+fn enum_parsers_reject_malformed_inputs_that_canonicalize_to_modeled_values() {
+    assert!(matches!(
+        Currency::from_str("$USD").unwrap_err(),
+        paft_money::MoneyParseError::InvalidEnumValue { enum_name, value }
+            if enum_name == "Currency" && value == "$USD"
+    ));
+
+    assert!(matches!(
+        Exchange::from_str("---NYSE").unwrap_err(),
+        DomainError::InvalidExchangeValue { value } if value == "---NYSE"
+    ));
+
+    assert!(matches!(
+        AssetKind::from_str("EQUITY!").unwrap_err(),
+        DomainError::InvalidAssetKindValue { value } if value == "EQUITY!"
+    ));
+
+    assert!(matches!(
+        MarketState::from_str("CLOSED!").unwrap_err(),
+        DomainError::InvalidMarketStateValue { value } if value == "CLOSED!"
+    ));
+}
+
+#[test]
+fn market_state_aliases_parse_to_expected_sessions() {
+    assert_eq!(MarketState::from_str("PRE").unwrap(), MarketState::Pre);
+    assert_eq!(
+        MarketState::from_str("PRE_MARKET").unwrap(),
+        MarketState::Pre
+    );
+
+    assert_eq!(MarketState::from_str("POST").unwrap(), MarketState::Post);
+    assert_eq!(
+        MarketState::from_str("POSTMARKET").unwrap(),
+        MarketState::Post
+    );
+    assert_eq!(
+        MarketState::from_str("POST_MARKET").unwrap(),
+        MarketState::Post
+    );
 }
 
 #[test]
@@ -126,21 +179,136 @@ fn extensible_enums_preserve_other_canonical_tokens() {
         other => panic!("expected Other variant, got {other:?}"),
     }
 
-    let state = MarketState::from_str("delayed").unwrap();
-    match state {
-        MarketState::Other(ref canon) => assert_eq!(canon.as_ref(), "DELAYED"),
+    let market_state = MarketState::from_str("pre-pre").unwrap();
+    match market_state {
+        MarketState::Other(ref canon) => assert_eq!(canon.as_ref(), "PRE_PRE"),
         other => panic!("expected Other variant, got {other:?}"),
     }
 
-    let state: MarketState = serde_json::from_str("\"regular_market\"").unwrap();
-    assert_eq!(state, MarketState::Regular);
-
-    let state: MarketState = serde_json::from_str("\"preopen\"").unwrap();
-    assert_eq!(state, MarketState::Pre);
-
-    let state: MarketState = serde_json::from_str("\"venue auction delay\"").unwrap();
-    match state {
-        MarketState::Other(ref canon) => assert_eq!(canon.as_ref(), "VENUE_AUCTION_DELAY"),
+    let market_state: MarketState = serde_json::from_str("\"post-post\"").unwrap();
+    match market_state {
+        MarketState::Other(ref canon) => assert_eq!(canon.as_ref(), "POST_POST"),
         other => panic!("expected Other variant, got {other:?}"),
     }
+}
+
+#[test]
+fn other_wrappers_reject_modeled_core_tokens() {
+    assert!(OtherCurrency::new("USD").is_err());
+    assert!(OtherCurrency::new("BTC").is_err());
+    assert_eq!(OtherCurrency::new("my token").unwrap().as_ref(), "MY_TOKEN");
+
+    assert!(OtherExchange::new("NASDAQ").is_err());
+    assert!(OtherExchange::new("bombay").is_err());
+    assert_eq!(
+        OtherExchange::new("my exchange").unwrap().as_ref(),
+        "MY_EXCHANGE"
+    );
+
+    assert!(OtherAssetKind::new("EQUITY").is_err());
+    assert!(OtherAssetKind::new("stock").is_err());
+    assert_eq!(
+        OtherAssetKind::new("structured note").unwrap().as_ref(),
+        "STRUCTURED_NOTE"
+    );
+
+    assert!(OtherPeriod::new("2023Q4").is_err());
+    assert!(OtherPeriod::new("FY2023").is_err());
+    assert!(OtherPeriod::new("-2023Q4").is_err());
+    assert_eq!(
+        OtherPeriod::new("custom range").unwrap().as_ref(),
+        "CUSTOM_RANGE"
+    );
+
+    assert!(OtherHorizon::new("7d").is_err());
+    assert!(OtherHorizon::new("1mo").is_err());
+    assert_eq!(
+        OtherHorizon::new("provider range").unwrap().as_ref(),
+        "PROVIDER_RANGE"
+    );
+
+    assert!(OtherMarketState::new("REGULAR").is_err());
+    assert!(OtherMarketState::new("PRE_MARKET").is_err());
+    assert_eq!(
+        OtherMarketState::new("pre-pre").unwrap().as_ref(),
+        "PRE_PRE"
+    );
+}
+
+#[test]
+fn other_wrappers_reject_overlong_core_tokens() {
+    let input = "x".repeat(MAX_CANONICAL_TOKEN_LEN + 1);
+
+    assert!(OtherCurrency::new(&input).is_err());
+    assert!(Currency::from_str(&input).is_err());
+
+    assert!(OtherExchange::new(&input).is_err());
+    assert!(Exchange::from_str(&input).is_err());
+
+    assert!(OtherAssetKind::new(&input).is_err());
+    assert!(AssetKind::from_str(&input).is_err());
+
+    assert!(OtherPeriod::new(&input).is_err());
+    assert!(ReportingPeriod::from_str(&input).is_err());
+
+    assert!(OtherHorizon::new(&input).is_err());
+    assert!(Horizon::from_str(&input).is_err());
+
+    assert!(OtherMarketState::new(&input).is_err());
+    assert!(MarketState::from_str(&input).is_err());
+
+    let json = serde_json::to_string(&input).unwrap();
+    assert!(serde_json::from_str::<OtherExchange>(&json).is_err());
+    assert!(serde_json::from_str::<Exchange>(&json).is_err());
+}
+
+#[test]
+fn other_wrappers_serde_uses_checked_constructors_for_core_tokens() {
+    let currency = OtherCurrency::new("my token").unwrap();
+    assert_eq!(serde_json::to_string(&currency).unwrap(), "\"MY_TOKEN\"");
+    let currency: OtherCurrency = serde_json::from_str("\"my token\"").unwrap();
+    assert_eq!(currency.as_ref(), "MY_TOKEN");
+    assert!(serde_json::from_str::<OtherCurrency>("\"USD\"").is_err());
+    assert!(serde_json::from_str::<OtherCurrency>("\"BTC\"").is_err());
+
+    let exchange = OtherExchange::new("my exchange").unwrap();
+    assert_eq!(serde_json::to_string(&exchange).unwrap(), "\"MY_EXCHANGE\"");
+    let exchange: OtherExchange = serde_json::from_str("\"my exchange\"").unwrap();
+    assert_eq!(exchange.as_ref(), "MY_EXCHANGE");
+    assert!(serde_json::from_str::<OtherExchange>("\"NASDAQ\"").is_err());
+    assert!(serde_json::from_str::<OtherExchange>("\"bombay\"").is_err());
+
+    let asset = OtherAssetKind::new("structured note").unwrap();
+    assert_eq!(
+        serde_json::to_string(&asset).unwrap(),
+        "\"STRUCTURED_NOTE\""
+    );
+    let asset: OtherAssetKind = serde_json::from_str("\"structured note\"").unwrap();
+    assert_eq!(asset.as_ref(), "STRUCTURED_NOTE");
+    assert!(serde_json::from_str::<OtherAssetKind>("\"EQUITY\"").is_err());
+    assert!(serde_json::from_str::<OtherAssetKind>("\"stock\"").is_err());
+
+    let period = OtherPeriod::new("custom range").unwrap();
+    assert_eq!(serde_json::to_string(&period).unwrap(), "\"CUSTOM_RANGE\"");
+    let period: OtherPeriod = serde_json::from_str("\"custom range\"").unwrap();
+    assert_eq!(period.as_ref(), "CUSTOM_RANGE");
+    assert!(serde_json::from_str::<OtherPeriod>("\"2023Q4\"").is_err());
+    assert!(serde_json::from_str::<OtherPeriod>("\"FY2023\"").is_err());
+
+    let horizon = OtherHorizon::new("provider range").unwrap();
+    assert_eq!(
+        serde_json::to_string(&horizon).unwrap(),
+        "\"PROVIDER_RANGE\""
+    );
+    let horizon: OtherHorizon = serde_json::from_str("\"provider range\"").unwrap();
+    assert_eq!(horizon.as_ref(), "PROVIDER_RANGE");
+    assert!(serde_json::from_str::<OtherHorizon>("\"7d\"").is_err());
+    assert!(serde_json::from_str::<OtherHorizon>("\"1mo\"").is_err());
+
+    let market_state = OtherMarketState::new("pre-pre").unwrap();
+    assert_eq!(serde_json::to_string(&market_state).unwrap(), "\"PRE_PRE\"");
+    let market_state: OtherMarketState = serde_json::from_str("\"post-post\"").unwrap();
+    assert_eq!(market_state.as_ref(), "POST_POST");
+    assert!(serde_json::from_str::<OtherMarketState>("\"REGULAR\"").is_err());
+    assert!(serde_json::from_str::<OtherMarketState>("\"PRE_MARKET\"").is_err());
 }

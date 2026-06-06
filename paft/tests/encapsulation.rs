@@ -17,8 +17,8 @@ fn test_encapsulation_prevents_invalid_construction() {
         interval: Interval::D1,
         include_prepost: false,
         include_actions: true,
-        auto_adjust: true,
-        keepna: false,
+        prefer_adjusted_prices: true,
+        keep_missing: false,
     };
 
     let invalid_search = SearchRequest {

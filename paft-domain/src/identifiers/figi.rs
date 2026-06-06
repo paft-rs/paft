@@ -1,7 +1,8 @@
 //! FIGI newtype for instrument codes.
 
 use crate::DomainError;
-use serde::{Deserialize, Deserializer, Serialize, de};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+use smol_str::SmolStr;
 use std::{convert::TryFrom, fmt, str::FromStr};
 
 #[inline]
@@ -11,26 +12,38 @@ fn invalid_figi(value: &str) -> DomainError {
     }
 }
 
-fn normalize_figi(input: &str) -> Result<String, DomainError> {
-    let candidate = input.trim();
-    if candidate.is_empty() {
+fn normalize_figi(input: &str) -> Result<SmolStr, DomainError> {
+    let Some(normalized) = normalized_12_byte_code(input) else {
+        return Err(invalid_figi(input));
+    };
+
+    if !figi_structure_is_valid(normalized.as_str()) {
         return Err(invalid_figi(input));
     }
 
-    let normalized = candidate.to_ascii_uppercase();
-    if normalized.len() != 12 {
-        return Err(invalid_figi(input));
-    }
-
-    if !figi_structure_is_valid(&normalized) {
-        return Err(invalid_figi(input));
-    }
-
-    if !figi_checksum_is_valid(&normalized) {
+    if !figi_checksum_is_valid(normalized.as_str()) {
         return Err(invalid_figi(input));
     }
 
     Ok(normalized)
+}
+
+fn normalized_12_byte_code(input: &str) -> Option<SmolStr> {
+    let trimmed = input.trim();
+    if trimmed.len() != 12 {
+        return None;
+    }
+
+    let mut bytes = [0; 12];
+    for (dest, byte) in bytes.iter_mut().zip(trimmed.bytes()) {
+        if !byte.is_ascii_alphanumeric() {
+            return None;
+        }
+        *dest = byte.to_ascii_uppercase();
+    }
+
+    let normalized = std::str::from_utf8(&bytes).expect("ASCII bytes are valid UTF-8");
+    Some(SmolStr::new(normalized))
 }
 
 fn figi_structure_is_valid(value: &str) -> bool {
@@ -83,9 +96,11 @@ fn figi_char_value(byte: u8) -> Option<u32> {
 }
 
 /// Opaque wrapper for validated FIGI values.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
-#[serde(transparent)]
-pub struct Figi(String);
+///
+/// Backed by [`SmolStr`], so standard 12-byte FIGI codes live inline without
+/// heap allocation and clones stay cheap.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Figi(SmolStr);
 
 impl Figi {
     /// Construct a new validated FIGI.
@@ -130,7 +145,16 @@ impl TryFrom<String> for Figi {
 
 impl From<Figi> for String {
     fn from(value: Figi) -> Self {
-        value.0
+        value.0.into()
+    }
+}
+
+impl Serialize for Figi {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_ref())
     }
 }
 

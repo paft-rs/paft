@@ -3,64 +3,69 @@ use crate::decimal::{self, Decimal, RoundingStrategy};
 use crate::error::MoneyError;
 use crate::money::Money;
 
-#[cfg(not(feature = "bigdecimal"))]
-#[inline]
-pub const fn copy_decimal(value: &Decimal) -> Decimal {
-    *value
+pub trait CurrencyAmount {
+    fn raw_amount(&self) -> &Decimal;
+
+    fn raw_currency(&self) -> &Currency;
 }
 
-#[cfg(feature = "bigdecimal")]
 #[inline]
 pub fn copy_decimal(value: &Decimal) -> Decimal {
-    value.clone()
+    decimal::clone_decimal(value)
 }
 
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
-pub fn checked_add_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_add(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs + rhs)
-    }
+/// Number of fractional digits represented by the active decimal backend.
+pub fn decimal_scale(value: &Decimal) -> i64 {
+    decimal::fractional_digit_count(value)
 }
 
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
-pub fn checked_sub_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_sub(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs - rhs)
-    }
+fn checked_add_decimal_inner(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    decimal::checked_add(lhs, rhs)
 }
 
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
-pub fn checked_mul_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_mul(*rhs)
-    }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs * rhs)
-    }
+fn checked_sub_decimal_inner(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    decimal::checked_sub(lhs, rhs)
 }
 
-#[cfg_attr(feature = "bigdecimal", allow(clippy::unnecessary_wraps))]
-pub fn checked_div_decimal(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
-    #[cfg(not(feature = "bigdecimal"))]
-    {
-        lhs.checked_div(*rhs)
+fn checked_mul_decimal_inner(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    decimal::checked_mul(lhs, rhs)
+}
+
+fn checked_div_decimal_inner(lhs: &Decimal, rhs: &Decimal) -> Option<Decimal> {
+    decimal::checked_div(lhs, rhs)
+}
+
+pub fn checked_add_decimal(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {
+    checked_add_decimal_inner(lhs, rhs).ok_or(MoneyError::ConversionError)
+}
+
+pub fn checked_sub_decimal(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {
+    checked_sub_decimal_inner(lhs, rhs).ok_or(MoneyError::ConversionError)
+}
+
+pub fn checked_mul_decimal(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {
+    checked_mul_decimal_inner(lhs, rhs).ok_or(MoneyError::ConversionError)
+}
+
+pub fn checked_div_decimal(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {
+    if rhs == &decimal::zero() {
+        return Err(MoneyError::DivisionByZero);
     }
-    #[cfg(feature = "bigdecimal")]
-    {
-        Some(lhs / rhs)
-    }
+    checked_div_decimal_inner(lhs, rhs).ok_or(MoneyError::ConversionError)
+}
+
+pub fn checked_add_amounts<T: CurrencyAmount>(lhs: &T, rhs: &T) -> Result<Decimal, MoneyError> {
+    ensure_same_currency(lhs.raw_currency(), rhs.raw_currency())?;
+    checked_add_decimal(lhs.raw_amount(), rhs.raw_amount())
+}
+
+pub fn checked_sub_amounts<T: CurrencyAmount>(lhs: &T, rhs: &T) -> Result<Decimal, MoneyError> {
+    ensure_same_currency(lhs.raw_currency(), rhs.raw_currency())?;
+    checked_sub_decimal(lhs.raw_amount(), rhs.raw_amount())
+}
+
+pub fn parse_canonical_decimal(amount: &str) -> Result<Decimal, MoneyError> {
+    decimal::parse_decimal(amount).ok_or(MoneyError::InvalidDecimal)
 }
 
 pub fn decimal_from_scaled_units(units: i128, scale: u32) -> Result<Decimal, MoneyError> {
@@ -84,10 +89,24 @@ pub fn round_to_money(
     Money::new(rounded, currency)
 }
 
-pub fn canonical_format(amount: &Decimal, currency: &Currency) -> String {
+fn canonical_format(amount: &Decimal, currency: &Currency) -> String {
     format!(
         "{} {}",
         decimal::to_canonical_string(amount),
         currency.code()
     )
+}
+
+pub fn canonical_amount_format(amount: &impl CurrencyAmount) -> String {
+    canonical_format(amount.raw_amount(), amount.raw_currency())
+}
+
+fn ensure_same_currency(expected: &Currency, found: &Currency) -> Result<(), MoneyError> {
+    if expected != found {
+        return Err(MoneyError::CurrencyMismatch {
+            expected: expected.clone(),
+            found: found.clone(),
+        });
+    }
+    Ok(())
 }

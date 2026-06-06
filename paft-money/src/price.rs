@@ -5,10 +5,12 @@ use crate::currency::Currency;
 use crate::decimal::{self, Decimal, RoundingStrategy};
 use crate::error::MoneyError;
 use crate::exact::{
-    canonical_format, checked_add_decimal, checked_div_decimal, checked_mul_decimal,
-    checked_sub_decimal, copy_decimal, decimal_from_scaled_units, round_to_money,
+    CurrencyAmount, canonical_amount_format, checked_add_amounts, checked_div_decimal,
+    checked_mul_decimal, checked_sub_amounts, copy_decimal, decimal_from_scaled_units,
+    parse_canonical_decimal, round_to_money,
 };
 use crate::money::Money;
+use crate::quantity::QuantityAmount;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -24,9 +26,69 @@ use df_derive_macros::ToDataFrame;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct Price {
+    #[serde(with = "paft_decimal::serde::canonical_str")]
     amount: Decimal,
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     currency: Currency,
+}
+
+/// Full-precision price amount whose currency is supplied by surrounding context.
+///
+/// Use `PriceAmount` for fields that are price-domain values but are already
+/// denominated by an enclosing record, such as OHLC values in a candle or
+/// levels in an order book. Use [`Price`] when the value must stand alone.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
+pub struct PriceAmount {
+    #[serde(with = "paft_decimal::serde::canonical_str")]
+    amount: Decimal,
+}
+
+impl PriceAmount {
+    /// Creates a contextual price amount.
+    #[must_use]
+    pub const fn new(amount: Decimal) -> Self {
+        Self { amount }
+    }
+
+    /// Returns the wrapped decimal by reference.
+    #[must_use]
+    pub const fn as_decimal(&self) -> &Decimal {
+        &self.amount
+    }
+
+    /// Returns the wrapped decimal.
+    #[must_use]
+    #[cfg(not(feature = "bigdecimal"))]
+    pub const fn into_inner(self) -> Decimal {
+        self.amount
+    }
+
+    /// Returns the wrapped decimal.
+    #[must_use]
+    #[cfg(feature = "bigdecimal")]
+    pub fn into_inner(self) -> Decimal {
+        self.amount
+    }
+
+    /// Attaches a currency and returns a standalone [`Price`].
+    #[must_use]
+    pub fn with_currency(&self, currency: Currency) -> Price {
+        Price::new(copy_decimal(&self.amount), currency)
+    }
+}
+
+impl Hash for PriceAmount {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        decimal::to_canonical_string(&self.amount).hash(state);
+    }
+}
+
+impl fmt::Display for PriceAmount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&decimal::to_canonical_string(&self.amount))
+    }
 }
 
 impl Price {
@@ -42,7 +104,7 @@ impl Price {
     ///
     /// Returns [`MoneyError::InvalidDecimal`] when the string cannot be parsed losslessly.
     pub fn from_canonical_str(amount: &str, currency: Currency) -> Result<Self, MoneyError> {
-        let decimal = decimal::parse_decimal(amount).ok_or(MoneyError::InvalidDecimal)?;
+        let decimal = parse_canonical_decimal(amount)?;
         Ok(Self::new(decimal, currency))
     }
 
@@ -50,7 +112,11 @@ impl Price {
     ///
     /// # Errors
     ///
-    /// Returns [`MoneyError::ConversionError`] when the scale exceeds the active backend precision.
+    /// Returns [`MoneyError::ConversionError`] when the active decimal backend
+    /// cannot represent the integer coefficient and scale. With the default
+    /// backend this can happen when the coefficient exceeds `rust_decimal`'s
+    /// mantissa or the scale exceeds its supported range; the `bigdecimal`
+    /// backend accepts every `i128` coefficient and `u32` scale.
     pub fn from_scaled_units(
         units: i128,
         scale: u32,
@@ -70,14 +136,6 @@ impl Price {
 
     /// Returns the underlying decimal amount.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
-    pub const fn amount(&self) -> Decimal {
-        copy_decimal(&self.amount)
-    }
-
-    /// Returns the underlying decimal amount.
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
     pub fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }
@@ -91,7 +149,7 @@ impl Price {
     /// Returns a canonical string with currency code (`"<amount> <CODE>"`).
     #[must_use]
     pub fn format(&self) -> String {
-        canonical_format(&self.amount, &self.currency)
+        canonical_amount_format(self)
     }
 
     /// Adds another price with the same currency.
@@ -101,9 +159,7 @@ impl Price {
     /// Returns [`MoneyError::CurrencyMismatch`] when currencies differ and
     /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
     pub fn try_add(&self, rhs: &Self) -> Result<Self, MoneyError> {
-        self.ensure_same_currency(rhs)?;
-        let amount =
-            checked_add_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)?;
+        let amount = checked_add_amounts(self, rhs)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -114,9 +170,7 @@ impl Price {
     /// Returns [`MoneyError::CurrencyMismatch`] when currencies differ and
     /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
     pub fn try_sub(&self, rhs: &Self) -> Result<Self, MoneyError> {
-        self.ensure_same_currency(rhs)?;
-        let amount =
-            checked_sub_decimal(&self.amount, &rhs.amount).ok_or(MoneyError::ConversionError)?;
+        let amount = checked_sub_amounts(self, rhs)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -127,10 +181,8 @@ impl Price {
     /// # Errors
     ///
     /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn try_mul(&self, factor: Decimal) -> Result<Self, MoneyError> {
-        let amount =
-            checked_mul_decimal(&self.amount, &factor).ok_or(MoneyError::ConversionError)?;
+    pub fn try_mul(&self, factor: &Decimal) -> Result<Self, MoneyError> {
+        let amount = checked_mul_decimal(&self.amount, factor)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -140,25 +192,34 @@ impl Price {
     ///
     /// Returns [`MoneyError::DivisionByZero`] when `divisor` is zero and
     /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn try_div(&self, divisor: Decimal) -> Result<Self, MoneyError> {
-        if divisor == decimal::zero() {
-            return Err(MoneyError::DivisionByZero);
-        }
-        let amount =
-            checked_div_decimal(&self.amount, &divisor).ok_or(MoneyError::ConversionError)?;
+    pub fn try_div(&self, divisor: &Decimal) -> Result<Self, MoneyError> {
+        let amount = checked_div_decimal(&self.amount, divisor)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
-    /// Multiplies this price by a quantity and returns an exact monetary total.
+    /// Multiplies this price by a non-negative quantity and returns an exact
+    /// monetary total.
     ///
     /// # Errors
     ///
     /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn try_total(&self, quantity: Decimal) -> Result<MonetaryAmount, MoneyError> {
-        let amount =
-            checked_mul_decimal(&self.amount, &quantity).ok_or(MoneyError::ConversionError)?;
+    pub fn try_total(&self, quantity: &QuantityAmount) -> Result<MonetaryAmount, MoneyError> {
+        self.try_total_decimal(quantity.as_decimal())
+    }
+
+    /// Multiplies this price by a raw decimal quantity and returns an exact
+    /// monetary total.
+    ///
+    /// Prefer [`Price::try_total`] for normal market sizes and volumes. This
+    /// escape hatch intentionally accepts signed decimals for flows such as
+    /// corrections, refunds, or short-exposure calculations where the caller
+    /// needs signed quantity semantics.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
+    pub fn try_total_decimal(&self, quantity: &Decimal) -> Result<MonetaryAmount, MoneyError> {
+        let amount = checked_mul_decimal(&self.amount, quantity)?;
         Ok(MonetaryAmount::new(amount, self.currency.clone()))
     }
 
@@ -191,15 +252,15 @@ impl Price {
             target_fraction_digits,
         )
     }
+}
 
-    fn ensure_same_currency(&self, rhs: &Self) -> Result<(), MoneyError> {
-        if self.currency != rhs.currency {
-            return Err(MoneyError::CurrencyMismatch {
-                expected: self.currency.clone(),
-                found: rhs.currency.clone(),
-            });
-        }
-        Ok(())
+impl CurrencyAmount for Price {
+    fn raw_amount(&self) -> &Decimal {
+        &self.amount
+    }
+
+    fn raw_currency(&self) -> &Currency {
+        &self.currency
     }
 }
 

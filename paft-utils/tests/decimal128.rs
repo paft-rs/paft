@@ -156,6 +156,12 @@ mod rust_decimal_backend {
         let d = Decimal::from_i128_with_scale(m, 0);
         assert_eq!(d.try_to_i128_mantissa(10), None);
     }
+
+    #[test]
+    fn target_scale_above_polars_precision_returns_none() {
+        let d = Decimal::from_i128_with_scale(1, 0);
+        assert_eq!(d.try_to_i128_mantissa(39), None);
+    }
 }
 
 // ===================================================================
@@ -300,5 +306,11 @@ mod bigdecimal_backend {
         assert_eq!(pos_m, 0);
         assert_eq!(neg_m, 0);
         assert_eq!(pos_m, neg_m);
+    }
+
+    #[test]
+    fn target_scale_above_polars_precision_returns_none() {
+        let d = BigDecimal::from_str("1").unwrap();
+        assert_eq!(d.try_to_i128_mantissa(39), None);
     }
 }

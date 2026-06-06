@@ -1,33 +1,36 @@
 //! Option contracts and chains under the market namespace.
 
-// `Eq` is intentionally NOT derived on the generic payload types: the
-// metadata payload `M` is meant to accept user types that don't satisfy
-// `Eq` (e.g. HFT timestamps stored as `f64` for hardware-clock latency).
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, NaiveDate, Utc};
 #[cfg(feature = "dataframe")]
 use df_derive_macros::ToDataFrame;
-use paft_decimal::Decimal;
+use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::Instrument;
-use paft_money::Price;
+use paft_money::{Currency, Price, PriceAmount};
 use std::fmt;
+use std::str::FromStr;
+
+use crate::error::MarketError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Primary first-order greeks for an option contract.
 pub struct OptionGreeks {
     /// Dimensionless change in option price for a 1.0 change in underlying price.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub delta: Option<Decimal>,
     /// Change in `delta` per 1.0 change in underlying price (1/price units).
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub gamma: Option<Decimal>,
     /// Change in option price per calendar day.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub theta: Option<Decimal>,
     /// Change in option price for a 1 percentage point (0.01) change in IV.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub vega: Option<Decimal>,
     /// Change in option price for a 1 percentage point (0.01) change in rate.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub rho: Option<Decimal>,
 }
 
@@ -50,6 +53,14 @@ impl OptionSide {
             Self::Put => "PUT",
         }
     }
+
+    fn from_code(value: &str) -> Option<Self> {
+        match value {
+            "CALL" => Some(Self::Call),
+            "PUT" => Some(Self::Put),
+            _ => None,
+        }
+    }
 }
 
 impl AsRef<str> for OptionSide {
@@ -64,10 +75,31 @@ impl fmt::Display for OptionSide {
     }
 }
 
-/// Economic identity of an option contract.
+impl FromStr for OptionSide {
+    type Err = MarketError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::from_code(value).ok_or_else(|| MarketError::InvalidEnumValue {
+            enum_name: "OptionSide",
+            value: value.to_string(),
+        })
+    }
+}
+
+/// Identity of an option contract.
+///
+/// The required fields form the option's economic key. When
+/// `contract_instrument` is present, it participates in equality and hashing so
+/// adjusted contracts, venue-specific listings, and other distinct listed
+/// contracts with the same economic terms do not collapse to the same key.
+/// Without a contract instrument this remains an economic key, not a guaranteed
+/// unique listed-contract identity.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct OptionContractKey {
+    /// Provider or venue instrument identifier for the option contract, when known.
+    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
+    pub contract_instrument: Option<Instrument>,
     /// Underlying instrument the option is written on.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub underlying: Instrument,
@@ -82,7 +114,7 @@ pub struct OptionContractKey {
 }
 
 impl OptionContractKey {
-    /// Build an option contract identity from its required economic fields.
+    /// Build an option contract key from its required economic fields.
     #[must_use]
     pub const fn new(
         underlying: Instrument,
@@ -91,15 +123,23 @@ impl OptionContractKey {
         expiration_date: NaiveDate,
     ) -> Self {
         Self {
+            contract_instrument: None,
             underlying,
             side,
             strike,
             expiration_date,
         }
     }
+
+    /// Add the listed contract instrument identifier to this key.
+    #[must_use]
+    pub fn with_contract_instrument(mut self, contract_instrument: Instrument) -> Self {
+        self.contract_instrument = Some(contract_instrument);
+        self
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single option contract (call or put) at a given strike and expiration.
 ///
@@ -111,25 +151,26 @@ impl OptionContractKey {
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericOptionContract<M = ()> {
-    /// Contract identity fields.
+    /// Contract key fields.
     #[serde(flatten)]
     #[cfg_attr(feature = "dataframe", df_derive(flatten))]
     pub key: OptionContractKey,
-    /// Provider or venue instrument identifier for the option contract, when known.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub contract_instrument: Option<Instrument>,
-    /// Last traded price.
-    pub price: Option<Price>,
-    /// Best bid.
-    pub bid: Option<Price>,
-    /// Best ask.
-    pub ask: Option<Price>,
+    /// Premium currency for `price`, `bid`, and `ask`.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub currency: Currency,
+    /// Last traded price amount, denominated in `currency`.
+    pub price: Option<PriceAmount>,
+    /// Best bid amount, denominated in `currency`.
+    pub bid: Option<PriceAmount>,
+    /// Best ask amount, denominated in `currency`.
+    pub ask: Option<PriceAmount>,
     /// Traded volume.
     pub volume: Option<u64>,
     /// Open interest at the time of fetch.
     pub open_interest: Option<u64>,
-    /// Implied volatility as a fraction (e.g., 0.25 for 25%).
-    pub implied_volatility: Option<Decimal>,
+    /// Implied volatility as a non-negative fraction (e.g., 0.25 for 25%).
+    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
+    pub implied_volatility: Option<NonNegativeDecimal>,
     /// Whether the provider reports the option as currently in the money.
     ///
     /// `None` means the provider did not report this value.
@@ -154,10 +195,10 @@ impl<M: Default> GenericOptionContract<M> {
     /// default to `None`, including `in_the_money`. `provider` is
     /// initialised via `M::default()`.
     #[must_use]
-    pub fn new(key: OptionContractKey) -> Self {
+    pub fn new(key: OptionContractKey, currency: Currency) -> Self {
         Self {
             key,
-            contract_instrument: None,
+            currency,
             price: None,
             bid: None,
             ask: None,
@@ -176,55 +217,56 @@ impl<M: Default> GenericOptionContract<M> {
 /// Standard `OptionContract` with no extra provider metadata.
 pub type OptionContract = GenericOptionContract<()>;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A full option chain for one or more expirations.
 ///
-/// Generic over a provider metadata payload `M`, which is flattened into the
-/// serialized representation and propagated into each contract. Use the
-/// [`OptionChain`] alias for the standard shape (no extra metadata).
+/// Generic over a chain-level provider metadata payload `R`, which is
+/// flattened into the serialized representation, and a contract-level
+/// metadata payload `C`. Use the [`OptionChain`] alias for the standard shape
+/// (no extra metadata).
 ///
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-pub struct GenericOptionChain<M = ()> {
+pub struct GenericOptionChain<R = (), C = ()> {
     /// Option contracts in the chain.
-    pub contracts: Vec<GenericOptionContract<M>>,
+    pub contracts: Vec<GenericOptionContract<C>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
-    pub provider: M,
+    pub provider: R,
 }
 
-impl<M> GenericOptionChain<M> {
+impl<R, C> GenericOptionChain<R, C> {
     /// Iterate over contracts for the requested option side.
     pub fn by_side(
         &self,
         side: OptionSide,
-    ) -> impl Iterator<Item = &GenericOptionContract<M>> + '_ {
+    ) -> impl Iterator<Item = &GenericOptionContract<C>> + '_ {
         self.contracts
             .iter()
             .filter(move |contract| contract.key.side == side)
     }
 
     /// Iterate over call contracts.
-    pub fn calls(&self) -> impl Iterator<Item = &GenericOptionContract<M>> + '_ {
+    pub fn calls(&self) -> impl Iterator<Item = &GenericOptionContract<C>> + '_ {
         self.by_side(OptionSide::Call)
     }
 
     /// Iterate over put contracts.
-    pub fn puts(&self) -> impl Iterator<Item = &GenericOptionContract<M>> + '_ {
+    pub fn puts(&self) -> impl Iterator<Item = &GenericOptionContract<C>> + '_ {
         self.by_side(OptionSide::Put)
     }
 }
 
 /// Standard `OptionChain` with no extra provider metadata.
-pub type OptionChain = GenericOptionChain<()>;
+pub type OptionChain = GenericOptionChain<(), ()>;
 
 /// A point-in-time update for an option contract.
 ///
 /// This represents incremental changes to market data commonly used for options,
 /// such as bid/ask, last price, and implied volatility, keyed by the option
-/// contract identity.
+/// contract key.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`OptionUpdate`] alias for the
@@ -233,27 +275,28 @@ pub type OptionChain = GenericOptionChain<()>;
 /// **Collision warning:** provider metadata is flattened into the same object
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOptionUpdate<M = ()> {
-    /// Contract identity fields.
+    /// Contract key fields.
     #[serde(flatten)]
     #[cfg_attr(feature = "dataframe", df_derive(flatten))]
     pub key: OptionContractKey,
-    /// Provider or venue instrument identifier for the option contract, when known.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
-    pub contract_instrument: Option<Instrument>,
     /// Timestamp of the update as Unix milliseconds.
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub ts: DateTime<Utc>,
-    /// Best bid for the contract, if available.
-    pub bid: Option<Price>,
-    /// Best ask for the contract, if available.
-    pub ask: Option<Price>,
-    /// Last traded price, if available.
-    pub last_price: Option<Price>,
+    /// Premium currency for `bid`, `ask`, and `last_price`.
+    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
+    pub currency: Currency,
+    /// Best bid amount for the contract, denominated in `currency`.
+    pub bid: Option<PriceAmount>,
+    /// Best ask amount for the contract, denominated in `currency`.
+    pub ask: Option<PriceAmount>,
+    /// Last traded price amount, denominated in `currency`.
+    pub last_price: Option<PriceAmount>,
     /// Implied volatility estimate, if available.
-    pub implied_volatility: Option<Decimal>,
+    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
+    pub implied_volatility: Option<NonNegativeDecimal>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
@@ -264,11 +307,11 @@ impl<M: Default> GenericOptionUpdate<M> {
     /// quoting fields default to `None` and `provider` is initialised via
     /// `M::default()`.
     #[must_use]
-    pub fn new(key: OptionContractKey, ts: DateTime<Utc>) -> Self {
+    pub fn new(key: OptionContractKey, currency: Currency, ts: DateTime<Utc>) -> Self {
         Self {
             key,
-            contract_instrument: None,
             ts,
+            currency,
             bid: None,
             ask: None,
             last_price: None,

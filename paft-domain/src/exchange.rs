@@ -5,9 +5,18 @@
 
 use crate::error::DomainError;
 // no module-level serde imports needed here
-use paft_utils::Canonical;
 use std::borrow::Cow;
 use std::str::FromStr;
+
+paft_core::other_string_code_type!(
+    /// Provider-specific exchange code that is not modeled by [`Exchange`].
+    pub struct OtherExchange for Exchange;
+    type Error = DomainError;
+    parse(input) => Exchange::try_from_str(input);
+    invalid(input) => DomainError::InvalidExchangeValue {
+        value: input.to_string(),
+    };
+);
 
 /// Exchange enumeration with major exchanges and extensible fallback.
 ///
@@ -17,14 +26,13 @@ use std::str::FromStr;
 /// Canonical/serde rules:
 /// - Emission uses a single canonical form per variant (UPPERCASE ASCII, no spaces)
 /// - Parser accepts a superset of tokens (aliases, case-insensitive)
-/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix) and must be non-empty
+/// - `Other(s)` serializes to its canonical `code()` string (no escape prefix)
 /// - `Display` output matches the canonical code for known variants and the raw `s` for `Other(s)`
 /// - Serde round-trips preserve identity for canonical variants; unknown tokens normalize to `Other(UPPERCASE)`
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Exchange {
     /// NASDAQ Stock Market
-    #[default]
     NASDAQ,
     /// New York Stock Exchange
     NYSE,
@@ -107,7 +115,7 @@ pub enum Exchange {
     /// Ho Chi Minh Stock Exchange
     HOSE,
     /// Unknown or provider-specific exchange
-    Other(Canonical),
+    Other(OtherExchange),
 }
 
 impl Exchange {
@@ -128,6 +136,16 @@ impl Exchange {
         Self::from_str(trimmed).map_err(|_| DomainError::InvalidExchangeValue {
             value: input.to_string(),
         })
+    }
+
+    /// Builds an unknown exchange value, rejecting tokens modeled by [`Exchange`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` is empty, cannot be canonicalized, or parses
+    /// to a modeled [`Exchange`] variant.
+    pub fn other(input: &str) -> Result<Self, DomainError> {
+        OtherExchange::new(input).map(Self::Other)
     }
 
     /// Returns true if this is a major US exchange
@@ -214,7 +232,11 @@ impl Exchange {
 
 // Implement code() and string impls via macro (open enum)
 crate::string_enum_with_code!(
-    Exchange, Other, "Exchange",
+    Exchange, Other(OtherExchange), "Exchange",
+    type Error = DomainError;
+    invalid(input) => DomainError::InvalidExchangeValue {
+        value: input.to_string(),
+    };
     {
         "NASDAQ" => Exchange::NASDAQ,
         "NYSE" => Exchange::NYSE,

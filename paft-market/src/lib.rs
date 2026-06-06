@@ -29,6 +29,14 @@
 //! # Serde
 //! All models serialize with stable, human-readable representations suitable for
 //! storage and transport. Dataframe support emits string codes for enums.
+//!
+//! Request and semantic metadata wire shapes deserialize strictly when silently
+//! dropping fields could change meaning. A `kind` discriminator alone does not
+//! make a data payload strict. Provider/data payload models are
+//! forward-compatible by default and ignore unmodeled JSON fields unless
+//! validation requires rejection. Generic provider metadata is serde-flattened
+//! into the owning JSON object, so colliding JSON field names are unsupported;
+//! dataframe export keeps provider metadata under `provider.*` columns.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
@@ -59,8 +67,9 @@ pub use responses::download::{
     DownloadEntry, DownloadResponse, GenericDownloadEntry, GenericDownloadResponse,
 };
 pub use responses::history::{
-    Candle, CandleUpdate, GenericCandle, GenericCandleUpdate, GenericHistoryResponse, HistoryMeta,
-    HistoryResponse,
+    AdjustmentAnchor, AdjustmentMethod, Candle, CandleUpdate, CorporateActionAdjustmentCause,
+    CorporateActionAdjustmentCauses, GenericCandle, GenericCandleUpdate, GenericHistoryResponse,
+    HistoryMeta, HistoryResponse, HistoryValidationError, Ohlc, OhlcPriceBasis, PriceBasis,
 };
 pub use responses::options::OptionExpirationsResponse;
 pub use responses::search::{

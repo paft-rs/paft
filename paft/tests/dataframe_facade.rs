@@ -1,8 +1,7 @@
 #![cfg(feature = "dataframe")]
 
 use paft::Decimal;
-use paft::money::IsoCurrency;
-use paft::prelude::{Currency, ExchangeRate, ToDataFrame, ToDataFrameVec};
+use paft::prelude::{Currency, ExchangeRate, IsoCurrency, ToDataFrame, ToDataFrameVec};
 use paft_decimal::from_minor_units;
 use polars::prelude::{AnyValue, DataType};
 

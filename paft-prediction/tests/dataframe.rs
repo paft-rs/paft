@@ -1,35 +1,37 @@
 #![cfg(feature = "dataframe")]
-use paft_prediction::PredictionInstrument;
+
+use paft_prediction::OutcomeInstrument;
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 
-const EVENT_A: &str = "0x1111111111111111111111111111111111111111111111111111111111111111";
-const EVENT_B: &str = "0x2222222222222222222222222222222222222222222222222222222222222222";
-
 #[test]
-fn prediction_instrument_to_dataframe() {
-    let instrument = PredictionInstrument::new(EVENT_A, "42").unwrap();
+fn outcome_instrument_to_dataframe() {
+    let instrument = OutcomeInstrument::new("KALSHI", "KXHIGHNY-24JAN01-T60", "YES").unwrap();
     let df = instrument.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
 }
 
 #[test]
-fn prediction_instruments_columnar_round_trips_string_cell_values() {
-    // Multi-row case that exercises the iterator-based string column
-    // construction (`from_iter_values`). Verifies the actual byte values land
-    // in the DataFrame, not just that columns of the right names exist.
+fn outcome_instruments_columnar_round_trips_string_cell_values() {
     let instruments = [
-        PredictionInstrument::new(EVENT_A, "1").unwrap(),
-        PredictionInstrument::new(EVENT_B, "9876543210").unwrap(),
+        OutcomeInstrument::new("KALSHI", "KXHIGHNY-24JAN01-T60", "YES").unwrap(),
+        OutcomeInstrument::new(
+            "POLYMARKET",
+            "0x5eed579ff6763914d78a966c83473ba2485ac8910d0a0914eef6d9fcb33085de",
+            "73470541315377973562501025254719659796416871135081220986683321361000395461644",
+        )
+        .unwrap(),
     ];
 
     let df = instruments.to_dataframe().unwrap();
     assert_eq!(df.height(), 2);
 
-    let event_id = df.column("event_id").unwrap().str().unwrap();
-    assert_eq!(event_id.get(0), Some(EVENT_A));
-    assert_eq!(event_id.get(1), Some(EVENT_B));
+    let venue = df.column("venue").unwrap().str().unwrap();
+    assert_eq!(venue.get(0), Some("KALSHI"));
+    assert_eq!(venue.get(1), Some("POLYMARKET"));
+
+    let market_id = df.column("market_id").unwrap().str().unwrap();
+    assert_eq!(market_id.get(0), Some("KXHIGHNY-24JAN01-T60"));
 
     let outcome_id = df.column("outcome_id").unwrap().str().unwrap();
-    assert_eq!(outcome_id.get(0), Some("1"));
-    assert_eq!(outcome_id.get(1), Some("9876543210"));
+    assert_eq!(outcome_id.get(0), Some("YES"));
 }

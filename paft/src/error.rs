@@ -11,6 +11,10 @@ pub enum Error {
     #[error(transparent)]
     Core(#[from] paft_core::error::PaftError),
 
+    /// Error originating from constrained decimal construction.
+    #[error(transparent)]
+    DecimalConstraint(#[from] paft_decimal::DecimalConstraintError),
+
     /// Error originating from `paft-domain`.
     #[cfg(feature = "domain")]
     #[error(transparent)]
@@ -20,6 +24,16 @@ pub enum Error {
     #[cfg(feature = "market")]
     #[error(transparent)]
     Market(#[from] paft_market::MarketError),
+
+    /// Error originating from `paft-market` history response validation.
+    #[cfg(feature = "market")]
+    #[error(transparent)]
+    HistoryValidation(#[from] paft_market::HistoryValidationError),
+
+    /// Error originating from `paft-fundamentals`.
+    #[cfg(feature = "fundamentals")]
+    #[error(transparent)]
+    Fundamentals(#[from] paft_fundamentals::FundamentalsError),
 
     /// Error originating from `paft-prediction`.
     #[cfg(feature = "prediction")]
