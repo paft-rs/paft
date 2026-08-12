@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Fundamentals/statements: expanded `IncomeStatementRow`, `BalanceSheetRow`,
+  and `CashflowRow` with additional common line items (e.g. cost of revenue,
+  R&D/SG&A, EBIT/EBITDA, pretax income, EPS, total debt, retained earnings,
+  investing/financing cash flow, stock-based compensation). This is a
+  breaking change for any code constructing these structs as full literals.
+- Fundamentals/statements: documented sign conventions on `CashflowRow` (cash
+  inflows positive, outflows negative; balances such as `end_cash_position`
+  excluded) and on `IncomeStatementRow` (expense lines are positive magnitudes
+  to be subtracted, not signed cash flows), and documented which
+  `IncomeStatementRow`, `BalanceSheetRow`, and `CashflowRow` fields are derived
+  or aggregate values carried as reported rather than computed or reconciled by
+  `paft` (including `ebit`/`ebitda`, `total_debt`, `working_capital`,
+  `tangible_book_value`, and `free_cash_flow`).
+- Fundamentals: exact `DataFrame` schema tests (full ordered column list and
+  dtype) and JSON wire-format tests for all three statement rows.
+
+### Changed
+
+- **Breaking** Fundamentals/statements: `IncomeStatementRow::total_expenses`
+  is renamed to `operating_expenses` and documented as *excluding* cost of
+  revenue, so that `gross_profit - operating_expenses = operating_income`.
+  Providers publishing a "total expenses" figure inclusive of cost of revenue
+  must subtract `cost_of_revenue` when mapping.
+- **Breaking** Fundamentals/statements:
+  `IncomeStatementRow::basic_average_shares` and `diluted_average_shares`
+  change from `Option<u64>` to `Option<QuantityAmount>`, since weighted
+  averages are fractional. This changes the JSON encoding from a number
+  (`1000000`) to a decimal string (`"1000000.25"`), and the `DataFrame`
+  column from `UInt64` to `Decimal(38, 10)` named
+  `basic_average_shares.amount` / `diluted_average_shares.amount`.
+  `BalanceSheetRow::shares_outstanding` is unchanged: it is a point-in-time
+  count with integral semantics.
+
 ## [0.9.0] - 2026-06-06
 
 This release is audited against the `v0.8.0` tag. It is a breaking API and
