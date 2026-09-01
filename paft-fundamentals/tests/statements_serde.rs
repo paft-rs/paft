@@ -244,9 +244,10 @@ fn statement_value_types_have_their_expected_wire_encodings() {
     assert!(balance["minority_interest"].is_null());
 }
 
-/// Cash outflows keep their negative sign through a serde round trip.
+/// Cash outflows and negative reconciliation adjustments keep their
+/// negative sign through a serde round trip.
 #[test]
-fn cashflow_outflow_signs_survive_serialization() {
+fn cashflow_negative_signs_survive_serialization() {
     let cashflow: Value = from_str(&to_string(&cashflow_row()).unwrap()).unwrap();
     for field in [
         "capital_expenditures",
@@ -258,7 +259,7 @@ fn cashflow_outflow_signs_survive_serialization() {
     ] {
         assert!(
             cashflow[field]["amount"].as_str().unwrap().starts_with('-'),
-            "{field} should serialize as a negative outflow"
+            "{field} should preserve its negative sign"
         );
     }
     assert_eq!(cashflow["issuance_of_debt"]["amount"], json!("300"));
