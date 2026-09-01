@@ -7,37 +7,62 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Fundamentals/statements: expanded `IncomeStatementRow`, `BalanceSheetRow`,
-  and `CashflowRow` with additional common line items (e.g. cost of revenue,
-  R&D/SG&A, EBIT/EBITDA, pretax income, EPS, total debt, retained earnings,
-  investing/financing cash flow, stock-based compensation). This is a
-  breaking change for any code constructing these structs as full literals.
-- Fundamentals/statements: documented sign conventions on `CashflowRow` (cash
-  inflows positive, outflows negative; balances such as `end_cash_position`
-  excluded) and on `IncomeStatementRow` (expense lines are positive magnitudes
-  to be subtracted, not signed cash flows), and documented which
-  `IncomeStatementRow`, `BalanceSheetRow`, and `CashflowRow` fields are derived
-  or aggregate values carried as reported rather than computed or reconciled by
-  `paft` (including `ebit`/`ebitda`, `total_debt`, `working_capital`,
-  `tangible_book_value`, and `free_cash_flow`).
+  and `CashflowRow` with additional common line items. New on
+  `IncomeStatementRow`: `cost_of_revenue`, `research_and_development`,
+  `selling_general_and_administrative`, `operating_expenses`,
+  `interest_income`, `ebit`, `ebitda`, `pretax_income`,
+  `net_income_common_stockholders`, `basic_eps`, `diluted_eps`,
+  `basic_average_shares`, and `diluted_average_shares`. New on
+  `BalanceSheetRow`: `total_debt`, `current_debt`,
+  `cash_and_short_term_investments`, `other_current_assets`,
+  `other_current_liabilities`, `retained_earnings`, `common_stock`,
+  `treasury_stock`, `minority_interest`, `working_capital`, and
+  `tangible_book_value`. New on `CashflowRow`: `stock_based_compensation`,
+  `change_in_working_capital`, `investing_cashflow`, `financing_cashflow`,
+  `issuance_of_debt`, `repayment_of_debt`, `repurchase_of_capital_stock`,
+  `cash_dividends_paid`, and `end_cash_position`.
+
+  Every field released in 0.9.0 is retained, with its name, type, and
+  encoding unchanged; no field was renamed or removed. The additions are
+  nonetheless **breaking** for code that constructs these structs as full
+  literals, and they add columns to the `DataFrame` schema and keys to the
+  JSON encoding of each row.
+
+- Fundamentals/statements: documented the sign conventions and reported-value
+  semantics of the statement rows:
+  - `CashflowRow` distinguishes direct cash flows (inflows positive, outflows
+    negative) from the non-cash reconciliation adjustments inside
+    `operating_cashflow` (`depreciation_and_amortization`,
+    `stock_based_compensation`, `change_in_working_capital`), which are signed
+    by their effect on operating cash flow and must not be summed with the
+    direct flows, and from balances such as `end_cash_position`.
+  - `IncomeStatementRow` expense lines, `depreciation_and_amortization`
+    included, are positive magnitudes to be subtracted rather than signed cash
+    flows.
+  - `BalanceSheetRow::treasury_stock` is carried negative, as the
+    contra-equity account the equity section presents.
+  - `ebit` and `ebitda` are the **unadjusted** measures only, defined as
+    `pretax_income + interest_expense - interest_income` and that plus
+    `depreciation_and_amortization`. Source-reported values under those
+    definitions belong in these fields; adjusted variants such as "Adjusted
+    EBITDA", with add-backs for stock-based compensation, restructuring, or
+    impairments, belong in provider metadata or a distinctly named field.
+  - The remaining derived or aggregate fields (`operating_expenses`,
+    `net_income_common_stockholders`, `total_debt`,
+    `cash_and_short_term_investments`, `working_capital`,
+    `tangible_book_value`, `free_cash_flow`) are carried as reported and are
+    never computed, reconciled, or validated by `paft`.
+
 - Fundamentals: exact `DataFrame` schema tests (full ordered column list and
   dtype) and JSON wire-format tests for all three statement rows.
 
 ### Changed
 
-- **Breaking** Fundamentals/statements: `IncomeStatementRow::total_expenses`
-  is renamed to `operating_expenses` and documented as *excluding* cost of
-  revenue, so that `gross_profit - operating_expenses = operating_income`.
-  Providers publishing a "total expenses" figure inclusive of cost of revenue
-  must subtract `cost_of_revenue` when mapping.
-- **Breaking** Fundamentals/statements:
-  `IncomeStatementRow::basic_average_shares` and `diluted_average_shares`
-  change from `Option<u64>` to `Option<QuantityAmount>`, since weighted
-  averages are fractional. This changes the JSON encoding from a number
-  (`1000000`) to a decimal string (`"1000000.25"`), and the `DataFrame`
-  column from `UInt64` to `Decimal(38, 10)` named
-  `basic_average_shares.amount` / `diluted_average_shares.amount`.
-  `BalanceSheetRow::shares_outstanding` is unchanged: it is a point-in-time
-  count with integral semantics.
+- **Breaking** Fundamentals/statements: `IncomeStatementRow` fields are
+  declared in statement order, which moves `net_income` after
+  `income_tax_expense` and `depreciation_and_amortization`. This changes the
+  `DataFrame` column order for those already-released fields; their dtypes and
+  the JSON encoding, which is keyed by name, are unaffected.
 
 ## [0.9.0] - 2026-06-06
 

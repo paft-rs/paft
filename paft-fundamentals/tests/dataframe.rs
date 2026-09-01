@@ -341,7 +341,7 @@ fn balance_sheet_row_to_dataframe() {
         other_current_liabilities: Some(usd(120)),
         retained_earnings: Some(usd(900)),
         common_stock: Some(usd(100)),
-        treasury_stock: Some(usd(50)),
+        treasury_stock: Some(usd(-50)),
         minority_interest: None,
         working_capital: Some(usd(1_400)),
         tangible_book_value: Some(usd(1_050)),

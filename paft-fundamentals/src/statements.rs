@@ -17,11 +17,15 @@ use paft_money::{Money, Price, QuantityAmount};
 /// Expense lines on this struct - [`Self::cost_of_revenue`],
 /// [`Self::research_and_development`],
 /// [`Self::selling_general_and_administrative`],
-/// [`Self::operating_expenses`], [`Self::interest_expense`], and
-/// [`Self::income_tax_expense`] - are **positive magnitudes to be subtracted**,
-/// as the income statement presents them. They are not signed cash flows: the
-/// inflow-positive/outflow-negative convention documented on [`CashflowRow`]
-/// does **not** apply here.
+/// [`Self::operating_expenses`], [`Self::interest_expense`],
+/// [`Self::income_tax_expense`], and
+/// [`Self::depreciation_and_amortization`] - are **positive magnitudes to be
+/// subtracted**, as the income statement presents them. They are not signed
+/// cash flows: the inflow-positive/outflow-negative convention documented on
+/// [`CashflowRow`] does **not** apply here. Note in particular that
+/// [`Self::depreciation_and_amortization`] here is an expense magnitude,
+/// whereas [`CashflowRow::depreciation_and_amortization`] is a positive
+/// add-back within operating cash flow.
 ///
 /// Result lines ([`Self::operating_income`], [`Self::pretax_income`],
 /// [`Self::net_income`], and the rest) are signed, and are negative for a
@@ -33,15 +37,42 @@ use paft_money::{Money, Price, QuantityAmount};
 /// the source and never computed, reconciled, or validated by `paft`:
 ///
 /// - [`Self::operating_expenses`] - aggregate of the operating expense lines.
-/// - [`Self::ebit`] and [`Self::ebitda`] - non-GAAP measures on which sources
-///   disagree substantially (notably over which items are added back to
-///   EBITDA).
+/// - [`Self::ebit`] and [`Self::ebitda`] - unadjusted earnings measures; see
+///   the boundary defined below.
 /// - [`Self::net_income_common_stockholders`] - net income after preferred
 ///   dividends and minority interest, with source-specific deductions.
 ///
 /// Recompute from the component line items when you need a value consistent
 /// with the rest of the row; use the derived field when you want what the
 /// source published.
+///
+/// # What `ebit` and `ebitda` mean here
+///
+/// These two fields carry the **unadjusted** measures only, defined against
+/// the other fields of this row:
+///
+/// - [`Self::ebit`] is earnings before interest and taxes:
+///   `pretax_income + interest_expense - interest_income`.
+/// - [`Self::ebitda`] is [`Self::ebit`] plus
+///   [`Self::depreciation_and_amortization`].
+///
+/// A value a source reports under those definitions belongs here, even where
+/// it does not reconcile exactly to this row's own line items - sources draw
+/// the line between operating and non-operating items differently, and `paft`
+/// carries what was published rather than recomputing it. The definitions
+/// above fix *which measure* the field holds; they are not an identity `paft`
+/// enforces.
+///
+/// What does **not** belong here is any *adjusted* measure - "Adjusted
+/// EBITDA", "EBITDA before exceptional items", and similar - that applies
+/// exclusions or add-backs beyond interest, taxes, depreciation, and
+/// amortization. Add-backs for stock-based compensation, restructuring
+/// charges, impairments, litigation settlements, acquisition costs, or other
+/// items a source labels one-off are provider-specific and mutually
+/// incomparable. Carry them as provider metadata, or under a distinct field
+/// name that says which adjustment it is - never in [`Self::ebit`] or
+/// [`Self::ebitda`], where they would silently make rows from different
+/// sources non-comparable.
 pub struct IncomeStatementRow {
     /// Financial period with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
@@ -65,7 +96,13 @@ pub struct IncomeStatementRow {
     /// `gross_profit - operating_expenses = operating_income`
     ///
     /// Providers that publish a "total expenses" figure inclusive of cost of
-    /// revenue must subtract `cost_of_revenue` before mapping into this field.
+    /// revenue may subtract `cost_of_revenue` to obtain this field, but only
+    /// where the remainder is in fact the operating expense aggregate above -
+    /// that is, where the provider's total covers cost of revenue plus the
+    /// operating expense lines and nothing else. Totals that also fold in
+    /// non-operating items (interest expense, income tax, other expense) do
+    /// not reduce to `operating_expenses` by that subtraction; leave this
+    /// field `None` rather than mapping such a figure into it.
     ///
     /// A positive magnitude, and an aggregate as reported; see the struct-level
     /// notes on signs and derived fields.
@@ -76,15 +113,21 @@ pub struct IncomeStatementRow {
     pub interest_income: Option<Money>,
     /// Interest expense.
     pub interest_expense: Option<Money>,
-    /// Earnings before interest and taxes.
+    /// Earnings before interest and taxes, **unadjusted**:
+    /// `pretax_income + interest_expense - interest_income`.
     ///
-    /// Non-GAAP measure as reported; see the struct-level note on derived
-    /// fields.
+    /// Carried as reported. Adjusted variants with further exclusions or
+    /// add-backs do not belong here; see the struct-level note on what `ebit`
+    /// and `ebitda` mean.
     pub ebit: Option<Money>,
-    /// Earnings before interest, taxes, depreciation, and amortization.
+    /// Earnings before interest, taxes, depreciation, and amortization,
+    /// **unadjusted**: [`Self::ebit`] plus
+    /// [`Self::depreciation_and_amortization`].
     ///
-    /// Non-GAAP measure as reported; see the struct-level note on derived
-    /// fields.
+    /// Carried as reported. "Adjusted EBITDA" and similar measures that add
+    /// back stock-based compensation, restructuring, impairments, or other
+    /// items do not belong here; see the struct-level note on what `ebit` and
+    /// `ebitda` mean.
     pub ebitda: Option<Money>,
     /// Pretax income.
     pub pretax_income: Option<Money>,
@@ -191,6 +234,14 @@ pub struct BalanceSheetRow {
     /// Common stock par/stated value.
     pub common_stock: Option<Money>,
     /// Treasury stock.
+    ///
+    /// # Sign convention
+    ///
+    /// A contra-equity account, carried **negative**, as the equity section
+    /// presents it: it reduces [`Self::total_equity`], so a company holding
+    /// repurchased shares reports a negative value here and zero or `None`
+    /// otherwise. Providers that publish treasury stock as an unsigned
+    /// magnitude must negate it before mapping into this field.
     pub treasury_stock: Option<Money>,
     /// Minority (non-controlling) interest.
     pub minority_interest: Option<Money>,
@@ -211,9 +262,19 @@ pub struct BalanceSheetRow {
 ///
 /// # Sign convention
 ///
-/// Every *flow* field on this struct is signed from the perspective of the
-/// company's cash balance, matching how the statement of cash flows is
-/// presented:
+/// Fields on this struct fall into three kinds, and the sign rule differs by
+/// kind.
+///
+/// ## Direct cash flows
+///
+/// Fields that record cash actually moving - the section subtotals
+/// [`Self::operating_cashflow`], [`Self::investing_cashflow`], and
+/// [`Self::financing_cashflow`], the individual investing and financing lines
+/// [`Self::capital_expenditures`], [`Self::issuance_of_debt`],
+/// [`Self::repayment_of_debt`], [`Self::repurchase_of_capital_stock`], and
+/// [`Self::cash_dividends_paid`], and the derived [`Self::free_cash_flow`] -
+/// are signed from the perspective of the company's cash balance, matching how
+/// the statement of cash flows is presented:
 ///
 /// - **Cash inflows are positive.**
 /// - **Cash outflows are negative.**
@@ -225,9 +286,33 @@ pub struct BalanceSheetRow {
 /// cash. Providers that publish these as unsigned magnitudes must negate them
 /// before mapping into this struct.
 ///
-/// The convention covers flows only. [`Self::end_cash_position`] is a
-/// point-in-time *balance*, not a flow, and is positive for a company holding
-/// cash.
+/// ## Non-cash reconciliation adjustments
+///
+/// [`Self::depreciation_and_amortization`],
+/// [`Self::stock_based_compensation`], and
+/// [`Self::change_in_working_capital`] are **not** cash flows. They are
+/// reconciling items *within* [`Self::operating_cashflow`], bridging
+/// [`Self::net_income`] to it under the indirect method, and are already
+/// included in that subtotal rather than adding to it.
+///
+/// Their sign is their effect on operating cash flow, not a direction of cash
+/// movement: an item added back to net income is **positive**, an item
+/// deducted is **negative**. So [`Self::depreciation_and_amortization`] and
+/// [`Self::stock_based_compensation`] are positive - they are non-cash
+/// expenses added back - even though no cash moved, and
+/// [`Self::change_in_working_capital`] is negative when working capital grew
+/// and consumed cash. Do not read a positive add-back as an inflow, and do not
+/// sum these fields with the direct cash flows above; doing so double-counts
+/// them.
+///
+/// [`Self::net_income`] is likewise not a cash flow: it is the starting point
+/// of that reconciliation, signed as on the income statement and negative for
+/// a loss-making period.
+///
+/// ## Balances
+///
+/// [`Self::end_cash_position`] is a point-in-time *balance*, neither a flow nor
+/// an adjustment, and is positive for a company holding cash.
 ///
 /// # Reported vs. derived fields
 ///
@@ -250,11 +335,23 @@ pub struct CashflowRow {
     ///
     /// Derived value as reported; see the struct-level note on derived fields.
     pub free_cash_flow: Option<Money>,
-    /// Net income.
+    /// Net income, the starting point of the operating-cash-flow
+    /// reconciliation rather than a cash flow itself; see the struct-level
+    /// sign convention.
     pub net_income: Option<Money>,
     /// Depreciation and amortization added back to net income.
+    ///
+    /// A non-cash reconciliation adjustment within
+    /// [`Self::operating_cashflow`], positive as an add-back; see the
+    /// struct-level sign convention. Distinct from
+    /// [`IncomeStatementRow::depreciation_and_amortization`], which is the
+    /// expense as presented on the income statement.
     pub depreciation_and_amortization: Option<Money>,
     /// Stock-based compensation added back to net income.
+    ///
+    /// A non-cash reconciliation adjustment within
+    /// [`Self::operating_cashflow`], positive as an add-back; see the
+    /// struct-level sign convention.
     pub stock_based_compensation: Option<Money>,
     /// Change in working capital as an adjustment within operating cash flow.
     ///
@@ -283,7 +380,7 @@ pub struct CashflowRow {
     /// Repurchase of capital stock (buybacks).
     ///
     /// Negative when cash was spent on repurchases, per the struct-level sign
-    /// convention. Positive values represent net issuance.
+    /// convention.
     pub repurchase_of_capital_stock: Option<Money>,
     /// Cash dividends paid.
     ///

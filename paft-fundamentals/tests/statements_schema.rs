@@ -213,8 +213,10 @@ fn income_statement_row_dataframe_schema_is_exact() {
         operating_income: Some(usd(3_500)),
         interest_income: Some(usd(120)),
         interest_expense: Some(usd(200)),
-        ebit: Some(usd(3_420)),
-        ebitda: Some(usd(4_020)),
+        // ebit = pretax_income + interest_expense - interest_income
+        //      = 3420 + 200 - 120; ebitda = ebit + d&a = 3500 + 600.
+        ebit: Some(usd(3_500)),
+        ebitda: Some(usd(4_100)),
         pretax_income: Some(usd(3_420)),
         income_tax_expense: Some(usd(700)),
         depreciation_and_amortization: Some(usd(600)),
@@ -256,7 +258,7 @@ fn balance_sheet_row_dataframe_schema_is_exact() {
         other_current_liabilities: Some(usd(120)),
         retained_earnings: Some(usd(900)),
         common_stock: Some(usd(100)),
-        treasury_stock: Some(usd(50)),
+        treasury_stock: Some(usd(-50)),
         minority_interest: None,
         working_capital: Some(usd(1_400)),
         tangible_book_value: Some(usd(2_050)),
