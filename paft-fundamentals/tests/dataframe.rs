@@ -30,6 +30,10 @@ fn usd_price(amount: i64) -> Price {
     )
 }
 
+fn shares(value: &str) -> paft_money::QuantityAmount {
+    paft_money::QuantityAmount::from_decimal(dec(value)).unwrap()
+}
+
 fn dec(value: &str) -> Decimal {
     Decimal::from_str(value).unwrap()
 }
@@ -288,12 +292,25 @@ fn statements_row_to_dataframe() {
     let row = IncomeStatementRow {
         period: ReportingPeriod::annual(2024).unwrap(),
         total_revenue: None,
+        cost_of_revenue: None,
         gross_profit: None,
+        research_and_development: None,
+        selling_general_and_administrative: None,
+        operating_expenses: None,
         operating_income: None,
-        net_income: None,
+        interest_income: None,
         interest_expense: None,
+        ebit: None,
+        ebitda: None,
+        pretax_income: None,
         income_tax_expense: None,
         depreciation_and_amortization: None,
+        net_income: None,
+        net_income_common_stockholders: None,
+        basic_eps: Some(usd_price(2)),
+        diluted_eps: Some(usd_price(2)),
+        basic_average_shares: Some(shares("1000000")),
+        diluted_average_shares: Some(shares("1010000.5")),
     };
     let df = row.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);
@@ -317,6 +334,17 @@ fn balance_sheet_row_to_dataframe() {
         net_property_plant_equipment: Some(usd(1_800)),
         goodwill: Some(usd(700)),
         intangible_assets: Some(usd(250)),
+        total_debt: Some(usd(1_500)),
+        current_debt: Some(usd(300)),
+        cash_and_short_term_investments: Some(usd(800)),
+        other_current_assets: Some(usd(150)),
+        other_current_liabilities: Some(usd(120)),
+        retained_earnings: Some(usd(900)),
+        common_stock: Some(usd(100)),
+        treasury_stock: Some(usd(-50)),
+        minority_interest: None,
+        working_capital: Some(usd(1_400)),
+        tangible_book_value: Some(usd(1_050)),
     };
 
     let df = row.to_dataframe().unwrap();
@@ -328,10 +356,19 @@ fn cashflow_row_to_dataframe() {
     let row = CashflowRow {
         period: ReportingPeriod::annual(2024).unwrap(),
         operating_cashflow: Some(usd(1_200)),
-        capital_expenditures: Some(usd(300)),
+        capital_expenditures: Some(usd(-300)),
         free_cash_flow: Some(usd(900)),
         net_income: Some(usd(700)),
         depreciation_and_amortization: Some(usd(250)),
+        stock_based_compensation: Some(usd(80)),
+        change_in_working_capital: Some(usd(-40)),
+        investing_cashflow: Some(usd(-500)),
+        financing_cashflow: Some(usd(-200)),
+        issuance_of_debt: Some(usd(300)),
+        repayment_of_debt: Some(usd(-150)),
+        repurchase_of_capital_stock: Some(usd(-100)),
+        cash_dividends_paid: Some(usd(-60)),
+        end_cash_position: Some(usd(1_000)),
     };
 
     let df = row.to_dataframe().unwrap();
