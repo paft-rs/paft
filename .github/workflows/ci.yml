@@ -96,6 +96,9 @@ jobs:
       - name: Run tests
         run: just test
 
+      - name: Check decimal backend feature unification
+        run: just check-decimal-feature-desync
+
   package:
     name: Package
     runs-on: ubuntu-latest

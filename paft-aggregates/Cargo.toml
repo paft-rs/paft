@@ -49,4 +49,4 @@ dataframe = [
 [dev-dependencies]
 paft-decimal = { workspace = true, default-features = false }
 serde_json = { workspace = true }
-pretty_assertions = "1.4"
+pretty_assertions = "1"

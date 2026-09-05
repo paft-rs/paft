@@ -224,11 +224,11 @@ impl Money {
     /// # Errors
     /// Returns `MoneyError::MetadataNotFound` when metadata is not registered for a custom currency.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
-    pub fn new(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
+    pub fn new(mut amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
         let (minor_units, scale) = Self::scale_for_currency(&currency)?;
-        let rounded = Self::round_amount_to_scale(&amount, scale);
+        amount = Self::round_amount_to_scale(&amount, scale);
         Ok(Self {
-            amount: rounded,
+            amount,
             currency,
             minor_units,
         })
@@ -256,13 +256,13 @@ impl Money {
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     // We take `amount` by value to mirror `Money::new` and avoid forcing
     // callers (notably the deserialize path) to clone before construction.
-    // The body uses `&amount` for validation and only consumes the canonical
-    // value; keep the signature consistent across backends and deserialize paths.
-    pub fn new_exact(amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
+    // Normalize the owned amount before storing it, keeping the signature
+    // consistent across backends and deserialize paths.
+    pub fn new_exact(mut amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
         let (minor_units, scale) = Self::scale_for_currency(&currency)?;
-        let canonical = Self::canonicalize_exact_amount(&amount, &currency, scale)?;
+        amount = Self::canonicalize_exact_amount(&amount, &currency, scale)?;
         Ok(Self {
-            amount: canonical,
+            amount,
             currency,
             minor_units,
         })

@@ -64,6 +64,15 @@ paft-money = { version = "0.9.0", features = ["money-formatting"] }
 Features
 --------
 
+`IsoCurrency` is re-exported from `iso_currency` `0.7`. Prefer that re-export
+when constructing `Currency::Iso`; applications that depend directly on
+`iso_currency` must use the compatible `0.7` line to share the same Rust type.
+
+`PriceAmount::into_inner` and `QuantityAmount::into_inner` are runtime methods
+so they work even when another dependency enables BigDecimal. Const callers
+can use the borrowed `as_decimal`/`as_non_negative_decimal` accessors or move
+owned extraction to runtime.
+
 - `bigdecimal`: switch to arbitrary precision decimals
 - `dataframe`: Polars integration for money types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 - `money-formatting`: locale-aware formatting and strict parsing for `Money`

@@ -71,6 +71,32 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Workspace: upgraded Cargo's workspace resolver from 2 to 3, enabling
+  Rust-version-aware dependency resolution against the declared MSRV.
+- Dependencies: upgraded `iso_currency` from `0.5` to `0.7`; downstream code
+  should use PAFT's `IsoCurrency` re-export or a compatible direct `0.7`
+  dependency. Refreshed the remaining dependency lockfile, including
+  `rust_decimal` 1.43.0, `bitflags` 2.13.1, `serde` 1.0.229,
+  `serde_json` 1.0.151, and `thiserror` 2.0.20. Broadened `serde`,
+  `serde_json`, `thiserror`, `bitflags`, and `pretty_assertions` to major-only
+  requirements. Pre-1.0 dependencies retain their minor
+  compatibility boundary, and `rust_decimal` retains its tested `1.42` API
+  floor while permitting later `1.x` releases.
+- Decimal: removed the independent `num-bigint` dependency and use
+  `bigdecimal::num_bigint::BigInt` so the integer type always matches the
+  active BigDecimal backend. BigDecimal 0.4 still uses num-bigint 0.4;
+  independently upgrading to num-bigint 0.5 would introduce incompatible types.
+- Money: normalize owned constructor inputs before storing them, preserving
+  the by-value API across decimal backends and resolving current Clippy
+  warnings without lint suppressions.
+- **Breaking** Money: `PriceAmount::into_inner` and
+  `QuantityAmount::into_inner` are no longer `const fn`. This fixes builds
+  where a different dependency enables `paft-decimal/bigdecimal` without the
+  matching local feature on `paft-money`; local cfg cannot determine whether
+  the decimal backend supports const extraction. Const callers must use the
+  borrowed accessors or move extraction to runtime. CI now runs the locked
+  decimal feature-isolation checks to prevent regressions.
+
 - **Breaking** DataFrame dependencies: upgraded `df-derive-core` and
   `df-derive-macros` from `0.3.1` to `0.5`, and `polars`/`polars-arrow` from
   `0.53` to `0.55`. Direct downstream Polars and df-derive dependencies must

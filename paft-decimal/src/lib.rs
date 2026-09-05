@@ -133,8 +133,7 @@ mod backend {
     use super::{DECIMAL128_PRECISION, FromStr, RoundingStrategy};
 
     pub use bigdecimal::BigDecimal as Decimal;
-    use bigdecimal::RoundingMode;
-    use num_bigint::BigInt;
+    use bigdecimal::{RoundingMode, num_bigint::BigInt};
     pub use num_traits::ToPrimitive;
     use num_traits::{One, Zero};
 

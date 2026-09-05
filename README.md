@@ -55,6 +55,11 @@ and fundamentals types by default; aggregate snapshots, prediction-market
 models, DataFrame export, tracing, formatting, and backend choices are opt-in.
 
 The minimum supported Rust version is 1.95.
+The workspace uses Cargo resolver 3, including Rust-version-aware dependency
+selection. Dependency requirements allow compatible updates: stable crates use
+major-only requirements where their API permits, while pre-1.0 crates retain
+their minor compatibility boundary. `rust_decimal` retains its tested `1.42`
+API floor while allowing later `1.x` releases.
 
 | Crate README | Role |
 | --- | --- |
