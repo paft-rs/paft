@@ -2,12 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.10.0] - Unreleased
 
-## [0.10.0] - 2026-09-05
-
-This release is audited against the `v0.9.0` tag. It expands financial
-statements, upgrades DataFrame integration, and raises the minimum supported
+Changes below are relative to the `v0.9.0` tag. This upcoming release uses one
+fixed decimal representation, enforces exact ingestion and arithmetic on
+`Price` and `MonetaryAmount`, expands financial statements, preserves instrument
+identity in DataFrames, and upgrades dependencies and the minimum supported
 Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Added
@@ -44,19 +44,36 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   wire-format and round-trip tests, and legacy-payload coverage for all three
   statement rows. Continuing income and current debt additionally cover
   monetary values, negative income, and missing-versus-zero values through
-  both single-row and columnar DataFrame conversion.
+  both single-row and columnar DataFrame conversion. Tax-benefit and expense
+  reversal cases preserve signed values and independently reported subtotals.
+- Decimal: `checked_add_exact`, `checked_sub_exact`, `checked_mul_exact`, and
+  `checked_div_exact` accept decimal references and return `Option<Decimal>`.
+  They reject precision loss, nonzero underflow, and nonterminating quotients
+  without adding numeric dependencies. Ordinary checked helpers retain upstream
+  rounding semantics.
+- Decimal/Money: `paft_decimal::clone_decimal`, `paft_decimal::zero`, and
+  `paft_decimal::one` are now const functions.
+  `Money::amount`, `ExchangeRate::rate`, `Price::amount`, `Price::zero`,
+  `MonetaryAmount::amount`, `MonetaryAmount::zero`, and
+  `PriceAmount::with_currency` also become const. `NonNegativeDecimal`,
+  `PositiveDecimal`, and `Ratio` retain `Copy` and const `into_inner` without
+  feature conditions; `PriceAmount::into_inner` and
+  `QuantityAmount::into_inner` remain const under every feature combination.
 
 ### Changed
 
 - **Breaking** Money: removed built-in metadata for `USDC`, `USDT`, `BNB`, and
   `AVAX`, whose native denominations depend on network or asset variant. Codes
   still parse, but settlement constructors require explicit metadata and return
-  `MoneyError::MetadataNotFound` until it is registered.
+  `MoneyError::MetadataNotFound` until it is registered. `full_name()` falls
+  back to the currency code without metadata; `Price` and `MonetaryAmount`
+  construction still does not require a settlement scale.
 - Workspace: bumped all ten crates and their internal dependency requirements
   to `0.10.0`, and updated installation examples and repository version guidance.
 - **Breaking** Fundamentals: all three statement rows gain fields, JSON keys,
   and DataFrame columns. Full Rust struct literals must supply the new fields.
-  Every field released in 0.9.0 retains its name, type, and value encoding.
+  Existing statement fields keep their names, declared types, and wire shapes;
+  the decimal and currency changes in this release still apply to their values.
 - **Breaking** Fundamentals: income statement fields follow statement order,
   moving `net_income` after `income_tax_expense` and
   `depreciation_and_amortization` in DataFrame output. The continuing-income
@@ -66,12 +83,14 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   rows. Income statement expenses, including depreciation and amortization,
   are signed amounts to subtract: charges are positive, while net credits or
   reversals are negative. The income-tax provision is positive for expense
-  and negative for benefit; result lines can be negative. Direct
-  cash flows use positive inflows and negative outflows. Non-cash
-  reconciliation adjustments are signed by their effect on operating cash
-  flow, are already included in that subtotal, and must not be added to it
-  again. `end_cash_position` is a balance, and `treasury_stock` is negative
-  contra-equity.
+  and negative for benefit, including current and deferred tax recognized in
+  profit or loss. The adapter guidance includes `100 - (-20) = 120` as a
+  simplified tax-benefit example, without enforcing a reconciliation identity.
+  Result lines can be negative. Direct cash flows use positive inflows and
+  negative outflows. Non-cash reconciliation adjustments are signed by their
+  effect on operating cash flow, are already included in that subtotal, and
+  must not be added to it again. `end_cash_position` is a balance, and
+  `treasury_stock` is negative contra-equity.
 - Fundamentals: `ebit` and `ebitda` carry **unadjusted** reported measures:
   `pretax_income + interest_expense - interest_income`, and that value plus
   `depreciation_and_amortization`, respectively. Adjusted variants belong in
@@ -90,36 +109,40 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   1.90 to 1.95 for df-derive 0.5 and the Polars 0.55 dependency graph.
 - Workspace: upgraded Cargo's resolver from 2 to 3, enabling Rust-version-aware
   dependency resolution against the declared MSRV.
-- Dependencies: refreshed the lockfile, including `rust_decimal` 1.43.0,
-  `bitflags` 2.13.1, `chrono` 0.4.45, `serde` 1.0.229,
-  `serde_json` 1.0.151, and `thiserror` 2.0.20. Requirements for `serde`,
+- Dependencies: refreshed the lockfile, including `rust_decimal` 1.42.0 →
+  1.43.0, `bitflags` 2.11.1 → 2.13.1, `chrono` 0.4.41 → 0.4.45,
+  `serde` 1.0.228 → 1.0.229, `serde_json` 1.0.149 → 1.0.151, and
+  `thiserror` 2.0.18 → 2.0.20. Requirements for `serde`,
   `serde_json`, `thiserror`, `bitflags`, and `pretty_assertions` now omit
   minor versions. Pre-1.0 dependencies retain their minor compatibility
-  boundary; `rust_decimal` retains its tested `1.42` API floor while allowing
-  later `1.x` releases.
+  boundary; the `rust_decimal = "1.42"` manifest requirement is unchanged.
 - **Breaking** Decimal: removed the `bigdecimal` backend, its features and
-  forwarding, and backend-only dependencies. `Decimal` always re-exports
+  forwarding, and the direct dependencies used for that backend. `bigdecimal`
+  and `num-bigint` are removed from the lockfile; `num-traits` remains a
+  transitive dependency of other crates. `Decimal` always re-exports
   `rust_decimal::Decimal`; financial models remain non-generic over numbers.
 - **Breaking** Decimal: `parse_decimal` now returns
-  `Result<Decimal, DecimalParseError>`, distinguishing `InvalidSyntax` from
-  `NotRepresentable`. Money string constructors report `InvalidDecimal` for
-  syntax and `NotRepresentable` for values outside PAFT's representation.
+  `Result<Decimal, DecimalParseError>`, with a non-exhaustive error enum
+  distinguishing `InvalidSyntax` from `NotRepresentable`. The canonical string
+  constructors on `Money`, `Price`, and `MonetaryAmount` report
+  `MoneyError::InvalidDecimal` for decimal syntax and the new
+  `MoneyError::NotRepresentable` for values outside PAFT's representation.
+  Localized money parsing retains its format, grouping, affix, and currency
+  scale errors and reports `NotRepresentable` for decimal range failures.
+  `InvalidDecimal` and `ConversionError` diagnostic text is also updated.
 - **Breaking** Money: all `Price` and `MonetaryAmount` arithmetic, including
   price-times-quantity totals, now returns an exact result or
-  `MoneyError::NotRepresentable`. Division by zero remains a distinct error.
-- Decimal: added `checked_add_exact`, `checked_sub_exact`, `checked_mul_exact`,
-  and `checked_div_exact`. These reject precision loss, nonzero underflow, and
-  nonterminating quotients without adding numeric dependencies. Ordinary checked
-  helpers retain upstream rounding semantics.
+  `MoneyError::NotRepresentable`; this also replaces `ConversionError` for
+  arithmetic overflow on these types. Currency mismatches and division by zero
+  retain their distinct errors. Explicit conversion to settlement `Money`
+  continues to apply the selected rounding strategy.
+- Money: documented existing upstream precision rounding in `Money`
+  arithmetic, FX conversion, money ratios, and exchange-rate inversion.
+  Settlement rounding remains a separate step where applicable; DataFrame
+  decimal scale reduction retains half-even rounding.
 
 ### Fixed
 
-- Fundamentals: corrected `IncomeStatementRow::income_tax_expense` guidance
-  to a signed provision, positive for tax expense and negative for tax benefit.
-  Broader expense guidance now preserves net credits and reversals instead of
-  treating positivity as an invariant. Added a tax-benefit adapter example
-  and JSON/DataFrame regressions; reported subtotals remain independent and
-  are not recomputed or reconciled by PAFT.
 - Money: localized parsing recognizes the expected currency symbol and code
   before locating the amount, so digit-bearing symbols such as `TOK2`
   round-trip in prefix and suffix positions, including negative amounts and
@@ -162,23 +185,20 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   decimal places. Audited every non-ISO default against primary definitions;
   [the audit](paft-money/CURRENCY_DENOMINATIONS.md) records each source and
   regression tests check both exponents and integer-to-amount conversion.
-- Decimal: `parse_decimal` uses exact parsing under `rust_decimal` and rejects
-  values that would lose nonzero digits to scale or coefficient limits.
-  Insignificant fractional trailing zeros remain accepted. Canonical decimal
-  serde adapters and the `Money`, `MonetaryAmount`, and `Price` string
-  constructors now preserve the original value or reject it before domain
-  validation; constrained decimal serde no longer validates a rounded value.
+- **Breaking** Decimal: `parse_decimal` uses exact parsing under `rust_decimal`
+  and rejects values that would lose nonzero digits to scale or coefficient limits.
+  Representable input scale is preserved, and insignificant fractional trailing
+  zeros may be removed to make a value fit. The plain decimal grammar is
+  unchanged. Required and optional canonical decimal serde adapters and the
+  `Money`, `MonetaryAmount`, and `Price` string constructors now preserve the
+  original numeric value or reject it before domain validation. This includes
+  constrained decimal and contextual amount serde, exchange-rate shadows, and
+  model fields using those adapters; they no longer validate rounded inputs.
 - Money: `ExchangeRate::try_inverse` validates the reciprocal through
   `ExchangeRate::new`, returning `MoneyError::InvalidExchangeRate` if it
   underflows to zero. Inverting the fixed-width decimal maximum previously
   returned an invalid zero rate; `inverse` now panics for this case, while
   representable positive reciprocals remain valid.
-- Decimal/Money: constrained decimal `Copy` implementations and const extraction
-  are unconditional. `PriceAmount::into_inner` and `QuantityAmount::into_inner`
-  are const methods under every feature combination.
-- Money: normalize owned constructor inputs before storing them, retaining
-  the by-value API. Document upstream precision rounding and settlement rounding
-  separately for Money arithmetic, FX conversion, ratios, and rate inversion.
 - CI: check decimal identity, capabilities, and exact model ingestion with no
   default features, default features, and all features; check Rust 1.95.
 
@@ -187,7 +207,8 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 - Statement adapters: map tax benefits to negative `income_tax_expense` and
   preserve the direction of expense credits and reversals. If an adapter
   previously took absolute values, remap from the original source data.
-  Rust types, JSON encodings, and DataFrame schemas are unchanged.
+  The sign guidance itself does not change Rust types or wire schemas; the
+  statement-field and DataFrame additions listed above are separate changes.
 - Localized currency affixes containing ASCII digits now require whitespace
   separation. Single-digit symbols gain a space in formatted output; affixes
   made entirely of digits and locale separators use two spaces in `EnBy`.
@@ -236,11 +257,21 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   and BigDecimal conversion helpers are outside this release. Keep values that
   cannot fit externally, or reject them when mapping into PAFT.
 - Migrate `parse_decimal` callers from `Option` to `Result`: handle
-  `DecimalParseError`, use `?`, or explicitly discard the reason with `.ok()`.
-  Existing `.unwrap()` and `.expect()` calls remain usable.
+  the non-exhaustive `DecimalParseError`, propagate it from a compatible
+  `Result`-returning function, or explicitly discard the reason with `.ok()`.
+  Existing `.unwrap()` and `.expect()` calls remain usable. Canonical money
+  ingestion retains `PrecisionExceeded` for excess settlement precision;
+  localized parsing retains `ScaleTooLarge` for excess fractional digits.
+  Canonical decimal serde now rejects unrepresentable strings through the
+  deserializer's error type. Stored or provider-supplied text that v0.9.0
+  silently rounded may therefore fail to deserialize in v0.10.0.
 - Handle `MoneyError::NotRepresentable` in string constructors and exact amount
   arithmetic. `1 / 3` and underflowing nonzero products now fail for `Price` and
-  `MonetaryAmount`; Money's documented rounded calculations remain available.
+  `MonetaryAmount`; overflow on these arithmetic paths also changes from
+  `ConversionError` to `NotRepresentable`. `Money` arithmetic and scaled-unit
+  conversion failures continue to use `ConversionError` where documented.
+  Prefer `ExchangeRate::try_inverse` when a reciprocal might underflow: it now
+  returns `InvalidExchangeRate` for zero results, while `inverse` panics.
 - PAFT's coefficient has 96 bits and scale 0 through 28; magnitude and fractional
   detail share that budget. Exactness preserves numeric value rather than input
   spelling. Native `Decimal` parsing, serde, and arithmetic retain upstream
@@ -262,8 +293,6 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   noncontrolling interests, and EBIT/EBITDA exclude provider-specific
   adjustments. Provider-specific aliases and fallback logic remain outside
   `paft`.
-- Const callers of `PriceAmount::into_inner` or `QuantityAmount::into_inner`
-  must use the borrowed accessors or move owned extraction to runtime.
 
 ## [0.9.0] - 2026-06-06
 
@@ -1244,8 +1273,7 @@ This release tightens identifier validation across the entire workspace and intr
 
 - Initial public release.
 
-[Unreleased]: https://github.com/paft-rs/paft/compare/v0.10.0...HEAD
-[0.10.0]: https://github.com/paft-rs/paft/compare/v0.9.0...v0.10.0
+[0.10.0]: https://github.com/paft-rs/paft/compare/v0.9.0...develop
 [0.9.0]: https://github.com/paft-rs/paft/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/paft-rs/paft/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/paft-rs/paft/compare/v0.7.0...v0.7.1
