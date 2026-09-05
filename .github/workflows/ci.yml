@@ -29,8 +29,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
 
-      - name: Set up Rust 1.90.0
-        uses: dtolnay/rust-toolchain@1.90.0
+      - name: Set up Rust 1.95.0
+        uses: dtolnay/rust-toolchain@1.95.0
 
       - name: Cache Cargo
         uses: Swatinem/rust-cache@v2

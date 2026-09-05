@@ -71,6 +71,15 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Breaking** DataFrame dependencies: upgraded `df-derive-core` and
+  `df-derive-macros` from `0.3.1` to `0.5`, and `polars`/`polars-arrow` from
+  `0.53` to `0.55`. Direct downstream Polars and df-derive dependencies must
+  use matching compatible version lines to share DataFrame and runtime trait
+  types. Patch updates remain permitted by the manifest requirements.
+- Workspace: raised the minimum supported Rust version from 1.90 to 1.95 to
+  match df-derive 0.5 and the Polars 0.55 dependency graph, and updated the
+  CI MSRV check.
+
 - Fundamentals/statements: clarified `BalanceSheetRow::current_debt` as
   short-term borrowings plus the current portion of long-term debt, excluding
   separately classified lease liabilities and distinct from total current

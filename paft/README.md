@@ -145,6 +145,12 @@ Contextual price fields flatten into amount columns such as `price.amount`;
 the containing record carries denomination in its `currency` column. Provider
 metadata columns are namespaced under `provider.*`.
 
+DataFrame integration uses Polars `0.55` and the shared df-derive `0.5`
+runtime and macros, requiring Rust 1.95 or newer. Downstream code that names
+Polars types or derives compatible provider metadata should use the same
+compatible version lines (`polars = "0.55"`, `df-derive-macros = "0.5"`, and
+`df-derive-core = "0.5"` when depending on the runtime directly).
+
 Money formatting
 ----------------
 

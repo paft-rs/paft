@@ -54,6 +54,8 @@ The workspace is on the v0.9.0 line. The `paft` facade enables domain, market,
 and fundamentals types by default; aggregate snapshots, prediction-market
 models, DataFrame export, tracing, formatting, and backend choices are opt-in.
 
+The minimum supported Rust version is 1.95.
+
 | Crate README | Role |
 | --- | --- |
 | [`paft`](paft/README.md) | Facade crate for applications that want one dependency, common re-exports, forwarded features, and runnable examples. |
