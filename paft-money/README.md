@@ -243,6 +243,22 @@ let parsed =
 assert_eq!(parsed.format(), "1234.56 EUR");
 ```
 
+Localized parsing matches the expected symbol and code before validating the
+amount. Either can precede or follow the amount; a trailing symbol followed by
+the code is also accepted. Matching ignores ASCII case, and a single leading
+`+` or `-` applies to the whole value. For example, a custom `TOK2` symbol
+round-trips as `TOK2 1.23`, `1.23 TOK2`, `-TOK2 1.23`, or `-1.23 TOK2`.
+Grouping, decimal separators, settlement precision, and exact decimal
+representability are still validated.
+
+Affixes containing ASCII digits must be separated by whitespace. In the
+space-grouping locale (`EnBy`), an affix made entirely of digits and locale
+separators needs two whitespace characters: with symbol `2`, `2  123,00`
+means `123`, while the bare grouped amount `2 123,00` means `2123`. The
+formatter emits the required spaces for symbols and codes; preserve them
+when passing formatted output back to the parser. Conflicting numeric
+interpretations of affix placement return `MoneyError::InvalidAmountFormat`.
+
 Links
 -----
 

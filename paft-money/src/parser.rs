@@ -29,33 +29,20 @@ pub fn parse_localized_str(
 
     rest = rest.trim_start();
 
-    let first_digit = rest
-        .find(|c: char| c.is_ascii_digit())
-        .ok_or(MoneyError::InvalidAmountFormat)?;
-    let last_digit = rest
-        .rfind(|c: char| c.is_ascii_digit())
-        .ok_or(MoneyError::InvalidAmountFormat)?;
-
-    let prefix = rest[..first_digit].trim();
-    let suffix = rest[last_digit + 1..].trim();
-    let amount_slice = &rest[first_digit..=last_digit];
-
     let symbol = currency
         .symbol()
         .unwrap_or_else(|| Cow::Borrowed(currency.code()));
-    let symbol_str = symbol.as_ref();
-    let currency_code = currency.code();
-
-    if !prefix.is_empty() {
-        match_affix(prefix, Some(symbol_str), currency_code)?;
-    }
-
-    if !suffix.is_empty() {
-        match_affix(suffix, Some(symbol_str), currency_code)?;
-    }
-
     let locale = locale_override.unwrap_or_else(|| currency.default_locale());
     let spec = locale.spec();
+    let amount_slice = strip_currency_affixes(rest, symbol.as_ref(), currency.code(), &spec)?;
+    if !amount_slice.bytes().any(|byte| byte.is_ascii_digit()) {
+        return Err(MoneyError::InvalidAmountFormat);
+    }
+    if !amount_slice.starts_with(|c: char| c.is_ascii_digit())
+        || !amount_slice.ends_with(|c: char| c.is_ascii_digit())
+    {
+        return Err(MoneyError::MismatchedCurrencyAffix);
+    }
 
     let mut decimal_count = 0_usize;
     for ch in amount_slice.chars() {
@@ -140,14 +127,105 @@ const fn localized_decimal_error(error: decimal::DecimalParseError) -> MoneyErro
     }
 }
 
-fn match_affix(token: &str, symbol: Option<&str>, code: &str) -> Result<(), MoneyError> {
-    if symbol.is_some_and(|sym| token.eq_ignore_ascii_case(sym)) {
-        return Ok(());
+/// Minimum whitespace separating an affix from the amount or another affix.
+/// Shared with the formatter so numeric symbols cannot merge into the amount.
+pub fn minimum_affix_spacing(affix: &str, spec: &LocalFormat) -> usize {
+    if !affix.bytes().any(|byte| byte.is_ascii_digit()) {
+        return 0;
     }
-    if token.eq_ignore_ascii_case(code) {
-        return Ok(());
+    // In a space-grouping locale, one space could be part of a bare number.
+    // Two spaces distinguish a numeric-looking affix from a digit group.
+    if spec.group_separator.is_whitespace()
+        && affix.chars().all(|ch| {
+            ch.is_ascii_digit() || ch == spec.group_separator || ch == spec.decimal_separator
+        })
+    {
+        2
+    } else {
+        1
     }
-    Err(MoneyError::MismatchedCurrencyAffix)
+}
+
+fn strip_currency_affixes<'a>(
+    input: &'a str,
+    symbol: &str,
+    code: &str,
+    spec: &LocalFormat,
+) -> Result<&'a str, MoneyError> {
+    let symbol = symbol.trim();
+    let strip_prefix = |input: &'a str| {
+        [symbol, code]
+            .into_iter()
+            .filter_map(|affix| {
+                strip_prefix_affix(input, affix, spec).map(|rest| (affix.len(), rest))
+            })
+            .max_by_key(|(len, _)| *len)
+            .map_or(input, |(_, rest)| rest)
+    };
+    let prefix_first = strip_currency_suffixes(strip_prefix(input), symbol, code, spec);
+    let suffix_first = strip_prefix(strip_currency_suffixes(input, symbol, code, spec));
+
+    // A numeric symbol can match the amount itself (for example "1.23 CODE"
+    // with symbol "1.23"). Keep the interpretation that leaves a number, and
+    // reject conflicting numeric interpretations instead of choosing an amount.
+    let looks_numeric = |value: &str| {
+        value.starts_with(|ch: char| ch.is_ascii_digit())
+            && value.ends_with(|ch: char| ch.is_ascii_digit())
+            && value.chars().all(|ch| {
+                ch.is_ascii_digit() || ch == spec.group_separator || ch == spec.decimal_separator
+            })
+    };
+    match (looks_numeric(prefix_first), looks_numeric(suffix_first)) {
+        (true, true) if prefix_first != suffix_first => Err(MoneyError::InvalidAmountFormat),
+        (false, true) => Ok(suffix_first),
+        _ => Ok(prefix_first),
+    }
+}
+
+fn strip_currency_suffixes<'a>(
+    input: &'a str,
+    symbol: &str,
+    code: &str,
+    spec: &LocalFormat,
+) -> &'a str {
+    let Some((affix, rest)) = [symbol, code]
+        .into_iter()
+        .filter_map(|affix| strip_suffix_affix(input, affix, spec).map(|rest| (affix, rest)))
+        .max_by_key(|(affix, _)| affix.len())
+    else {
+        return input;
+    };
+
+    // `LocalizedMoney::with_code` can place both symbol and code after the
+    // amount. Only this ordered pair permits a second suffix.
+    if affix.eq_ignore_ascii_case(code) && !symbol.eq_ignore_ascii_case(code) {
+        strip_suffix_affix(rest, symbol, spec).unwrap_or(rest)
+    } else {
+        rest
+    }
+}
+
+fn strip_prefix_affix<'a>(input: &'a str, affix: &str, spec: &LocalFormat) -> Option<&'a str> {
+    if affix.is_empty() || !input.get(..affix.len())?.eq_ignore_ascii_case(affix) {
+        return None;
+    }
+    let rest = &input[affix.len()..];
+    let spaces = rest.chars().take_while(|ch| ch.is_whitespace()).count();
+    (spaces >= minimum_affix_spacing(affix, spec)).then(|| rest.trim_start())
+}
+
+fn strip_suffix_affix<'a>(input: &'a str, affix: &str, spec: &LocalFormat) -> Option<&'a str> {
+    let start = input.len().checked_sub(affix.len())?;
+    if affix.is_empty() || !input.get(start..)?.eq_ignore_ascii_case(affix) {
+        return None;
+    }
+    let rest = &input[..start];
+    let spaces = rest
+        .chars()
+        .rev()
+        .take_while(|ch| ch.is_whitespace())
+        .count();
+    (spaces >= minimum_affix_spacing(affix, spec)).then(|| rest.trim_end())
 }
 
 fn split_parts(core: &str, decimal_separator: char) -> (&str, &str) {

@@ -112,6 +112,14 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- Money: localized parsing recognizes the expected currency symbol and code
+  before locating the amount, so digit-bearing symbols such as `TOK2`
+  round-trip in prefix and suffix positions, including negative amounts and
+  output with a trailing code. Affixes containing digits require whitespace;
+  numeric-looking affixes in space-grouping locales require two whitespace
+  characters to preserve bare grouped amounts. The formatter supplies these
+  separators. Conflicting numeric affix interpretations are rejected, and
+  strict grouping, decimal-separator, and precision validation remain in place.
 - Money: `as_minor_units` now uses exact coefficient scaling in `i128`, so valid
   counts can exceed the decimal's 96-bit coefficient range. Decimal and money
   scaled-unit constructors accept numeric representability by removing trailing
@@ -168,6 +176,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Migration notes
 
+- Localized currency affixes containing ASCII digits now require whitespace
+  separation. Single-digit symbols gain a space in formatted output; affixes
+  made entirely of digits and locale separators use two spaces in `EnBy`.
+  Preserve those separators when parsing formatted strings. Bare numbers
+  retain their locale grouping rules, and ambiguous numeric affix placements
+  return `MoneyError::InvalidAmountFormat`.
 - Minor-unit conversions now accept large counts that previously failed due
   to a decimal intermediate. `Money::as_minor_units` remains fallible for
   `i128` overflow. `paft_decimal::try_from_scaled_units`, its panicking

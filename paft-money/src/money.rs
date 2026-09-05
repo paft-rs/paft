@@ -367,6 +367,13 @@ impl Money {
     ///
     /// The input must respect the separators and grouping pattern for `locale` and
     /// already match the currency exponent. No implicit rounding is performed.
+    /// A single leading `+` or `-` may precede the currency affixes and amount.
+    /// Symbols and codes are matched before the numeric portion, ignoring ASCII
+    /// case. Affixes containing ASCII digits require whitespace separation.
+    /// In space-grouping locales, numeric-looking affixes require two whitespace
+    /// characters so a single separator remains part of a bare grouped number.
+    /// The formatter supplies these separators, including with a trailing code.
+    /// Conflicting numeric interpretations of affix placement are rejected.
     ///
     /// # Errors
     /// Returns [`MoneyError`] when the input fails validation or exceeds the currency scale.
@@ -764,7 +771,11 @@ impl Money {
         }
 
         let symbol_first = symbol_first_override.unwrap_or_else(|| self.currency.symbol_first());
-        let symbol_spacing = symbol.as_ref().is_some_and(|s| s.chars().count() > 1);
+        let spec = locale.spec();
+        let symbol_spacing = symbol.as_ref().map_or(0, |symbol| {
+            usize::from(symbol.chars().count() > 1)
+                .max(parser::minimum_affix_spacing(symbol.trim(), &spec))
+        });
 
         let code = if include_code {
             match &self.currency {
@@ -781,15 +792,11 @@ impl Money {
         if symbol.is_some() {
             if symbol_first {
                 positions.push(FormatItem::Symbol);
-                if symbol_spacing {
-                    positions.push(FormatItem::Space);
-                }
+                positions.extend(std::iter::repeat_n(FormatItem::Space, symbol_spacing));
                 positions.push(FormatItem::Amount);
             } else {
                 positions.push(FormatItem::Amount);
-                if symbol_spacing {
-                    positions.push(FormatItem::Space);
-                }
+                positions.extend(std::iter::repeat_n(FormatItem::Space, symbol_spacing));
                 positions.push(FormatItem::Symbol);
             }
         } else {
@@ -797,7 +804,10 @@ impl Money {
         }
 
         if include_code {
-            positions.push(FormatItem::Space);
+            let code_spacing = code
+                .as_ref()
+                .map_or(1, |code| parser::minimum_affix_spacing(code, &spec).max(1));
+            positions.extend(std::iter::repeat_n(FormatItem::Space, code_spacing));
             positions.push(FormatItem::Code);
         }
 
