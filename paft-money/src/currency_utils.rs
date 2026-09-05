@@ -6,6 +6,11 @@
 //! scale source of truth; otherwise `Currency::decimal_places`
 //! consults metadata. If no metadata exists for a currency that needs it, money
 //! operations that require a scale return `MoneyError::MetadataNotFound`.
+//!
+//! Built-in non-ISO scales describe the documented native denominations, not
+//! venue quantity increments or display preferences. `USDC`, `USDT`, `BNB`, and
+//! `AVAX` require explicit metadata because their denominations depend on the
+//! network or asset variant. The registry is keyed by code, not by network.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -31,7 +36,9 @@ pub const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
 pub struct CurrencyMetadata {
     /// Human-readable name for the currency.
     pub full_name: Cow<'static, str>,
-    /// Number of decimal places (minor units) for the currency.
+    /// Minor-unit exponent used for settlement, exact money validation, and
+    /// integer unit conversion. This is not a preferred display precision or
+    /// a venue's quantity increment.
     pub minor_units: u8,
     /// Symbol used when rendering the currency.
     pub symbol: Cow<'static, str>,
@@ -100,6 +107,9 @@ impl fmt::Display for MinorUnitError {
 impl std::error::Error for MinorUnitError {}
 
 /// Built-in metadata for commonly used ISO and non-ISO currency codes.
+// Sources and the scope of each native denomination are recorded in
+// paft-money/CURRENCY_DENOMINATIONS.md. Add a sourced regression case below
+// whenever adding a non-ISO entry. Network-dependent codes have no default.
 const BUILTIN_CURRENCY_METADATA: &[(&str, &str, u8, &str, bool, Locale)] = &[
     (
         "USD",
@@ -127,19 +137,15 @@ const BUILTIN_CURRENCY_METADATA: &[(&str, &str, u8, &str, bool, Locale)] = &[
     ("BTC", "Bitcoin", 8, "\u{20BF}", true, Locale::EnUs),
     ("ETH", "Ethereum", 18, "\u{039E}", true, Locale::EnUs),
     ("XMR", "Monero", 12, "XMR", true, Locale::EnUs),
-    ("USDC", "USD Coin", 6, "USDC", true, Locale::EnUs),
-    ("USDT", "Tether", 6, "USDT", true, Locale::EnUs),
-    ("BNB", "BNB", 8, "BNB", true, Locale::EnUs),
     ("ADA", "Cardano", 6, "ADA", true, Locale::EnUs),
     ("SOL", "Solana", 9, "SOL", true, Locale::EnUs),
     ("XRP", "XRP", 6, "XRP", true, Locale::EnUs),
     ("DOT", "Polkadot", 10, "DOT", true, Locale::EnUs),
     ("DOGE", "Dogecoin", 8, "DOGE", true, Locale::EnUs),
-    ("AVAX", "Avalanche", 8, "AVAX", true, Locale::EnUs),
-    ("LINK", "Chainlink", 8, "LINK", true, Locale::EnUs),
+    ("LINK", "Chainlink", 18, "LINK", true, Locale::EnUs),
     ("LTC", "Litecoin", 8, "LTC", true, Locale::EnUs),
-    ("MATIC", "Polygon", 8, "MATIC", true, Locale::EnUs),
-    ("UNI", "Uniswap", 8, "UNI", true, Locale::EnUs),
+    ("MATIC", "Polygon", 18, "MATIC", true, Locale::EnUs),
+    ("UNI", "Uniswap", 18, "UNI", true, Locale::EnUs),
 ];
 
 fn build_builtin_metadata() -> HashMap<String, CurrencyMetadata> {
@@ -297,12 +303,17 @@ fn insert_currency_metadata(
     Ok(custom.insert(canonical, metadata))
 }
 
-/// Registers metadata for a custom currency.
+/// Registers metadata for a currency, including modeled non-ISO codes such
+/// as `USDC` and `USDT` that have no universal minor-unit exponent.
 ///
 /// If a minor-unit scale is already known for `code` (from ISO 4217, built-in
 /// metadata, or an earlier custom registration), this function only accepts
 /// the same `minor_units` value. Use [`override_currency_metadata`] when a
 /// scale change is intentional.
+///
+/// The registry is process-wide and keyed only by canonical currency code.
+/// When handling networks or asset variants with different denominations at
+/// the same time, register distinct application-defined codes for them.
 ///
 /// # Errors
 /// Returns a `MinorUnitError` when the currency code cannot be parsed as a
@@ -406,6 +417,54 @@ mod tests {
     // serialize against any other tests in the same binary that touch
     // the registry.
     static SERIALIZE: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn every_builtin_non_iso_denomination_matches_its_native_unit() {
+        let _guard = SERIALIZE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+
+        // Independently verified native denominations, with per-currency
+        // primary sources in paft-money/CURRENCY_DENOMINATIONS.md.
+        let expected = [
+            ("BTC", 8, "0.00000001"),
+            ("ETH", 18, "0.000000000000000001"),
+            ("XMR", 12, "0.000000000001"),
+            ("ADA", 6, "0.000001"),
+            ("SOL", 9, "0.000000001"),
+            ("XRP", 6, "0.000001"),
+            ("DOT", 10, "0.0000000001"),
+            ("DOGE", 8, "0.00000001"),
+            ("LINK", 18, "0.000000000000000001"),
+            ("LTC", 8, "0.00000001"),
+            ("MATIC", 18, "0.000000000000000001"),
+            ("UNI", 18, "0.000000000000000001"),
+        ];
+        let builtins: Vec<_> = BUILTIN_CURRENCY_METADATA
+            .iter()
+            .filter(|(code, ..)| iso_currency::Currency::from_code(code).is_none())
+            .collect();
+        assert_eq!(builtins.len(), expected.len(), "audit every non-ISO entry");
+
+        for (code, _, exponent, ..) in builtins {
+            let (_, expected_exponent, unit) = expected
+                .iter()
+                .find(|(expected_code, ..)| expected_code == code)
+                .expect("each built-in needs an independently sourced denomination");
+            assert_eq!(exponent, expected_exponent, "{code}");
+            assert_eq!(currency_metadata(code).unwrap().minor_units, *exponent);
+            let currency = Currency::try_from_str(code).unwrap();
+            assert_eq!(currency.decimal_places().unwrap(), *exponent, "{code}");
+            let money = crate::Money::from_minor_units(1, currency).unwrap();
+            assert_eq!(money.minor_units(), *exponent, "{code}");
+            assert_eq!(
+                money.amount(),
+                paft_decimal::parse_decimal(unit).unwrap(),
+                "{code}"
+            );
+            assert_eq!(money.as_minor_units().unwrap(), 1, "{code}");
+        }
+    }
 
     fn poison_lock() {
         let _ = catch_unwind(AssertUnwindSafe(|| {

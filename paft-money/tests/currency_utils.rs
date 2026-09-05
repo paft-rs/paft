@@ -76,12 +76,12 @@ fn test_currency_full_name() {
 
 #[test]
 fn test_builtin_currency_metadata() {
-    let usdc = Currency::try_from_str("usdc").unwrap();
-    assert_eq!(usdc.decimal_places().unwrap(), 6);
+    let link = Currency::try_from_str("link").unwrap();
+    assert_eq!(link.decimal_places().unwrap(), 18);
 
     assert_eq!(
-        currency_metadata("usdc").unwrap().full_name.as_ref(),
-        "USD Coin"
+        currency_metadata("link").unwrap().full_name.as_ref(),
+        "Chainlink"
     );
 
     let xrp = Currency::try_from_str("xrp").unwrap();
@@ -269,22 +269,27 @@ fn test_custom_currency_metadata_required() {
 
 #[test]
 fn test_non_iso_decimal_places_route_through_registry() {
-    // BTC, ETH, XMR, USDC, USDT no longer have hard-coded scales — the
+    // BTC, ETH, XMR no longer have hard-coded scales — the
     // values must come from `BUILTIN_CURRENCY_METADATA`. If a future
     // change drifts those entries, this test will catch the regression.
     assert_eq!(Currency::BTC.decimal_places().unwrap(), 8);
     assert_eq!(Currency::ETH.decimal_places().unwrap(), 18);
     assert_eq!(Currency::XMR.decimal_places().unwrap(), 12);
-    assert_eq!(Currency::USDC.decimal_places().unwrap(), 6);
-    assert_eq!(Currency::USDT.decimal_places().unwrap(), 6);
 
     // The values must match what's registered for the same code, with
     // no fallback to the (now removed) hardcoded arms.
     assert_eq!(currency_metadata("BTC").unwrap().minor_units, 8);
     assert_eq!(currency_metadata("ETH").unwrap().minor_units, 18);
     assert_eq!(currency_metadata("XMR").unwrap().minor_units, 12);
-    assert_eq!(currency_metadata("USDC").unwrap().minor_units, 6);
-    assert_eq!(currency_metadata("USDT").unwrap().minor_units, 6);
+
+    // Modeled codes with network-dependent denominations need registration.
+    for currency in [Currency::USDC, Currency::USDT] {
+        assert!(currency_metadata(currency.code()).is_none());
+        assert_eq!(
+            currency.decimal_places(),
+            Err(paft_money::MoneyError::MetadataNotFound { currency })
+        );
+    }
 }
 
 #[test]

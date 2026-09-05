@@ -160,9 +160,9 @@ The `minor_units` field is the scale captured when the value was constructed,
 and it participates in equality, hashing, `as_minor_units()`, and arithmetic
 compatibility. Deserialization validates the amount against the serialized
 scale. If current metadata exists for the currency and disagrees with the
-serialized scale, the payload is rejected; if metadata is absent for a custom
-or ISO-None currency, the serialized scale is enough to restore the captured
-settlement semantics.
+serialized scale, the payload is rejected. When neither ISO nor registered
+metadata supplies a scale, the serialized scale is enough to restore the
+captured settlement semantics.
 
 Currency Metadata
 -----------------
@@ -182,6 +182,33 @@ assert_eq!(gold.as_minor_units().unwrap(), 1234);
 `set_currency_metadata` refuses to change an already-known scale. Use
 `override_currency_metadata` only when a scale change is intentional; existing
 `Money` values keep their captured scale.
+
+Built-in non-ISO exponents describe native denominations, not venue quantity
+increments or display preferences. `USDC`, `USDT`, `BNB`, and `AVAX` require
+explicit metadata because their denominations depend on network or asset
+variant. Their codes still parse; `Money` constructors that need a scale return
+`MoneyError::MetadataNotFound` until registration. Metadata is process-wide and
+keyed only by code, so use distinct application-defined codes when different
+denominations must coexist:
+
+```rust
+use paft_money::{Currency, Locale, Money, set_currency_metadata};
+
+set_currency_metadata("USDC_ETHEREUM", "USDC on Ethereum", 6, "USDC", true, Locale::EnUs).unwrap();
+set_currency_metadata("USDC_STELLAR", "USDC on Stellar", 7, "USDC", true, Locale::EnUs).unwrap();
+
+let unit = Money::from_minor_units(1, Currency::other("USDC_STELLAR").unwrap()).unwrap();
+assert_eq!(unit.format(), "0.0000001 USDC_STELLAR");
+```
+
+In v0.10.0, LINK, UNI, and MATIC defaults change from 8 to 18 decimal places.
+Old serialized `Money` with `minor_units: 8` conflicts with these corrected
+defaults and fails deserialization. Migrate correct major-unit amounts without
+changing their numeric value; if an original native integer count was decoded
+with the wrong exponent, reconstruct from that source count instead. Values
+with different captured scales remain incompatible for arithmetic. See the
+[denomination audit and migration details](CURRENCY_DENOMINATIONS.md), including
+primary sources for every retained non-ISO default.
 
 Locale-aware formatting
 -----------------------

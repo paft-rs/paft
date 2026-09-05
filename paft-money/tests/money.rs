@@ -366,7 +366,16 @@ fn test_money_minor_units_boundary_precisions() {
 }
 
 #[test]
-fn test_money_respects_builtin_usdc_override() {
+fn test_money_respects_explicit_usdc_metadata() {
+    paft_money::set_currency_metadata(
+        "USDC",
+        "USDC on Ethereum",
+        6,
+        "USDC",
+        true,
+        paft_money::Locale::EnUs,
+    )
+    .unwrap();
     let usdc = Currency::try_from_str("USDC").unwrap();
     let microscopic = 1_500_000i128; // 1.5 USDC with 6 decimal places
     let money = Money::from_minor_units(microscopic, usdc.clone()).unwrap();
@@ -374,6 +383,7 @@ fn test_money_respects_builtin_usdc_override() {
     assert_eq!(money.currency(), &usdc);
     assert_eq!(money.as_minor_units().unwrap(), microscopic);
     assert_eq!(money.amount(), Decimal::from_str("1.5").unwrap());
+    paft_money::clear_currency_metadata("USDC");
 }
 
 #[test]

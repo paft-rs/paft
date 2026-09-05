@@ -36,6 +36,12 @@
 //! Metadata display fields are the source of truth for non-ISO currency names
 //! and for localized formatting metadata. ISO currencies keep their ISO 4217
 //! name and, when ISO defines an exponent, their ISO minor-unit scale.
+//! Built-in non-ISO metadata uses documented native denominations, not venue
+//! increments or display precision. `USDC`, `USDT`, `BNB`, and `AVAX` have no
+//! default metadata because their scales depend on network or asset variant;
+//! register the intended scale before constructing settlement `Money`.
+//! The registry is keyed only by code. Use distinct application-defined codes
+//! when different denominations must coexist in the same process.
 //!
 //! Using metals/funds (recommended defaults):
 //! - Gold `XAU`: 3 or 6 decimal places are common; choose per domain needs.

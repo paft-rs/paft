@@ -96,9 +96,9 @@ pub enum Currency {
     ETH,
     /// Monero (non-ISO)
     XMR,
-    /// USDC
+    /// USDC. Its network-dependent minor-unit scale requires explicit metadata.
     USDC,
-    /// USDT
+    /// USDT. Its network-dependent minor-unit scale requires explicit metadata.
     USDT,
     /// Unknown or provider-specific currency
     Other(OtherCurrency),
@@ -146,6 +146,9 @@ impl Currency {
     /// the built-in non-ISO variants, and for `Other` codes), we consult the
     /// metadata registry by canonical code. If metadata is present, its
     /// `minor_units` value is used. Otherwise, an error is returned.
+    /// `USDC`, `USDT`, `BNB`, and `AVAX` have no built-in metadata because
+    /// their denomination depends on network or asset variant; register the
+    /// intended scale explicitly.
     ///
     /// Routing every non-ISO variant through the registry keeps the source of
     /// truth in one place (`BUILTIN_CURRENCY_METADATA`) so a future drift

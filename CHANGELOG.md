@@ -48,6 +48,10 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Money: removed built-in metadata for `USDC`, `USDT`, `BNB`, and
+  `AVAX`, whose native denominations depend on network or asset variant. Codes
+  still parse, but settlement constructors require explicit metadata and return
+  `MoneyError::MetadataNotFound` until it is registered.
 - Workspace: bumped all ten crates and their internal dependency requirements
   to `0.10.0`, and updated installation examples and repository version guidance.
 - **Breaking** Fundamentals: all three statement rows gain fields, JSON keys,
@@ -108,6 +112,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- **Breaking** Money: corrected LINK, UNI, and original MATIC minor-unit
+  exponents from 8 to 18. One native minor unit now constructs an amount of
+  `0.000000000000000001`, and exact settlement ingestion and rounding use 18
+  decimal places. Audited every non-ISO default against primary definitions;
+  [the audit](paft-money/CURRENCY_DENOMINATIONS.md) records each source and
+  regression tests check both exponents and integer-to-amount conversion.
 - Decimal: `parse_decimal` uses exact parsing under `rust_decimal` and rejects
   values that would lose nonzero digits to scale or coefficient limits.
   Insignificant fractional trailing zeros remain accepted. Canonical decimal
@@ -130,6 +140,20 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Migration notes
 
+- LINK, UNI, and MATIC `Money` values constructed with the old default retain
+  and serialize scale 8. Such payloads now fail deserialization against the
+  corrected scale 18; different captured scales remain unequal and incompatible
+  for arithmetic. Reconstruct correct major-unit amounts at the new scale
+  without changing their value. If a native integer count was decoded using
+  the wrong exponent, recover the original count and decode it correctly;
+  changing only the serialized exponent cannot repair the amount.
+- Register the intended network/asset denomination for `USDC`, `USDT`, `BNB`,
+  and `AVAX` before constructing new settlement `Money`. Use distinct
+  application-defined codes when different scales must coexist in one process.
+  With no metadata, deserialization still restores a payload's captured scale;
+  it does not establish that the scale matches a native denomination. Review
+  old amounts against source data, particularly the former AVAX default of 8.
+  See [denomination migration details](paft-money/CURRENCY_DENOMINATIONS.md).
 - Remove `bigdecimal` from all PAFT dependency feature lists. The feature is
   removed, not repurposed or accepted as a no-op. Arbitrary-precision storage
   and BigDecimal conversion helpers are outside this release. Keep values that

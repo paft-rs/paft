@@ -345,6 +345,8 @@ impl Money {
     /// Creates a new Money instance from an integer amount in the currency's minor units.
     ///
     /// # Errors
+    /// Returns `MoneyError::MetadataNotFound` when the currency has no registered
+    /// scale, including network-dependent non-ISO codes such as `USDC` and `AVAX`.
     /// Returns `MoneyError::ConversionError` when the currency precision exceeds supported limits
     /// (currently 18 decimal places to keep `10^scale` within `i64`) or the scaled value cannot
     /// be represented by the `rust_decimal` representation.
