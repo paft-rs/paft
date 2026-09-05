@@ -112,6 +112,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- **Breaking** Market: `TimeSpec::period`, `TimeSpec::validate`, and
+  `HistoryRequest` construction now require endpoints exactly representable as
+  Unix milliseconds. Sub-millisecond components and leap seconds return
+  `MarketError::InvalidPeriodTimestamp` with the offending endpoint and original
+  value. This prevents validated periods from collapsing or changing during
+  JSON round trips. `TimeSpec` serialization also validates directly constructed
+  enum values, rejecting unsupported precision and `start >= end`.
 - **Breaking** Money: corrected LINK, UNI, and original MATIC minor-unit
   exponents from 8 to 18. One native minor unit now constructs an amount of
   `0.000000000000000001`, and exact settlement ingestion and rounding use 18
@@ -140,6 +147,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Migration notes
 
+- History periods: explicitly choose millisecond-aligned UTC bounds before
+  constructing a `TimeSpec` or `HistoryRequest`, and ensure `start < end` after
+  any caller-chosen quantization. Unsupported precision is rejected rather than
+  rounded; handle `MarketError::InvalidPeriodTimestamp`. Serialization of an
+  invalid directly constructed `TimeSpec::Period` now fails too. Valid
+  millisecond-based period and range wire formats are unchanged.
 - LINK, UNI, and MATIC `Money` values constructed with the old default retain
   and serialize scale 8. Such payloads now fail deserialization against the
   corrected scale 18; different captured scales remain unequal and incompatible

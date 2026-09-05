@@ -74,6 +74,22 @@ let news = NewsRequest {
 assert_eq!(news.count.get(), 25);
 ```
 
+History period precision
+------------------------
+
+`TimeSpec::period` and `HistoryRequest` builders require `start < end` and both
+endpoints to be exactly representable as Unix milliseconds, matching their wire
+format. Sub-millisecond components and leap seconds return
+`MarketError::InvalidPeriodTimestamp`, identifying the endpoint and its original
+value. PAFT rejects unsupported precision without rounding the timestamps.
+
+Direct `TimeSpec::Period` construction can bypass validation in memory, but
+serialization now calls `validate` and rejects invalid bounds or unsupported
+timestamp precision. Supported period and range JSON shapes are unchanged.
+For v0.10.0, callers that previously supplied finer precision must explicitly
+choose their millisecond bounds before construction and check that the resulting
+period is still nonempty.
+
 Market payload notes
 --------------------
 

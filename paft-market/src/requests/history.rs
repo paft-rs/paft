@@ -500,15 +500,17 @@ impl<'de> Deserialize<'de> for HistoryFlags {
 /// This enum ensures that only one time specification method is used at a time,
 /// making range-vs-period exclusivity unrepresentable at compile time.
 ///
-/// Direct enum construction can still build a `Period` whose `start >= end`.
+/// Direct enum construction can still build an invalid `Period`.
 /// Use [`TimeSpec::period`] or [`TimeSpec::validate`] when constructing or
 /// accepting a standalone `TimeSpec`. [`HistoryRequestBuilder::build`] and
-/// `TimeSpec` deserialization also perform this validation.
+/// `TimeSpec` serialization and deserialization also perform this validation.
 ///
 /// Serializes as explicitly tagged JSON:
 /// `{ "kind": "range", "range": "6mo" }` or
 /// `{ "kind": "period", "start": 1716595200000, "end": 1719187200000 }`.
-/// Period timestamps use Unix milliseconds.
+/// Period timestamps must be exactly representable as Unix milliseconds and
+/// satisfy `start < end`. Sub-millisecond precision and leap seconds are rejected;
+/// no implicit quantization is performed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TimeSpec {
@@ -516,9 +518,9 @@ pub enum TimeSpec {
     Range(Range),
     /// Use an explicit time period with start and end timestamps.
     Period {
-        /// Start timestamp for the period.
+        /// Start timestamp for the period, exactly representable as Unix milliseconds.
         start: DateTime<Utc>,
-        /// End timestamp for the period.
+        /// End timestamp for the period, exactly representable as Unix milliseconds.
         end: DateTime<Utc>,
     },
 }
@@ -532,9 +534,14 @@ impl TimeSpec {
 
     /// Build a validated explicit period time specification.
     ///
+    /// Both endpoints must be exactly representable as Unix milliseconds;
+    /// sub-millisecond precision and leap seconds are rejected without rounding.
+    ///
     /// # Errors
     ///
     /// Returns [`MarketError::InvalidPeriod`] when `start >= end`.
+    /// Returns [`MarketError::InvalidPeriodTimestamp`] when an endpoint cannot
+    /// be preserved by the millisecond wire format, before checking the order.
     pub fn period(start: DateTime<Utc>, end: DateTime<Utc>) -> Result<Self, MarketError> {
         let time_spec = Self::Period { start, end };
         time_spec.validate()?;
@@ -544,19 +551,34 @@ impl TimeSpec {
     /// Validate standalone `TimeSpec` invariants.
     ///
     /// `TimeSpec::Range` is always valid. `TimeSpec::Period` must have
-    /// `start < end`.
+    /// endpoints exactly representable as Unix milliseconds and `start < end`.
+    /// This ensures validated values survive serialization without changing
+    /// their timestamps or invalidating their bounds.
     ///
     /// # Errors
     ///
     /// Returns [`MarketError::InvalidPeriod`] when a period has `start >= end`.
+    /// Returns [`MarketError::InvalidPeriodTimestamp`] when an endpoint cannot
+    /// be preserved by the millisecond wire format, before checking the order.
     pub fn validate(&self) -> Result<(), MarketError> {
-        if let Self::Period { start, end } = self
-            && start >= end
-        {
-            return Err(MarketError::InvalidPeriod {
-                start: start.timestamp_millis(),
-                end: end.timestamp_millis(),
-            });
+        if let Self::Period { start, end } = self {
+            for (field, timestamp) in [("start", start), ("end", end)] {
+                // Match both directions of chrono::serde::ts_milliseconds.
+                // A divisibility check alone would miss leap-second values.
+                if DateTime::from_timestamp_millis(timestamp.timestamp_millis()) != Some(*timestamp)
+                {
+                    return Err(MarketError::InvalidPeriodTimestamp {
+                        field,
+                        timestamp: *timestamp,
+                    });
+                }
+            }
+            if start >= end {
+                return Err(MarketError::InvalidPeriod {
+                    start: start.timestamp_millis(),
+                    end: end.timestamp_millis(),
+                });
+            }
         }
 
         Ok(())
@@ -582,6 +604,7 @@ impl Serialize for TimeSpec {
     where
         S: Serializer,
     {
+        self.validate().map_err(serde::ser::Error::custom)?;
         let wire = match self {
             Self::Range(range) => TimeSpecWire::Range { range: *range },
             Self::Period { start, end } => TimeSpecWire::Period {
@@ -686,7 +709,8 @@ impl HistoryRequestBuilder {
     /// Set the explicit period with start and end timestamps.
     ///
     /// Validation is deferred until [`Self::build`]. Use [`TimeSpec::period`]
-    /// when constructing a standalone validated time specification.
+    /// when constructing a standalone validated time specification. Endpoints
+    /// must be exactly representable as Unix milliseconds; they are not rounded.
     #[must_use]
     pub const fn period(mut self, start: DateTime<Utc>, end: DateTime<Utc>) -> Self {
         self.time_spec = TimeSpec::Period { start, end };
@@ -746,11 +770,10 @@ impl HistoryRequestBuilder {
 
     /// Build the `HistoryRequest` with validation.
     ///
-    /// Returns an error if:
-    /// - `period` start is not before end
-    ///
     /// # Errors
     /// Returns `MarketError::InvalidPeriod` when a `Period { start, end }` has `start >= end`.
+    /// Returns [`MarketError::InvalidPeriodTimestamp`] when an endpoint cannot
+    /// be preserved exactly as Unix milliseconds, before checking the order.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn build(self) -> Result<HistoryRequest, MarketError> {
         self.time_spec.validate()?;
@@ -787,7 +810,7 @@ impl HistoryRequest {
     }
 
     /// Build a request using explicit UTC `DateTime` bounds (`[start, end)`)
-    /// and `interval`.
+    /// and `interval`. Bounds must be exactly representable as Unix milliseconds.
     ///
     /// This is a convenience method that uses the builder pattern internally.
     ///

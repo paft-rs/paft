@@ -1,5 +1,6 @@
 //! Error types specific to `paft-market` request validation.
 
+use chrono::{DateTime, Utc};
 use thiserror::Error;
 
 /// Errors returned when validating market requests before execution.
@@ -28,6 +29,18 @@ pub enum MarketError {
         start: i64,
         /// End timestamp (milliseconds since epoch).
         end: i64,
+    },
+
+    /// A period endpoint cannot be preserved exactly as Unix milliseconds.
+    /// Sub-millisecond precision and leap seconds are unsupported.
+    #[error(
+        "HistoryRequest: 'period' {field} ({timestamp}) must be exactly representable as Unix milliseconds"
+    )]
+    InvalidPeriodTimestamp {
+        /// The endpoint that failed validation (`"start"` or `"end"`).
+        field: &'static str,
+        /// The original timestamp, including its unsupported precision.
+        timestamp: DateTime<Utc>,
     },
 
     /// String value did not match any modeled closed market enum code.

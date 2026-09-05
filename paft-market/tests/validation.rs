@@ -210,6 +210,30 @@ fn history_request_validation_period_start_eq_end_rejected() {
 }
 
 #[test]
+fn history_request_rejects_submillisecond_period_endpoints() {
+    for (start, end, field) in [
+        ((1, 100), (1, 200), "start"),
+        ((1, 100), (2, 200), "start"),
+        ((1, 0), (2, 200), "end"),
+    ] {
+        let start = DateTime::from_timestamp(start.0, start.1).unwrap();
+        let end = DateTime::from_timestamp(end.0, end.1).unwrap();
+        let expected = MarketError::InvalidPeriodTimestamp {
+            field,
+            timestamp: if field == "start" { start } else { end },
+        };
+        assert_eq!(
+            HistoryRequest::builder().period(start, end).build(),
+            Err(expected.clone())
+        );
+        assert_eq!(
+            HistoryRequest::try_from_period(start, end, Interval::I1s),
+            Err(expected)
+        );
+    }
+}
+
+#[test]
 fn history_request_deserialization_period_start_ge_end_rejected() {
     let invalid = serde_json::json!({
         "time_spec": {
