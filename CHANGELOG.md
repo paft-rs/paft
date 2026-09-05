@@ -112,6 +112,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- Prediction: binary and outcome order books now find the highest bid and
+  lowest ask across all stored levels. Unsorted public vectors no longer hide
+  better prices or corrupt derived binary NO prices, midpoint, spread, or
+  crossing checks. Queries preserve level order, take linear time, and retain
+  the first stored level when prices tie. Regression tests cover every
+  bid/ask permutation of crossed, locked, and uncrossed books, plus equal-price
+  levels and empty or one-sided books.
 - **Breaking** Market: `TimeSpec::period`, `TimeSpec::validate`, and
   `HistoryRequest` construction now require endpoints exactly representable as
   Unix milliseconds. Sub-millisecond components and leap seconds return

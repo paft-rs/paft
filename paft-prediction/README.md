@@ -64,7 +64,11 @@ What's inside
   allow best bid/ask quantities to be absent, while present quote quantities,
   depth book levels, trades, and minimum order quantities require non-zero
   displayed quantity. `BinaryOrderBook` stores a canonical YES-view book and
-  derives NO-side top-of-book values by complement.
+  derives NO-side top-of-book values by complement. Both book types find the
+  highest bid and lowest ask by scanning all stored levels, preserving their
+  order. Binary NO prices, midpoint, spread, and crossing checks therefore use
+  the same price extrema even when levels are unsorted. Best-level queries take
+  linear time and choose the first stored level when prices tie.
 - `PredictionError`: non-exhaustive validation error for constructors, serde,
   price-grid validation, and book-order validation.
 

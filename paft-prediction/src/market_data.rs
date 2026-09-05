@@ -172,6 +172,10 @@ pub struct GenericBinaryQuote<M = ()> {
 pub type BinaryQuote = GenericBinaryQuote<()>;
 
 /// Canonical YES-view order book for an atomic binary market.
+///
+/// Levels may be stored in any order. Best-price and derived quote queries
+/// scan the levels without reordering them. Use [`Self::sort_levels`] when
+/// canonical ordering is needed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GenericBinaryOrderBook<M = ()> {
     /// Venue-namespaced binary market key.
@@ -179,9 +183,9 @@ pub struct GenericBinaryOrderBook<M = ()> {
     /// Timestamp (UTC) when this book snapshot was observed.
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
-    /// YES bids, normally sorted by price descending.
+    /// YES bids in stored order; [`Self::sort_levels`] sorts prices descending.
     pub yes_bids: Vec<PredictionBookLevel>,
-    /// YES asks, normally sorted by price ascending.
+    /// YES asks in stored order; [`Self::sort_levels`] sorts prices ascending.
     pub yes_asks: Vec<PredictionBookLevel>,
     /// Market-specific price grid, if known.
     pub price_grid: Option<PriceGrid>,
@@ -215,16 +219,20 @@ impl<M> GenericBinaryOrderBook<M> {
         self.yes_asks.sort_by_key(|level| level.price);
     }
 
-    /// Returns the best YES bid.
+    /// Returns the highest-priced YES bid, scanning all levels in linear time.
+    /// Equal prices select the first level in stored order.
     #[must_use]
     pub fn best_yes_bid(&self) -> Option<&PredictionBookLevel> {
-        self.yes_bids.first()
+        self.yes_bids
+            .iter()
+            .min_by_key(|level| Reverse(level.price))
     }
 
-    /// Returns the best YES ask.
+    /// Returns the lowest-priced YES ask, scanning all levels in linear time.
+    /// Equal prices select the first level in stored order.
     #[must_use]
     pub fn best_yes_ask(&self) -> Option<&PredictionBookLevel> {
-        self.yes_asks.first()
+        self.yes_asks.iter().min_by_key(|level| level.price)
     }
 
     /// Returns the derived best NO bid.
@@ -322,6 +330,10 @@ impl<M> GenericBinaryOrderBook<M> {
 pub type BinaryOrderBook = GenericBinaryOrderBook<()>;
 
 /// Bid/ask book for one outcome instrument.
+///
+/// Levels may be stored in any order. Best-price queries scan the levels
+/// without reordering them. Use [`Self::sort_levels`] when canonical ordering
+/// is needed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GenericOutcomeOrderBook<M = ()> {
     /// Venue-namespaced outcome instrument.
@@ -329,9 +341,9 @@ pub struct GenericOutcomeOrderBook<M = ()> {
     /// Timestamp (UTC) when this book snapshot was observed.
     #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
-    /// Bids for this outcome instrument, normally sorted by price descending.
+    /// Bids in stored order; [`Self::sort_levels`] sorts prices descending.
     pub bids: Vec<PredictionBookLevel>,
-    /// Asks for this outcome instrument, normally sorted by price ascending.
+    /// Asks in stored order; [`Self::sort_levels`] sorts prices ascending.
     pub asks: Vec<PredictionBookLevel>,
     /// Market-specific price grid, if known.
     pub price_grid: Option<PriceGrid>,
@@ -365,16 +377,18 @@ impl<M> GenericOutcomeOrderBook<M> {
         self.asks.sort_by_key(|level| level.price);
     }
 
-    /// Returns the best bid.
+    /// Returns the highest-priced bid, scanning all levels in linear time.
+    /// Equal prices select the first level in stored order.
     #[must_use]
     pub fn best_bid(&self) -> Option<&PredictionBookLevel> {
-        self.bids.first()
+        self.bids.iter().min_by_key(|level| Reverse(level.price))
     }
 
-    /// Returns the best ask.
+    /// Returns the lowest-priced ask, scanning all levels in linear time.
+    /// Equal prices select the first level in stored order.
     #[must_use]
     pub fn best_ask(&self) -> Option<&PredictionBookLevel> {
-        self.asks.first()
+        self.asks.iter().min_by_key(|level| level.price)
     }
 
     /// Returns `true` when bids are descending, asks are ascending, and the
@@ -478,3 +492,6 @@ fn validate_levels_on_grid(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
