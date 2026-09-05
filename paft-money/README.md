@@ -90,6 +90,12 @@ Choose the level of structure you need:
 - `PriceAmount` carries only the decimal amount; attach a currency with `with_currency` when it needs to stand alone
 - `QuantityAmount` carries a non-negative decimal quantity whose unit comes from the surrounding market record
 
+Canonical string constructors and decimal serde fields require an exact
+representation in the active backend. Values that exceed its precision are
+rejected before currency-scale or domain validation. Insignificant fractional
+trailing zeros remain accepted. `Money::new` and `round_dp_with_strategy` provide
+explicit rounding for values already represented as decimals.
+
 ```rust
 use paft_decimal::{self as decimal, RoundingStrategy};
 use paft_money::{

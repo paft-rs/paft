@@ -10,7 +10,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-use std::{borrow::Cow, str::FromStr};
+use std::borrow::Cow;
 
 mod constrained;
 
@@ -38,16 +38,23 @@ pub enum RoundingStrategy {
 
 #[cfg(not(feature = "bigdecimal"))]
 mod backend {
-    use super::{
-        FromStr, RoundingStrategy, rust_decimal_to_i128_mantissa, rust_decimal_to_scaled_units,
-    };
+    use super::{RoundingStrategy, rust_decimal_to_i128_mantissa, rust_decimal_to_scaled_units};
 
     pub use rust_decimal::Decimal;
     use rust_decimal::RoundingStrategy as RustRoundingStrategy;
     pub use rust_decimal::prelude::ToPrimitive;
 
     pub fn parse_decimal(value: &str) -> Option<Decimal> {
-        Decimal::from_str(value).ok()
+        Decimal::from_str_exact(value).ok().or_else(|| {
+            if !value.contains('.') {
+                return None;
+            }
+
+            // Preserve the input scale when it fits. Otherwise, removing only
+            // fractional trailing zeros can make the same value representable.
+            let normalized = value.trim_end_matches('0').trim_end_matches('.');
+            Decimal::from_str_exact(normalized).ok()
+        })
     }
 
     pub const MAX_DECIMAL_PRECISION: u8 = 28;
@@ -130,7 +137,9 @@ mod backend {
 
 #[cfg(feature = "bigdecimal")]
 mod backend {
-    use super::{DECIMAL128_PRECISION, FromStr, RoundingStrategy};
+    use std::str::FromStr;
+
+    use super::{DECIMAL128_PRECISION, RoundingStrategy};
 
     pub use bigdecimal::BigDecimal as Decimal;
     use bigdecimal::{RoundingMode, num_bigint::BigInt};
@@ -420,11 +429,16 @@ impl Decimal128Mantissa for Ratio {
     }
 }
 
-/// Parses a plain decimal string using the active backend.
+/// Parses a plain decimal string exactly using the active backend.
+///
+/// Returns `None` if the string is invalid or its numeric value cannot be
+/// represented without rounding. Insignificant fractional trailing zeros may
+/// be removed to fit the backend; nonzero digits are never discarded. Use
+/// [`round_dp_with_strategy`] explicitly to round a representable decimal.
 ///
 /// Surrounding whitespace is ignored, an optional leading sign is accepted, and
 /// scientific notation, digit separators, and internal whitespace are rejected
-/// so both decimal backends share identical parsing semantics.
+/// so both decimal backends share the same grammar.
 #[must_use]
 pub fn parse_decimal(value: &str) -> Option<Decimal> {
     let normalized = normalize_decimal_literal(value)?;
@@ -550,6 +564,8 @@ pub fn round_dp_with_strategy(value: &Decimal, scale: u32, strategy: RoundingStr
 /// These modules serialize decimals as canonical strings rendered by
 /// [`to_canonical_string`] and deserialize with [`parse_decimal`], avoiding
 /// backend-native differences such as scale preservation or exponent output.
+/// Deserialization rejects values that the active backend cannot represent
+/// exactly, including nonzero digits beyond its precision limit.
 pub mod serde {
     use super::{Cow, Decimal};
     use serde::{Deserialize, Serializer, de};

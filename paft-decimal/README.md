@@ -9,7 +9,7 @@ Backend-agnostic decimal helpers for the paft ecosystem.
 
 - `Decimal` aliases the active backend: `rust_decimal::Decimal` by default, or
   `bigdecimal::BigDecimal` with the `bigdecimal` feature
-- Backend-stable helpers for plain decimal parsing, canonical rendering,
+- Backend-stable helpers for exact plain decimal parsing, canonical rendering,
   rounding, checked arithmetic, and exact scaled-unit conversion
 - Constrained decimal newtypes: `NonNegativeDecimal`, `PositiveDecimal`, and
   `Ratio`
@@ -72,8 +72,15 @@ assert!(Ratio::new(decimal::parse_decimal("1.2").unwrap()).is_err());
 Serde Adapters
 --------------
 
+`parse_decimal` preserves the input's numeric value or returns `None` when the
+active backend cannot represent it exactly. Insignificant fractional trailing
+zeros remain accepted, including beyond the backend's scale limit. Nonzero
+digits are never silently rounded away. Apply `round_dp_with_strategy`
+explicitly when a representable value needs rounding.
+
 Use the serde helpers when a decimal-backed field must keep the same JSON wire
-format under both decimal backends:
+format under both decimal backends. Both adapters use the same exact parser
+and reject unrepresentable values:
 
 ```rust
 use paft_decimal::Decimal;

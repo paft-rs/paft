@@ -64,9 +64,9 @@ fn non_midpoint_rounding_boundaries() {
         "12345678901234567890.56",
     );
 
-    // Very small magnitudes keep precision.
+    // An exactly representable small value can be rounded to fewer digits.
     expect_round(
-        "0.00000000000000000000000123456",
+        "0.0000000000000000000000012345",
         24,
         RoundingStrategy::ToZero,
         "0.000000000000000000000001",

@@ -326,8 +326,8 @@ impl Money {
     /// want rounding behaviour from a previously parsed `Decimal`.
     ///
     /// # Errors
-    /// - Returns `MoneyError::InvalidDecimal` when the string cannot be
-    ///   parsed as a decimal.
+    /// - Returns `MoneyError::InvalidDecimal` when the string is invalid or
+    ///   cannot be represented exactly by the active decimal backend.
     /// - Returns `MoneyError::PrecisionExceeded` when the parsed amount has
     ///   more fractional digits than the currency exponent permits.
     ///

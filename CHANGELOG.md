@@ -98,6 +98,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- Decimal: `parse_decimal` uses exact parsing under `rust_decimal` and rejects
+  values that would lose nonzero digits to scale or coefficient limits.
+  Insignificant fractional trailing zeros remain accepted. Canonical decimal
+  serde adapters and the `Money`, `MonetaryAmount`, and `Price` string
+  constructors now preserve the original value or reject it before domain
+  validation; constrained decimal serde no longer validates a rounded value.
 - Money: `ExchangeRate::try_inverse` validates the reciprocal through
   `ExchangeRate::new`, returning `MoneyError::InvalidExchangeRate` if it
   underflows to zero. Inverting the fixed-width decimal maximum previously
@@ -116,6 +122,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Migration notes
 
+- Handle parse or deserialization errors for decimal strings that previously
+  relied on implicit backend rounding. Use the BigDecimal backend when the
+  original precision must be retained, or round representable decimals
+  explicitly before settlement. Constructor signatures are unchanged;
+  `Money`, `MonetaryAmount`, and `Price` string constructors return
+  `MoneyError::InvalidDecimal` for unrepresentable values.
 - Upgrade to Rust 1.95 or newer and move PAFT dependencies to `0.10.0`.
   Direct dependencies that share public types must use Polars `0.55`,
   df-derive `0.5`, and `iso_currency` `0.7`. Prefer PAFT's `IsoCurrency`
