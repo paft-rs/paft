@@ -71,7 +71,6 @@ pub type BookLevel = GenericBookLevel<()>;
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOrderBook<B = (), L = ()> {
     /// Instrument identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
 
     /// Timestamp (UTC) when this book snapshot was observed.

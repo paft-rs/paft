@@ -8,6 +8,9 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
+#[cfg(feature = "dataframe")]
+mod dataframe;
+
 paft_core::other_string_code_type!(
     /// Provider-specific asset kind that is not modeled by [`AssetKind`].
     pub struct OtherAssetKind for AssetKind;
@@ -143,23 +146,23 @@ impl AssetKind {
 }
 
 /// Logical instrument identity for a security.
+///
+/// With the `dataframe` feature, exports include the structured identity fields
+/// plus `key` from [`Self::unique_key`] and `display` from [`Self::display_key`].
+/// Nested market records prefix these columns, for example `instrument.key`
+/// and `instrument.display`. Use the key for identity joins and grouping; the
+/// display label can be shared by distinct instruments.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(df_derive_macros::ToDataFrame))]
 pub struct Instrument {
     /// Canonical ticker symbol.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub symbol: Symbol,
     /// Optional trading venue context for disambiguation.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub exchange: Option<Exchange>,
     /// Optional global identifier (preferred).
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub figi: Option<Figi>,
     /// Optional global identifier (fallback).
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub isin: Option<Isin>,
     /// Asset class and behavior.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub kind: AssetKind,
 }
 
@@ -268,6 +271,8 @@ impl Instrument {
 
     /// Returns the best available compact identifier for display
     /// (FIGI > ISIN > SYMBOL@EXCHANGE > SYMBOL).
+    ///
+    /// This label is not unique. Use [`Self::unique_key`] for identity comparisons.
     #[must_use]
     pub fn display_key(&self) -> Cow<'_, str> {
         if let Some(figi) = &self.figi {

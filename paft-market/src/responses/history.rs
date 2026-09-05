@@ -117,7 +117,6 @@ pub type Candle = GenericCandle<()>;
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericCandleUpdate<U = (), C = ()> {
     /// Instrument identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Interval represented by the candle.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]

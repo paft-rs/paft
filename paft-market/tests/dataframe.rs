@@ -152,7 +152,7 @@ fn vec_quote_to_dataframe_smoke() {
 
     let df = quotes.to_dataframe().unwrap();
     let cols = df.get_column_names();
-    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
+    assert!(cols.iter().any(|c| c.as_str() == "instrument.key"));
 }
 
 #[test]
@@ -178,7 +178,7 @@ fn quote_to_dataframe_smoke() {
 
     let df = quote.to_dataframe().unwrap();
     let cols = df.get_column_names();
-    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
+    assert!(cols.iter().any(|c| c.as_str() == "instrument.key"));
     assert_eq!(df.height(), 1);
 }
 
@@ -209,7 +209,7 @@ fn provider_metadata_dataframe_columns_are_provider_namespaced() {
     let df = quote.to_dataframe().unwrap();
     let cols = df.get_column_names();
     assert!(cols.iter().any(|c| c.as_str() == "price.amount"));
-    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
+    assert!(cols.iter().any(|c| c.as_str() == "instrument.key"));
     assert!(cols.iter().any(|c| c.as_str() == "provider.price"));
     assert!(cols.iter().any(|c| c.as_str() == "provider.instrument"));
 }
@@ -230,7 +230,7 @@ fn quote_update_to_dataframe_smoke() {
 
     let df = update.to_dataframe().unwrap();
     let cols = df.get_column_names();
-    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
+    assert!(cols.iter().any(|c| c.as_str() == "instrument.key"));
 }
 
 #[test]
@@ -301,8 +301,8 @@ fn option_contract_to_dataframe() {
 
     let df = contract.to_dataframe().unwrap();
     let cols = df.get_column_names();
-    assert!(cols.iter().any(|c| c.as_str() == "contract_instrument"));
-    assert!(cols.iter().any(|c| c.as_str() == "underlying"));
+    assert!(cols.iter().any(|c| c.as_str() == "contract_instrument.key"));
+    assert!(cols.iter().any(|c| c.as_str() == "underlying.key"));
     assert!(cols.iter().any(|c| c.as_str() == "side"));
     assert!(cols.iter().any(|c| c.as_str() == "strike.amount"));
     assert!(cols.iter().any(|c| c.as_str() == "expiration_date"));
@@ -339,7 +339,7 @@ fn option_chain_to_dataframe() {
     let cols = df.get_column_names();
     assert!(
         cols.iter()
-            .any(|c| c.as_str() == "contracts.contract_instrument")
+            .any(|c| c.as_str() == "contracts.contract_instrument.key")
     );
     assert!(cols.iter().any(|c| c.as_str() == "contracts.side"));
     assert!(
@@ -461,5 +461,5 @@ fn vec_candle_update_to_dataframe_smoke() {
     let df = updates.to_dataframe().unwrap();
     assert_eq!(df.height(), 2);
     let cols = df.get_column_names();
-    assert!(cols.iter().any(|c| c.as_str() == "instrument"));
+    assert!(cols.iter().any(|c| c.as_str() == "instrument.key"));
 }

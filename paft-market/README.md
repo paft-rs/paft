@@ -102,6 +102,15 @@ Market payload notes
 - Provider metadata is flattened into JSON payloads and must avoid field-name
   collisions with paft fields. DataFrame export namespaces provider metadata
   under `provider.*`.
+- DataFrame instrument fields expand to `instrument.key`, `instrument.display`,
+  and the structured `symbol`, `exchange`, `figi`, `isin`, and `kind` columns
+  under the same prefix. Use `.key` for identity joins and grouping; `.display`
+  is a readable label that can be shared by distinct instruments. Option keys,
+  contracts, and updates use `underlying.*` and `contract_instrument.*`; option
+  chains use list columns under `contracts.underlying.*` and
+  `contracts.contract_instrument.*`. An absent contract instrument produces
+  nulls. In v0.10.0 these columns replace the former display-only `instrument`,
+  `underlying`, and `contract_instrument` strings.
 - `HistoryResponse::validate` checks non-decreasing candle timestamps;
   `into_chronological` sorts caller-owned responses when provider data arrives
   out of order.

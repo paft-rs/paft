@@ -28,7 +28,6 @@ use serde::{Deserialize, Serialize};
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericSnapshot<M = ()> {
     /// Primary instrument as provided by the data source.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Human-friendly instrument name.
     pub name: Option<String>,

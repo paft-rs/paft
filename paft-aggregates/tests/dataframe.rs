@@ -78,6 +78,37 @@ fn snapshot_vec_to_dataframe() {
     let df = snapshots.to_dataframe().unwrap();
     assert_eq!(df.height(), 2);
     let columns = df.get_column_names();
-    assert!(columns.iter().any(|c| c.as_str() == "instrument"));
+    assert!(columns.iter().any(|c| c.as_str() == "instrument.key"));
     assert!(columns.iter().any(|c| c.as_str() == "market_state"));
+}
+
+#[test]
+fn snapshots_preserve_distinct_identities_with_the_same_display() {
+    let instruments = [
+        Instrument::from_symbol("BTC", AssetKind::Crypto).unwrap(),
+        Instrument::from_symbol("BTC", AssetKind::Equity).unwrap(),
+    ];
+    let snapshots = instruments
+        .each_ref()
+        .map(|i| Snapshot::new(i.clone(), usd()));
+    let df = snapshots.to_dataframe().unwrap();
+    let keys = df.column("instrument.key").unwrap().str().unwrap();
+    let labels = df.column("instrument.display").unwrap().str().unwrap();
+    assert_ne!(keys.get(0), keys.get(1));
+    for (row, instrument) in instruments.iter().enumerate() {
+        assert_eq!(keys.get(row), Some(instrument.unique_key().as_str()));
+        assert_eq!(labels.get(row), Some("BTC"));
+        let single = snapshots[row].to_dataframe().unwrap();
+        assert_eq!(single.schema(), df.schema());
+        assert_eq!(
+            single
+                .column("instrument.key")
+                .unwrap()
+                .str()
+                .unwrap()
+                .get(0),
+            keys.get(row)
+        );
+    }
+    assert_eq!(Snapshot::empty_dataframe().unwrap().schema(), df.schema());
 }

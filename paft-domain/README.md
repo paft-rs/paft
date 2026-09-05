@@ -44,6 +44,17 @@ Features
 - `tracing`: enable lightweight instrumentation on constructors and validators
 - `dataframe`: enable DataFrame traits for Polars integration
 
+Instrument DataFrame columns are `symbol`, `exchange`, `figi`, `isin`, `kind`,
+`key`, and `display`. `key` uses `Instrument::unique_key()`, including asset
+kind and the preferred identifier source (FIGI, ISIN, or symbol with optional
+exchange). Use it for identity joins and grouping. `display` uses the compact
+`Display` label and can be identical for different instruments.
+
+Nested market exports use the containing field's prefix, such as
+`instrument.key` and `instrument.display`. Both columns are computed from the
+current instrument at export time; an absent optional instrument exports nulls
+for every instrument column.
+
 Quickstart
 ----------
 

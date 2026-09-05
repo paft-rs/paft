@@ -24,7 +24,6 @@ use crate::market::orderbook::GenericBookLevel;
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericQuote<Q = (), L = ()> {
     /// Instrument identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Display name.
     pub name: Option<String>,
@@ -89,7 +88,6 @@ pub type Quote = GenericQuote<(), ()>;
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericQuoteUpdate<M = ()> {
     /// Instrument identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Currency shared by every price amount in this update.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]

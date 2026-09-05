@@ -20,7 +20,6 @@ use paft_domain::Instrument;
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericSearchResult<M = ()> {
     /// Instrument identifier.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub instrument: Instrument,
     /// Display name.
     pub name: Option<String>,

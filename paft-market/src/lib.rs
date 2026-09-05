@@ -25,6 +25,12 @@
 //!
 //! - `dataframe`: enable `polars`/`df-derive-macros` integration for dataframe export
 //!
+//! Instrument exports include a stable `instrument.key`, a compact
+//! `instrument.display` label, and structured identity columns. Use the key for
+//! joins and grouping because display labels need not be unique. Option data
+//! uses `underlying.*` and `contract_instrument.*` (prefixed by `contracts.` in
+//! option-chain list columns). Absent optional instruments export nulls.
+//!
 //! # Serde
 //! All models serialize with stable, human-readable representations suitable for
 //! storage and transport. Dataframe support emits string codes for enums.

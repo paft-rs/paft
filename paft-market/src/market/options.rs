@@ -98,10 +98,8 @@ impl FromStr for OptionSide {
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct OptionContractKey {
     /// Provider or venue instrument identifier for the option contract, when known.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub contract_instrument: Option<Instrument>,
     /// Underlying instrument the option is written on.
-    #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub underlying: Instrument,
     /// Call or put side of the option contract.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]

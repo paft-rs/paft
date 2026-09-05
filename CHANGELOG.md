@@ -112,6 +112,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- **Breaking** DataFrame: market records and aggregate snapshots now export
+  instruments as structured columns with a stable `.key` and a separate
+  `.display` label. The key follows `Instrument::unique_key()`, preserving
+  asset-kind, identifier-source, and venue distinctions that compact labels
+  can share. Option underlying and optional contract instruments use the same
+  export, including option-chain list columns. Standalone `Instrument` export
+  retains its five identity columns and adds `key` and `display`.
 - Prediction: binary and outcome order books now find the highest bid and
   lowest ask across all stored levels. Unsorted public vectors no longer hide
   better prices or corrupt derived binary NO prices, midpoint, spread, or
@@ -154,6 +161,15 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Migration notes
 
+- DataFrame consumers: replace display-only `instrument` selections with
+  `instrument.key` for identity joins/grouping or `instrument.display` for
+  labels. The same migration applies to `underlying` and `contract_instrument`
+  in option keys, contracts, and updates; option-chain columns retain the
+  `contracts.` prefix and list shape. Structured identity fields are also
+  exported under each prefix. Missing optional instruments produce nulls in
+  all their columns. Update explicit schemas for these columns and the two
+  added standalone `Instrument` columns. Rust model fields, JSON, `Display`,
+  and `unique_key()` semantics are unchanged.
 - History periods: explicitly choose millisecond-aligned UTC bounds before
   constructing a `TimeSpec` or `HistoryRequest`, and ensure `start < end` after
   any caller-chosen quantization. Unsupported precision is rejected rather than

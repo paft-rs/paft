@@ -3,7 +3,8 @@ use paft_domain::{
     Exchange, Figi, Isin,
     instrument::{AssetKind, Instrument},
 };
-use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
+use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
+use polars::prelude::DataType;
 
 #[test]
 fn instrument_to_dataframe() {
@@ -91,4 +92,47 @@ fn instruments_columnar_round_trips_string_cell_values() {
     assert_eq!(isin.get(0), None);
     assert_eq!(isin.get(1), Some("US0378331005"));
     assert_eq!(isin.get(2), None);
+
+    let keys = df.column("key").unwrap().str().unwrap();
+    let labels = df.column("display").unwrap().str().unwrap();
+    for (row, instrument) in instruments.iter().enumerate() {
+        assert_eq!(keys.get(row), Some(instrument.unique_key().as_str()));
+        assert_eq!(labels.get(row), Some(instrument.display_key().as_ref()));
+    }
+}
+
+#[test]
+fn instrument_identity_schema_matches_single_batch_and_empty_exports() {
+    let instruments = [
+        Instrument::from_symbol("BTC", AssetKind::Crypto).unwrap(),
+        Instrument::from_symbol("BTC", AssetKind::Equity).unwrap(),
+    ];
+    let schema = [
+        "symbol", "exchange", "figi", "isin", "kind", "key", "display",
+    ]
+    .map(|name| (name.to_owned(), DataType::String));
+    assert_eq!(Instrument::schema().unwrap(), schema);
+
+    let df = instruments.to_dataframe().unwrap();
+    let keys = df.column("key").unwrap().str().unwrap();
+    let labels = df.column("display").unwrap().str().unwrap();
+    assert_eq!(keys.get(0), Some("CRYPTO|SYMBOL|3:BTC"));
+    assert_eq!(keys.get(1), Some("EQUITY|SYMBOL|3:BTC"));
+    assert_eq!(labels.get(0), Some("BTC"));
+    assert_eq!(labels.get(1), Some("BTC"));
+
+    let refs = Instrument::columnar_from_refs(&instruments.each_ref()).unwrap();
+    assert!(df.equals_missing(&refs));
+    for (row, instrument) in instruments.iter().enumerate() {
+        let single = instrument.to_dataframe().unwrap();
+        assert!(single.equals_missing(&df.slice(i64::try_from(row).unwrap(), 1)));
+    }
+    for empty in [
+        Instrument::empty_dataframe().unwrap(),
+        Instrument::columnar_to_dataframe(&[]).unwrap(),
+        Instrument::columnar_from_refs(&[]).unwrap(),
+    ] {
+        assert_eq!(empty.height(), 0);
+        assert_eq!(empty.schema(), df.schema());
+    }
 }
