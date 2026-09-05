@@ -254,6 +254,42 @@ fn statement_value_types_have_their_expected_wire_encodings() {
     );
 }
 
+/// Tax benefits and expense reversals retain their signs, while reported
+/// subtotals remain independent of the component fields.
+#[test]
+fn income_tax_provisions_and_expense_reversals_survive_json() {
+    for (tax, net_income) in [
+        (Some("-20"), "120"),
+        (Some("20"), "80"),
+        (Some("0"), "100"),
+        (None, "100"),
+        // Reported subtotals need not reconcile with these component fields.
+        (Some("-20"), "117"),
+    ] {
+        let mut income: IncomeStatementRow = from_str(r#"{"period":"2024"}"#).unwrap();
+        income.pretax_income = Some(usd("100"));
+        income.income_tax_expense = tax.map(usd);
+        income.operating_expenses = Some(usd("-5"));
+        income.net_income = Some(usd(net_income));
+
+        let encoded = to_string(&income).unwrap();
+        let payload: Value = from_str(&encoded).unwrap();
+        assert_eq!(
+            payload["income_tax_expense"],
+            tax.map_or(Value::Null, |amount| {
+                json!({"amount": amount, "currency": "USD", "minor_units": 2})
+            })
+        );
+        assert_eq!(
+            payload["operating_expenses"],
+            json!({"amount": "-5", "currency": "USD", "minor_units": 2})
+        );
+        assert_eq!(payload["pretax_income"]["amount"], "100");
+        assert_eq!(payload["net_income"]["amount"], net_income);
+        assert_eq!(from_str::<IncomeStatementRow>(&encoded).unwrap(), income);
+    }
+}
+
 /// Cash outflows and negative reconciliation adjustments keep their
 /// negative sign through a serde round trip.
 #[test]

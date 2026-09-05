@@ -64,7 +64,9 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   keyed by field name.
 - Fundamentals: documented the canonical accounting conventions for statement
   rows. Income statement expenses, including depreciation and amortization,
-  are positive magnitudes to subtract; result lines can be negative. Direct
+  are signed amounts to subtract: charges are positive, while net credits or
+  reversals are negative. The income-tax provision is positive for expense
+  and negative for benefit; result lines can be negative. Direct
   cash flows use positive inflows and negative outflows. Non-cash
   reconciliation adjustments are signed by their effect on operating cash
   flow, are already included in that subtotal, and must not be added to it
@@ -112,6 +114,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- Fundamentals: corrected `IncomeStatementRow::income_tax_expense` guidance
+  to a signed provision, positive for tax expense and negative for tax benefit.
+  Broader expense guidance now preserves net credits and reversals instead of
+  treating positivity as an invariant. Added a tax-benefit adapter example
+  and JSON/DataFrame regressions; reported subtotals remain independent and
+  are not recomputed or reconciled by PAFT.
 - Money: localized parsing recognizes the expected currency symbol and code
   before locating the amount, so digit-bearing symbols such as `TOK2`
   round-trip in prefix and suffix positions, including negative amounts and
@@ -176,6 +184,10 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Migration notes
 
+- Statement adapters: map tax benefits to negative `income_tax_expense` and
+  preserve the direction of expense credits and reversals. If an adapter
+  previously took absolute values, remap from the original source data.
+  Rust types, JSON encodings, and DataFrame schemas are unchanged.
 - Localized currency affixes containing ASCII digits now require whitespace
   separation. Single-digit symbols gain a space in formatted output; affixes
   made entirely of digits and locale separators use two spaces in `EnBy`.

@@ -137,6 +137,37 @@ the continuing-income columns are appended to the income statement schema.
 Code constructing a full `IncomeStatementRow` literal must supply the new
 field, using `None` when unavailable.
 
+Statement adapter sign guidance
+-------------------------------
+
+Income statement expense lines are signed amounts to subtract: charges are
+positive, while net credits or reversals reducing an expense are negative.
+Map the economic direction from the source's presentation; taking absolute
+values would erase credits and reversals. The cash-flow convention of positive
+inflows and negative outflows does not apply to income statement expenses.
+
+`IncomeStatementRow::income_tax_expense` is a signed tax provision: **positive
+for tax expense, negative for tax benefit (tax income)**. It includes current
+and deferred tax recognized in profit or loss. IAS 12 likewise describes tax
+expense or income as comprising current and deferred components.
+([IAS 12, paragraphs 5–6](https://www.ifrs.org/content/dam/ifrs/publications/pdf-standards/english/2021/issued/part-a/ias-12-income-taxes.pdf#page=5))
+
+For a simplified statement reporting pretax income of 100 USD, a tax benefit
+of 20 USD, and net income of 120 USD, map the values as follows:
+
+| PAFT field | Amount in USD |
+| --- | ---: |
+| `pretax_income` | 100 |
+| `income_tax_expense` | -20 |
+| `net_income` | 120 |
+
+Subtracting the signed tax provision gives `100 - (-20) = 120` in this example.
+Reported subtotals remain independent: PAFT does not recompute net income,
+require this identity across provider statements, or reconcile differences in
+scope or other adjustments. JSON and DataFrame export preserve the supplied
+signed values. Adapters that previously took absolute values should remap the
+original source data to recover the expense or benefit direction.
+
 Links
 -----
 

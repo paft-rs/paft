@@ -18,14 +18,20 @@ use paft_money::{Money, Price, QuantityAmount};
 /// [`Self::research_and_development`],
 /// [`Self::selling_general_and_administrative`],
 /// [`Self::operating_expenses`], [`Self::interest_expense`],
-/// [`Self::income_tax_expense`], and
-/// [`Self::depreciation_and_amortization`] - are **positive magnitudes to be
-/// subtracted**, as the income statement presents them. They are not signed
-/// cash flows: the inflow-positive/outflow-negative convention documented on
-/// [`CashflowRow`] does **not** apply here. Note in particular that
-/// [`Self::depreciation_and_amortization`] here is an expense magnitude,
-/// whereas [`CashflowRow::depreciation_and_amortization`] is a positive
-/// add-back within operating cash flow.
+/// and [`Self::depreciation_and_amortization`] - are **signed amounts to be
+/// subtracted**: positive values represent charges, and negative values
+/// represent net credits or reversals reducing that expense. Adapters must
+/// map the economic direction under this convention, not take absolute values
+/// or assume every expense line is positive.
+///
+/// [`Self::income_tax_expense`] is a **signed tax provision**: positive values
+/// represent tax expense; negative values represent tax benefit (tax income).
+///
+/// These are not cash flows: the inflow-positive/outflow-negative convention
+/// documented on [`CashflowRow`] does **not** apply here.
+/// [`Self::depreciation_and_amortization`] here follows the expense convention,
+/// whereas [`CashflowRow::depreciation_and_amortization`] is a reconciliation
+/// adjustment, positive when added back to net income.
 ///
 /// Result lines ([`Self::operating_income`], [`Self::pretax_income`],
 /// [`Self::net_income`], and the rest) are signed, and are negative for a
@@ -104,8 +110,9 @@ pub struct IncomeStatementRow {
     /// not reduce to `operating_expenses` by that subtraction; leave this
     /// field `None` rather than mapping such a figure into it.
     ///
-    /// A positive magnitude, and an aggregate as reported; see the struct-level
-    /// notes on signs and derived fields.
+    /// A signed aggregate as reported: positive for a net charge, negative for
+    /// a net credit or reversal. See the struct-level notes on signs and
+    /// derived fields.
     pub operating_expenses: Option<Money>,
     /// Operating income.
     pub operating_income: Option<Money>,
@@ -131,7 +138,16 @@ pub struct IncomeStatementRow {
     pub ebitda: Option<Money>,
     /// Pretax income.
     pub pretax_income: Option<Money>,
-    /// Income tax expense (provision for income taxes).
+    /// Signed provision for income taxes, including current and deferred tax
+    /// recognized in profit or loss.
+    ///
+    /// Positive values represent tax expense; negative values represent tax
+    /// benefit (tax income). For example, pretax income of 100 and a tax benefit
+    /// of 20 use `income_tax_expense = -20`; subtracting that line gives 120 in
+    /// a simplified statement with no other adjustments.
+    ///
+    /// Carried as reported. `paft` does not compute or reconcile this field or
+    /// [`Self::net_income`] against [`Self::pretax_income`].
     pub income_tax_expense: Option<Money>,
     /// Depreciation and amortization recognized on the income statement.
     pub depreciation_and_amortization: Option<Money>,
@@ -316,11 +332,11 @@ pub struct BalanceSheetRow {
 ///
 /// Their sign is their effect on operating cash flow, not a direction of cash
 /// movement: an item added back to net income is **positive**, an item
-/// deducted is **negative**. So [`Self::depreciation_and_amortization`] and
-/// [`Self::stock_based_compensation`] are positive - they are non-cash
-/// expenses added back - even though no cash moved, and
-/// [`Self::change_in_working_capital`] is negative when working capital grew
-/// and consumed cash. Do not read a positive add-back as an inflow, and do not
+/// deducted is **negative**. Thus [`Self::depreciation_and_amortization`] and
+/// [`Self::stock_based_compensation`] are positive when non-cash expenses are
+/// added back, and negative when reversals are deducted, even though no cash
+/// moved. [`Self::change_in_working_capital`] is negative when working capital
+/// grew and consumed cash. Do not read a positive add-back as an inflow, and do not
 /// sum these fields with the direct cash flows above; doing so double-counts
 /// them.
 ///

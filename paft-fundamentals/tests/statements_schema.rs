@@ -398,6 +398,55 @@ fn assert_money_values(df: &DataFrame, field: &str, expected: &[Option<i128>]) {
     }
 }
 
+#[test]
+fn income_tax_provisions_and_expense_reversals_preserve_dataframe_values() {
+    let mut rows = Vec::new();
+    for (tax, net_income) in [
+        (Some(-20), 120),
+        (Some(20), 80),
+        (Some(0), 100),
+        (None, 100),
+        // Export the reported subtotal even when it does not reconcile.
+        (Some(-20), 117),
+    ] {
+        let mut income: IncomeStatementRow = serde_json::from_str(r#"{"period":"2024"}"#).unwrap();
+        income.pretax_income = Some(usd(100));
+        income.income_tax_expense = tax.map(usd);
+        income.operating_expenses = Some(usd(-5));
+        income.net_income = Some(usd(net_income));
+        rows.push(income);
+    }
+
+    let taxes = [
+        Some(-200_000_000_000),
+        Some(200_000_000_000),
+        Some(0),
+        None,
+        Some(-200_000_000_000),
+    ];
+    let net_incomes = [
+        Some(1_200_000_000_000),
+        Some(800_000_000_000),
+        Some(1_000_000_000_000),
+        Some(1_000_000_000_000),
+        Some(1_170_000_000_000),
+    ];
+    for (index, row) in rows.iter().enumerate() {
+        let df = row.to_dataframe().unwrap();
+        assert_money_values(&df, "income_tax_expense", &taxes[index..=index]);
+        assert_money_values(&df, "net_income", &net_incomes[index..=index]);
+        assert_money_values(&df, "pretax_income", &[Some(1_000_000_000_000)]);
+        assert_money_values(&df, "operating_expenses", &[Some(-50_000_000_000)]);
+    }
+
+    let df = rows.to_dataframe().unwrap();
+    assert_schema(&df, INCOME_STATEMENT_SCHEMA);
+    assert_money_values(&df, "income_tax_expense", &taxes);
+    assert_money_values(&df, "net_income", &net_incomes);
+    assert_money_values(&df, "pretax_income", &[Some(1_000_000_000_000); 5]);
+    assert_money_values(&df, "operating_expenses", &[Some(-50_000_000_000); 5]);
+}
+
 /// Single-row and columnar conversions must preserve a loss, reported zero,
 /// and missing data, including validity on both monetary columns.
 #[test]
