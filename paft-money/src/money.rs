@@ -100,33 +100,30 @@ impl ExchangeRate {
     /// known to be representable after inversion.
     ///
     /// # Panics
-    /// Panics when the inverted rate overflows the active decimal backend.
-    /// This is only possible under the fixed-width `rust_decimal` backend.
+    /// Panics when the inverted rate cannot be represented as a positive rate
+    /// by the active decimal backend, including when it underflows to zero.
     #[must_use]
     pub fn inverse(&self) -> Self {
         self.try_inverse()
-            .expect("inverse exchange rate overflows decimal backend")
+            .expect("inverse exchange rate cannot be represented as a positive rate")
     }
 
     /// Tries to create the inverse exchange rate.
     ///
-    /// This swaps `from` and `to`, then computes `1 / rate` using checked
-    /// division so very small fixed-width decimal rates return an error instead
-    /// of panicking.
+    /// This swaps `from` and `to`, computes `1 / rate` using checked division,
+    /// and validates the result through [`ExchangeRate::new`]. Large rates can
+    /// produce a reciprocal that underflows to zero in the fixed-width
+    /// `rust_decimal` backend; such a result is rejected.
     ///
     /// # Errors
-    /// Returns [`MoneyError::ConversionError`] when the inverted rate cannot be
-    /// represented by the active decimal backend. This is only possible under
-    /// the fixed-width `rust_decimal` backend.
+    /// Returns [`MoneyError::ConversionError`] when checked division fails, or
+    /// [`MoneyError::InvalidExchangeRate`] when the reciprocal underflows to zero.
     pub fn try_inverse(&self) -> Result<Self, MoneyError> {
         let one = decimal::one();
         let rate = checked_div_decimal(&one, &self.rate)?;
 
-        Ok(Self {
-            from: self.to.clone(),
-            to: self.from.clone(),
-            rate,
-        })
+        // Checked division can succeed with a zero result after rounding.
+        Self::new(self.to.clone(), self.from.clone(), rate)
     }
 
     /// Checks if this exchange rate can be used to convert the given money.

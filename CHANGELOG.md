@@ -98,6 +98,11 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- Money: `ExchangeRate::try_inverse` validates the reciprocal through
+  `ExchangeRate::new`, returning `MoneyError::InvalidExchangeRate` if it
+  underflows to zero. Inverting the fixed-width decimal maximum previously
+  returned an invalid zero rate; `inverse` now panics for this case, while
+  representable positive reciprocals remain valid.
 - **Breaking** Money: `PriceAmount::into_inner` and
   `QuantityAmount::into_inner` are now runtime methods. They compile when
   another dependency enables `paft-decimal/bigdecimal` without enabling

@@ -1,6 +1,6 @@
 use iso_currency::Currency as IsoCurrency;
 use paft_decimal::{self as decimal, Decimal, RoundingStrategy};
-use paft_money::{Currency, ExchangeRate, Money};
+use paft_money::{Currency, ExchangeRate, Money, MoneyError};
 use serde_json::{from_value, json, to_value};
 
 const fn usd() -> Currency {
@@ -106,7 +106,9 @@ fn exchange_rate_validation_and_inverse() {
     // anything else describes a non-existent translation. Trailing-zero
     // forms are accepted because the comparison is numeric. Negative or
     // zero rates remain rejected regardless of currency pairing.
-    assert!(ExchangeRate::new(usd(), usd(), decimal::one()).is_ok());
+    let identity = ExchangeRate::new(usd(), usd(), decimal::one()).unwrap();
+    assert_eq!(identity.try_inverse().unwrap(), identity);
+    assert_eq!(identity.inverse(), identity);
     assert!(ExchangeRate::new(usd(), usd(), dec("1.0")).is_ok());
     assert!(ExchangeRate::new(usd(), usd(), dec("1.5")).is_err());
     assert!(ExchangeRate::new(usd(), jpy(), decimal::zero()).is_err());
@@ -128,6 +130,44 @@ fn exchange_rate_validation_and_inverse() {
         rounded,
         decimal::round_dp_with_strategy(&one, 6, RoundingStrategy::MidpointAwayFromZero)
     );
+}
+
+#[test]
+fn exchange_rate_inverse_handles_fixed_width_maximum() {
+    // The rust_decimal maximum is written as a literal so this test also runs
+    // with BigDecimal, including when dependency feature unification selects it.
+    let rate = ExchangeRate::new(usd(), jpy(), dec("79228162514264337593543950335")).unwrap();
+
+    if decimal::MAX_DECIMAL_PRECISION == 28 {
+        // Its reciprocal is about 1.26e-29, which rounds to zero at scale 28.
+        assert_eq!(
+            rate.try_inverse(),
+            Err(MoneyError::InvalidExchangeRate {
+                rate: decimal::zero(),
+            })
+        );
+        assert!(std::panic::catch_unwind(|| rate.inverse()).is_err());
+    } else {
+        let inverse = rate.try_inverse().unwrap();
+        assert!(inverse.rate() > decimal::zero());
+        assert!(inverse.rate() < dec("0.0000000000000000000000000001"));
+        assert_eq!(inverse.from(), &jpy());
+        assert_eq!(inverse.to(), &usd());
+        assert_eq!(rate.inverse(), inverse);
+    }
+}
+
+#[test]
+fn exchange_rate_inverse_preserves_small_positive_reciprocal() {
+    let rate = ExchangeRate::new(usd(), jpy(), dec("10000000000000000000000000000")).unwrap();
+    let inverse = rate.try_inverse().unwrap();
+
+    // Exactly 1e-28 is still representable by the fixed-width backend.
+    assert_eq!(inverse.rate(), dec("0.0000000000000000000000000001"));
+    assert_eq!(inverse.from(), &jpy());
+    assert_eq!(inverse.to(), &usd());
+    assert_eq!(rate.inverse(), inverse);
+    assert_eq!(inverse.try_inverse().unwrap(), rate);
 }
 
 #[test]
