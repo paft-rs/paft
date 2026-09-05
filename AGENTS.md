@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-We are currently working on v0.9.0, last tagged version is 0.8.0 on main, so breaking changes are allowed and recommended. Keep the changelog updated under v0.9.0 as you work.
+We are currently working on v0.10.0, last tagged version is v0.9.0 on main, so breaking changes are allowed and recommended. Keep the changelog updated under v0.10.0 as you work.
 
 ## PAFT
 

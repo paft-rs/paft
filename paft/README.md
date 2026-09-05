@@ -25,7 +25,7 @@ Most applications should start with the default feature set:
 
 ```toml
 [dependencies]
-paft = "0.9.0"
+paft = "0.10.0"
 ```
 
 The default features are `domain`, `market`, and `fundamentals`. For a smaller
@@ -33,28 +33,28 @@ dependency, disable defaults and opt into only what you use:
 
 ```toml
 [dependencies]
-paft = { version = "0.9.0", default-features = false, features = ["domain"] }
+paft = { version = "0.10.0", default-features = false, features = ["domain"] }
 ```
 
 Add one or more optional features to the default set:
 
 ```toml
 [dependencies]
-paft = { version = "0.9.0", features = ["aggregates", "prediction", "dataframe"] }
+paft = { version = "0.10.0", features = ["aggregates", "prediction", "dataframe"] }
 ```
 
 Use `full` when you want every domain crate plus DataFrame support:
 
 ```toml
 [dependencies]
-paft = { version = "0.9.0", features = ["full"] }
+paft = { version = "0.10.0", features = ["full"] }
 ```
 
 Use `bigdecimal` when you need an arbitrary-precision decimal backend:
 
 ```toml
 [dependencies]
-paft = { version = "0.9.0", features = ["bigdecimal"] }
+paft = { version = "0.10.0", features = ["bigdecimal"] }
 ```
 
 Features
@@ -131,7 +131,7 @@ Enable the `dataframe` feature and import the traits from the facade prelude:
 
 ```toml
 [dependencies]
-paft = { version = "0.9.0", features = ["dataframe"] }
+paft = { version = "0.10.0", features = ["dataframe"] }
 ```
 
 ```rust
@@ -159,7 +159,7 @@ locale-aware parsing. Canonical `Display` remains stable as `"<amount> <CODE>"`.
 
 ```toml
 [dependencies]
-paft = { version = "0.9.0", features = ["money-formatting"] }
+paft = { version = "0.10.0", features = ["money-formatting"] }
 ```
 
 ```rust

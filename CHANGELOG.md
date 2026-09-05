@@ -4,118 +4,131 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-05
+
+This release is audited against the `v0.9.0` tag. It expands financial
+statements, upgrades DataFrame integration, and raises the minimum supported
+Rust version. Breaking changes and downstream migration steps are listed below.
+
 ### Added
 
-- Fundamentals/statements: added
-  `IncomeStatementRow::net_income_from_continuing_operations: Option<Money>`
-  for after-tax continuing income or loss including noncontrolling interests
-  and excluding discontinued operations. It is distinct from continuing income
-  attributable to the parent and does not redefine or reconcile `net_income`.
-  Negative values are valid, missing values remain distinct from reported
-  zero, and older JSON payloads default the omitted field to `None`.
-  **Breaking:** full income-statement literals must supply the field; JSON
-  gains a key and DataFrame export appends nullable amount/currency columns.
-- Fundamentals/statements: added monetary-value, null/zero, negative-income,
-  legacy-payload, and serde/DataFrame coverage for continuing income and
-  current debt.
-
-- Fundamentals/statements: expanded `IncomeStatementRow`, `BalanceSheetRow`,
-  and `CashflowRow` with additional common line items. New on
-  `IncomeStatementRow`: `cost_of_revenue`, `research_and_development`,
+- Fundamentals: 14 optional fields on `IncomeStatementRow`:
+  `cost_of_revenue`, `research_and_development`,
   `selling_general_and_administrative`, `operating_expenses`,
   `interest_income`, `ebit`, `ebitda`, `pretax_income`,
   `net_income_common_stockholders`, `basic_eps`, `diluted_eps`,
-  `basic_average_shares`, and `diluted_average_shares`. New on
-  `BalanceSheetRow`: `total_debt`, `current_debt`,
-  `cash_and_short_term_investments`, `other_current_assets`,
-  `other_current_liabilities`, `retained_earnings`, `common_stock`,
-  `treasury_stock`, `minority_interest`, `working_capital`, and
-  `tangible_book_value`. New on `CashflowRow`: `stock_based_compensation`,
-  `change_in_working_capital`, `investing_cashflow`, `financing_cashflow`,
-  `issuance_of_debt`, `repayment_of_debt`, `repurchase_of_capital_stock`,
-  `cash_dividends_paid`, and `end_cash_position`.
-
-  Every field released in 0.9.0 is retained, with its name, type, and
-  encoding unchanged; no field was renamed or removed. The additions are
-  nonetheless **breaking** for code that constructs these structs as full
-  literals, and they add columns to the `DataFrame` schema and keys to the
-  JSON encoding of each row.
-
-- Fundamentals/statements: documented the sign conventions and reported-value
-  semantics of the statement rows:
-  - `CashflowRow` distinguishes direct cash flows (inflows positive, outflows
-    negative) from the non-cash reconciliation adjustments inside
-    `operating_cashflow` (`depreciation_and_amortization`,
-    `stock_based_compensation`, `change_in_working_capital`), which are signed
-    by their effect on operating cash flow and must not be summed with the
-    direct flows, and from balances such as `end_cash_position`.
-  - `IncomeStatementRow` expense lines, `depreciation_and_amortization`
-    included, are positive magnitudes to be subtracted rather than signed cash
-    flows.
-  - `BalanceSheetRow::treasury_stock` is carried negative, as the
-    contra-equity account the equity section presents.
-  - `ebit` and `ebitda` are the **unadjusted** measures only, defined as
-    `pretax_income + interest_expense - interest_income` and that plus
-    `depreciation_and_amortization`. Source-reported values under those
-    definitions belong in these fields; adjusted variants such as "Adjusted
-    EBITDA", with add-backs for stock-based compensation, restructuring, or
-    impairments, belong in provider metadata or a distinctly named field.
-  - The remaining derived or aggregate fields (`operating_expenses`,
-    `net_income_common_stockholders`, `total_debt`,
-    `cash_and_short_term_investments`, `working_capital`,
-    `tangible_book_value`, `free_cash_flow`) are carried as reported and are
-    never computed, reconciled, or validated by `paft`.
-
-- Fundamentals: exact `DataFrame` schema tests (full ordered column list and
-  dtype) and JSON wire-format tests for all three statement rows.
+  `basic_average_shares`, `diluted_average_shares`, and
+  `net_income_from_continuing_operations`. EPS fields use `Price`,
+  weighted-average shares use fractional `QuantityAmount`, and the remaining
+  new fields use `Money`.
+- Fundamentals: 11 optional `Money` fields on `BalanceSheetRow`:
+  `total_debt`, `current_debt`, `cash_and_short_term_investments`,
+  `other_current_assets`, `other_current_liabilities`, `retained_earnings`,
+  `common_stock`, `treasury_stock`, `minority_interest`, `working_capital`,
+  and `tangible_book_value`.
+- Fundamentals: nine optional `Money` fields on `CashflowRow`:
+  `stock_based_compensation`, `change_in_working_capital`,
+  `investing_cashflow`, `financing_cashflow`, `issuance_of_debt`,
+  `repayment_of_debt`, `repurchase_of_capital_stock`, `cash_dividends_paid`,
+  and `end_cash_position`.
+- Fundamentals: `net_income_from_continuing_operations` explicitly carries
+  after-tax income or loss from continuing operations, **including
+  noncontrolling interests** and excluding discontinued operations. It is
+  distinct from continuing income attributable to the parent and does not
+  redefine or reconcile the existing `net_income` field. Negative values
+  represent losses.
+- Fundamentals: `current_debt` represents short-term borrowings plus the
+  current portion of long-term debt, excluding separately classified lease
+  liabilities. It is distinct from total current liabilities.
+- Fundamentals: exact ordered DataFrame schema and dtype tests, JSON
+  wire-format and round-trip tests, and legacy-payload coverage for all three
+  statement rows. Continuing income and current debt additionally cover
+  monetary values, negative income, and missing-versus-zero values through
+  both single-row and columnar DataFrame conversion.
 
 ### Changed
 
-- Workspace: upgraded Cargo's workspace resolver from 2 to 3, enabling
-  Rust-version-aware dependency resolution against the declared MSRV.
-- Dependencies: upgraded `iso_currency` from `0.5` to `0.7`; downstream code
-  should use PAFT's `IsoCurrency` re-export or a compatible direct `0.7`
-  dependency. Refreshed the remaining dependency lockfile, including
-  `rust_decimal` 1.43.0, `bitflags` 2.13.1, `serde` 1.0.229,
-  `serde_json` 1.0.151, and `thiserror` 2.0.20. Broadened `serde`,
-  `serde_json`, `thiserror`, `bitflags`, and `pretty_assertions` to major-only
-  requirements. Pre-1.0 dependencies retain their minor
-  compatibility boundary, and `rust_decimal` retains its tested `1.42` API
-  floor while permitting later `1.x` releases.
-- Decimal: removed the independent `num-bigint` dependency and use
-  `bigdecimal::num_bigint::BigInt` so the integer type always matches the
-  active BigDecimal backend. BigDecimal 0.4 still uses num-bigint 0.4;
-  independently upgrading to num-bigint 0.5 would introduce incompatible types.
-- Money: normalize owned constructor inputs before storing them, preserving
-  the by-value API across decimal backends and resolving current Clippy
-  warnings without lint suppressions.
-- **Breaking** Money: `PriceAmount::into_inner` and
-  `QuantityAmount::into_inner` are no longer `const fn`. This fixes builds
-  where a different dependency enables `paft-decimal/bigdecimal` without the
-  matching local feature on `paft-money`; local cfg cannot determine whether
-  the decimal backend supports const extraction. Const callers must use the
-  borrowed accessors or move extraction to runtime. CI now runs the locked
-  decimal feature-isolation checks to prevent regressions.
-
+- Workspace: bumped all ten crates and their internal dependency requirements
+  to `0.10.0`, and updated installation examples and repository version guidance.
+- **Breaking** Fundamentals: all three statement rows gain fields, JSON keys,
+  and DataFrame columns. Full Rust struct literals must supply the new fields.
+  Every field released in 0.9.0 retains its name, type, and value encoding.
+- **Breaking** Fundamentals: income statement fields follow statement order,
+  moving `net_income` after `income_tax_expense` and
+  `depreciation_and_amortization` in DataFrame output. The continuing-income
+  amount/currency columns are appended at the end of the schema. JSON remains
+  keyed by field name.
+- Fundamentals: documented the canonical accounting conventions for statement
+  rows. Income statement expenses, including depreciation and amortization,
+  are positive magnitudes to subtract; result lines can be negative. Direct
+  cash flows use positive inflows and negative outflows. Non-cash
+  reconciliation adjustments are signed by their effect on operating cash
+  flow, are already included in that subtotal, and must not be added to it
+  again. `end_cash_position` is a balance, and `treasury_stock` is negative
+  contra-equity.
+- Fundamentals: `ebit` and `ebitda` carry **unadjusted** reported measures:
+  `pretax_income + interest_expense - interest_income`, and that value plus
+  `depreciation_and_amortization`, respectively. Adjusted variants belong in
+  provider metadata or a distinctly named field. These and other reported
+  aggregates (`operating_expenses`, `net_income_common_stockholders`,
+  `total_debt`, `cash_and_short_term_investments`, `working_capital`,
+  `tangible_book_value`, and `free_cash_flow`) are never computed, reconciled,
+  or validated against sibling fields by `paft`.
 - **Breaking** DataFrame dependencies: upgraded `df-derive-core` and
-  `df-derive-macros` from `0.3.1` to `0.5`, and `polars`/`polars-arrow` from
-  `0.53` to `0.55`. Direct downstream Polars and df-derive dependencies must
-  use matching compatible version lines to share DataFrame and runtime trait
-  types. Patch updates remain permitted by the manifest requirements.
-- Workspace: raised the minimum supported Rust version from 1.90 to 1.95 to
-  match df-derive 0.5 and the Polars 0.55 dependency graph, and updated the
-  CI MSRV check.
+  `df-derive-macros` from `0.3.1` to `0.5.0`, and `polars`/`polars-arrow`
+  from `0.53.0` to `0.55.2`. Manifest requirements are `0.5` and `0.55`,
+  respectively, allowing compatible patch updates.
+- **Breaking** Currency dependency: upgraded `iso_currency` from `0.5.3` to
+  `0.7.0`. PAFT's `IsoCurrency` re-export now exposes the `0.7` Rust type.
+- **Breaking** Toolchain: raised the minimum supported Rust version from
+  1.90 to 1.95 for df-derive 0.5 and the Polars 0.55 dependency graph.
+- Workspace: upgraded Cargo's resolver from 2 to 3, enabling Rust-version-aware
+  dependency resolution against the declared MSRV.
+- Dependencies: refreshed the lockfile, including `rust_decimal` 1.43.0,
+  `bitflags` 2.13.1, `chrono` 0.4.45, `serde` 1.0.229,
+  `serde_json` 1.0.151, and `thiserror` 2.0.20. Requirements for `serde`,
+  `serde_json`, `thiserror`, `bitflags`, and `pretty_assertions` now omit
+  minor versions. Pre-1.0 dependencies retain their minor compatibility
+  boundary; `rust_decimal` retains its tested `1.42` API floor while allowing
+  later `1.x` releases.
+- Decimal: removed the independent `num-bigint` dependency in favor of
+  `bigdecimal::num_bigint::BigInt`, keeping the integer type aligned with
+  BigDecimal's backend. The resolved transitive version is `num-bigint`
+  0.4.8; the incompatible 0.5 line is not introduced.
 
-- Fundamentals/statements: clarified `BalanceSheetRow::current_debt` as
-  short-term borrowings plus the current portion of long-term debt, excluding
-  separately classified lease liabilities and distinct from total current
-  liabilities. Its existing name, type, encoding, and column order are retained.
+### Fixed
 
-- **Breaking** Fundamentals/statements: `IncomeStatementRow` fields are
-  declared in statement order, which moves `net_income` after
-  `income_tax_expense` and `depreciation_and_amortization`. This changes the
-  `DataFrame` column order for those already-released fields; their dtypes and
-  the JSON encoding, which is keyed by name, are unaffected.
+- **Breaking** Money: `PriceAmount::into_inner` and
+  `QuantityAmount::into_inner` are now runtime methods. They compile when
+  another dependency enables `paft-decimal/bigdecimal` without enabling
+  `paft-money/bigdecimal`; the local feature flag no longer incorrectly
+  selects const extraction for a backend with a destructor.
+- Money: normalize owned constructor inputs before storing them, retaining
+  the by-value API across decimal backends and resolving current Clippy
+  warnings without suppressing constructor lints.
+- CI: run the locked decimal feature-isolation checks to cover dependency
+  feature unification, and check the workspace on Rust 1.95.
+
+### Migration notes
+
+- Upgrade to Rust 1.95 or newer and move PAFT dependencies to `0.10.0`.
+  Direct dependencies that share public types must use Polars `0.55`,
+  df-derive `0.5`, and `iso_currency` `0.7`. Prefer PAFT's `IsoCurrency`
+  re-export when constructing `Currency::Iso`.
+- Add the new optional fields to complete statement-row literals, using
+  `None` when unavailable. Older JSON payloads that omit the new fields still
+  deserialize successfully; a reported zero remains distinct from `None`.
+- Update consumers that assume exact JSON key sets or DataFrame schemas and
+  column order. Continuing-income export adds nullable
+  `net_income_from_continuing_operations.amount` and
+  `net_income_from_continuing_operations.currency` columns.
+- Audit provider mappings against the accounting definitions: current debt
+  excludes separately classified lease liabilities, continuing income includes
+  noncontrolling interests, and EBIT/EBITDA exclude provider-specific
+  adjustments. Provider-specific aliases and fallback logic remain outside
+  `paft`.
+- Const callers of `PriceAmount::into_inner` or `QuantityAmount::into_inner`
+  must use the borrowed accessors or move owned extraction to runtime.
 
 ## [0.9.0] - 2026-06-06
 
@@ -1096,7 +1109,8 @@ This release tightens identifier validation across the entire workspace and intr
 
 - Initial public release.
 
-[Unreleased]: https://github.com/paft-rs/paft/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/paft-rs/paft/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/paft-rs/paft/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/paft-rs/paft/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/paft-rs/paft/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/paft-rs/paft/compare/v0.7.0...v0.7.1

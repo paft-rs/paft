@@ -1,4 +1,4 @@
-//! Small v0.9 ergonomics tour.
+//! Small paft facade ergonomics tour.
 //!
 //! Run with:
 //!

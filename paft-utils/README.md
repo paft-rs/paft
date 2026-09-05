@@ -17,28 +17,28 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.9.0"
+paft = "0.10.0"
 ```
 
 Direct dependency for enum/token helpers:
 
 ```toml
 [dependencies]
-paft-utils = { version = "0.9.0", default-features = false }
+paft-utils = { version = "0.10.0", default-features = false }
 ```
 
 With DataFrame helpers:
 
 ```toml
 [dependencies]
-paft-utils = { version = "0.9.0", default-features = false, features = ["dataframe"] }
+paft-utils = { version = "0.10.0", default-features = false, features = ["dataframe"] }
 ```
 
 With DataFrame helpers and the `bigdecimal` decimal backend:
 
 ```toml
 [dependencies]
-paft-utils = { version = "0.9.0", default-features = false, features = ["dataframe", "bigdecimal"] }
+paft-utils = { version = "0.10.0", default-features = false, features = ["dataframe", "bigdecimal"] }
 ```
 
 Features

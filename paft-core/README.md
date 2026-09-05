@@ -19,14 +19,14 @@ Most applications should depend on the facade crate:
 
 ```toml
 [dependencies]
-paft = "0.9.0"
+paft = "0.10.0"
 ```
 
 Advanced (direct dependency, minimal):
 
 ```toml
 [dependencies]
-paft-core = { version = "0.9.0", default-features = false }
+paft-core = { version = "0.10.0", default-features = false }
 ```
 
 Use `paft-core` directly when defining paft-compatible crates or local enum

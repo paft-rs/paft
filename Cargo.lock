@@ -1523,7 +1523,7 @@ checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
 
 [[package]]
 name = "paft"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -1549,7 +1549,7 @@ dependencies = [
 
 [[package]]
 name = "paft-aggregates"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "chrono",
  "df-derive-macros",
@@ -1565,7 +1565,7 @@ dependencies = [
 
 [[package]]
 name = "paft-core"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "chrono",
  "paft-utils",
@@ -1576,7 +1576,7 @@ dependencies = [
 
 [[package]]
 name = "paft-decimal"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bigdecimal",
  "num-traits",
@@ -1587,7 +1587,7 @@ dependencies = [
 
 [[package]]
 name = "paft-domain"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "chrono",
  "df-derive-macros",
@@ -1605,7 +1605,7 @@ dependencies = [
 
 [[package]]
 name = "paft-fundamentals"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "chrono",
  "df-derive-macros",
@@ -1623,7 +1623,7 @@ dependencies = [
 
 [[package]]
 name = "paft-market"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bitflags",
  "chrono",
@@ -1642,7 +1642,7 @@ dependencies = [
 
 [[package]]
 name = "paft-money"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "df-derive-macros",
  "iso_currency",
@@ -1657,7 +1657,7 @@ dependencies = [
 
 [[package]]
 name = "paft-prediction"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "chrono",
  "df-derive-macros",
@@ -1673,7 +1673,7 @@ dependencies = [
 
 [[package]]
 name = "paft-utils"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bigdecimal",
  "df-derive-core",

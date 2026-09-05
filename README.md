@@ -50,7 +50,7 @@ agree on.
 
 ## Workspace Crates
 
-The workspace is on the v0.9.0 line. The `paft` facade enables domain, market,
+The workspace is on the v0.10.0 line. The `paft` facade enables domain, market,
 and fundamentals types by default; aggregate snapshots, prediction-market
 models, DataFrame export, tracing, formatting, and backend choices are opt-in.
 
@@ -190,7 +190,7 @@ specialized crates or applications on top of paft data.
 
 - [Facade README](paft/README.md): installation, feature flags, quickstart, and
   common examples.
-- [Facade examples](paft/examples/): runnable examples for v0.9 ergonomics,
+- [Facade examples](paft/examples/): runnable examples for facade usage,
   provider metadata, metadata DataFrame export, and extensible enums.
 - [docs.rs/paft](https://docs.rs/paft): facade API documentation.
 - Crate-specific docs and links are listed in [Workspace Crates](#workspace-crates).

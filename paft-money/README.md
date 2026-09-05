@@ -21,44 +21,44 @@ Prefer the facade crate for most applications:
 
 ```toml
 [dependencies]
-paft = "0.9.0"
+paft = "0.10.0"
 ```
 
 Advanced (direct dependency, default backend):
 
 ```toml
 [dependencies]
-paft-money = "0.9.0"
-paft-decimal = "0.9.0" # only needed when using decimal helpers directly
+paft-money = "0.10.0"
+paft-decimal = "0.10.0" # only needed when using decimal helpers directly
 ```
 
 Alternate decimal backend:
 
 ```toml
 [dependencies]
-paft-money = { version = "0.9.0", features = ["bigdecimal"] }
+paft-money = { version = "0.10.0", features = ["bigdecimal"] }
 ```
 
 With DataFrame integration:
 
 ```toml
 [dependencies]
-paft-money = { version = "0.9.0", features = ["dataframe"] }
-paft-utils = { version = "0.9.0", default-features = false, features = ["dataframe"] } # trait imports for direct users
+paft-money = { version = "0.10.0", features = ["dataframe"] }
+paft-utils = { version = "0.10.0", default-features = false, features = ["dataframe"] } # trait imports for direct users
 ```
 
 With panicking ops:
 
 ```toml
 [dependencies]
-paft-money = { version = "0.9.0", features = ["panicking-money-ops"] }
+paft-money = { version = "0.10.0", features = ["panicking-money-ops"] }
 ```
 
 With locale-aware formatting:
 
 ```toml
 [dependencies]
-paft-money = { version = "0.9.0", features = ["money-formatting"] }
+paft-money = { version = "0.10.0", features = ["money-formatting"] }
 ```
 
 Features

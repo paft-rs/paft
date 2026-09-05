@@ -24,7 +24,7 @@ Use the facade crate when you only need the decimal types it re-exports:
 
 ```toml
 [dependencies]
-paft = "0.9.0"
+paft = "0.10.0"
 ```
 
 Depend directly when you need helpers such as `parse_decimal`,
@@ -32,14 +32,14 @@ Depend directly when you need helpers such as `parse_decimal`,
 
 ```toml
 [dependencies]
-paft-decimal = "0.9.0"
+paft-decimal = "0.10.0"
 ```
 
 Alternate decimal backend:
 
 ```toml
 [dependencies]
-paft-decimal = { version = "0.9.0", features = ["bigdecimal"] }
+paft-decimal = { version = "0.10.0", features = ["bigdecimal"] }
 ```
 
 Features
