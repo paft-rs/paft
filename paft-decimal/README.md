@@ -101,6 +101,18 @@ helpers retain upstream precision rounding and are not exactness checks.
 `round_dp_with_strategy` rounds explicitly. `Decimal128Mantissa` uses half-even
 rounding when reducing scale; use `try_to_scaled_units` for exact integer units.
 
+`try_to_scaled_units` uses checked `i128` coefficient scaling. The exact count
+can exceed the decimal's 96-bit coefficient range as long as it fits `i128`.
+Zero converts to zero at any target scale.
+
+`try_from_scaled_units` and its panicking counterpart `from_minor_units` accept
+numeric representability. They preserve the supplied coefficient and scale when
+those fit; otherwise they remove trailing coefficient zeros and reduce the
+scale together until the value fits. For example, `(10^29, 2)` represents
+`10^27`, and `(10, 29)` represents `10^-28`; both are accepted exactly.
+`(10^29 + 1, 2)` and `(1, 29)` fail because fitting them would lose nonzero
+digits. Zero accepts any input scale, capped at 28 in storage.
+
 v0.10.0 migration
 -----------------
 

@@ -52,10 +52,13 @@ impl MonetaryAmount {
 
     /// Creates a full-precision amount from integer units and an explicit scale.
     ///
+    /// Preserves the numeric value exactly, removing trailing coefficient zeros
+    /// and reducing the stored scale when necessary to fit the decimal limits.
+    ///
     /// # Errors
     ///
-    /// Returns [`MoneyError::ConversionError`] when the coefficient exceeds
-    /// 96 bits or the supplied scale exceeds 28. No rounding is performed.
+    /// Returns [`MoneyError::ConversionError`] when the numeric value cannot fit
+    /// a 96-bit coefficient and scale 0 through 28 exactly. No rounding is performed.
     pub fn from_scaled_units(
         units: i128,
         scale: u32,

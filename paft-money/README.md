@@ -164,6 +164,20 @@ serialized scale, the payload is rejected. When neither ISO nor registered
 metadata supplies a scale, the serialized scale is enough to restore the
 captured settlement semantics.
 
+`as_minor_units()` scales the decimal coefficient exactly in `i128`. For
+example, a USD amount of `1000000000000000000000000000` converts to
+`100000000000000000000000000000` cents, even though that integer count exceeds
+the decimal coefficient range. Counts that exceed `i128` return
+`MoneyError::ConversionError`.
+
+`Money::from_minor_units` accepts numeric representability: it removes trailing
+coefficient zeros when necessary to fit the value without rounding. The stored
+decimal may then have fewer fractional places than the currency, while the
+captured `minor_units` remains the currency's exponent and the original count
+round-trips exactly. `Price::from_scaled_units` and
+`MonetaryAmount::from_scaled_units` use the same numeric conversion rule.
+Currency scales remain capped at 18 decimal places.
+
 Currency Metadata
 -----------------
 

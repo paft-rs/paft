@@ -64,6 +64,9 @@ const MAX_I128_MANTISSA: i128 = 10_i128.pow(DECIMAL128_PRECISION);
 fn rust_decimal_to_scaled_units(value: &rust_decimal::Decimal, target_scale: u32) -> Option<i128> {
     let source_scale = value.scale();
     let mantissa = value.mantissa();
+    if mantissa == 0 {
+        return Some(0);
+    }
     match source_scale.cmp(&target_scale) {
         std::cmp::Ordering::Equal => Some(mantissa),
         std::cmp::Ordering::Less => {
@@ -322,21 +325,39 @@ pub const fn one() -> Decimal {
 
 /// Builds a decimal from an integer count of minor units and the provided scale.
 ///
+/// Like [`try_from_scaled_units`], this preserves the numeric value, removing
+/// trailing zeros only when needed to fit the coefficient and scale limits.
+///
 /// # Panics
-/// Panics when the scale exceeds 28 or the coefficient exceeds 96 bits. Use
-/// [`try_from_scaled_units`] when the input is not already known to fit.
+/// Panics when the numeric value cannot be represented exactly. Use
+/// [`try_from_scaled_units`] for a fallible conversion.
 #[must_use]
 pub fn from_minor_units(value: i128, scale: u32) -> Decimal {
-    Decimal::from_i128_with_scale(value, scale)
+    try_from_scaled_units(value, scale).expect("scaled numeric value cannot be represented exactly")
 }
 
 /// Builds a decimal from an integer coefficient and scale without rounding.
 ///
-/// Returns `None` when the supplied scale exceeds 28 or the coefficient exceeds
-/// 96 bits, even if reducing trailing zeros could represent the numeric value.
+/// Preserves the supplied coefficient and scale when they fit. Otherwise,
+/// removes trailing coefficient zeros and reduces the scale by the same amount
+/// until the numeric value fits. Zero accepts any scale, capped at 28 in storage.
+/// Returns `None` if the numeric value cannot fit a 96-bit coefficient and scale
+/// 0 through 28 exactly; nonzero digits are never discarded.
 #[must_use]
-pub fn try_from_scaled_units(value: i128, scale: u32) -> Option<Decimal> {
-    Decimal::try_from_i128_with_scale(value, scale).ok()
+pub fn try_from_scaled_units(mut value: i128, mut scale: u32) -> Option<Decimal> {
+    if value == 0 {
+        scale = scale.min(u32::from(MAX_DECIMAL_PRECISION));
+    }
+    loop {
+        if let Ok(decimal) = Decimal::try_from_i128_with_scale(value, scale) {
+            return Some(decimal);
+        }
+        if scale == 0 || value % 10 != 0 {
+            return None;
+        }
+        value /= 10;
+        scale -= 1;
+    }
 }
 
 /// Converts a decimal into exact base-10 scaled integer units.
@@ -582,6 +603,60 @@ mod tests {
     fn try_from_scaled_units_accepts_representable_values() {
         let value = try_from_scaled_units(123_456, 3).unwrap();
         assert_eq!(to_canonical_string(&value), "123.456");
+        for (coefficient, scale) in [(123_450, 3), (-123_450, 3), (0, 18)] {
+            let value = try_from_scaled_units(coefficient, scale).unwrap();
+            assert_eq!(value.mantissa(), coefficient);
+            assert_eq!(value.scale(), scale);
+        }
+    }
+
+    #[test]
+    fn scaled_unit_constructors_reduce_only_insignificant_zeros_when_needed() {
+        for (coefficient, scale, expected) in [
+            (
+                10_i128.pow(29),
+                2,
+                Decimal::from_i128_with_scale(10_i128.pow(27), 0),
+            ),
+            (Decimal::MAX.mantissa() * 100, 2, Decimal::MAX),
+            (
+                10_i128.pow(38),
+                18,
+                Decimal::from_i128_with_scale(10_i128.pow(20), 0),
+            ),
+            (10, 29, Decimal::from_i128_with_scale(1, 28)),
+            (10_i128.pow(38), 66, Decimal::from_i128_with_scale(1, 28)),
+        ] {
+            for sign in [-1, 1] {
+                let coefficient = coefficient * sign;
+                let expected = if sign < 0 { -expected } else { expected };
+                let value = try_from_scaled_units(coefficient, scale).unwrap();
+                assert_eq!(value, expected);
+                assert_eq!(super::from_minor_units(coefficient, scale), expected);
+                assert_eq!(try_to_scaled_units(&value, scale), Some(coefficient));
+            }
+        }
+        let zero = try_from_scaled_units(0, u32::MAX).unwrap();
+        assert!(zero.is_zero());
+        assert_eq!(zero.scale(), 28);
+        assert_eq!(super::from_minor_units(0, u32::MAX), zero);
+    }
+
+    #[test]
+    fn try_to_scaled_units_can_exceed_decimal_coefficient_limits() {
+        let coefficient = Decimal::MAX.mantissa();
+        assert_eq!(
+            try_to_scaled_units(&Decimal::MAX, 2),
+            Some(coefficient * 100)
+        );
+        assert_eq!(
+            try_to_scaled_units(&Decimal::MIN, 2),
+            Some(-coefficient * 100)
+        );
+        assert_eq!(try_to_scaled_units(&Decimal::MAX, 18), None);
+        assert_eq!(try_to_scaled_units(&Decimal::MIN, 18), None);
+        assert_eq!(try_to_scaled_units(&Decimal::ZERO, 18), Some(0));
+        assert_eq!(try_to_scaled_units(&Decimal::ZERO, u32::MAX), Some(0));
     }
 
     #[test]
@@ -605,7 +680,26 @@ mod tests {
 
     #[test]
     fn try_from_scaled_units_rejects_rust_decimal_limits() {
-        assert!(try_from_scaled_units(i128::MAX, 0).is_none());
-        assert!(try_from_scaled_units(1, 29).is_none());
+        for (coefficient, scale) in [
+            (i128::MAX, 0),
+            (i128::MIN, 0),
+            (10_i128.pow(29), 0),
+            (10_i128.pow(29) + 1, 2),
+            (10_i128.pow(30) + 10, 2),
+            (1, 29),
+            (10, 30),
+            (10_i128.pow(38), u32::MAX),
+        ] {
+            assert!(
+                try_from_scaled_units(coefficient, scale).is_none(),
+                "{coefficient} at scale {scale}"
+            );
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "scaled numeric value cannot be represented exactly")]
+    fn from_minor_units_panics_when_normalization_cannot_represent_the_value() {
+        let _ = super::from_minor_units(10_i128.pow(29) + 1, 2);
     }
 }

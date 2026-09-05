@@ -203,6 +203,58 @@ fn test_as_minor_units_basic() {
     assert_eq!(usd_123_45.as_minor_units().unwrap(), 12345i128);
 }
 
+#[test]
+fn money_minor_unit_round_trips_exceed_decimal_coefficient_range() {
+    for (amount, currency, units) in [
+        (
+            Decimal::from_i128_with_scale(10_i128.pow(27), 0),
+            Currency::Iso(IsoCurrency::USD),
+            10_i128.pow(29),
+        ),
+        (
+            Decimal::from_i128_with_scale(10_i128.pow(28) + 1, 1),
+            Currency::Iso(IsoCurrency::USD),
+            10_i128.pow(29) + 10,
+        ),
+        (
+            Decimal::MAX,
+            Currency::Iso(IsoCurrency::USD),
+            Decimal::MAX.mantissa() * 100,
+        ),
+        (
+            Decimal::MAX,
+            Currency::BTC,
+            Decimal::MAX.mantissa() * 10_i128.pow(8),
+        ),
+        (
+            Decimal::from_i128_with_scale(170_141_183_460_469_231_731, 0),
+            Currency::ETH,
+            170_141_183_460_469_231_731 * 10_i128.pow(18),
+        ),
+    ] {
+        assert!(units > Decimal::MAX.mantissa());
+        for sign in [-1, 1] {
+            let amount = if sign < 0 { -amount } else { amount };
+            let units = units * sign;
+            let money = Money::new_exact(amount, currency.clone()).unwrap();
+            assert_eq!(money.as_minor_units().unwrap(), units);
+
+            let from_units = Money::from_minor_units(units, currency.clone()).unwrap();
+            assert_eq!(from_units, money);
+            assert_eq!(from_units.as_minor_units().unwrap(), units);
+            assert_eq!(from_units.minor_units(), currency.decimal_places().unwrap());
+            let json = serde_json::to_value(&from_units).unwrap();
+            assert_eq!(
+                json["minor_units"],
+                serde_json::json!(from_units.minor_units())
+            );
+            let restored: Money = serde_json::from_value(json).unwrap();
+            assert_eq!(restored, money);
+            assert_eq!(restored.as_minor_units().unwrap(), units);
+        }
+    }
+}
+
 fn set_test_metadata(code: &str, minor_units: u8) {
     set_currency_metadata(code, code, minor_units, code, true, Locale::EnUs).unwrap();
 }
@@ -330,12 +382,28 @@ fn test_from_minor_units_large_precision() {
 
 #[test]
 fn money_from_minor_units_returns_error_on_decimal_overflow() {
-    let err = Money::from_minor_units(i128::MAX, Currency::Iso(IsoCurrency::USD)).unwrap_err();
-    assert!(matches!(err, paft_money::MoneyError::ConversionError));
+    for units in [
+        i128::MAX,
+        i128::MIN,
+        10_i128.pow(29) + 1,
+        -(10_i128.pow(29) + 1),
+        10_i128.pow(30) + 10,
+    ] {
+        let err = Money::from_minor_units(units, Currency::Iso(IsoCurrency::USD)).unwrap_err();
+        assert!(matches!(err, paft_money::MoneyError::ConversionError));
+    }
 }
 
 #[test]
 fn test_money_minor_units_boundary_precisions() {
+    for currency in [
+        Currency::Iso(IsoCurrency::JPY),
+        Currency::Iso(IsoCurrency::USD),
+        Currency::ETH,
+    ] {
+        let zero = Money::from_minor_units(0, currency).unwrap();
+        assert_eq!(zero.as_minor_units().unwrap(), 0);
+    }
     // 0 decimals (JPY)
     let jpy_minor = 42i128;
     let jpy = Money::from_minor_units(jpy_minor, Currency::Iso(IsoCurrency::JPY)).unwrap();
@@ -695,16 +763,15 @@ fn money_try_div_returns_error_on_decimal_overflow() {
 }
 
 #[test]
-fn money_as_minor_units_returns_error_on_overflow() {
-    use std::str::FromStr;
-
-    // ETH has 18 decimal places, so the multiplier is 10^18. A value just
-    // shy of `i128::MAX / 10^18` already pushes the conversion close to
-    // the i128 bound; the constant below is well past `i128::MAX` once
-    // multiplied. With unchecked `*`, this used to panic; now it surfaces
-    // as ConversionError.
-    let huge = Decimal::from_str("99999999999999999999.123456789012345678").unwrap();
-    let money = Money::new(huge, Currency::ETH).unwrap();
-    let err = money.as_minor_units().unwrap_err();
-    assert!(matches!(err, paft_money::MoneyError::ConversionError));
+fn money_as_minor_units_returns_error_on_i128_overflow() {
+    // The next whole ETH above floor(i128::MAX / 10^18) fits in Decimal,
+    // but its positive and negative minor-unit counts both exceed i128.
+    let huge = Decimal::from_i128_with_scale(170_141_183_460_469_231_732, 0);
+    for amount in [huge, -huge, Decimal::MAX, Decimal::MIN] {
+        let money = Money::new_exact(amount, Currency::ETH).unwrap();
+        assert_eq!(
+            money.as_minor_units(),
+            Err(paft_money::MoneyError::ConversionError)
+        );
+    }
 }

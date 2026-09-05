@@ -64,8 +64,11 @@
 //! where applicable. Ratios and exchange-rate inverses can round at decimal
 //! precision. `DataFrame` scale reduction uses half-even rounding.
 //!
-//! Minor-unit scaling uses `10_i64.pow(scale)` and remains capped at 18 decimal
-//! places ([`MAX_MINOR_UNIT_DECIMALS`]); the integer unit count uses `i128`.
+//! Currency minor-unit scales remain capped at 18 decimal places
+//! ([`MAX_MINOR_UNIT_DECIMALS`]). [`Money::as_minor_units`] scales the coefficient
+//! exactly in `i128`, so the count may exceed the decimal coefficient range.
+//! Scaled-unit constructors accept numeric representability, removing trailing
+//! zeros when necessary while preserving the supplied value exactly.
 //!
 //! # Currency value types
 //!

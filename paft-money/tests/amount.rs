@@ -83,6 +83,40 @@ fn scaled_unit_constructors_return_error_on_decimal_overflow() {
 }
 
 #[test]
+fn scaled_unit_constructors_accept_numeric_representability_after_normalization() {
+    for (units, scale, expected) in [
+        (
+            10_i128.pow(29),
+            2,
+            Decimal::from_i128_with_scale(10_i128.pow(27), 0),
+        ),
+        (10, 29, Decimal::from_i128_with_scale(1, 28)),
+        (0, u32::MAX, Decimal::ZERO),
+    ] {
+        for sign in [-1, 1] {
+            let units = units * sign;
+            let expected = if sign < 0 { -expected } else { expected };
+            let amount = MonetaryAmount::from_scaled_units(units, scale, usd()).unwrap();
+            let price = Price::from_scaled_units(units, scale, usd()).unwrap();
+            assert_eq!(amount.amount(), expected);
+            assert_eq!(price.amount(), expected);
+            assert_eq!(amount.currency(), &usd());
+            assert_eq!(price.currency(), &usd());
+        }
+    }
+    for (units, scale) in [(10_i128.pow(29) + 1, 2), (10, 30)] {
+        assert_eq!(
+            MonetaryAmount::from_scaled_units(units, scale, usd()),
+            Err(MoneyError::ConversionError)
+        );
+        assert_eq!(
+            Price::from_scaled_units(units, scale, usd()),
+            Err(MoneyError::ConversionError)
+        );
+    }
+}
+
+#[test]
 fn monetary_amount_from_money_preserves_currency() {
     let usd = usd();
     let money = Money::from_canonical_str("10", usd.clone()).unwrap();

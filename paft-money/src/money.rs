@@ -1,6 +1,6 @@
 //! Money type for representing financial values with currency.
 
-use crate::decimal::{self, Decimal, RoundingStrategy, ToPrimitive};
+use crate::decimal::{self, Decimal, RoundingStrategy};
 use crate::error::MoneyError;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::hash::{Hash, Hasher};
@@ -238,11 +238,10 @@ impl Money {
     ///
     /// Trailing zeros do not count as precision (so `1.230` is a valid USD
     /// amount because rounding to two places leaves `1.23` numerically
-    /// unchanged). The accepted amount is canonicalized to the currency's
-    /// exact scale, which guarantees that two `Money` values built from
-    /// equal numbers — for example one constructed via the API and one
-    /// arriving over the wire — share the same internal representation
-    /// regardless of how their string form was written.
+    /// unchanged). The stored decimal may use fewer fractional places than
+    /// the currency's exponent, especially for large amounts whose coefficient
+    /// cannot accommodate extra trailing zeros. The captured [`Self::minor_units`]
+    /// defines settlement precision independently of the decimal's stored scale.
     ///
     /// This is the constructor used by [`Money::from_canonical_str`]. Serde
     /// deserialization applies the same exact-scale validation to the
@@ -300,24 +299,16 @@ impl Money {
 
     /// Returns the amount as the smallest currency unit (minor units).
     ///
-    /// Uses checked multiplication so a value that would overflow the
-    /// `rust_decimal` representation surfaces as
-    /// `MoneyError::ConversionError` instead of panicking.
+    /// Uses the captured [`Self::minor_units`] scale and exact coefficient
+    /// scaling in `i128`. The resulting count may exceed the decimal's 96-bit
+    /// coefficient range; no intermediate decimal multiplication is required.
     ///
     /// # Errors
-    /// Returns `MoneyError::ConversionError` when conversion cannot be performed.
+    /// Returns [`MoneyError::ConversionError`] if the exact count exceeds `i128`,
+    /// the amount is not an integral minor-unit count, or the scale is unsupported.
     pub fn as_minor_units(&self) -> Result<i128, MoneyError> {
         let scale = Self::ensure_scale_within_limits(self.minor_units)?;
-
-        // The cap on `scale` is enforced by `ensure_scale_within_limits`
-        // (currently 18 dp) so `10^scale` always fits inside `i64`.
-        let multiplier = Decimal::from(10_i64.pow(scale));
-        let scaled = checked_mul_decimal(&self.amount, &multiplier)?;
-        let integral = decimal::round_dp_with_strategy(&scaled, 0, RoundingStrategy::ToZero);
-        if integral != scaled {
-            return Err(MoneyError::ConversionError);
-        }
-        scaled.to_i128().ok_or(MoneyError::ConversionError)
+        paft_decimal::try_to_scaled_units(&self.amount, scale).ok_or(MoneyError::ConversionError)
     }
 
     /// Creates a new `Money` instance from a canonical decimal string and currency.
@@ -344,12 +335,17 @@ impl Money {
 
     /// Creates a new Money instance from an integer amount in the currency's minor units.
     ///
+    /// Accepts any exactly representable numeric value, removing trailing zeros
+    /// from the coefficient when necessary to fit the decimal representation.
+    /// This can reduce the stored decimal scale but preserves the currency's
+    /// captured [`Self::minor_units`] and the original integer count.
+    ///
     /// # Errors
     /// Returns `MoneyError::MetadataNotFound` when the currency has no registered
     /// scale, including network-dependent non-ISO codes such as `USDC` and `AVAX`.
-    /// Returns `MoneyError::ConversionError` when the currency precision exceeds supported limits
-    /// (currently 18 decimal places to keep `10^scale` within `i64`) or the scaled value cannot
-    /// be represented by the `rust_decimal` representation.
+    /// Returns `MoneyError::ConversionError` when the currency precision exceeds
+    /// supported limits (currently 18 decimal places) or the numeric value cannot
+    /// be represented exactly by `rust_decimal`, even after removing trailing zeros.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_minor_units(minor_units: i128, currency: Currency) -> Result<Self, MoneyError> {
         let (currency_minor_units, scale) = Self::scale_for_currency(&currency)?;

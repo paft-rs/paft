@@ -112,6 +112,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- Money: `as_minor_units` now uses exact coefficient scaling in `i128`, so valid
+  counts can exceed the decimal's 96-bit coefficient range. Decimal and money
+  scaled-unit constructors accept numeric representability by removing trailing
+  coefficient zeros when needed, allowing these large counts to round-trip
+  without rounding. `Money` retains its captured currency exponent even when
+  the stored decimal uses a lower scale. True `i128` overflow and unrepresentable
+  numeric values still return errors.
 - **Breaking** DataFrame: market records and aggregate snapshots now export
   instruments as structured columns with a stable `.key` and a separate
   `.display` label. The key follows `Instrument::unique_key()`, preserving
@@ -161,6 +168,14 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Migration notes
 
+- Minor-unit conversions now accept large counts that previously failed due
+  to a decimal intermediate. `Money::as_minor_units` remains fallible for
+  `i128` overflow. `paft_decimal::try_from_scaled_units`, its panicking
+  `from_minor_units` counterpart, `Money::from_minor_units`, and the `Price` /
+  `MonetaryAmount` scaled-unit constructors now preserve numeric value rather
+  than require the original coefficient/scale pair to fit. Read settlement
+  precision from `Money::minor_units()`; the stored decimal scale can be lower.
+  Currency metadata still supports at most 18 decimal places.
 - DataFrame consumers: replace display-only `instrument` selections with
   `instrument.key` for identity joins/grouping or `instrument.display` for
   labels. The same migration applies to `underlying` and `contract_instrument`

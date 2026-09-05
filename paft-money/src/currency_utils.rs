@@ -25,10 +25,12 @@ use crate::locale::Locale;
 
 /// Maximum decimal scale (28), subject to the shared 96-bit coefficient budget.
 pub const MAX_DECIMAL_PRECISION: u8 = paft_decimal::MAX_DECIMAL_PRECISION;
-/// Maximum precision that can be converted into an `i64` minor-unit scale (10^18).
+/// Maximum supported currency minor-unit scale (18 decimal places).
 ///
-/// This is bounded by `10_i64.pow(scale)` fitting into an `i64`, ensuring minor-unit
-/// conversions respect the minor-unit scaling limit.
+/// This settlement metadata limit is separate from the decimal representation's
+/// scale limit. Exact minor-unit counts use checked `i128` scaling and can still
+/// overflow for sufficiently large amounts. The limit also keeps the factor
+/// returned by [`Currency::minor_unit_scale`] within `i64`.
 pub const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
 
 /// Metadata describing display and scale information for currency codes.
@@ -62,7 +64,7 @@ pub enum MinorUnitError {
         /// Requested fractional digits.
         decimals: u8,
     },
-    /// The requested precision would overflow `10_i64.pow(decimals)` used for minor units.
+    /// The requested precision exceeds the supported currency minor-unit scale.
     ExceedsMinorUnitScale {
         /// Requested fractional digits.
         decimals: u8,
