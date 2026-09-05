@@ -311,6 +311,7 @@ fn statements_row_to_dataframe() {
         diluted_eps: Some(usd_price(2)),
         basic_average_shares: Some(shares("1000000")),
         diluted_average_shares: Some(shares("1010000.5")),
+        net_income_from_continuing_operations: Some(usd(-125)),
     };
     let df = row.to_dataframe().unwrap();
     assert_eq!(df.height(), 1);

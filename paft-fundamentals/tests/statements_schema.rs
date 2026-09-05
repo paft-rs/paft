@@ -10,8 +10,8 @@ use paft_decimal::Decimal;
 use paft_domain::ReportingPeriod;
 use paft_fundamentals::{BalanceSheetRow, CashflowRow, IncomeStatementRow};
 use paft_money::{Currency, IsoCurrency, Money, Price, QuantityAmount};
-use paft_utils::dataframe::ToDataFrame;
-use polars::prelude::{DataFrame, DataType};
+use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
+use polars::prelude::{AnyValue, DataFrame, DataType};
 use std::str::FromStr;
 
 fn usd(amount: i64) -> Money {
@@ -95,6 +95,14 @@ const INCOME_STATEMENT_SCHEMA: &[(&str, DataType)] = &[
     ("diluted_eps.currency", DataType::String),
     ("basic_average_shares.amount", DataType::Decimal(38, 10)),
     ("diluted_average_shares.amount", DataType::Decimal(38, 10)),
+    (
+        "net_income_from_continuing_operations.amount",
+        DataType::Decimal(38, 10),
+    ),
+    (
+        "net_income_from_continuing_operations.currency",
+        DataType::String,
+    ),
 ];
 
 const BALANCE_SHEET_SCHEMA: &[(&str, DataType)] = &[
@@ -226,6 +234,7 @@ fn income_statement_row_dataframe_schema_is_exact() {
         diluted_eps: Some(usd_price("2.69")),
         basic_average_shares: Some(shares("1000000.25")),
         diluted_average_shares: Some(shares("1010000.5")),
+        net_income_from_continuing_operations: Some(usd(-125)),
     };
 
     let df = row.to_dataframe().unwrap();
@@ -320,6 +329,7 @@ fn all_none_rows_produce_the_same_schema() {
         diluted_eps: None,
         basic_average_shares: None,
         diluted_average_shares: None,
+        net_income_from_continuing_operations: None,
     };
     assert_schema(&income.to_dataframe().unwrap(), INCOME_STATEMENT_SCHEMA);
 
@@ -371,4 +381,77 @@ fn all_none_rows_produce_the_same_schema() {
         end_cash_position: None,
     };
     assert_schema(&cashflow.to_dataframe().unwrap(), CASHFLOW_SCHEMA);
+}
+
+fn assert_money_values(df: &DataFrame, field: &str, expected: &[Option<i128>]) {
+    let amounts = df.column(&format!("{field}.amount")).unwrap();
+    let currencies = df.column(&format!("{field}.currency")).unwrap();
+    assert_eq!(amounts.dtype(), &DataType::Decimal(38, 10));
+    assert_eq!(currencies.dtype(), &DataType::String);
+    assert_eq!(df.height(), expected.len());
+    for (index, mantissa) in expected.iter().enumerate() {
+        let (amount, currency) = mantissa.map_or((AnyValue::Null, None), |mantissa| {
+            (AnyValue::Decimal(mantissa, 38, 10), Some("USD"))
+        });
+        assert_eq!(amounts.get(index).unwrap(), amount);
+        assert_eq!(currencies.str().unwrap().get(index), currency);
+    }
+}
+
+/// Single-row and columnar conversions must preserve a loss, reported zero,
+/// and missing data, including validity on both monetary columns.
+#[test]
+fn continuing_income_and_current_debt_preserve_values_and_nulls() {
+    let mut income_rows = Vec::new();
+    let mut balance_rows = Vec::new();
+    for (continuing_income, current_debt) in [
+        (Some("-125.50"), Some("20329000000")),
+        (Some("0"), Some("0")),
+        (None, None),
+    ] {
+        let money =
+            |amount| Money::from_canonical_str(amount, Currency::Iso(IsoCurrency::USD)).unwrap();
+        let mut income: IncomeStatementRow = serde_json::from_str(r#"{"period":"2024"}"#).unwrap();
+        income.net_income_from_continuing_operations = continuing_income.map(money);
+        income_rows.push(income);
+
+        let mut balance: BalanceSheetRow = serde_json::from_str(r#"{"period":"2025"}"#).unwrap();
+        balance.current_debt = current_debt.map(money);
+        balance_rows.push(balance);
+    }
+
+    let income_amounts = [Some(-1_255_000_000_000), Some(0), None];
+    let debt_amounts = [Some(203_290_000_000_000_000_000), Some(0), None];
+    for (index, (income, balance)) in income_rows.iter().zip(&balance_rows).enumerate() {
+        assert_money_values(
+            &income.to_dataframe().unwrap(),
+            "net_income_from_continuing_operations",
+            &income_amounts[index..=index],
+        );
+        assert_money_values(
+            &balance.to_dataframe().unwrap(),
+            "current_debt",
+            &debt_amounts[index..=index],
+        );
+    }
+
+    let income_df = income_rows.to_dataframe().unwrap();
+    assert_schema(&income_df, INCOME_STATEMENT_SCHEMA);
+    assert_money_values(
+        &income_df,
+        "net_income_from_continuing_operations",
+        &income_amounts,
+    );
+    let balance_df = balance_rows.to_dataframe().unwrap();
+    assert_schema(&balance_df, BALANCE_SHEET_SCHEMA);
+    assert_money_values(&balance_df, "current_debt", &debt_amounts);
+
+    assert_schema(
+        &IncomeStatementRow::empty_dataframe().unwrap(),
+        INCOME_STATEMENT_SCHEMA,
+    );
+    assert_schema(
+        &BalanceSheetRow::empty_dataframe().unwrap(),
+        BALANCE_SHEET_SCHEMA,
+    );
 }

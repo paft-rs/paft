@@ -119,6 +119,32 @@ if let Profile::Company(c) = profile { assert_eq!(c.name, "Example Corp"); }
 `Profile` serializes as a flat tagged shape with `kind`; fund profiles use
 `fund_kind` for the fund type so it cannot collide with the discriminator.
 
+Statement concepts
+------------------
+
+`BalanceSheetRow::current_debt` carries short-term borrowings plus the current
+portion of long-term debt, excluding separately classified lease liabilities.
+It is distinct from total current liabilities, which include non-debt
+obligations.
+
+`IncomeStatementRow::net_income_from_continuing_operations` carries after-tax
+income or loss from continuing operations, including noncontrolling interests
+and excluding discontinued operations. Continuing income attributable only to
+the parent is a different measure. The existing `net_income` field retains its
+meaning, and the two values are stored independently without reconciliation.
+
+Both fields are `Option<Money>`: `None` means unavailable, and `Some` with a
+zero amount means a reported zero. Negative continuing income is valid.
+Provider adapters must map the accounting concept rather than infer it from a
+provider's field name.
+
+Older JSON payloads that omit these fields deserialize with `None`. Serialized
+amounts retain their currency and captured minor-unit scale. DataFrame export
+uses nullable `<field>.amount` decimal and `<field>.currency` string columns;
+the continuing-income columns are appended to the income statement schema.
+Code constructing a full `IncomeStatementRow` literal must supply the new
+field, using `None` when unavailable.
+
 Links
 -----
 

@@ -156,6 +156,18 @@ pub struct IncomeStatementRow {
     ///
     /// Fractional for the same reason as [`Self::basic_average_shares`].
     pub diluted_average_shares: Option<QuantityAmount>,
+    /// After-tax income or loss from continuing operations, **including
+    /// noncontrolling interests** and excluding discontinued operations.
+    ///
+    /// This is the consolidated measure before attribution to the parent and
+    /// noncontrolling interests, not continuing income attributable only to
+    /// the parent. Negative values represent losses. `None` means the measure
+    /// is unavailable; a reported zero is present with a zero amount.
+    ///
+    /// Carried as reported, independently of [`Self::net_income`]; `paft`
+    /// neither derives this value from other line items nor changes the
+    /// meaning of `net_income`.
+    pub net_income_from_continuing_operations: Option<Money>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -218,7 +230,14 @@ pub struct BalanceSheetRow {
     ///
     /// Aggregate as reported; see the struct-level note on derived fields.
     pub total_debt: Option<Money>,
-    /// Current portion of debt due within one year.
+    /// Short-term borrowings plus the current portion of long-term debt,
+    /// excluding separately classified lease liabilities.
+    ///
+    /// This is distinct from [`Self::current_liabilities`], which also
+    /// includes non-debt obligations. Carry the reported debt amount without
+    /// adding separately classified lease liabilities. `None` means the
+    /// measure is unavailable, while `Some` with a zero amount means reported
+    /// zero debt.
     pub current_debt: Option<Money>,
     /// Cash, cash equivalents, and short-term investments.
     ///

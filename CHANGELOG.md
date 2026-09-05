@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Fundamentals/statements: added
+  `IncomeStatementRow::net_income_from_continuing_operations: Option<Money>`
+  for after-tax continuing income or loss including noncontrolling interests
+  and excluding discontinued operations. It is distinct from continuing income
+  attributable to the parent and does not redefine or reconcile `net_income`.
+  Negative values are valid, missing values remain distinct from reported
+  zero, and older JSON payloads default the omitted field to `None`.
+  **Breaking:** full income-statement literals must supply the field; JSON
+  gains a key and DataFrame export appends nullable amount/currency columns.
+- Fundamentals/statements: added monetary-value, null/zero, negative-income,
+  legacy-payload, and serde/DataFrame coverage for continuing income and
+  current debt.
+
 - Fundamentals/statements: expanded `IncomeStatementRow`, `BalanceSheetRow`,
   and `CashflowRow` with additional common line items. New on
   `IncomeStatementRow`: `cost_of_revenue`, `research_and_development`,
@@ -57,6 +70,11 @@ All notable changes to this project will be documented in this file.
   dtype) and JSON wire-format tests for all three statement rows.
 
 ### Changed
+
+- Fundamentals/statements: clarified `BalanceSheetRow::current_debt` as
+  short-term borrowings plus the current portion of long-term debt, excluding
+  separately classified lease liabilities and distinct from total current
+  liabilities. Its existing name, type, encoding, and column order are retained.
 
 - **Breaking** Fundamentals/statements: `IncomeStatementRow` fields are
   declared in statement order, which moves `net_income` after

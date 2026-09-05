@@ -56,6 +56,7 @@ fn income_row() -> IncomeStatementRow {
         diluted_eps: Some(usd_price("2.69")),
         basic_average_shares: Some(shares("1000000.25")),
         diluted_average_shares: Some(shares("1010000.5")),
+        net_income_from_continuing_operations: Some(usd("-125.50")),
     }
 }
 
@@ -138,6 +139,7 @@ fn statement_rows_serialize_every_field_under_its_declared_name() {
         "diluted_eps",
         "basic_average_shares",
         "diluted_average_shares",
+        "net_income_from_continuing_operations",
     ];
     let mut actual: Vec<&str> = income
         .as_object()
@@ -237,11 +239,19 @@ fn statement_value_types_have_their_expected_wire_encodings() {
     // not a JSON number.
     assert_eq!(income["basic_average_shares"], json!("1000000.25"));
     assert_eq!(income["diluted_average_shares"], json!("1010000.5"));
+    assert_eq!(
+        income["net_income_from_continuing_operations"],
+        json!({"amount": "-125.5", "currency": "USD", "minor_units": 2})
+    );
 
     // The point-in-time share count stays an integral JSON number.
     let balance: Value = from_str(&to_string(&balance_sheet_row()).unwrap()).unwrap();
     assert_eq!(balance["shares_outstanding"], json!(1_000_000));
     assert!(balance["minority_interest"].is_null());
+    assert_eq!(
+        balance["current_debt"],
+        json!({"amount": "300", "currency": "USD", "minor_units": 2})
+    );
 }
 
 /// Cash outflows and negative reconciliation adjustments keep their
@@ -287,6 +297,66 @@ fn statement_rows_round_trip_through_json() {
     );
 }
 
+#[test]
+fn statement_concepts_preserve_missing_zero_and_reported_money() {
+    for (continuing_income, current_debt) in [
+        (None, None),
+        (Some("0"), Some("0")),
+        (Some("-125.5"), Some("20329000000")),
+        (Some("4024000000"), Some("20329000000")),
+    ] {
+        let mut income = income_row();
+        income.net_income_from_continuing_operations = continuing_income.map(usd);
+        let income_json = serde_json::to_value(&income).unwrap();
+        let expected_income = continuing_income.map_or(
+            Value::Null,
+            |amount| json!({"amount": amount, "currency": "USD", "minor_units": 2}),
+        );
+        assert_eq!(
+            income_json["net_income_from_continuing_operations"],
+            expected_income
+        );
+        assert_eq!(
+            serde_json::from_value::<IncomeStatementRow>(income_json).unwrap(),
+            income
+        );
+
+        let mut balance = balance_sheet_row();
+        balance.current_debt = current_debt.map(usd);
+        let balance_json = serde_json::to_value(&balance).unwrap();
+        let expected_debt = current_debt.map_or(
+            Value::Null,
+            |amount| json!({"amount": amount, "currency": "USD", "minor_units": 2}),
+        );
+        assert_eq!(balance_json["current_debt"], expected_debt);
+        assert_eq!(
+            serde_json::from_value::<BalanceSheetRow>(balance_json).unwrap(),
+            balance
+        );
+    }
+}
+
+/// Legacy values for other concepts must not become fallbacks for the new
+/// fields, even when present in a payload that predates them.
+#[test]
+fn legacy_statement_payloads_keep_distinct_concepts_independent() {
+    let income: IncomeStatementRow = from_str(
+        r#"{"period":"2024","net_income":
+        {"amount":"4188000000","currency":"USD","minor_units":2}}"#,
+    )
+    .unwrap();
+    assert!(income.net_income_from_continuing_operations.is_none());
+    assert_eq!(income.net_income, Some(usd("4188000000")));
+
+    let balance: BalanceSheetRow = from_str(
+        r#"{"period":"2025","current_liabilities":
+        {"amount":"165631000000","currency":"USD","minor_units":2}}"#,
+    )
+    .unwrap();
+    assert!(balance.current_debt.is_none());
+    assert_eq!(balance.current_liabilities, Some(usd("165631000000")));
+}
+
 /// Statement rows are forward-compatible payloads: omitting any optional field
 /// deserializes to `None` rather than failing, so payloads written before these
 /// fields existed still load.
@@ -297,10 +367,12 @@ fn omitted_optional_fields_deserialize_to_none() {
     assert!(income.total_revenue.is_none());
     assert!(income.ebitda.is_none());
     assert!(income.basic_average_shares.is_none());
+    assert!(income.net_income_from_continuing_operations.is_none());
 
     let balance: BalanceSheetRow = from_str(r#"{"period":"2024"}"#).unwrap();
     assert!(balance.shares_outstanding.is_none());
     assert!(balance.tangible_book_value.is_none());
+    assert!(balance.current_debt.is_none());
 
     let cashflow: CashflowRow = from_str(r#"{"period":"2024"}"#).unwrap();
     assert!(cashflow.stock_based_compensation.is_none());
