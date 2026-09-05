@@ -130,7 +130,14 @@ pub fn parse_localized_str(
         canonical.insert(0, '-');
     }
 
-    decimal::parse_decimal(&canonical).ok_or(MoneyError::InvalidAmountFormat)
+    decimal::parse_decimal(&canonical).map_err(localized_decimal_error)
+}
+
+const fn localized_decimal_error(error: decimal::DecimalParseError) -> MoneyError {
+    match error {
+        decimal::DecimalParseError::NotRepresentable => MoneyError::NotRepresentable,
+        _ => MoneyError::InvalidAmountFormat,
+    }
 }
 
 fn match_affix(token: &str, symbol: Option<&str>, code: &str) -> Result<(), MoneyError> {

@@ -26,12 +26,6 @@ df-derive-macros = { workspace = true, optional = true }
 [features]
 default = []
 
-# No feature flag is needed for the default rust_decimal backend.
-bigdecimal = [
-  "paft-money/bigdecimal",
-  "paft-utils?/bigdecimal",
-]
-
 # Optional: expose panicking money ops for tests/consumers
 panicking-money-ops = ["paft-money/panicking-money-ops"]
 

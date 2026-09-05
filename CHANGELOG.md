@@ -91,10 +91,20 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   minor versions. Pre-1.0 dependencies retain their minor compatibility
   boundary; `rust_decimal` retains its tested `1.42` API floor while allowing
   later `1.x` releases.
-- Decimal: removed the independent `num-bigint` dependency in favor of
-  `bigdecimal::num_bigint::BigInt`, keeping the integer type aligned with
-  BigDecimal's backend. The resolved transitive version is `num-bigint`
-  0.4.8; the incompatible 0.5 line is not introduced.
+- **Breaking** Decimal: removed the `bigdecimal` backend, its features and
+  forwarding, and backend-only dependencies. `Decimal` always re-exports
+  `rust_decimal::Decimal`; financial models remain non-generic over numbers.
+- **Breaking** Decimal: `parse_decimal` now returns
+  `Result<Decimal, DecimalParseError>`, distinguishing `InvalidSyntax` from
+  `NotRepresentable`. Money string constructors report `InvalidDecimal` for
+  syntax and `NotRepresentable` for values outside PAFT's representation.
+- **Breaking** Money: all `Price` and `MonetaryAmount` arithmetic, including
+  price-times-quantity totals, now returns an exact result or
+  `MoneyError::NotRepresentable`. Division by zero remains a distinct error.
+- Decimal: added `checked_add_exact`, `checked_sub_exact`, `checked_mul_exact`,
+  and `checked_div_exact`. These reject precision loss, nonzero underflow, and
+  nonterminating quotients without adding numeric dependencies. Ordinary checked
+  helpers retain upstream rounding semantics.
 
 ### Fixed
 
@@ -109,25 +119,32 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   underflows to zero. Inverting the fixed-width decimal maximum previously
   returned an invalid zero rate; `inverse` now panics for this case, while
   representable positive reciprocals remain valid.
-- **Breaking** Money: `PriceAmount::into_inner` and
-  `QuantityAmount::into_inner` are now runtime methods. They compile when
-  another dependency enables `paft-decimal/bigdecimal` without enabling
-  `paft-money/bigdecimal`; the local feature flag no longer incorrectly
-  selects const extraction for a backend with a destructor.
+- Decimal/Money: constrained decimal `Copy` implementations and const extraction
+  are unconditional. `PriceAmount::into_inner` and `QuantityAmount::into_inner`
+  are const methods under every feature combination.
 - Money: normalize owned constructor inputs before storing them, retaining
-  the by-value API across decimal backends and resolving current Clippy
-  warnings without suppressing constructor lints.
-- CI: run the locked decimal feature-isolation checks to cover dependency
-  feature unification, and check the workspace on Rust 1.95.
+  the by-value API. Document upstream precision rounding and settlement rounding
+  separately for Money arithmetic, FX conversion, ratios, and rate inversion.
+- CI: check decimal identity, capabilities, and exact model ingestion with no
+  default features, default features, and all features; check Rust 1.95.
 
 ### Migration notes
 
-- Handle parse or deserialization errors for decimal strings that previously
-  relied on implicit backend rounding. Use the BigDecimal backend when the
-  original precision must be retained, or round representable decimals
-  explicitly before settlement. Constructor signatures are unchanged;
-  `Money`, `MonetaryAmount`, and `Price` string constructors return
-  `MoneyError::InvalidDecimal` for unrepresentable values.
+- Remove `bigdecimal` from all PAFT dependency feature lists. The feature is
+  removed, not repurposed or accepted as a no-op. Arbitrary-precision storage
+  and BigDecimal conversion helpers are outside this release. Keep values that
+  cannot fit externally, or reject them when mapping into PAFT.
+- Migrate `parse_decimal` callers from `Option` to `Result`: handle
+  `DecimalParseError`, use `?`, or explicitly discard the reason with `.ok()`.
+  Existing `.unwrap()` and `.expect()` calls remain usable.
+- Handle `MoneyError::NotRepresentable` in string constructors and exact amount
+  arithmetic. `1 / 3` and underflowing nonzero products now fail for `Price` and
+  `MonetaryAmount`; Money's documented rounded calculations remain available.
+- PAFT's coefficient has 96 bits and scale 0 through 28; magnitude and fractional
+  detail share that budget. Exactness preserves numeric value rather than input
+  spelling. Native `Decimal` parsing, serde, and arithmetic retain upstream
+  semantics; constructors cannot detect earlier precision loss in a supplied
+  decimal. Use PAFT's canonical serde adapters for caller-owned decimal fields.
 - Upgrade to Rust 1.95 or newer and move PAFT dependencies to `0.10.0`.
   Direct dependencies that share public types must use Polars `0.55`,
   df-derive `0.5`, and `iso_currency` `0.7`. Prefer PAFT's `IsoCurrency`

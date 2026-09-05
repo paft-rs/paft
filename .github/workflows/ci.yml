@@ -96,8 +96,8 @@ jobs:
       - name: Run tests
         run: just test
 
-      - name: Check decimal backend feature unification
-        run: just check-decimal-feature-desync
+      - name: Check the decimal contract across features
+        run: just check-decimal-contract
 
   package:
     name: Package

@@ -2,8 +2,8 @@ use crate::currency::Currency;
 use crate::decimal::{self, Decimal, RoundingStrategy};
 use crate::error::MoneyError;
 use crate::exact::{
-    CurrencyAmount, canonical_amount_format, checked_add_amounts, checked_div_decimal,
-    checked_mul_decimal, checked_sub_amounts, copy_decimal, decimal_from_scaled_units,
+    CurrencyAmount, canonical_amount_format, checked_add_amounts, checked_div_decimal_exact,
+    checked_mul_decimal_exact, checked_sub_amounts, copy_decimal, decimal_from_scaled_units,
     parse_canonical_decimal, round_to_money,
 };
 use crate::money::Money;
@@ -20,7 +20,9 @@ use df_derive_macros::ToDataFrame;
 /// currency's minor-unit exponent. Use it for exact totals that are not yet
 /// settlement-ready, such as price-times-quantity products, prorations, fee
 /// calculations, or FX intermediates. Convert to [`Money`] explicitly when
-/// final settlement rounding is required.
+/// final settlement rounding is required. Arithmetic returns an exact
+/// representable result or an error. Existing decimal inputs cannot reveal
+/// precision lost before construction.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct MonetaryAmount {
@@ -41,7 +43,8 @@ impl MonetaryAmount {
     ///
     /// # Errors
     ///
-    /// Returns [`MoneyError::InvalidDecimal`] when the string cannot be parsed losslessly.
+    /// Returns [`MoneyError::InvalidDecimal`] for invalid syntax or
+    /// [`MoneyError::NotRepresentable`] when the numeric value cannot fit exactly.
     pub fn from_canonical_str(amount: &str, currency: Currency) -> Result<Self, MoneyError> {
         let decimal = parse_canonical_decimal(amount)?;
         Ok(Self::new(decimal, currency))
@@ -51,11 +54,8 @@ impl MonetaryAmount {
     ///
     /// # Errors
     ///
-    /// Returns [`MoneyError::ConversionError`] when the active decimal backend
-    /// cannot represent the integer coefficient and scale. With the default
-    /// backend this can happen when the coefficient exceeds `rust_decimal`'s
-    /// mantissa or the scale exceeds its supported range; the `bigdecimal`
-    /// backend accepts every `i128` coefficient and `u32` scale.
+    /// Returns [`MoneyError::ConversionError`] when the coefficient exceeds
+    /// 96 bits or the supplied scale exceeds 28. No rounding is performed.
     pub fn from_scaled_units(
         units: i128,
         scale: u32,
@@ -69,13 +69,13 @@ impl MonetaryAmount {
 
     /// Returns the zero amount for the given currency.
     #[must_use]
-    pub fn zero(currency: Currency) -> Self {
+    pub const fn zero(currency: Currency) -> Self {
         Self::new(decimal::zero(), currency)
     }
 
-    /// Returns the underlying [`Decimal`], cloning when required by the backend.
+    /// Returns a copy of the underlying [`Decimal`].
     #[must_use]
-    pub fn amount(&self) -> Decimal {
+    pub const fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }
 
@@ -96,7 +96,7 @@ impl MonetaryAmount {
     /// # Errors
     ///
     /// Returns [`MoneyError::CurrencyMismatch`] when currencies differ and
-    /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
+    /// [`MoneyError::NotRepresentable`] when the exact result cannot fit PAFT.
     pub fn try_add(&self, rhs: &Self) -> Result<Self, MoneyError> {
         let amount = checked_add_amounts(self, rhs)?;
         Ok(Self::new(amount, self.currency.clone()))
@@ -107,7 +107,7 @@ impl MonetaryAmount {
     /// # Errors
     ///
     /// Returns [`MoneyError::CurrencyMismatch`] when currencies differ and
-    /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
+    /// [`MoneyError::NotRepresentable`] when the exact result cannot fit PAFT.
     pub fn try_sub(&self, rhs: &Self) -> Result<Self, MoneyError> {
         let amount = checked_sub_amounts(self, rhs)?;
         Ok(Self::new(amount, self.currency.clone()))
@@ -117,9 +117,9 @@ impl MonetaryAmount {
     ///
     /// # Errors
     ///
-    /// Returns [`MoneyError::ConversionError`] when the active decimal backend overflows.
+    /// Returns [`MoneyError::NotRepresentable`] when the exact result cannot fit PAFT.
     pub fn try_mul(&self, factor: &Decimal) -> Result<Self, MoneyError> {
-        let amount = checked_mul_decimal(&self.amount, factor)?;
+        let amount = checked_mul_decimal_exact(&self.amount, factor)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 
@@ -128,9 +128,9 @@ impl MonetaryAmount {
     /// # Errors
     ///
     /// Returns [`MoneyError::DivisionByZero`] when `divisor` is zero and
-    /// [`MoneyError::ConversionError`] when the active decimal backend overflows.
+    /// [`MoneyError::NotRepresentable`] when the exact result cannot fit PAFT.
     pub fn try_div(&self, divisor: &Decimal) -> Result<Self, MoneyError> {
-        let amount = checked_div_decimal(&self.amount, divisor)?;
+        let amount = checked_div_decimal_exact(&self.amount, divisor)?;
         Ok(Self::new(amount, self.currency.clone()))
     }
 

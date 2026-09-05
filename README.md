@@ -52,7 +52,7 @@ agree on.
 
 The workspace is on the v0.10.0 line. The `paft` facade enables domain, market,
 and fundamentals types by default; aggregate snapshots, prediction-market
-models, DataFrame export, tracing, formatting, and backend choices are opt-in.
+models, DataFrame export, tracing, and formatting are opt-in.
 
 The minimum supported Rust version is 1.95.
 The workspace uses Cargo resolver 3, including Rust-version-aware dependency
@@ -66,7 +66,7 @@ API floor while allowing later `1.x` releases.
 | [`paft`](paft/README.md) | Facade crate for applications that want one dependency, common re-exports, forwarded features, and runnable examples. |
 | [`paft-domain`](paft-domain/README.md) | Instruments, exchanges, asset kinds, market state, reporting/calendar periods, horizons, and validated security identifiers. |
 | [`paft-money`](paft-money/README.md) | Currency, money, price, quantity, settlement scale, runtime currency metadata, and optional localized formatting. |
-| [`paft-decimal`](paft-decimal/README.md) | Backend-agnostic decimal alias and helpers, constrained decimal newtypes, canonical string serde, and decimal128 support. |
+| [`paft-decimal`](paft-decimal/README.md) | Fixed-width decimal alias and helpers, constrained decimal newtypes, canonical string serde, and decimal128 support. |
 | [`paft-market`](paft-market/README.md) | Quotes, candles, history, order books, options, news, search, downloads, and validated market request builders. |
 | [`paft-fundamentals`](paft-fundamentals/README.md) | Profiles, statements, analysis rows, holders, ESG, key statistics, and related helper models. |
 | [`paft-aggregates`](paft-aggregates/README.md) | Instant-in-time instrument snapshots with optional provider metadata. |
@@ -119,6 +119,29 @@ Provider-facing enums are open where upstreams can add new tokens. Known
 provider aliases should map to canonical variants. Truly unknown values should
 round-trip through typed `Other` wrappers, not through ad hoc strings.
 
+## Numeric Contract
+
+PAFT uses `rust_decimal::Decimal` for canonical decimal values: a 96-bit
+coefficient and scale 0 through 28, with magnitude and fractional precision
+sharing the coefficient budget. PAFT text parsing and model canonical serde
+preserve the supplied numeric value exactly or return an error. Quoted prices
+and quantities are not rounded to a currency's settlement scale.
+
+`Price` and `MonetaryAmount` arithmetic produces an exact representable result
+or fails. Operations that permit rounding document both decimal precision
+rounding and settlement or export rounding. Native `Decimal` parsing, serde,
+and arithmetic retain upstream semantics. Constructors accepting an existing
+`Decimal` validate that value and cannot detect prior precision loss.
+
+An unrepresentable provider value is a limitation of PAFT's representation,
+not invalid financial data. Adapters must reject it or retain it outside the
+canonical model. Arbitrary-precision computation and universal native blockchain
+accounting are outside this contract. Provider metadata uses caller-defined
+serde unless it opts into PAFT's adapters.
+
+See [paft-decimal](paft-decimal/README.md) and [paft-money](paft-money/README.md)
+for API contracts and v0.10.0 migration guidance.
+
 ## Provider Integration Guidance
 
 Provider crates should keep efficient internal wire types and add an explicit
@@ -165,8 +188,6 @@ Exact feature names and install snippets live in the crate READMEs. At the
 workspace level, the optional feature families are:
 
 - DataFrame export through Polars and shared `ToDataFrame` traits.
-- `bigdecimal` as an alternate decimal backend to the default
-  `rust_decimal` backend.
 - Locale-aware money formatting and strict parsing.
 - Opt-in panicking `Money` arithmetic operators for controlled code paths;
   safe `try_*` methods remain the default recommendation.

@@ -34,20 +34,12 @@ With DataFrame helpers:
 paft-utils = { version = "0.10.0", default-features = false, features = ["dataframe"] }
 ```
 
-With DataFrame helpers and the `bigdecimal` decimal backend:
-
-```toml
-[dependencies]
-paft-utils = { version = "0.10.0", default-features = false, features = ["dataframe", "bigdecimal"] }
-```
-
 Features
 --------
 
 Default features are empty.
 
-- `dataframe`: enable the shared `df-derive-core`/Polars trait runtime and `Decimal128Encode` for the active `paft-decimal` backend
-- `bigdecimal`: when combined with `dataframe`, switch decimal128 encoding from `rust_decimal::Decimal` to `bigdecimal::BigDecimal`
+- `dataframe`: enable the shared `df-derive-core`/Polars trait runtime and `Decimal128Encode` for PAFT decimal types
 
 Quickstart
 ----------

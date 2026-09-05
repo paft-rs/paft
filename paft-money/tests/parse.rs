@@ -33,21 +33,9 @@ fn parse_rejects_invalid_tokens() {
     assert!(Money::from_canonical_str("--1.0", usd()).is_err());
 }
 
-#[cfg(feature = "bigdecimal")]
 #[test]
-fn parse_high_precision_bigdecimal_mode() {
-    let m = Money::from_canonical_str("12345678901234567890.123456789012345678", Currency::ETH)
-        .unwrap();
-    assert_eq!(
-        m.amount(),
-        Decimal::from_str("12345678901234567890.123456789012345678").unwrap()
-    );
-}
-
-#[cfg(not(feature = "bigdecimal"))]
-#[test]
-fn parse_high_precision_rust_decimal_mode_rejects_precision_loss() {
+fn parse_high_precision_decimal_limit_rejects_precision_loss() {
     let error = Money::from_canonical_str("12345678901234567890.123456789012345678", Currency::ETH)
         .unwrap_err();
-    assert_eq!(error, paft_money::MoneyError::InvalidDecimal);
+    assert_eq!(error, paft_money::MoneyError::NotRepresentable);
 }

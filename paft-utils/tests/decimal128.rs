@@ -1,7 +1,6 @@
 //! Direct unit tests for `Decimal128Encode::try_to_i128_mantissa`.
 //!
-//! Verifies the rescale + half-even rounding contract on both the
-//! `rust_decimal` and `bigdecimal` backends, plus the shared
+//! Verifies the rescale + half-even rounding contract and the
 //! `|mantissa| < 10^38` rejection band that matches polars's
 //! `dec128_fits` precision check for `Decimal(38, _)` columns.
 
@@ -13,11 +12,10 @@ use paft_utils::Decimal128Encode;
 const MAX_I128_MANTISSA: i128 = 10_i128.pow(38);
 
 // ===================================================================
-// rust_decimal backend
+// Decimal encoding
 // ===================================================================
 
-#[cfg(not(feature = "bigdecimal"))]
-mod rust_decimal_backend {
+mod decimal_encoding {
     use super::{Decimal128Encode, MAX_I128_MANTISSA};
     use rust_decimal::Decimal;
 
@@ -135,9 +133,7 @@ mod rust_decimal_backend {
     // check that becomes load-bearing only if rust_decimal ever widens
     // its mantissa.
     //
-    // We still pin the boundaries on `bigdecimal` (where the band is
-    // reachable), and we sanity-check that values comfortably under the
-    // band continue to round-trip.
+    // Values comfortably under the band continue to round-trip.
 
     #[test]
     fn rescaled_mantissa_just_below_10pow38_is_accepted() {
@@ -165,152 +161,5 @@ mod rust_decimal_backend {
 }
 
 // ===================================================================
-// bigdecimal backend
+
 // ===================================================================
-
-#[cfg(feature = "bigdecimal")]
-mod bigdecimal_backend {
-    use super::{Decimal128Encode, MAX_I128_MANTISSA};
-    use bigdecimal::BigDecimal;
-    use std::str::FromStr;
-
-    // ---- source_scale == target_scale ----
-
-    #[test]
-    fn same_scale_small_positive() {
-        let d = BigDecimal::from_str("123.456").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(3), Some(123_456));
-    }
-
-    #[test]
-    fn same_scale_small_negative() {
-        let d = BigDecimal::from_str("-123.456").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(3), Some(-123_456));
-    }
-
-    #[test]
-    fn same_scale_zero() {
-        let d = BigDecimal::from_str("0.0000").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(4), Some(0));
-    }
-
-    #[test]
-    fn same_scale_large_mantissa() {
-        // 10^37 — large but still safely under the 10^38 precision cap.
-        let s = format!("{}", 10_i128.pow(37));
-        let d = BigDecimal::from_str(&s).unwrap();
-        assert_eq!(d.try_to_i128_mantissa(0), Some(10_i128.pow(37)));
-    }
-
-    // ---- scale-up (rescale to higher scale) ----
-
-    #[test]
-    fn scale_up_one_to_ten() {
-        let d = BigDecimal::from_str("1.5").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(10), Some(15_000_000_000));
-    }
-
-    // ---- scale-down half-even ties ----
-
-    #[test]
-    fn scale_down_half_even_round_down_positive() {
-        let d = BigDecimal::from_str("1.25").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(1), Some(12));
-    }
-
-    #[test]
-    fn scale_down_half_even_round_up_positive() {
-        let d = BigDecimal::from_str("1.35").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(1), Some(14));
-    }
-
-    #[test]
-    fn scale_down_half_even_round_down_negative() {
-        let d = BigDecimal::from_str("-1.25").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(1), Some(-12));
-    }
-
-    #[test]
-    fn scale_down_half_even_round_up_negative() {
-        let d = BigDecimal::from_str("-1.35").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(1), Some(-14));
-    }
-
-    // ---- scale-down non-tie rounding ----
-
-    #[test]
-    fn scale_down_above_half_rounds_up() {
-        let d = BigDecimal::from_str("1.250001").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(1), Some(13));
-    }
-
-    #[test]
-    fn scale_down_below_half_rounds_down() {
-        let d = BigDecimal::from_str("1.249999").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(1), Some(12));
-    }
-
-    // ---- precision boundary (10^38) ----
-
-    #[test]
-    fn boundary_just_below_10pow38_is_accepted() {
-        // 10^38 - 1 — the largest 38-digit mantissa, accepted.
-        let m = MAX_I128_MANTISSA - 1;
-        let s = format!("{m}");
-        let d = BigDecimal::from_str(&s).unwrap();
-        assert_eq!(d.try_to_i128_mantissa(0), Some(m));
-    }
-
-    #[test]
-    fn boundary_at_10pow38_is_rejected() {
-        // 10^38 — strictly excluded by polars's `dec128_fits`.
-        let s = format!("{MAX_I128_MANTISSA}");
-        let d = BigDecimal::from_str(&s).unwrap();
-        assert_eq!(d.try_to_i128_mantissa(0), None);
-    }
-
-    #[test]
-    fn negative_boundary_just_below_10pow38_is_accepted() {
-        let m = -(MAX_I128_MANTISSA - 1);
-        let s = format!("{m}");
-        let d = BigDecimal::from_str(&s).unwrap();
-        assert_eq!(d.try_to_i128_mantissa(0), Some(m));
-    }
-
-    #[test]
-    fn negative_boundary_at_10pow38_is_rejected() {
-        let s = format!("-{MAX_I128_MANTISSA}");
-        let d = BigDecimal::from_str(&s).unwrap();
-        assert_eq!(d.try_to_i128_mantissa(0), None);
-    }
-
-    // ---- zero with non-zero target_scale ----
-
-    #[test]
-    fn zero_at_non_zero_target_scale_succeeds() {
-        let d = BigDecimal::from_str("0").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(5), Some(0));
-    }
-
-    // ---- negative zero ----
-
-    #[test]
-    fn negative_zero_collapses_to_positive_zero() {
-        // bigdecimal accepts "-0" and `with_scale_round` normalises the
-        // sign of the resulting BigInt mantissa to non-negative zero, so
-        // the encoded mantissa equals the encoding of "+0".
-        let pos = BigDecimal::from_str("0").unwrap();
-        let neg = BigDecimal::from_str("-0").unwrap();
-        let pos_m = pos.try_to_i128_mantissa(3).expect("+0 encodes");
-        let neg_m = neg.try_to_i128_mantissa(3).expect("-0 encodes");
-        assert_eq!(pos_m, 0);
-        assert_eq!(neg_m, 0);
-        assert_eq!(pos_m, neg_m);
-    }
-
-    #[test]
-    fn target_scale_above_polars_precision_returns_none() {
-        let d = BigDecimal::from_str("1").unwrap();
-        assert_eq!(d.try_to_i128_mantissa(39), None);
-    }
-}

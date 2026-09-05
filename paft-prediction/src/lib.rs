@@ -13,8 +13,6 @@
 //!
 //! # Feature flags
 //! - `dataframe`: derive `ToDataFrame` impls for flat prediction identity types.
-//! - `bigdecimal`: switch the shared decimal backend to `bigdecimal` (forwarded
-//!   to `paft-decimal`, `paft-money`, and `paft-utils`).
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

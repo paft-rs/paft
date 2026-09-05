@@ -88,9 +88,9 @@ impl ExchangeRate {
 
     /// Returns the exchange rate.
     ///
-    /// The value is cloned from the active decimal backend.
+    /// Returns a copy of the stored decimal value.
     #[must_use]
-    pub fn rate(&self) -> Decimal {
+    pub const fn rate(&self) -> Decimal {
         copy_decimal(&self.rate)
     }
 
@@ -101,7 +101,7 @@ impl ExchangeRate {
     ///
     /// # Panics
     /// Panics when the inverted rate cannot be represented as a positive rate
-    /// by the active decimal backend, including when it underflows to zero.
+    /// by the `rust_decimal` representation, including when it underflows to zero.
     #[must_use]
     pub fn inverse(&self) -> Self {
         self.try_inverse()
@@ -110,10 +110,12 @@ impl ExchangeRate {
 
     /// Tries to create the inverse exchange rate.
     ///
+    /// This is a rounded calculation: upstream checked division may round
+    /// `1 / rate` to decimal precision. It does not promise an exact reciprocal.
     /// This swaps `from` and `to`, computes `1 / rate` using checked division,
     /// and validates the result through [`ExchangeRate::new`]. Large rates can
     /// produce a reciprocal that underflows to zero in the fixed-width
-    /// `rust_decimal` backend; such a result is rejected.
+    /// `rust_decimal` representation; such a result is rejected.
     ///
     /// # Errors
     /// Returns [`MoneyError::ConversionError`] when checked division fails, or
@@ -246,6 +248,9 @@ impl Money {
     /// deserialization applies the same exact-scale validation to the
     /// serialized `minor_units` field.
     ///
+    /// This validates the supplied decimal value; it cannot detect precision
+    /// lost before construction. Text ingestion also uses PAFT's exact parser.
+    ///
     /// # Errors
     /// - Returns `MoneyError::MetadataNotFound` when metadata is not registered.
     /// - Returns `MoneyError::PrecisionExceeded` when the supplied amount has
@@ -254,7 +259,7 @@ impl Money {
     // We take `amount` by value to mirror `Money::new` and avoid forcing
     // callers (notably the deserialize path) to clone before construction.
     // Normalize the owned amount before storing it, keeping the signature
-    // consistent across backends and deserialize paths.
+    // consistent across construction and deserialization paths.
     pub fn new_exact(mut amount: Decimal, currency: Currency) -> Result<Self, MoneyError> {
         let (minor_units, scale) = Self::scale_for_currency(&currency)?;
         amount = Self::canonicalize_exact_amount(&amount, &currency, scale)?;
@@ -275,12 +280,9 @@ impl Money {
 
     /// Returns the amount as a [`Decimal`].
     ///
-    /// The value is cloned from the internal representation. Cloning is a
-    /// cheap copy with the default backend, but incurs an
-    /// allocation proportional to the number of digits when the `bigdecimal`
-    /// feature is enabled.
+    /// Returns a copy of the stored decimal value.
     #[must_use]
-    pub fn amount(&self) -> Decimal {
+    pub const fn amount(&self) -> Decimal {
         copy_decimal(&self.amount)
     }
 
@@ -299,7 +301,7 @@ impl Money {
     /// Returns the amount as the smallest currency unit (minor units).
     ///
     /// Uses checked multiplication so a value that would overflow the
-    /// fixed-width `rust_decimal` backend surfaces as
+    /// `rust_decimal` representation surfaces as
     /// `MoneyError::ConversionError` instead of panicking.
     ///
     /// # Errors
@@ -326,14 +328,14 @@ impl Money {
     /// want rounding behaviour from a previously parsed `Decimal`.
     ///
     /// # Errors
-    /// - Returns `MoneyError::InvalidDecimal` when the string is invalid or
-    ///   cannot be represented exactly by the active decimal backend.
+    /// - Returns `MoneyError::InvalidDecimal` for invalid plain decimal syntax.
+    /// - Returns `MoneyError::NotRepresentable` when the numeric value cannot fit exactly.
     /// - Returns `MoneyError::PrecisionExceeded` when the parsed amount has
     ///   more fractional digits than the currency exponent permits.
     ///
     /// Leading and trailing whitespace is ignored and an optional leading `+`
     /// sign is supported. Scientific notation is rejected so that behaviour is
-    /// consistent across decimal backends.
+    /// independent of native decimal serde features.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_canonical_str(amount: &str, currency: Currency) -> Result<Self, MoneyError> {
         let amount = parse_canonical_decimal(amount)?;
@@ -344,8 +346,8 @@ impl Money {
     ///
     /// # Errors
     /// Returns `MoneyError::ConversionError` when the currency precision exceeds supported limits
-    /// (currently 18 decimal places to keep `10^scale` within `i128`) or the scaled value cannot
-    /// be represented by the active decimal backend.
+    /// (currently 18 decimal places to keep `10^scale` within `i64`) or the scaled value cannot
+    /// be represented by the `rust_decimal` representation.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn from_minor_units(minor_units: i128, currency: Currency) -> Result<Self, MoneyError> {
         let (currency_minor_units, scale) = Self::scale_for_currency(&currency)?;
@@ -438,13 +440,18 @@ impl Money {
 
     /// Addition that returns an error for currency mismatch.
     ///
+    /// Uses upstream checked decimal arithmetic, which may round to fit decimal
+    /// precision, then rounds to the captured settlement scale with
+    /// [`RoundingStrategy::MidpointAwayFromZero`]. The intermediate is not
+    /// guaranteed exact.
+    ///
     /// # Errors
     /// - Returns `MoneyError::CurrencyMismatch` when the operands use
     ///   different currencies.
     /// - Returns `MoneyError::MinorUnitMismatch` when the operands use the
     ///   same currency code but carry different captured minor-unit scales.
     /// - Returns `MoneyError::ConversionError` when the sum overflows the
-    ///   active decimal backend (only possible under `rust_decimal`).
+    ///   `rust_decimal` representation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
@@ -461,13 +468,18 @@ impl Money {
 
     /// Subtraction that returns an error for currency mismatch.
     ///
+    /// Uses upstream checked decimal arithmetic, which may round to fit decimal
+    /// precision, then rounds to the captured settlement scale with
+    /// [`RoundingStrategy::MidpointAwayFromZero`]. The intermediate is not
+    /// guaranteed exact.
+    ///
     /// # Errors
     /// - Returns `MoneyError::CurrencyMismatch` when the operands use
     ///   different currencies.
     /// - Returns `MoneyError::MinorUnitMismatch` when the operands use the
     ///   same currency code but carry different captured minor-unit scales.
     /// - Returns `MoneyError::ConversionError` when the difference overflows
-    ///   the active decimal backend (only possible under `rust_decimal`).
+    ///   the `rust_decimal` representation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
@@ -484,9 +496,14 @@ impl Money {
 
     /// Multiplication that preserves the currency.
     ///
+    /// Uses upstream checked decimal arithmetic, which may round to fit decimal
+    /// precision, then rounds to the captured settlement scale with
+    /// [`RoundingStrategy::MidpointAwayFromZero`]. The intermediate is not
+    /// guaranteed exact.
+    ///
     /// # Errors
     /// Returns `MoneyError::ConversionError` when the product overflows the
-    ///   active decimal backend (only possible under `rust_decimal`).
+    ///   `rust_decimal` representation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
@@ -502,10 +519,15 @@ impl Money {
 
     /// Division that returns an error for division by zero.
     ///
+    /// Uses upstream checked decimal arithmetic, which may round to fit decimal
+    /// precision, then rounds to the captured settlement scale with
+    /// [`RoundingStrategy::MidpointAwayFromZero`]. The intermediate is not
+    /// guaranteed exact.
+    ///
     /// # Errors
     /// - Returns `MoneyError::DivisionByZero` when `rhs` is zero.
     /// - Returns `MoneyError::ConversionError` when the quotient overflows
-    ///   the active decimal backend (only possible under `rust_decimal`).
+    ///   the `rust_decimal` representation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
@@ -523,7 +545,8 @@ impl Money {
     ///
     /// Use this for finance ratios such as "how many shares fit in a budget"
     /// (`budget.try_div_money(&price)`) or P/E-style quotients. The result is a
-    /// pure [`Decimal`] and is **not** rounded to any currency precision.
+    /// pure [`Decimal`]. Upstream division may round to decimal precision;
+    /// no currency settlement rounding is applied and the ratio need not be exact.
     ///
     /// # Errors
     /// - [`MoneyError::CurrencyMismatch`] when the operands use different currencies.
@@ -531,7 +554,7 @@ impl Money {
     ///   currency code but carry different captured minor-unit scales.
     /// - [`MoneyError::DivisionByZero`] when `rhs` has a zero amount.
     /// - [`MoneyError::ConversionError`] when the quotient overflows the
-    ///   active decimal backend (only possible under `rust_decimal`).
+    ///   `rust_decimal` representation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
@@ -544,14 +567,17 @@ impl Money {
     /// Converts this money to another currency using the provided exchange rate and rounding strategy.
     ///
     /// Identity conversions (`from == to`, rate `1`) bypass arithmetic and
-    /// rounding, returning a clone of `self`. The conversion uses
+    /// rounding, returning a clone of `self`. Otherwise the checked product may
+    /// first round to decimal precision, followed by the requested settlement
+    /// rounding. This does not promise a single rounding of an exact product.
+    /// The conversion uses
     /// `checked_mul`, so a multiplication that would overflow the
-    /// fixed-width `rust_decimal` backend surfaces as
+    /// `rust_decimal` representation surfaces as
     /// `MoneyError::ConversionError` instead of panicking.
     ///
     /// # Errors
     /// - Returns `MoneyError::IncompatibleExchangeRate` when the exchange rate does not match the money's currency.
-    /// - Returns `MoneyError::ConversionError` when the rate-scaled amount overflows the active decimal backend.
+    /// - Returns `MoneyError::ConversionError` when the rate-scaled amount overflows the `rust_decimal` representation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rate), err)
@@ -782,7 +808,7 @@ impl Money {
         params.symbol = symbol;
         params.code = code;
 
-        // clone the amount once (cheap in rust_decimal; explicit clone in bigdecimal)
+        // Copy the amount once for formatting.
         let amount = copy_decimal(&self.amount);
 
         Formatter::new(amount, locale, params).format()

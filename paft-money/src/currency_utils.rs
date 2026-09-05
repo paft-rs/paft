@@ -18,15 +18,12 @@ use crate::currency::Currency;
 use crate::error::MoneyParseError;
 use crate::locale::Locale;
 
-/// Maximum precision supported by the active decimal backend for safe scaling operations.
-///
-/// * With the default `rust_decimal` backend this reflects the 28 fractional digits that
-///   `rust_decimal::Decimal` can represent safely.
+/// Maximum decimal scale (28), subject to the shared 96-bit coefficient budget.
 pub const MAX_DECIMAL_PRECISION: u8 = paft_decimal::MAX_DECIMAL_PRECISION;
 /// Maximum precision that can be converted into an `i64` minor-unit scale (10^18).
 ///
 /// This is bounded by `10_i64.pow(scale)` fitting into an `i64`, ensuring minor-unit
-/// conversions remain safe regardless of backend precision.
+/// conversions respect the minor-unit scaling limit.
 pub const MAX_MINOR_UNIT_DECIMALS: u8 = 18;
 
 /// Metadata describing display and scale information for currency codes.
@@ -53,7 +50,7 @@ pub enum MinorUnitError {
         /// The offending input value.
         code: String,
     },
-    /// The requested precision exceeds the decimal backend's supported limit.
+    /// The requested precision exceeds PAFT's supported decimal scale.
     ExceedsDecimalPrecision {
         /// Requested fractional digits.
         decimals: u8,

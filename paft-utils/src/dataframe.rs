@@ -2,9 +2,8 @@
 //!
 //! This module re-exports the shared `df-derive-core` runtime traits so
 //! dataframe impls derived across crates share one trait identity. paft keeps
-//! its own `Decimal128Encode` trait so it can provide decimal backend impls
-//! for the active `paft-decimal` backend without making downstream crates
-//! branch on the concrete decimal type.
+//! its own `Decimal128Encode` trait to encode PAFT decimal values and constrained
+//! newtypes through the shared `paft-decimal` mantissa conversion.
 
 pub use df_derive_core::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 

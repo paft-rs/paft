@@ -5,7 +5,7 @@ edition = "2024"
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Backend-agnostic decimal helpers for the paft ecosystem."
+description = "Fixed-width decimal helpers for the paft ecosystem."
 repository.workspace = true
 homepage = "https://github.com/paft-rs/paft"
 documentation = "https://docs.rs/paft-decimal"
@@ -19,12 +19,9 @@ workspace = true
 [dependencies]
 rust_decimal = { workspace = true }
 serde = { workspace = true }
-bigdecimal = { workspace = true, optional = true }
-num-traits = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
 
 [features]
 default = []
-bigdecimal = ["dep:bigdecimal", "dep:num-traits"]

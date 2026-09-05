@@ -27,7 +27,6 @@ polars = { workspace = true, features = ["dtype-decimal"], optional = true }
 tracing = { workspace = true, optional = true }
 
 [features]
-bigdecimal = ["paft-decimal/bigdecimal", "paft-utils/bigdecimal"]
 dataframe = ["polars", "polars/fmt", "df-derive-macros", "paft-utils/dataframe"]
 money-formatting = []
 panicking-money-ops = []

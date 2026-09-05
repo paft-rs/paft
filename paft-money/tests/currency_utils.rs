@@ -1,5 +1,3 @@
-#[cfg(feature = "bigdecimal")]
-use paft_money::Money;
 use paft_money::currency_utils::CurrencyMetadata;
 use paft_money::{
     Currency, MinorUnitError, clear_currency_metadata, currency_metadata,
@@ -209,17 +207,10 @@ fn test_currency_metadata_rejects_overflowing_precision() {
     ));
 
     let err = call_set_metadata("overflow_decimal", "Token", 29).unwrap_err();
-    if cfg!(feature = "bigdecimal") {
-        assert!(matches!(
-            err,
-            MinorUnitError::ExceedsMinorUnitScale { decimals } if decimals == 29
-        ));
-    } else {
-        assert!(matches!(
-            err,
-            MinorUnitError::ExceedsDecimalPrecision { decimals } if decimals == 29
-        ));
-    }
+    assert!(matches!(
+        err,
+        MinorUnitError::ExceedsDecimalPrecision { decimals } if decimals == 29
+    ));
 }
 
 #[test]
@@ -238,19 +229,6 @@ fn test_currency_metadata_rejects_empty_canonical_codes() {
         err,
         MinorUnitError::InvalidCurrencyCode { code } if code.is_empty()
     ));
-}
-
-#[cfg(feature = "bigdecimal")]
-#[test]
-fn test_bigdecimal_accepts_large_magnitudes() {
-    call_set_metadata("HP18", "High Precision", 18).expect("metadata accepted");
-    let currency = Currency::try_from_str("HP18").unwrap();
-
-    let amount = "123456789012345678901234567890.123456789012345678";
-    let money = Money::from_canonical_str(amount, currency).unwrap();
-    assert_eq!(money.amount().to_string(), amount);
-
-    clear_currency_metadata("HP18");
 }
 
 #[test]

@@ -15,21 +15,11 @@ pub struct DecimalConstraintError {
 }
 
 impl DecimalConstraintError {
-    #[cfg(not(feature = "bigdecimal"))]
     const fn new(type_name: &'static str, expected: &'static str, value: &Decimal) -> Self {
         Self {
             type_name,
             expected,
             value: *value,
-        }
-    }
-
-    #[cfg(feature = "bigdecimal")]
-    fn new(type_name: &'static str, expected: &'static str, value: &Decimal) -> Self {
-        Self {
-            type_name,
-            expected,
-            value: value.clone(),
         }
     }
 
@@ -81,8 +71,7 @@ fn is_ratio(value: &Decimal) -> bool {
 }
 
 /// Decimal constrained to `x >= 0`.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
-#[cfg_attr(not(feature = "bigdecimal"), derive(Copy))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 pub struct NonNegativeDecimal(Decimal);
 
 impl NonNegativeDecimal {
@@ -112,15 +101,7 @@ impl NonNegativeDecimal {
 
     /// Returns the wrapped decimal.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
     pub const fn into_inner(self) -> Decimal {
-        self.0
-    }
-
-    /// Returns the wrapped decimal.
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
-    pub fn into_inner(self) -> Decimal {
         self.0
     }
 }
@@ -171,8 +152,7 @@ impl<'de> Deserialize<'de> for NonNegativeDecimal {
 }
 
 /// Decimal constrained to `x > 0`.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
-#[cfg_attr(not(feature = "bigdecimal"), derive(Copy))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 pub struct PositiveDecimal(Decimal);
 
 impl PositiveDecimal {
@@ -202,15 +182,7 @@ impl PositiveDecimal {
 
     /// Returns the wrapped decimal.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
     pub const fn into_inner(self) -> Decimal {
-        self.0
-    }
-
-    /// Returns the wrapped decimal.
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
-    pub fn into_inner(self) -> Decimal {
         self.0
     }
 }
@@ -267,8 +239,7 @@ impl<'de> Deserialize<'de> for PositiveDecimal {
 }
 
 /// Decimal constrained to `0 <= x <= 1`.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
-#[cfg_attr(not(feature = "bigdecimal"), derive(Copy))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 pub struct Ratio(Decimal);
 
 impl Ratio {
@@ -294,15 +265,7 @@ impl Ratio {
 
     /// Returns the wrapped decimal.
     #[must_use]
-    #[cfg(not(feature = "bigdecimal"))]
     pub const fn into_inner(self) -> Decimal {
-        self.0
-    }
-
-    /// Returns the wrapped decimal.
-    #[must_use]
-    #[cfg(feature = "bigdecimal")]
-    pub fn into_inner(self) -> Decimal {
         self.0
     }
 }

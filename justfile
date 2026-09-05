@@ -14,13 +14,11 @@ lint:
   cargo clippy --locked --workspace --all-features --all-targets \
     -- {{ clippy_flags }}
 
-# Checks that downstream crates do not infer the active `paft-decimal`
-# backend from their own local `bigdecimal` feature state.
-check-decimal-feature-desync:
-  cargo check --locked -p paft-money --features paft-decimal/bigdecimal
-  cargo check --locked -p paft-utils --features paft-decimal/bigdecimal,dataframe
-  cargo check --locked -p paft-market --features paft-decimal/bigdecimal,dataframe
-  cargo check --locked -p paft-fundamentals --features paft-decimal/bigdecimal,dataframe
+# Checks the fixed decimal type, capabilities, and ingestion under feature combinations.
+check-decimal-contract:
+  cargo test --locked -p paft --test decimal_contract --no-default-features
+  cargo test --locked -p paft --test decimal_contract
+  cargo test --locked -p paft --test decimal_contract --all-features
 
 # Exhaustive testing strategy
 test-full:

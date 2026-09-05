@@ -16,7 +16,7 @@ optional aggregate snapshots, optional prediction-market types, and a unified
 - `paft::money` exposes currency, money, price, and quantity primitives
 - `paft::domain`, `paft::market`, and `paft::fundamentals` are enabled by default
 - `paft::aggregates`, `paft::prediction`, and `paft::dataframe` are feature-gated
-- `paft::Decimal` follows the active decimal backend
+- `paft::Decimal` is always `rust_decimal::Decimal`
 
 Install
 -------
@@ -50,13 +50,6 @@ Use `full` when you want every domain crate plus DataFrame support:
 paft = { version = "0.10.0", features = ["full"] }
 ```
 
-Use `bigdecimal` when you need an arbitrary-precision decimal backend:
-
-```toml
-[dependencies]
-paft = { version = "0.10.0", features = ["bigdecimal"] }
-```
-
 Features
 --------
 
@@ -66,7 +59,6 @@ Features
 - `aggregates` (enables `domain`): `Snapshot` instrument snapshots
 - `prediction`: prediction-market venue/id, event/market metadata, fixed-point price, book, quote, and trade types
 - `dataframe`: Polars DataFrame traits and implementations for enabled paft types
-- `bigdecimal`: switch the shared decimal backend from `rust_decimal` to `bigdecimal`
 - `money-formatting`: locale-aware `Money` formatting and strict parsing APIs
 - `panicking-money-ops`: opt in to `Money` arithmetic operators that panic on invalid operations
 - `tracing`: lightweight instrumentation in selected constructors and validators

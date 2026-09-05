@@ -44,34 +44,28 @@
 //! - Special Drawing Rights `XDR`: 6 is common. These are recommendations; the
 //!   appropriate scale is domain-driven. Always register the scale you need.
 //!
-//! # Decimal backend
+//! # Decimal contract
 //!
-//! Decimal helpers live in the lightweight [`paft_decimal`](https://docs.rs/paft-decimal)
-//! crate, which provides the [`paft_decimal::Decimal`] type,
-//! [`paft_decimal::RoundingStrategy`], and supporting
-//! utilities used throughout `paft`. By default it uses
-//! [`rust_decimal`](https://docs.rs/rust_decimal) providing 28 fractional
-//! digits of precision with a fast fixed-size representation. Alternatively,
-//! enabling the `bigdecimal` feature switches the backend to
-//! [`bigdecimal`](https://docs.rs/bigdecimal) for effectively unbounded
-//! precision backed by big integers.
+//! [`paft_decimal::Decimal`] always re-exports `rust_decimal::Decimal`: a 96-bit
+//! coefficient with scale 0 through 28. Magnitude and fractional precision share
+//! that coefficient budget. PAFT parsing and canonical serde preserve numeric
+//! value exactly or reject it. Native decimal operations retain upstream
+//! semantics, and constructors taking an existing decimal cannot detect prior
+//! precision loss. Caller-defined provider metadata controls its own serde.
 //!
-//! The public API, serde representation (amounts encoded as strings, currencies
-//! as ISO codes, and `Money` carrying its captured `minor_units`), and
-//! `DataFrame` integration remain stable across backends. The primary trade-offs
-//! are performance (the `bigdecimal` backend may allocate more often) and
-//! precision (see [`MAX_DECIMAL_PRECISION`]). Minor-unit scaling always uses
-//! 64-bit integers (`10_i64.pow(scale)`) and is therefore capped at 18 decimal
-//! places — see [`MAX_MINOR_UNIT_DECIMALS`]. Beyond that, the cap-line shift
-//! would push `10^scale` outside `i64`. The minor-unit integer itself is widened
-//! to `i128` before/after scaling, while each backend still enforces its own
-//! decimal representation limits.
+//! [`Price`] and [`MonetaryAmount`] arithmetic is exact-or-error. [`Money`]
+//! arithmetic uses upstream precision rounding, followed by settlement rounding
+//! where applicable. Ratios and exchange-rate inverses can round at decimal
+//! precision. `DataFrame` scale reduction uses half-even rounding.
+//!
+//! Minor-unit scaling uses `10_i64.pow(scale)` and remains capped at 18 decimal
+//! places ([`MAX_MINOR_UNIT_DECIMALS`]); the integer unit count uses `i128`.
 //!
 //! # Currency value types
 //!
 //! The ecosystem exposes complementary concrete types for different financial
 //! meanings:
-//! - [`paft_decimal`](https://docs.rs/paft-decimal): backend-agnostic helpers
+//! - [`paft_decimal`](https://docs.rs/paft-decimal): fixed-width decimal helpers
 //!   such as [`paft_decimal::parse_decimal`], [`paft_decimal::from_minor_units`],
 //!   [`paft_decimal::zero`], and [`paft_decimal::one`].
 //! - [`Money`]: settled or payable amounts that enforce currency exponents and
@@ -199,7 +193,6 @@
 //!
 //! # Feature flags
 //!
-//! - `bigdecimal`: switch to arbitrary precision decimals (slower, allocates for large values).
 //! - `dataframe`: enables `serde`/`polars`/`df-derive-macros` integration for dataframes.
 //! - `panicking-money-ops`: implements `Add`/`Sub`/`Mul`/`Div` for `Money` that
 //!   assert on invalid operations. Prefer the `try_*` methods for fallible APIs.
@@ -226,7 +219,7 @@
 //! # }
 //! ```
 //!
-//! Regardless of backend, serde and the high-level API remain stable; see
+//! Canonical serde and numeric types are independent of PAFT features; see
 //! [`MAX_DECIMAL_PRECISION`] and [`MAX_MINOR_UNIT_DECIMALS`] for limits that
 //! affect scaling and minor-unit conversions.
 

@@ -123,7 +123,7 @@ fn exchange_rate_validation_and_inverse() {
 
     let product = rate.rate() * inverse.rate();
     let one = decimal::one();
-    // Allow for rounding differences in the backend by rounding to 6 decimals.
+    // Inversion uses upstream precision rounding; compare at six decimals.
     let rounded =
         decimal::round_dp_with_strategy(&product, 6, RoundingStrategy::MidpointAwayFromZero);
     assert_eq!(
@@ -134,27 +134,16 @@ fn exchange_rate_validation_and_inverse() {
 
 #[test]
 fn exchange_rate_inverse_handles_fixed_width_maximum() {
-    // The rust_decimal maximum is written as a literal so this test also runs
-    // with BigDecimal, including when dependency feature unification selects it.
     let rate = ExchangeRate::new(usd(), jpy(), dec("79228162514264337593543950335")).unwrap();
 
-    if decimal::MAX_DECIMAL_PRECISION == 28 {
-        // Its reciprocal is about 1.26e-29, which rounds to zero at scale 28.
-        assert_eq!(
-            rate.try_inverse(),
-            Err(MoneyError::InvalidExchangeRate {
-                rate: decimal::zero(),
-            })
-        );
-        assert!(std::panic::catch_unwind(|| rate.inverse()).is_err());
-    } else {
-        let inverse = rate.try_inverse().unwrap();
-        assert!(inverse.rate() > decimal::zero());
-        assert!(inverse.rate() < dec("0.0000000000000000000000000001"));
-        assert_eq!(inverse.from(), &jpy());
-        assert_eq!(inverse.to(), &usd());
-        assert_eq!(rate.inverse(), inverse);
-    }
+    // Its reciprocal is about 1.26e-29, which rounds to zero at scale 28.
+    assert_eq!(
+        rate.try_inverse(),
+        Err(MoneyError::InvalidExchangeRate {
+            rate: decimal::zero(),
+        })
+    );
+    assert!(std::panic::catch_unwind(|| rate.inverse()).is_err());
 }
 
 #[test]
@@ -162,7 +151,7 @@ fn exchange_rate_inverse_preserves_small_positive_reciprocal() {
     let rate = ExchangeRate::new(usd(), jpy(), dec("10000000000000000000000000000")).unwrap();
     let inverse = rate.try_inverse().unwrap();
 
-    // Exactly 1e-28 is still representable by the fixed-width backend.
+    // Exactly 1e-28 is still representable by the fixed decimal representation.
     assert_eq!(inverse.rate(), dec("0.0000000000000000000000000001"));
     assert_eq!(inverse.from(), &jpy());
     assert_eq!(inverse.to(), &usd());

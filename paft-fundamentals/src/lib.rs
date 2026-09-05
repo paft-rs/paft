@@ -32,9 +32,8 @@
 //! ```
 //!
 //! # Feature flags
-//! The default money backend is `rust_decimal`.
+//! Decimal values always use `rust_decimal::Decimal`.
 //!
-//! - `bigdecimal`: switch `paft-money` to the `bigdecimal` backend
 //! - `dataframe`: enable `polars`/`df-derive-macros` integration for dataframe export
 //!
 //! # Serde

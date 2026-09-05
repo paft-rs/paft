@@ -6,14 +6,8 @@ fn dec(value: &str) -> Decimal {
     Decimal::from_str(value).unwrap()
 }
 
-#[cfg(not(feature = "bigdecimal"))]
 const fn decimal_for_reuse(value: &Decimal) -> Decimal {
     *value
-}
-
-#[cfg(feature = "bigdecimal")]
-fn decimal_for_reuse(value: &Decimal) -> Decimal {
-    value.clone()
 }
 
 #[test]

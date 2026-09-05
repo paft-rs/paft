@@ -38,9 +38,3 @@ dataframe = [
   "paft-utils/dataframe",
   "paft-money/dataframe",
 ]
-
-bigdecimal = [
-  "paft-decimal/bigdecimal",
-  "paft-money/bigdecimal",
-  "paft-utils/bigdecimal",
-]

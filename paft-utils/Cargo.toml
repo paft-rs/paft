@@ -20,10 +20,8 @@ smol_str = { workspace = true }
 df-derive-core = { workspace = true, optional = true }
 polars = { workspace = true, features = ["dtype-decimal"], optional = true }
 rust_decimal = { workspace = true, optional = true }
-bigdecimal = { workspace = true, optional = true }
 paft-decimal = { workspace = true, default-features = false, optional = true }
 
 [features]
 default = []
 dataframe = ["dep:df-derive-core", "dep:polars", "dep:rust_decimal", "dep:paft-decimal", "polars/fmt"]
-bigdecimal = ["dep:bigdecimal", "paft-decimal?/bigdecimal"]

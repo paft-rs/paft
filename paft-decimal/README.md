@@ -1,16 +1,15 @@
 paft-decimal
 ============
 
-Backend-agnostic decimal helpers for the paft ecosystem.
+Fixed-width decimal helpers for the paft ecosystem.
 
 [![Crates.io](https://img.shields.io/crates/v/paft-decimal)](https://crates.io/crates/paft-decimal)
 [![Docs.rs](https://docs.rs/paft-decimal/badge.svg)](https://docs.rs/paft-decimal)
 [![Downloads](https://img.shields.io/crates/d/paft-decimal)](https://crates.io/crates/paft-decimal)
 
-- `Decimal` aliases the active backend: `rust_decimal::Decimal` by default, or
-  `bigdecimal::BigDecimal` with the `bigdecimal` feature
-- Backend-stable helpers for exact plain decimal parsing, canonical rendering,
-  rounding, checked arithmetic, and exact scaled-unit conversion
+- `Decimal` is an unconditional re-export of `rust_decimal::Decimal`
+- Helpers for exact plain decimal parsing, canonical rendering,
+  rounding, checked and exact arithmetic, and exact scaled-unit conversion
 - Constrained decimal newtypes: `NonNegativeDecimal`, `PositiveDecimal`, and
   `Ratio`
 - Serde adapters for canonical decimal strings
@@ -34,19 +33,6 @@ Depend directly when you need helpers such as `parse_decimal`,
 [dependencies]
 paft-decimal = "0.10.0"
 ```
-
-Alternate decimal backend:
-
-```toml
-[dependencies]
-paft-decimal = { version = "0.10.0", features = ["bigdecimal"] }
-```
-
-Features
---------
-
-- `bigdecimal`: switch the active `Decimal` type from `rust_decimal::Decimal`
-  to `bigdecimal::BigDecimal` for arbitrary precision decimals
 
 Quickstart
 ----------
@@ -72,15 +58,16 @@ assert!(Ratio::new(decimal::parse_decimal("1.2").unwrap()).is_err());
 Serde Adapters
 --------------
 
-`parse_decimal` preserves the input's numeric value or returns `None` when the
-active backend cannot represent it exactly. Insignificant fractional trailing
-zeros remain accepted, including beyond the backend's scale limit. Nonzero
-digits are never silently rounded away. Apply `round_dp_with_strategy`
+`parse_decimal` returns `Result<Decimal, DecimalParseError>`. `InvalidSyntax`
+identifies malformed plain decimal text; `NotRepresentable` identifies a numeric
+value that cannot fit PAFT exactly. Insignificant fractional trailing zeros
+remain accepted, including beyond the scale limit. Nonzero digits are never
+silently rounded away. Apply `round_dp_with_strategy`
 explicitly when a representable value needs rounding.
 
-Use the serde helpers when a decimal-backed field must keep the same JSON wire
-format under both decimal backends. Both adapters use the same exact parser
-and reject unrepresentable values:
+Use PAFT's serde helpers for exact ingestion and canonical decimal strings.
+Both adapters use the same exact parser and reject unrepresentable values;
+native `Decimal` serde and upstream string adapters do not provide this contract:
 
 ```rust
 use paft_decimal::Decimal;
@@ -93,6 +80,38 @@ struct Payload {
     ratio: Option<Decimal>,
 }
 ```
+
+Numeric contract
+----------------
+
+`Decimal` stores a 96-bit coefficient with a scale from 0 through 28. Magnitude
+and fractional precision share that coefficient budget. For example,
+`1000000000000.12` and `0.000000000000000001` fit exactly, while
+`100000000000.000000000000000001` does not.
+
+Exact ingestion preserves numeric value, not spelling: `1.2300` can serialize
+as `"1.23"`. Native `Decimal::from_str`, `parse::<Decimal>()`, serde, and
+arithmetic retain upstream semantics. PAFT cannot detect earlier precision loss
+in an existing `Decimal`. Provider metadata uses the caller's serde policy.
+
+`checked_add_exact`, `checked_sub_exact`, `checked_mul_exact`, and
+`checked_div_exact` return `None` when the exact result cannot fit, including
+underflow and nonterminating division such as `1 / 3`. Ordinary `checked_*`
+helpers retain upstream precision rounding and are not exactness checks.
+`round_dp_with_strategy` rounds explicitly. `Decimal128Mantissa` uses half-even
+rounding when reducing scale; use `try_to_scaled_units` for exact integer units.
+
+v0.10.0 migration
+-----------------
+
+Remove `bigdecimal` from dependency feature lists. The feature and
+arbitrary-precision storage have been removed; values outside PAFT's range must
+be retained externally or rejected at the adapter boundary. BigDecimal
+conversion helpers are deferred.
+
+Update `parse_decimal` callers from `Option` to `Result`: use `?`, match
+`DecimalParseError`, or call `.ok()` if the error reason is intentionally
+unneeded. Existing `.unwrap()` and `.expect()` calls still compile.
 
 Links
 -----

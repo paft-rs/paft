@@ -24,8 +24,14 @@ fn decimal_facade_behaviour() {
     let parsed = decimal::parse_decimal("  +123.450 ").unwrap();
     assert_eq!(parsed, parse_decimal("123.45"));
 
-    assert_eq!(decimal::parse_decimal("1e2"), None);
-    assert_eq!(decimal::parse_decimal("   "), None);
+    assert_eq!(
+        decimal::parse_decimal("1e2"),
+        Err(decimal::DecimalParseError::InvalidSyntax)
+    );
+    assert_eq!(
+        decimal::parse_decimal("   "),
+        Err(decimal::DecimalParseError::InvalidSyntax)
+    );
 
     let from_units = decimal::from_minor_units(12345, 3);
     assert_eq!(from_units, parse_decimal("12.345"));
@@ -56,7 +62,6 @@ fn monetary_amount_construction_requires_currency() {
     assert_eq!(MonetaryAmount::zero(usd).amount(), decimal::zero());
 }
 
-#[cfg(not(feature = "bigdecimal"))]
 #[test]
 fn monetary_amount_from_scaled_units_invalid_scale() {
     let err = MonetaryAmount::from_scaled_units(
@@ -68,7 +73,6 @@ fn monetary_amount_from_scaled_units_invalid_scale() {
     assert_eq!(err, MoneyError::ConversionError);
 }
 
-#[cfg(not(feature = "bigdecimal"))]
 #[test]
 fn scaled_unit_constructors_return_error_on_decimal_overflow() {
     let amount_err = MonetaryAmount::from_scaled_units(i128::MAX, 0, usd()).unwrap_err();

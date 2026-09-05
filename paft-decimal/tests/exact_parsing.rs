@@ -1,4 +1,4 @@
-use paft_decimal::{self as decimal, Decimal};
+use paft_decimal::{self as decimal, Decimal, DecimalParseError};
 use serde_json::json;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -22,6 +22,7 @@ fn parsing_preserves_all_significant_digits_or_rejects_the_value() {
         "79228162514264337593543950335.1",
         "79228162514264337593543950336",
         "1000000000000000000000000000000",
+        "100000000000.000000000000000001",
     ] {
         let padded = if literal.contains('.') {
             format!("{literal}000")
@@ -30,11 +31,7 @@ fn parsing_preserves_all_significant_digits_or_rejects_the_value() {
         };
         for input in [literal, &padded] {
             let parsed = decimal::parse_decimal(input);
-            if decimal::MAX_DECIMAL_PRECISION == 28 {
-                assert!(parsed.is_none(), "{input} was accepted as {parsed:?}");
-            } else {
-                assert_eq!(decimal::to_canonical_string(&parsed.unwrap()), literal);
-            }
+            assert_eq!(parsed, Err(DecimalParseError::NotRepresentable), "{input}");
         }
     }
 }
@@ -46,6 +43,8 @@ fn parsing_accepts_exact_boundaries_with_insignificant_trailing_zeros() {
         "1.23",
         "-1.23",
         "1000",
+        "1000000000000.12",
+        "0.000000000000000001",
         "0.0000000000000000000000000001",
         "-0.0000000000000000000000000001",
         "7.9228162514264337593543950335",
@@ -60,7 +59,7 @@ fn parsing_accepts_exact_boundaries_with_insignificant_trailing_zeros() {
         };
         for input in [canonical, &padded] {
             let parsed = decimal::parse_decimal(input)
-                .unwrap_or_else(|| panic!("{input} should be representable exactly"));
+                .unwrap_or_else(|error| panic!("{input} should be representable exactly: {error}"));
             assert_eq!(decimal::to_canonical_string(&parsed), canonical);
         }
     }
@@ -80,11 +79,7 @@ fn canonical_serde_preserves_significant_digits_or_rejects_the_value() {
         json!({ "value": "1", "optional": literal }),
     ] {
         let parsed = serde_json::from_value::<Payload>(wire.clone());
-        if decimal::MAX_DECIMAL_PRECISION == 28 {
-            assert!(parsed.is_err(), "{wire} was accepted as {parsed:?}");
-        } else {
-            assert_eq!(serde_json::to_value(parsed.unwrap()).unwrap(), wire);
-        }
+        assert!(parsed.is_err(), "{wire} was accepted as {parsed:?}");
     }
 }
 
@@ -105,7 +100,7 @@ fn canonical_serde_accepts_insignificant_zeros_without_relaxing_the_grammar() {
         format!("1.{zeros}e0"),
         format!("+-0.{zeros}"),
     ] {
-        assert!(decimal::parse_decimal(&literal).is_none());
+        assert!(decimal::parse_decimal(&literal).is_err());
         assert!(serde_json::from_value::<Payload>(json!({ "value": literal })).is_err());
     }
 }
@@ -121,4 +116,19 @@ fn constrained_decimals_validate_the_original_value() {
         ))
         .is_err()
     );
+}
+
+#[test]
+fn syntax_and_representation_errors_are_distinct() {
+    for literal in ["", "1e3", "1_000", "1.2.3", "--1", "NaN", "Infinity"] {
+        assert_eq!(
+            decimal::parse_decimal(literal),
+            Err(DecimalParseError::InvalidSyntax)
+        );
+    }
+    for literal in ["1.00000000000000000000000000001", "1e3"] {
+        let error = serde_json::from_value::<Payload>(json!({"value": literal})).unwrap_err();
+        let reason = decimal::parse_decimal(literal).unwrap_err();
+        assert!(error.to_string().contains(&reason.to_string()));
+    }
 }

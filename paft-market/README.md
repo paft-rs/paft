@@ -32,13 +32,6 @@ Advanced (direct dependency, minimal):
 paft-market = { version = "0.10.0", default-features = false }
 ```
 
-Alternate decimal backend:
-
-```toml
-[dependencies]
-paft-market = { version = "0.10.0", default-features = false, features = ["bigdecimal"] }
-```
-
 With DataFrame integration:
 
 ```toml
@@ -50,7 +43,6 @@ paft-utils = { version = "0.10.0", default-features = false, features = ["datafr
 Features
 --------
 
-- `bigdecimal`: switch the shared decimal backend from `rust_decimal` to `bigdecimal`
 - `dataframe`: Polars integration for market types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 - `tracing`: enable lightweight instrumentation for request builders and search constructors
 

@@ -71,7 +71,6 @@ What's inside
 Features
 --------
 
-- `bigdecimal`: switch the shared decimal backend from `rust_decimal` to `bigdecimal`
 - `dataframe`: Polars integration for flat prediction identity types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 
 Quickstart

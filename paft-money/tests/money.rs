@@ -328,7 +328,6 @@ fn test_from_minor_units_large_precision() {
     );
 }
 
-#[cfg(not(feature = "bigdecimal"))]
 #[test]
 fn money_from_minor_units_returns_error_on_decimal_overflow() {
     let err = Money::from_minor_units(i128::MAX, Currency::Iso(IsoCurrency::USD)).unwrap_err();
@@ -402,9 +401,9 @@ fn test_money_display() {
     assert_eq!(format!("{jpy}"), "100 JPY");
 }
 
-#[cfg(all(feature = "dataframe", not(feature = "bigdecimal")))]
+#[cfg(feature = "dataframe")]
 #[test]
-fn test_money_dataframe_rust_decimal_backend() {
+fn test_money_dataframe_decimal_encoding() {
     use polars::prelude::AnyValue;
 
     let usd = Money::new(
@@ -431,41 +430,6 @@ fn test_money_dataframe_rust_decimal_backend() {
     match currency_value {
         AnyValue::String(s) => assert_eq!(s, "USD"),
         AnyValue::StringOwned(s) => assert_eq!(s.as_str(), "USD"),
-        other => panic!("expected string value, got {other:?}"),
-    }
-}
-
-#[cfg(all(feature = "dataframe", feature = "bigdecimal"))]
-#[test]
-fn test_money_dataframe_bigdecimal_backend() {
-    use polars::prelude::AnyValue;
-
-    let eth_amount = Decimal::from_str("1.234567890123456789012345").unwrap();
-    let eth = Money::new(eth_amount, Currency::ETH).unwrap();
-
-    let df = eth.to_dataframe().unwrap();
-    assert_eq!(df.height(), 1);
-
-    let amount_value = df.column("amount").unwrap().get(0).unwrap();
-    match amount_value {
-        AnyValue::Decimal(value, _, scale) => {
-            assert_eq!(scale, 10);
-            let df_amount =
-                decimal::from_minor_units(value, u32::try_from(scale).expect("scale fits in u32"));
-            let expected = decimal::round_dp_with_strategy(
-                &eth.amount(),
-                u32::try_from(scale).expect("scale fits in u32"),
-                RoundingStrategy::ToZero,
-            );
-            assert_eq!(df_amount, expected);
-        }
-        other => panic!("expected decimal value, got {other:?}"),
-    }
-
-    let currency_value = df.column("currency").unwrap().get(0).unwrap();
-    match currency_value {
-        AnyValue::String(s) => assert_eq!(s, "ETH"),
-        AnyValue::StringOwned(s) => assert_eq!(s.as_str(), "ETH"),
         other => panic!("expected string value, got {other:?}"),
     }
 }
@@ -706,7 +670,6 @@ fn exchange_rate_serde_accepts_valid_payload() {
     assert_eq!(parsed.rate(), Decimal::from_str("0.9").unwrap());
 }
 
-#[cfg(not(feature = "bigdecimal"))]
 #[test]
 fn money_try_div_returns_error_on_decimal_overflow() {
     let currency = Currency::Iso(IsoCurrency::USD);
@@ -721,7 +684,6 @@ fn money_try_div_returns_error_on_decimal_overflow() {
     assert!(matches!(err, paft_money::MoneyError::ConversionError));
 }
 
-#[cfg(not(feature = "bigdecimal"))]
 #[test]
 fn money_as_minor_units_returns_error_on_overflow() {
     use std::str::FromStr;
@@ -732,23 +694,6 @@ fn money_as_minor_units_returns_error_on_overflow() {
     // multiplied. With unchecked `*`, this used to panic; now it surfaces
     // as ConversionError.
     let huge = Decimal::from_str("99999999999999999999.123456789012345678").unwrap();
-    let money = Money::new(huge, Currency::ETH).unwrap();
-    let err = money.as_minor_units().unwrap_err();
-    assert!(matches!(err, paft_money::MoneyError::ConversionError));
-}
-
-#[cfg(feature = "bigdecimal")]
-#[test]
-fn money_as_minor_units_returns_error_on_i128_overflow_under_bigdecimal() {
-    use std::str::FromStr;
-
-    // BigDecimal has unbounded precision, so the *multiplication* never
-    // overflows. The conversion to `i128`, however, can still fail when
-    // the scaled value exceeds the `i128` range — and that path must
-    // still surface as ConversionError, not a panic.
-    let huge =
-        Decimal::from_str("999999999999999999999999999999999999999999999999.123456789012345678")
-            .unwrap();
     let money = Money::new(huge, Currency::ETH).unwrap();
     let err = money.as_minor_units().unwrap_err();
     assert!(matches!(err, paft_money::MoneyError::ConversionError));

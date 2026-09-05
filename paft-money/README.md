@@ -12,7 +12,7 @@ Currency and money primitives for the paft ecosystem.
 - `Price` and `MonetaryAmount` for full-precision quoted values and exact totals
 - `PriceAmount` and `QuantityAmount` for contextual market payload amounts
 - Runtime metadata overlays for ISO-None codes such as `XAU`/`XDR` and custom currencies
-- Optional locale-aware formatting, DataFrame export, tracing, and `bigdecimal` backend support
+- Optional locale-aware formatting, DataFrame export, and tracing
 
 Install
 -------
@@ -24,19 +24,12 @@ Prefer the facade crate for most applications:
 paft = "0.10.0"
 ```
 
-Advanced (direct dependency, default backend):
+Direct dependency:
 
 ```toml
 [dependencies]
 paft-money = "0.10.0"
 paft-decimal = "0.10.0" # only needed when using decimal helpers directly
-```
-
-Alternate decimal backend:
-
-```toml
-[dependencies]
-paft-money = { version = "0.10.0", features = ["bigdecimal"] }
 ```
 
 With DataFrame integration:
@@ -68,12 +61,9 @@ Features
 when constructing `Currency::Iso`; applications that depend directly on
 `iso_currency` must use the compatible `0.7` line to share the same Rust type.
 
-`PriceAmount::into_inner` and `QuantityAmount::into_inner` are runtime methods
-so they work even when another dependency enables BigDecimal. Const callers
-can use the borrowed `as_decimal`/`as_non_negative_decimal` accessors or move
-owned extraction to runtime.
+`PriceAmount::into_inner` and `QuantityAmount::into_inner` are const methods.
+Decimal types and their capabilities are the same under every PAFT feature set.
 
-- `bigdecimal`: switch to arbitrary precision decimals
 - `dataframe`: Polars integration for money types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 - `money-formatting`: locale-aware formatting and strict parsing for `Money`
 - `panicking-money-ops`: opt-in `Add`/`Sub`/`Mul`/`Div` implementations that panic on invalid operations
@@ -91,7 +81,7 @@ Choose the level of structure you need:
 - `QuantityAmount` carries a non-negative decimal quantity whose unit comes from the surrounding market record
 
 Canonical string constructors and decimal serde fields require an exact
-representation in the active backend. Values that exceed its precision are
+representation in `rust_decimal`. Values that exceed its precision are
 rejected before currency-scale or domain validation. Insignificant fractional
 trailing zeros remain accepted. `Money::new` and `round_dp_with_strategy` provide
 explicit rounding for values already represented as decimals.
@@ -127,6 +117,34 @@ fn run() -> Result<(), MoneyError> {
 
 run().unwrap();
 ```
+
+Precision and arithmetic
+------------------------
+
+PAFT uses a 96-bit decimal coefficient with scale 0 through 28; magnitude and
+fractional detail share that coefficient budget. Canonical string constructors
+report `MoneyError::InvalidDecimal` for syntax and `MoneyError::NotRepresentable`
+for values outside PAFT's representation. Settlement-scale failures remain
+separate errors. Native `Decimal` parsing and serde retain upstream semantics;
+constructors taking an existing decimal cannot detect earlier precision loss.
+
+All `Price` and `MonetaryAmount` arithmetic is exact-or-error, including
+price-times-quantity totals. `1 / 3`, nonzero underflow, and other unrepresentable
+results return `MoneyError::NotRepresentable`. A quoted USD price of `1.234567`
+retains all six fractional digits; exact `Money` ingestion rejects that scale.
+
+`Money` arithmetic first uses upstream checked decimal operations, which can
+round to fit decimal precision, then rounds settlement amounts with
+`MidpointAwayFromZero`. FX conversion uses the selected strategy for its final
+rounding; the intermediate product may already have been rounded. Ratios and
+exchange-rate inverses use upstream division precision without settlement
+rounding. `to_money` and `Money::new` round explicitly; DataFrame scale reduction
+uses half-even rounding. These paths do not promise an exact calculation or a
+single rounding of an unlimited-precision intermediate.
+
+For v0.10.0, remove the `bigdecimal` feature from dependencies and handle the new
+representability errors. Arbitrary-precision storage and conversion helpers are
+outside this release. See the [decimal contract](../paft-decimal/README.md).
 
 Money Scale
 -----------

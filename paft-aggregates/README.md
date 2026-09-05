@@ -29,13 +29,6 @@ Advanced (direct dependency, minimal features):
 paft-aggregates = { version = "0.10.0", default-features = false }
 ```
 
-Alternate decimal backend:
-
-```toml
-[dependencies]
-paft-aggregates = { version = "0.10.0", default-features = false, features = ["bigdecimal"] }
-```
-
 With DataFrame integration:
 
 ```toml
@@ -47,7 +40,6 @@ paft-utils = { version = "0.10.0", default-features = false, features = ["datafr
 Features
 --------
 
-- `bigdecimal`: switch the shared decimal backend from `rust_decimal` to `bigdecimal`
 - `panicking-money-ops`: forward to `paft-money` to enable panicking arithmetic operators
 - `dataframe`: Polars integration for `Snapshot`; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 

@@ -33,21 +33,11 @@ tracing = { workspace = true, optional = true }
 [features]
 default = ["domain", "market", "fundamentals"]
 
-bigdecimal = [
-  "paft-money/bigdecimal",
-  "paft-utils/bigdecimal",
-  "paft-market?/bigdecimal",
-  "paft-fundamentals?/bigdecimal",
-  "paft-aggregates?/bigdecimal",
-  "paft-prediction?/bigdecimal"
-]
-
 domain = ["dep:paft-domain"]
 market = ["dep:paft-market", "domain"]
 fundamentals = ["dep:paft-fundamentals", "domain"]
 aggregates = ["dep:paft-aggregates", "domain"]
 prediction = ["dep:paft-prediction"]
-
 
 tracing = [
   "dep:tracing",

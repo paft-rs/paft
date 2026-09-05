@@ -45,8 +45,8 @@ pub enum MoneyError {
         /// The scale carried by the right-hand value or serialized payload.
         found_scale: u8,
     },
-    /// Occurs when converting a Money amount to cents fails due to overflow or precision issues.
-    #[error("could not convert amount to minor units")]
+    /// A numeric conversion fails because the amount, coefficient, or scale cannot fit.
+    #[error("numeric conversion failed: amount, coefficient, or scale cannot be represented")]
     ConversionError,
     /// Occurs when attempting to divide by zero.
     #[error("division by zero")]
@@ -75,9 +75,14 @@ pub enum MoneyError {
         /// The currency missing metadata.
         currency: Currency,
     },
-    /// Occurs when parsing a decimal amount fails.
-    #[error("invalid decimal")]
+    /// Occurs when decimal text does not follow PAFT's accepted grammar.
+    #[error("invalid decimal syntax")]
     InvalidDecimal,
+    /// The supplied numeric value or exact arithmetic result cannot fit PAFT's
+    /// 96-bit decimal coefficient and scale 0 through 28. This is a limitation
+    /// of PAFT's representation, not a claim that the financial data is invalid.
+    #[error("numeric value or exact result is not representable by PAFT")]
+    NotRepresentable,
     /// Occurs when an amount cannot be represented exactly at the applicable
     /// minor-unit scale. Returned by [`crate::Money::new_exact`] (and therefore
     /// by [`crate::Money::from_canonical_str`]) when the supplied value carries
@@ -116,7 +121,7 @@ pub enum MoneyError {
         exponent: u8,
     },
     /// Occurs when localized formatting requests more fractional digits than
-    /// the active decimal backend supports.
+    /// PAFT's decimal representation supports.
     #[cfg(feature = "money-formatting")]
     #[error("format fraction digits {actual_fraction_digits} exceed maximum {max_fraction_digits}")]
     FormatPrecisionExceeded {

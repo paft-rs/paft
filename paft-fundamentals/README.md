@@ -31,13 +31,6 @@ Advanced (direct dependency, minimal):
 paft-fundamentals = { version = "0.10.0", default-features = false }
 ```
 
-Alternate decimal backend:
-
-```toml
-[dependencies]
-paft-fundamentals = { version = "0.10.0", default-features = false, features = ["bigdecimal"] }
-```
-
 With DataFrame integration:
 
 ```toml
@@ -49,7 +42,6 @@ paft-utils = { version = "0.10.0", default-features = false, features = ["datafr
 Features
 --------
 
-- `bigdecimal`: switch the shared decimal backend used by `Money`, `Price`, and decimal-backed fields from `rust_decimal` to `bigdecimal`
 - `dataframe`: Polars integration for dataframe-enabled row/leaf fundamentals types; direct users import `ToDataFrame`/`ToDataFrameVec` from `paft_utils::dataframe`
 - `tracing`: enable lightweight instrumentation on parsing and helper constructors
 

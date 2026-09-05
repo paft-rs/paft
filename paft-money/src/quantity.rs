@@ -53,11 +53,7 @@ impl QuantityAmount {
 
     /// Returns the wrapped non-negative decimal.
     #[must_use]
-    #[allow(
-        clippy::missing_const_for_fn,
-        reason = "dependency feature unification can enable a non-Copy decimal backend without this crate's bigdecimal cfg, so a conditional expect cannot model const support"
-    )]
-    pub fn into_inner(self) -> NonNegativeDecimal {
+    pub const fn into_inner(self) -> NonNegativeDecimal {
         self.amount
     }
 }
