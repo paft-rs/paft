@@ -7,7 +7,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use df_derive_macros::ToDataFrame;
 use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::Instrument;
-use paft_money::{Currency, Price, PriceAmount};
+use paft_money::{Currency, Price, PriceAmount, QuantityAmount};
 use std::fmt;
 use std::str::FromStr;
 
@@ -160,10 +160,20 @@ pub struct GenericOptionContract<M = ()> {
     pub bid: Option<PriceAmount>,
     /// Best ask amount, denominated in `currency`.
     pub ask: Option<PriceAmount>,
-    /// Traded volume.
-    pub volume: Option<u64>,
-    /// Open interest at the time of fetch.
-    pub open_interest: Option<u64>,
+    /// Traded contract quantity over the provider's reported volume window.
+    ///
+    /// One unit is one contract identified by `key`; fractional contracts are
+    /// supported. Adapters must convert underlying-unit amounts by the known
+    /// underlying units per contract, exactly, and reject unsupported conversion
+    /// rather than round or invent a scale. Preserve the window in provider
+    /// metadata when it is needed to compare volumes across sources.
+    pub volume: Option<QuantityAmount>,
+    /// Outstanding contract quantity at the time of fetch, counting each open
+    /// contract once (not both its long and short side).
+    ///
+    /// Uses the same fractional contract units and exact normalization rule as
+    /// `volume`; this is neither an underlying-unit quantity nor a notional value.
+    pub open_interest: Option<QuantityAmount>,
     /// Implied volatility as a non-negative fraction (e.g., 0.25 for 25%).
     pub implied_volatility: Option<NonNegativeDecimal>,
     /// Whether the provider reports the option as currently in the money.
@@ -193,8 +203,8 @@ paft_utils::impl_checked_dataframe! {
         price: [Option<PriceAmount>],
         bid: [Option<PriceAmount>],
         ask: [Option<PriceAmount>],
-        volume: [Option<u64>],
-        open_interest: [Option<u64>],
+        volume: [Option<QuantityAmount>],
+        open_interest: [Option<QuantityAmount>],
         #[df_derive(decimal(precision = 38, scale = 10))]
         implied_volatility: [Option<NonNegativeDecimal>],
         in_the_money: [Option<bool>],

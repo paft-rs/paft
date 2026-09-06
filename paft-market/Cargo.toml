@@ -39,4 +39,4 @@ dataframe = ["paft-utils/dataframe", "polars", "polars/fmt", "df-derive-macros",
 tracing = ["dep:tracing"]
 
 [dev-dependencies]
-serde_json = { workspace = true }
+serde_json = { workspace = true, features = ["raw_value"] }

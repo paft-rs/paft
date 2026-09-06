@@ -62,6 +62,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Market: option `volume` and `open_interest` now use fractional
+  `QuantityAmount` in contract units. Adapters must normalize underlying-unit
+  amounts with a known contract size using exact conversion. JSON uses canonical
+  decimal strings; DataFrame columns become `volume.amount` and
+  `open_interest.amount` with decimal dtype. Missing quantities remain null.
+
 - **Breaking** Market: incremental option `bid`, `ask`, `last_price`, and
   `implied_volatility` now use `FieldUpdate::{Unchanged, Set, Clear}`. JSON
   omission leaves state unchanged, a value replaces it, and `null` clears it.
