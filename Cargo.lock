@@ -1552,6 +1552,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "paft-decimal-consumer"
+version = "0.10.0"
+dependencies = [
+ "paft",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "paft-domain"
 version = "0.10.0"
 dependencies = [

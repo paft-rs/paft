@@ -16,6 +16,7 @@ lint:
 
 # Checks the fixed decimal type, capabilities, and ingestion under feature combinations.
 check-decimal-contract:
+  cargo test --locked -p paft-decimal-consumer
   cargo test --locked -p paft --test decimal_contract --no-default-features
   cargo test --locked -p paft --test decimal_contract
   cargo test --locked -p paft --test decimal_contract --all-features

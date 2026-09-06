@@ -18,8 +18,8 @@ const fn extract_quantity(value: QuantityAmount) -> NonNegativeDecimal {
     value.into_inner()
 }
 
-const PRICE: Decimal = PriceAmount::new(paft_decimal::one()).into_inner();
-const COPIED: Decimal = paft_decimal::clone_decimal(&PRICE);
+const PRICE: Decimal = PriceAmount::new(paft::decimal::one()).into_inner();
+const COPIED: Decimal = paft::decimal::clone_decimal(&PRICE);
 
 #[test]
 fn decimal_identity_and_capabilities_are_unconditional() {
@@ -41,7 +41,7 @@ fn decimal_identity_and_capabilities_are_unconditional() {
         extract_quantity(QuantityAmount::new(non_negative)),
         non_negative
     );
-    assert_eq!(paft_decimal::MAX_DECIMAL_PRECISION, 28);
+    assert_eq!(paft::decimal::MAX_DECIMAL_PRECISION, 28);
 }
 
 #[test]
@@ -131,7 +131,7 @@ fn prediction_numeric_bounds_use_canonical_serde() {
 #[test]
 fn dataframe_encoding_uses_the_same_decimal_types() {
     use paft::dataframe::Decimal128Encode;
-    let value = paft_decimal::parse_decimal("1.25").unwrap();
+    let value = paft::decimal::parse_decimal("1.25").unwrap();
     assert_eq!(value.try_to_i128_mantissa(1), Some(12));
     assert_eq!(
         NonNegativeDecimal::new(value)

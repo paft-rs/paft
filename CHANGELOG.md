@@ -12,6 +12,11 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Added
 
+- Facade: `paft::decimal` exposes PAFT's parser, `DecimalParseError`, exact
+  arithmetic helpers, and canonical serde adapters. The prelude also re-exports
+  this namespace; existing top-level decimal types remain available. A private
+  consumer fixture depends only on the facade for PAFT APIs and runs in the
+  decimal-contract CI job as well as workspace tests.
 - Fundamentals: 14 optional fields on `IncomeStatementRow`:
   `cost_of_revenue`, `research_and_development`,
   `selling_general_and_administrative`, `operating_expenses`,

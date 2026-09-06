@@ -16,6 +16,7 @@ optional aggregate snapshots, optional prediction-market types, and a unified
 - `paft::money` exposes currency, money, price, and quantity primitives
 - `paft::domain`, `paft::market`, and `paft::fundamentals` are enabled by default
 - `paft::aggregates`, `paft::prediction`, and `paft::dataframe` are feature-gated
+- `paft::decimal` exposes exact ingestion/arithmetic, errors, and canonical serde adapters
 - `paft::Decimal` is always `rust_decimal::Decimal`
 
 Install
@@ -115,6 +116,37 @@ let instrument = Instrument {
 assert_eq!(instrument.security_key().as_deref(), Some("SECURITY|6:EQUITY|ISIN|US0378331005"));
 assert_eq!(instrument.display_key(), "BBG000B9Y5X2");
 ```
+
+Exact decimal ingestion
+-----------------------
+
+Use PAFT's parser and canonical serde adapters through the facade; no direct
+`paft-decimal` dependency is needed. The namespace is also in the prelude and
+is available with default features disabled. `paft::Decimal` remains available.
+
+```rust
+use paft::prelude::{decimal, Decimal};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+struct Payload {
+    #[serde(with = "paft::decimal::serde::canonical_str")]
+    amount: Decimal,
+}
+
+let value = decimal::parse_decimal("+1.2300").unwrap();
+let doubled = decimal::checked_mul_exact(&value, &Decimal::TWO).unwrap();
+assert_eq!(doubled, decimal::parse_decimal("2.46").unwrap());
+assert_eq!(
+    decimal::parse_decimal("1e3"),
+    Err(decimal::DecimalParseError::InvalidSyntax),
+);
+```
+
+Add `serde` with its `derive` feature for your own payloads. Parsing rejects
+unrepresentable values as `DecimalParseError::NotRepresentable`; exact helpers
+return `None` rather than round. Canonical serde emits decimal strings and
+rejects JSON numeric literals.
 
 DataFrame support
 -----------------

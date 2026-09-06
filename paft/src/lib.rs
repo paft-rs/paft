@@ -103,6 +103,16 @@ pub mod money {
     pub use paft_utils::MAX_CANONICAL_TOKEN_LEN;
 }
 
+/// PAFT decimal parsing, exact arithmetic, errors, and canonical serde adapters.
+///
+/// ```rust
+/// use paft::decimal::{parse_decimal, checked_mul_exact};
+/// let price = parse_decimal("1.234567").unwrap();
+/// let shares = parse_decimal("10").unwrap();
+/// assert_eq!(checked_mul_exact(&price, &shares), Some(parse_decimal("12.34567").unwrap()));
+/// ```
+pub use paft_decimal as decimal;
+
 /// Direct access to decimal types.
 pub use paft_decimal::{
     Decimal, DecimalConstraintError, NonNegativeDecimal, PositiveDecimal, Ratio, RoundingStrategy,

@@ -1,0 +1,20 @@
+[package]
+name = "paft-decimal-consumer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Private facade-only fixture for PAFT exact decimal ingestion."
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+paft = { path = "../../paft", default-features = false }
+
+[dev-dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
