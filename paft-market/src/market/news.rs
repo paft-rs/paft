@@ -23,8 +23,8 @@ pub struct GenericNewsArticle<M = ()> {
     pub publisher: Option<String>,
     /// A direct link to the article.
     pub link: Option<String>,
-    /// The Unix timestamp in milliseconds of when the article was published.
-    #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
+    /// Publication UTC instant, encoded as canonical ISO-8601-style text.
+    #[serde(with = "paft_core::serde_helpers::ts_iso8601")]
     pub published_at: DateTime<Utc>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
@@ -38,10 +38,11 @@ paft_utils::impl_checked_dataframe! {
         title: [String],
         publisher: [Option<String>],
         link: [Option<String>],
+        #[df_derive(time_unit = "ns")]
         published_at: [DateTime<Utc>],
         provider: [M],
     }
-    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.published_at).is_some()
+    validate |row| paft_core::serde_helpers::validate_timestamp_nanos("published_at", &row.published_at)
 }
 
 /// Standard `NewsArticle` with no extra provider metadata.

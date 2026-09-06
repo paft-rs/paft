@@ -21,7 +21,7 @@ fn calendar_serializes_instants_and_dates_with_domain_precision() {
     let v: serde_json::Value = from_str(&s).unwrap();
     assert_eq!(
         v["earnings_dates"],
-        json!([1_704_067_200_123_i64, 1_711_929_600_000_i64])
+        json!(["2024-01-01T00:00:00.123Z", "2024-04-01T00:00:00Z"])
     );
     assert_eq!(v["ex_dividend_date"], json!("2024-02-15"));
     assert!(v["dividend_payment_date"].is_null());

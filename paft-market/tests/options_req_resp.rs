@@ -255,7 +255,7 @@ fn option_greeks_decimal_serde_uses_canonical_strings() {
 }
 
 #[test]
-fn option_update_ts_serde_uses_unix_milliseconds() {
+fn option_update_ts_serde_uses_canonical_timestamp_text() {
     let update: MarketOptionUpdate = OptionUpdate::new(
         option_key(),
         usd_currency(),
@@ -265,7 +265,7 @@ fn option_update_ts_serde_uses_unix_milliseconds() {
     let value = serde_json::to_value(&update).unwrap();
     assert_eq!(
         value.get("ts"),
-        Some(&serde_json::json!(1_640_995_200_789_i64))
+        Some(&serde_json::json!("2022-01-01T00:00:00.789Z"))
     );
     assert_eq!(value.get("side"), Some(&serde_json::json!("CALL")));
     assert_eq!(value.get("currency"), Some(&serde_json::json!("USD")));

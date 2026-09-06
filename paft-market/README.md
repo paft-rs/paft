@@ -111,18 +111,19 @@ An unavailable applicable date means the action cannot map to this type.
 History period precision
 ------------------------
 
-`TimeSpec::period` and `HistoryRequest` builders require `start < end` and both
-endpoints to be exactly representable as Unix milliseconds, matching their wire
-format. Sub-millisecond components and leap seconds return
-`MarketError::InvalidPeriodTimestamp`, identifying the endpoint and its original
-value. PAFT rejects unsupported precision without rounding the timestamps.
+`TimeSpec::period` and `HistoryRequest` builders require non-leap-second endpoints
+and `start < end` at full instant precision. A one-nanosecond period within one
+millisecond remains nonempty through canonical JSON. Serialization validates
+publicly constructed `TimeSpec::Period` values too. Errors retain the original
+instants; `InvalidPeriodTimestamp` includes the shared timestamp failure reason.
 
-Direct `TimeSpec::Period` construction can bypass validation in memory, but
-serialization now calls `validate` and rejects invalid bounds or unsupported
-timestamp precision. Supported period and range JSON shapes are unchanged.
-For v0.10.0, callers that previously supplied finer precision must explicitly
-choose their millisecond bounds before construction and check that the resulting
-period is still nonempty.
+For v0.10, period bounds and all market UTC-instant fields change from integer
+milliseconds to canonical UTC ISO-8601-style strings. New readers accept strings
+only. Migrate known legacy integer milliseconds explicitly without floating
+point or epoch-unit inference. Calendar action dates remain dates. See the
+[shared timestamp contract](../paft-core/README.md#utc-instants) for the grammar,
+expanded years, retained millisecond adapters, and independently checked
+DataFrame nanosecond range.
 
 Market payload notes
 --------------------

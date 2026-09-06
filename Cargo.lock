@@ -1579,6 +1579,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "paft-facade-consumer"
+version = "0.10.0"
+dependencies = [
+ "chrono",
+ "paft",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "paft-fundamentals"
 version = "0.10.0"
 dependencies = [

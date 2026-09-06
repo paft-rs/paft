@@ -24,7 +24,7 @@ pub struct KeyStatistics {
     /// Timestamp at which these statistics were observed. Useful when
     /// snapshotting price-driven values like `market_cap` that move
     /// intraday.
-    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_iso8601_option")]
     pub as_of: Option<DateTime<Utc>>,
 
     // ---- Valuation ----
@@ -84,6 +84,7 @@ pub struct KeyStatistics {
 #[cfg(feature = "dataframe")]
 paft_utils::impl_checked_dataframe! {
     KeyStatistics {
+        #[df_derive(time_unit = "ns")]
         as_of: [Option<DateTime<Utc>>],
         market_cap: [Option<MonetaryAmount>],
         shares_outstanding: [Option<u64>],
@@ -98,5 +99,5 @@ paft_utils::impl_checked_dataframe! {
         average_daily_volume_3m: [Option<QuantityAmount>],
         beta: [Option<Decimal>],
     }
-    validate |row| row.as_of.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
+    validate |row| row.as_of.iter().try_for_each(|ts| paft_core::serde_helpers::validate_timestamp_nanos("as_of", ts))
 }

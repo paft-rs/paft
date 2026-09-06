@@ -6,6 +6,12 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+mod timestamps;
+pub use timestamps::{
+    TimestampError, TimestampErrorKind, parse_timestamp, timestamp_nanos_exact, ts_iso8601,
+    ts_iso8601_option, ts_iso8601_vec, validate_timestamp, validate_timestamp_nanos,
+};
+
 /// Returns Unix milliseconds only when decoding them restores the same timestamp.
 ///
 /// Rejects sub-millisecond precision and leap seconds, including leap-second

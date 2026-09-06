@@ -181,10 +181,10 @@ pub struct GenericOptionContract<M = ()> {
     /// `None` means the provider did not report this value.
     pub in_the_money: Option<bool>,
     /// Exact UTC expiration instant, if known.
-    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_iso8601_option")]
     pub expiration_at: Option<DateTime<Utc>>,
     /// Exact UTC last trade instant, if known.
-    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_iso8601_option")]
     pub last_trade_at: Option<DateTime<Utc>>,
     /// Optional first-order greeks for the contract.
     pub greeks: Option<OptionGreeks>,
@@ -208,13 +208,17 @@ paft_utils::impl_checked_dataframe! {
         #[df_derive(decimal(precision = 38, scale = 10))]
         implied_volatility: [Option<NonNegativeDecimal>],
         in_the_money: [Option<bool>],
+        #[df_derive(time_unit = "ns")]
         expiration_at: [Option<DateTime<Utc>>],
+        #[df_derive(time_unit = "ns")]
         last_trade_at: [Option<DateTime<Utc>>],
         greeks: [Option<OptionGreeks>],
         provider: [M],
     }
-    validate |row| row.expiration_at.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
-        && row.last_trade_at.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
+    validate |row| {
+        row.expiration_at.iter().try_for_each(|ts| paft_core::serde_helpers::validate_timestamp_nanos("expiration_at", ts))?;
+        row.last_trade_at.iter().try_for_each(|ts| paft_core::serde_helpers::validate_timestamp_nanos("last_trade_at", ts))
+    }
 }
 
 impl<M: Default> GenericOptionContract<M> {
@@ -312,8 +316,8 @@ pub struct GenericOptionUpdate<M = ()> {
     /// Contract key fields.
     #[serde(flatten)]
     pub key: OptionContractKey,
-    /// Timestamp of the update as Unix milliseconds.
-    #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
+    /// UTC instant of the update, encoded as canonical ISO-8601-style text.
+    #[serde(with = "paft_core::serde_helpers::ts_iso8601")]
     pub ts: DateTime<Utc>,
     /// Premium currency for `bid`, `ask`, and `last_price`.
     pub currency: Currency,
@@ -339,6 +343,7 @@ paft_utils::impl_checked_dataframe! {
     GenericOptionUpdate<M> {
         #[df_derive(flatten)]
         key: [OptionContractKey],
+        #[df_derive(time_unit = "ns")]
         ts: [DateTime<Utc>],
         #[df_derive(as_str)]
         currency: [Currency],
@@ -348,7 +353,7 @@ paft_utils::impl_checked_dataframe! {
         implied_volatility: [FieldUpdate<NonNegativeDecimal>],
         provider: [M],
     }
-    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.ts).is_some()
+    validate |row| paft_core::serde_helpers::validate_timestamp_nanos("ts", &row.ts)
 }
 
 impl<M: Default> GenericOptionUpdate<M> {

@@ -47,7 +47,7 @@ impl Ohlc {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-/// A single observed OHLCV bar at timestamp `ts` (Unix milliseconds).
+/// A single observed OHLCV bar at UTC instant `ts`.
 ///
 /// Every price is an observation in the declared price basis. Missing intervals
 /// have no candle; adapters must not fabricate zero-price or carried-forward
@@ -65,7 +65,7 @@ impl Ohlc {
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericCandle<M = ()> {
     /// Inclusive start of the bar's actual aggregation window, in UTC, encoded
-    /// as Unix milliseconds. This is not the first trade, end, publication time,
+    /// as canonical UTC ISO-8601-style text. This is not the first trade, end, publication time,
     /// or an arbitrary session label. Fixed-duration windows are `[ts, end)`.
     ///
     /// For daily/session and longer calendar bars, use the start prescribed by
@@ -75,7 +75,7 @@ pub struct GenericCandle<M = ()> {
     /// interval code or timezone alone does not establish equivalent windows.
     /// Do not relabel a UTC-day aggregate as a session aggregate. Calendar ends
     /// must follow the calendar, not an assumed 24-hour duration.
-    #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
+    #[serde(with = "paft_core::serde_helpers::ts_iso8601")]
     pub ts: DateTime<Utc>,
     /// Currency shared by every price amount in this candle.
     pub currency: Currency,
@@ -98,6 +98,7 @@ pub struct GenericCandle<M = ()> {
 #[cfg(feature = "dataframe")]
 paft_utils::impl_checked_dataframe! {
     GenericCandle<M> {
+        #[df_derive(time_unit = "ns")]
         ts: [DateTime<Utc>],
         #[df_derive(as_str)]
         currency: [Currency],
@@ -107,7 +108,7 @@ paft_utils::impl_checked_dataframe! {
         volume: [Option<QuantityAmount>],
         provider: [M],
     }
-    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.ts).is_some()
+    validate |row| paft_core::serde_helpers::validate_timestamp_nanos("ts", &row.ts)
 }
 
 impl<M: Default> GenericCandle<M> {
@@ -608,17 +609,17 @@ pub struct HistoryMeta {
 pub enum HistoryValidationError {
     /// A candle timestamp is earlier than the previous candle timestamp.
     #[error(
-        "history candles are not ordered by non-decreasing timestamp: candles[{previous_index}] ({previous_ts_millis}) is after candles[{current_index}] ({current_ts_millis})"
+        "history candles are not ordered by non-decreasing timestamp: candles[{previous_index}] ({previous_ts}) is after candles[{current_index}] ({current_ts})"
     )]
     CandlesNotChronological {
         /// Index of the previous candle in the first out-of-order pair.
         previous_index: usize,
-        /// Previous candle timestamp in Unix milliseconds.
-        previous_ts_millis: i64,
+        /// Previous candle instant, retaining nanosecond precision.
+        previous_ts: DateTime<Utc>,
         /// Index of the current candle in the first out-of-order pair.
         current_index: usize,
-        /// Current candle timestamp in Unix milliseconds.
-        current_ts_millis: i64,
+        /// Current candle instant, retaining nanosecond precision.
+        current_ts: DateTime<Utc>,
     },
 }
 
@@ -682,9 +683,9 @@ impl<R, C> GenericHistoryResponse<R, C> {
             if pair[0].ts > pair[1].ts {
                 return Err(HistoryValidationError::CandlesNotChronological {
                     previous_index,
-                    previous_ts_millis: pair[0].ts.timestamp_millis(),
+                    previous_ts: pair[0].ts,
                     current_index: previous_index + 1,
-                    current_ts_millis: pair[1].ts.timestamp_millis(),
+                    current_ts: pair[1].ts,
                 });
             }
         }

@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "paft",
     "tests/decimal-consumer",
+    "tests/facade-consumer",
     "paft-decimal",
     "paft-core",
     "paft-market",

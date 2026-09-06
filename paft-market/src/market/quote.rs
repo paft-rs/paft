@@ -39,8 +39,9 @@ pub struct GenericQuote<Q = (), L = ()> {
     /// Market state.
     pub market_state: Option<MarketState>,
     /// Timestamp (UTC) when this quote snapshot was observed.
-    /// Serialization and `DataFrame` export reject sub-millisecond precision and leap seconds.
-    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
+    /// Serialization rejects leap seconds. `DataFrame` export uses exact nanoseconds
+    /// and independently rejects instants outside the signed i64 nanosecond range.
+    #[serde(default, with = "paft_core::serde_helpers::ts_iso8601_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
@@ -61,10 +62,11 @@ paft_utils::impl_checked_dataframe! {
         day_volume: [Option<QuantityAmount>],
         #[df_derive(as_str)]
         market_state: [Option<MarketState>],
+        #[df_derive(time_unit = "ns")]
         as_of: [Option<DateTime<Utc>>],
         provider: [Q],
     }
-    validate |row| row.as_of.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
+    validate |row| row.as_of.iter().try_for_each(|ts| paft_core::serde_helpers::validate_timestamp_nanos("as_of", ts))
 }
 
 impl<Q: Default, L> GenericQuote<Q, L> {
@@ -118,9 +120,10 @@ pub struct GenericQuoteUpdate<M = ()> {
     /// trading-day window. This field is a snapshot value, not a per-update
     /// delta.
     pub volume: Option<QuantityAmount>,
-    /// Event timestamp as Unix milliseconds.
-    /// Serialization and `DataFrame` export reject sub-millisecond precision and leap seconds.
-    #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
+    /// Event UTC instant, encoded as canonical ISO-8601-style text.
+    /// Serialization rejects leap seconds. `DataFrame` export uses exact nanoseconds
+    /// and independently rejects instants outside the signed i64 nanosecond range.
+    #[serde(with = "paft_core::serde_helpers::ts_iso8601")]
     pub ts: DateTime<Utc>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
@@ -136,17 +139,18 @@ paft_utils::impl_checked_dataframe! {
         price: [Option<PriceAmount>],
         previous_close: [Option<PriceAmount>],
         volume: [Option<QuantityAmount>],
+        #[df_derive(time_unit = "ns")]
         ts: [DateTime<Utc>],
         provider: [M],
     }
-    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.ts).is_some()
+    validate |row| paft_core::serde_helpers::validate_timestamp_nanos("ts", &row.ts)
 }
 
 impl<M: Default> GenericQuoteUpdate<M> {
     /// Build a quote update with the given instrument and timestamp; all other
     /// fields default to `None` and `provider` is initialised via `M::default()`.
     /// The timestamp is retained unchanged in memory; serialization requires
-    /// exact Unix-millisecond representability, including after public mutation.
+    /// a non-leap-second instant, including after public mutation.
     #[must_use]
     pub fn new(instrument: Instrument, currency: Currency, ts: DateTime<Utc>) -> Self {
         Self {

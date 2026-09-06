@@ -89,7 +89,7 @@ fn order_book_with_mixed_size_availability() {
     };
 
     let json = serde_json::to_string(&book).unwrap();
-    assert!(json.contains(r#""as_of":1700000000456"#));
+    assert!(json.contains(r#""as_of":"2023-11-14T22:13:20.456Z""#));
 
     let decoded: OrderBook = serde_json::from_str(&json).unwrap();
     assert_eq!(book, decoded);

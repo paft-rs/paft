@@ -260,11 +260,11 @@ fn history_validation_errors_convert_into_facade_result() {
         Err(Error::HistoryValidation(
             HistoryValidationError::CandlesNotChronological {
                 previous_index: 0,
-                previous_ts_millis: 2_000,
+                previous_ts,
                 current_index: 1,
-                current_ts_millis: 1_000,
+                current_ts,
             }
-        ))
+        )) if previous_ts == DateTime::from_timestamp(2, 0).unwrap() && current_ts == DateTime::from_timestamp(1, 0).unwrap()
     ));
 }
 

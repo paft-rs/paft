@@ -155,8 +155,8 @@ fn error_handling_workflow() {
     assert!(result.is_err());
 
     if let Err(MarketError::InvalidPeriod { start, end }) = result {
-        assert_eq!(start, 2_000_000);
-        assert_eq!(end, 1_000_000);
+        assert_eq!(start, DateTime::from_timestamp(2000, 0).unwrap());
+        assert_eq!(end, DateTime::from_timestamp(1000, 0).unwrap());
     } else {
         panic!("Expected InvalidPeriod error, got: {result:?}");
     }

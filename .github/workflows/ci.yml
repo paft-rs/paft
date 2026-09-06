@@ -96,6 +96,11 @@ jobs:
       - name: Run tests and doctests
         run: just test
 
+      - name: Test the isolated facade consumer
+        run: |
+          cargo test --locked -p paft-facade-consumer
+          cargo test --locked -p paft-facade-consumer --all-features
+
   configurations:
     name: Consumer configurations
     uses: ./.github/workflows/configurations.yml

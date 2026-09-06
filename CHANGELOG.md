@@ -125,11 +125,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   (`BS`, `BM`, `GG`, `GB`, `GH`, `KY`, `VG`) after normalization, even when their
   checksums are valid. Documentation distinguishes local structural/checksum
   validation from registry assignment and FIGI level verification.
-- **Breaking** DataFrame: PAFT timestamp fields now use the same exact-millisecond
-  validation as JSON before encoding, including required/optional/list fields
-  and nested records. Unsupported precision or leap seconds return a Polars
-  compute error. Borrowed projections retain existing schemas and public Rust
-  field types; exhaustive field matching detects projection drift at compile time.
+- **Breaking** DataFrame: PAFT UTC-instant columns encode directly as
+  `Datetime(Nanoseconds, None)` across required/optional/list/nested and
+  empty/all-null paths. Physical counts denote UTC without a timezone annotation.
+  Shared errors retain reason, field, timestamp, and available indices, with
+  leap-second failures separate from the narrower i64 nanosecond range. JSON
+  independently retains Chrono's non-leap-second range. Borrowed projections
+  preserve dependency direction and detect projection drift at compile time.
 - **Breaking** Money: currency metadata registration and explicit overrides
   reject symbols beginning with ASCII `+` or `-` after whitespace, in either
   placement. `MinorUnitError::InvalidCurrencySymbol` prevents formatted positive
@@ -163,12 +165,14 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   remains available with its mixed identity scope documented and is no longer
   recommended for joins. DataFrames add nullable `security_key` and `listing_key`
   columns, including nested exports; legacy `key` retains its prior meaning.
-- **Breaking** Timestamp serde: all epoch-millisecond payload fields (required,
-  optional, and vector) now reject sub-millisecond values and leap seconds on
-  serialization instead of silently changing them. Integer JSON is unchanged.
-  Payloads retain full precision in memory; callers requiring lossy normalization
-  must perform it explicitly. Shared exact adapters live in
-  `paft_core::serde_helpers` and also back `TimeSpec` validation.
+- **Breaking** Timestamp serde: all PAFT-owned UTC instants now use canonical
+  UTC ISO-8601-style strings with exact nanosecond precision and Chrono's
+  signed-year extension. Numeric JSON is rejected; legacy integer milliseconds
+  need an explicit source-schema migration. Shared parsing/errors and required,
+  optional, and list adapters are exposed through `paft::core::serde_helpers`,
+  alongside retained exact-millisecond utilities. An isolated facade consumer
+  now runs in ordinary CI; attributed exchange fixtures exercise normal source
+  microseconds through JSON and DataFrames.
 - **Breaking** Money/DataFrame: exports now include `minor_units` (`UInt8`),
   including nested and vector exports, so captured settlement specifications
   remain distinguishable when amount and currency are equal.
@@ -297,12 +301,10 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   bid/ask permutation of crossed, locked, and uncrossed books, plus equal-price
   levels and empty or one-sided books.
 - **Breaking** Market: `TimeSpec::period`, `TimeSpec::validate`, and
-  `HistoryRequest` construction now require endpoints exactly representable as
-  Unix milliseconds. Sub-millisecond components and leap seconds return
-  `MarketError::InvalidPeriodTimestamp` with the offending endpoint and original
-  value. This prevents validated periods from collapsing or changing during
-  JSON round trips. `TimeSpec` serialization also validates directly constructed
-  enum values, rejecting unsupported precision and `start >= end`.
+  `HistoryRequest` require non-leap-second endpoints and `start < end` at full
+  instant precision. Serialization validates direct enum construction too.
+  Period/order diagnostics retain original instants rather than milliseconds;
+  `MarketError::InvalidPeriodTimestamp` includes the shared failure reason.
 - **Breaking** Money: corrected LINK, UNI, and original MATIC minor-unit
   exponents from 8 to 18. One native minor unit now constructs an amount of
   `0.000000000000000001`, and exact settlement ingestion and rounding use 18
@@ -357,12 +359,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   all their columns. Update explicit schemas for these columns and the four
   added standalone `Instrument` columns. Rust model fields, JSON, `Display`,
   and `unique_key()` semantics are unchanged.
-- History periods: explicitly choose millisecond-aligned UTC bounds before
-  constructing a `TimeSpec` or `HistoryRequest`, and ensure `start < end` after
-  any caller-chosen quantization. Unsupported precision is rejected rather than
-  rounded; handle `MarketError::InvalidPeriodTimestamp`. Serialization of an
-  invalid directly constructed `TimeSpec::Period` now fails too. Valid
-  millisecond-based period and range wire formats are unchanged.
+- UTC instants and history periods: migrate known legacy JSON integer
+  milliseconds directly with `DateTime::from_timestamp_millis`, then serialize
+  canonical timestamp text. Do not pass through floats, infer units, or truncate
+  precision. Numeric model JSON is no longer accepted. Handle leap seconds and
+  DataFrame range errors separately; JSON's range is wider. Calendar dates are
+  unchanged. Ordering diagnostics now contain full instants, and one-nanosecond
+  periods survive the wire unchanged.
 - LINK, UNI, and MATIC `Money` values constructed with the old default retain
   and serialize scale 8. Such payloads now fail deserialization against the
   corrected scale 18; different captured scales remain unequal and incompatible

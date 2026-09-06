@@ -1,6 +1,7 @@
 //! Error types specific to `paft-market` request validation.
 
 use chrono::{DateTime, Utc};
+use paft_core::serde_helpers::TimestampErrorKind;
 use thiserror::Error;
 
 /// Errors returned when validating market requests before execution.
@@ -25,22 +26,21 @@ pub enum MarketError {
     /// `HistoryRequest`: 'period' start must be before end.
     #[error("HistoryRequest: 'period' start ({start}) must be before end ({end})")]
     InvalidPeriod {
-        /// Start timestamp (milliseconds since epoch).
-        start: i64,
-        /// End timestamp (milliseconds since epoch).
-        end: i64,
+        /// Original start instant, retaining nanosecond precision.
+        start: DateTime<Utc>,
+        /// Original end instant, retaining nanosecond precision.
+        end: DateTime<Utc>,
     },
 
-    /// A period endpoint cannot be preserved exactly as Unix milliseconds.
-    /// Sub-millisecond precision and leap seconds are unsupported.
-    #[error(
-        "HistoryRequest: 'period' {field} ({timestamp}) must be exactly representable as Unix milliseconds"
-    )]
+    /// A period endpoint violates the canonical UTC instant contract.
+    #[error("HistoryRequest: 'period' {field} ({timestamp}) is invalid: {reason}")]
     InvalidPeriodTimestamp {
         /// The endpoint that failed validation (`"start"` or `"end"`).
         field: &'static str,
-        /// The original timestamp, including its unsupported precision.
+        /// The original timestamp, retaining all precision.
         timestamp: DateTime<Utc>,
+        /// Shared reason for rejecting this endpoint.
+        reason: TimestampErrorKind,
     },
 
     /// String value did not match any modeled closed market enum code.

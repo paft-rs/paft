@@ -1,0 +1,11 @@
+{
+  "source": "https://docs.cdp.coinbase.com/exchange/websocket-feed/channels#ticker-channel",
+  "description": "Reduced official ticker example; field values are transcribed, not generated.",
+  "ticker": {
+    "type": "ticker",
+    "product_id": "ETH-USD",
+    "price": "1285.22",
+    "volume_24h": "245532.79269678",
+    "time": "2022-10-19T23:28:22.061769Z"
+  }
+}

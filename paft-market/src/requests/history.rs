@@ -519,10 +519,10 @@ impl<'de> Deserialize<'de> for HistoryFlags {
 ///
 /// Serializes as explicitly tagged JSON:
 /// `{ "kind": "range", "range": "6mo" }` or
-/// `{ "kind": "period", "start": 1716595200000, "end": 1719187200000 }`.
-/// Period timestamps must be exactly representable as Unix milliseconds and
-/// satisfy `start < end`. Sub-millisecond precision and leap seconds are rejected;
-/// no implicit quantization is performed.
+/// `{ "kind": "period", "start": "2024-05-25T00:00:00Z", "end": "2024-06-24T00:00:00Z" }`.
+/// Period timestamps use canonical UTC ISO-8601-style text and satisfy
+/// `start < end` at nanosecond precision. Leap seconds and numeric JSON timestamps
+/// are rejected; legacy epoch milliseconds require an explicit migration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TimeSpec {
@@ -530,9 +530,9 @@ pub enum TimeSpec {
     Range(Range),
     /// Use an explicit time period with start and end timestamps.
     Period {
-        /// Start timestamp for the period, exactly representable as Unix milliseconds.
+        /// Start timestamp for the period, a valid non-leap-second UTC instant.
         start: DateTime<Utc>,
-        /// End timestamp for the period, exactly representable as Unix milliseconds.
+        /// End timestamp for the period, a valid non-leap-second UTC instant.
         end: DateTime<Utc>,
     },
 }
@@ -546,14 +546,14 @@ impl TimeSpec {
 
     /// Build a validated explicit period time specification.
     ///
-    /// Both endpoints must be exactly representable as Unix milliseconds;
-    /// sub-millisecond precision and leap seconds are rejected without rounding.
+    /// Both endpoints must be valid non-leap-second UTC instants;
+    /// leap seconds are rejected without rounding.
     ///
     /// # Errors
     ///
     /// Returns [`MarketError::InvalidPeriod`] when `start >= end`.
     /// Returns [`MarketError::InvalidPeriodTimestamp`] when an endpoint cannot
-    /// be preserved by the millisecond wire format, before checking the order.
+    /// be preserved by the canonical timestamp text format, before checking the order.
     pub fn period(start: DateTime<Utc>, end: DateTime<Utc>) -> Result<Self, MarketError> {
         let time_spec = Self::Period { start, end };
         time_spec.validate()?;
@@ -563,7 +563,7 @@ impl TimeSpec {
     /// Validate standalone `TimeSpec` invariants.
     ///
     /// `TimeSpec::Range` is always valid. `TimeSpec::Period` must have
-    /// endpoints exactly representable as Unix milliseconds and `start < end`.
+    /// valid non-leap-second UTC endpoints and `start < end`.
     /// This ensures validated values survive serialization without changing
     /// their timestamps or invalidating their bounds.
     ///
@@ -571,23 +571,22 @@ impl TimeSpec {
     ///
     /// Returns [`MarketError::InvalidPeriod`] when a period has `start >= end`.
     /// Returns [`MarketError::InvalidPeriodTimestamp`] when an endpoint cannot
-    /// be preserved by the millisecond wire format, before checking the order.
+    /// be preserved by the canonical timestamp text format, before checking the order.
     pub fn validate(&self) -> Result<(), MarketError> {
         if let Self::Period { start, end } = self {
             for (field, timestamp) in [("start", start), ("end", end)] {
-                // Match both directions of paft_core::serde_helpers::ts_milliseconds.
-                // A divisibility check alone would miss leap-second values.
-                if paft_core::serde_helpers::timestamp_millis_exact(timestamp).is_none() {
-                    return Err(MarketError::InvalidPeriodTimestamp {
+                paft_core::serde_helpers::validate_timestamp(timestamp).map_err(|error| {
+                    MarketError::InvalidPeriodTimestamp {
                         field,
                         timestamp: *timestamp,
-                    });
-                }
+                        reason: error.kind,
+                    }
+                })?;
             }
             if start >= end {
                 return Err(MarketError::InvalidPeriod {
-                    start: start.timestamp_millis(),
-                    end: end.timestamp_millis(),
+                    start: *start,
+                    end: *end,
                 });
             }
         }
@@ -603,9 +602,9 @@ enum TimeSpecWire {
         range: Range,
     },
     Period {
-        #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
+        #[serde(with = "paft_core::serde_helpers::ts_iso8601")]
         start: DateTime<Utc>,
-        #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
+        #[serde(with = "paft_core::serde_helpers::ts_iso8601")]
         end: DateTime<Utc>,
     },
 }
@@ -724,7 +723,7 @@ impl HistoryRequestBuilder {
     ///
     /// Validation is deferred until [`Self::build`]. Use [`TimeSpec::period`]
     /// when constructing a standalone validated time specification. Endpoints
-    /// must be exactly representable as Unix milliseconds; they are not rounded.
+    /// must be valid non-leap-second UTC instants; they are not rounded.
     #[must_use]
     pub const fn period(mut self, start: DateTime<Utc>, end: DateTime<Utc>) -> Self {
         self.time_spec = TimeSpec::Period { start, end };
@@ -776,7 +775,7 @@ impl HistoryRequestBuilder {
     /// # Errors
     /// Returns `MarketError::InvalidPeriod` when a `Period { start, end }` has `start >= end`.
     /// Returns [`MarketError::InvalidPeriodTimestamp`] when an endpoint cannot
-    /// be preserved exactly as Unix milliseconds, before checking the order.
+    /// be preserved as canonical timestamp text, before checking the order.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn build(self) -> Result<HistoryRequest, MarketError> {
         self.time_spec.validate()?;
@@ -813,7 +812,7 @@ impl HistoryRequest {
     }
 
     /// Build a request using explicit UTC `DateTime` bounds (`[start, end)`)
-    /// and `interval`. Bounds must be exactly representable as Unix milliseconds.
+    /// and `interval`. Bounds must be valid non-leap-second UTC instants.
     ///
     /// This is a convenience method that uses the builder pattern internally.
     ///

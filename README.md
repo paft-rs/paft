@@ -48,18 +48,29 @@ That is the narrow promise of paft: not a universal financial API, but a stable
 language of financial data types that provider crates and downstream tools can
 agree on.
 
-All epoch-millisecond timestamp fields serialize exactly or return an error.
-Sub-millisecond values and leap seconds can remain in public payload fields in
-memory, but callers must explicitly normalize them before using the millisecond
-wire format. This applies to required, optional, and vector timestamps across
-market, fundamentals, aggregate, and prediction payloads. Adapters are shared in
-`paft_core::serde_helpers`; ordinary millisecond JSON is unchanged.
+PAFT-owned UTC instants retain `DateTime<Utc>` in memory and use exact canonical
+UTC ISO-8601-style strings in JSON. Ordinary years use RFC 3339 syntax; dates
+outside `0000..=9999` use Chrono's signed-year extension. Output ends in `Z`,
+with the shortest exact fractional width among zero, three, six, and nine digits.
+Explicit input offsets normalize to UTC. Canonicalization preserves the instant,
+not the original offset, spelling, or declared source precision. Leap seconds
+and more than nine fractional digits (even trailing zeros) are rejected.
 
-DataFrame export applies the same exact-or-error millisecond policy to PAFT
-timestamp fields, including nested records, optional timestamps, and timestamp
-lists. Unsupported precision returns a Polars compute error. Public Rust fields
-retain their original `DateTime<Utc>` types; caller-defined provider metadata
-controls its own export policy.
+DataFrame instant columns use exactly `Datetime(Nanoseconds, None)`: signed i64
+Unix nanoseconds denote UTC, with no timezone annotation. PAFT chooses this fixed
+unit for every batch, including empty/all-null and nested exports. Chrono's JSON
+range is wider than this DataFrame range; out-of-range supplied instants return
+an error identifying the reason, field, value, and available indices. Missing
+values remain null. Calendar dates retain their date representation.
+
+For v0.10 migration, canonical deserializers accept strings only; old JSON
+integer milliseconds require an explicit source-schema migration. No epoch-unit
+inference or floating-point conversion is performed. The retained
+`ts_milliseconds`, `ts_milliseconds_option`, and `ts_milliseconds_vec` adapters
+still provide explicit exact-millisecond encoding. The parser, shared errors,
+and all adapters are reachable through `paft::core::serde_helpers`; see the
+[complete timestamp grammar and migration guidance](paft-core/README.md#utc-instants).
+Caller-defined provider metadata controls its own timestamp/export policy.
 
 ## Workspace Crates
 

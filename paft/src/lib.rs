@@ -48,7 +48,7 @@ pub use paft_utils::MAX_CANONICAL_TOKEN_LEN;
 
 /// Namespaced access to `paft-core`.
 pub mod core {
-    pub use paft_core::PaftError;
+    pub use paft_core::{PaftError, serde_helpers};
     #[cfg(feature = "dataframe")]
     pub use paft_utils::dataframe;
 }

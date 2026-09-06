@@ -319,13 +319,16 @@ fn quote_serialization() {
 }
 
 #[test]
-fn quote_as_of_serializes_as_unix_milliseconds() {
+fn quote_as_of_serializes_as_canonical_timestamp_text() {
     let mut quote = Quote::new(aapl(), usd());
     quote.as_of = Some(DateTime::from_timestamp(1_640_995_200, 654_000_000).unwrap());
 
     let json = serde_json::to_string(&quote).unwrap();
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
-    assert_eq!(value["as_of"], serde_json::json!(1_640_995_200_654_i64));
+    assert_eq!(
+        value["as_of"],
+        serde_json::json!("2022-01-01T00:00:00.654Z")
+    );
 
     let deserialized: Quote = serde_json::from_str(&json).unwrap();
     assert_eq!(quote, deserialized);
@@ -366,7 +369,7 @@ fn quote_update_serialization() {
 
     let json = serde_json::to_string(&update).unwrap();
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
-    assert_eq!(value["ts"], serde_json::json!(1_640_995_200_654_i64));
+    assert_eq!(value["ts"], serde_json::json!("2022-01-01T00:00:00.654Z"));
     assert_eq!(value["currency"], serde_json::json!("USD"));
     assert_eq!(value["volume"], serde_json::json!("12345.678"));
 

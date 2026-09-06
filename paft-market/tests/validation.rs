@@ -184,8 +184,8 @@ fn history_request_validation_period_start_ge_end_rejected() {
     assert!(result.is_err());
 
     if let Err(MarketError::InvalidPeriod { start, end }) = result {
-        assert_eq!(start, 2_000_000);
-        assert_eq!(end, 1_000_000);
+        assert_eq!(start, DateTime::from_timestamp(2000, 0).unwrap());
+        assert_eq!(end, DateTime::from_timestamp(1000, 0).unwrap());
     } else {
         panic!("Expected InvalidPeriod error for invalid period");
     }
@@ -202,33 +202,30 @@ fn history_request_validation_period_start_eq_end_rejected() {
     assert!(result.is_err());
 
     if let Err(MarketError::InvalidPeriod { start, end }) = result {
-        assert_eq!(start, 1_000_000);
-        assert_eq!(end, 1_000_000);
+        assert_eq!(start, DateTime::from_timestamp(1000, 0).unwrap());
+        assert_eq!(end, DateTime::from_timestamp(1000, 0).unwrap());
     } else {
         panic!("Expected InvalidPeriod error for equal start and end");
     }
 }
 
 #[test]
-fn history_request_rejects_submillisecond_period_endpoints() {
-    for (start, end, field) in [
-        ((1, 100), (1, 200), "start"),
-        ((1, 100), (2, 200), "start"),
-        ((1, 0), (2, 200), "end"),
+fn history_request_preserves_nanosecond_period_endpoints() {
+    let start = DateTime::from_timestamp_nanos(1);
+    let end = DateTime::from_timestamp_nanos(2);
+    assert_eq!(start.timestamp_millis(), end.timestamp_millis());
+    for request in [
+        HistoryRequest::builder()
+            .period(start, end)
+            .build()
+            .unwrap(),
+        HistoryRequest::try_from_period(start, end, Interval::I1s).unwrap(),
     ] {
-        let start = DateTime::from_timestamp(start.0, start.1).unwrap();
-        let end = DateTime::from_timestamp(end.0, end.1).unwrap();
-        let expected = MarketError::InvalidPeriodTimestamp {
-            field,
-            timestamp: if field == "start" { start } else { end },
-        };
+        assert_eq!(request.period(), Some((start, end)));
+        let wire = serde_json::to_value(&request).unwrap();
         assert_eq!(
-            HistoryRequest::builder().period(start, end).build(),
-            Err(expected.clone())
-        );
-        assert_eq!(
-            HistoryRequest::try_from_period(start, end, Interval::I1s),
-            Err(expected)
+            serde_json::from_value::<HistoryRequest>(wire).unwrap(),
+            request
         );
     }
 }
@@ -238,8 +235,8 @@ fn history_request_deserialization_period_start_ge_end_rejected() {
     let invalid = serde_json::json!({
         "time_spec": {
             "kind": "period",
-            "start": 2_000_000,
-            "end": 1_000_000
+            "start": "1970-01-01T00:33:20Z",
+            "end": "1970-01-01T00:16:40Z"
         },
         "interval": Interval::D1,
         "flags": 6

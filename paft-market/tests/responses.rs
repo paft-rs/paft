@@ -55,7 +55,7 @@ fn candle_serialization() {
 
     let json = serde_json::to_string(&candle).unwrap();
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
-    assert_eq!(value["ts"], serde_json::json!(1_640_995_200_321_i64));
+    assert_eq!(value["ts"], serde_json::json!("2022-01-01T00:00:00.321Z"));
     assert_eq!(value["currency"], serde_json::json!("USD"));
     assert_eq!(value["open"], serde_json::json!("100"));
     assert_eq!(value["volume"], serde_json::json!("1000000.125"));
@@ -101,7 +101,7 @@ fn sparse_history_preserves_observations_without_missing_slot_markers() {
     // A null or absent OHLC group is not an ordinary candle.
     for remove in [false, true] {
         let mut missing = wire["candles"][0].clone();
-        missing["ts"] = serde_json::json!(34_260_000);
+        missing["ts"] = serde_json::json!("1970-01-01T09:31:00Z");
         for field in ["open", "high", "low", "close"] {
             if remove {
                 missing.as_object_mut().unwrap().remove(field);
@@ -394,9 +394,9 @@ fn history_response_chronological_order_validation_allows_duplicate_timestamps()
         out_of_order.validate(),
         Err(HistoryValidationError::CandlesNotChronological {
             previous_index: 0,
-            previous_ts_millis: 2_000,
+            previous_ts: DateTime::from_timestamp(2, 0).unwrap(),
             current_index: 1,
-            current_ts_millis: 1_000,
+            current_ts: DateTime::from_timestamp(1, 0).unwrap(),
         })
     );
 

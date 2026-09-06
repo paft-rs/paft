@@ -168,8 +168,8 @@ fn history_request_with_period() {
         value["time_spec"],
         serde_json::json!({
             "kind": "period",
-            "start": 1_000_000,
-            "end": 2_000_000
+            "start": "1970-01-01T00:16:40Z",
+            "end": "1970-01-01T00:33:20Z"
         })
     );
 
@@ -179,7 +179,7 @@ fn history_request_with_period() {
 }
 
 #[test]
-fn time_spec_period_uses_epoch_millisecond_wire_shape() {
+fn time_spec_period_uses_canonical_timestamp_text() {
     use chrono::DateTime;
 
     let time_spec = TimeSpec::period(
@@ -194,8 +194,8 @@ fn time_spec_period_uses_epoch_millisecond_wire_shape() {
         value,
         serde_json::json!({
             "kind": "period",
-            "start": 1_716_595_200_123_i64,
-            "end": 1_719_187_200_456_i64
+            "start": "2024-05-25T00:00:00.123Z",
+            "end": "2024-06-24T00:00:00.456Z"
         })
     );
 
@@ -211,13 +211,7 @@ fn time_spec_period_constructor_rejects_invalid_bounds() {
     let end = DateTime::from_timestamp(1_000, 0).unwrap();
 
     let err = TimeSpec::period(start, end).unwrap_err();
-    assert!(matches!(
-        err,
-        paft_market::MarketError::InvalidPeriod {
-            start: 2_000_000,
-            end: 1_000_000,
-        }
-    ));
+    assert_eq!(err, paft_market::MarketError::InvalidPeriod { start, end });
 }
 
 #[test]
@@ -239,35 +233,30 @@ fn time_spec_validation_and_serialization_reject_invalid_period_bounds() {
 }
 
 #[test]
-fn time_spec_rejects_submillisecond_endpoints_without_quantizing() {
-    use chrono::DateTime;
-
-    for (start, end, field) in [
-        // Distinct timestamps that would collapse to one millisecond on the wire.
-        ((1, 100), (1, 200), "start"),
-        // A longer range must not silently lose precision at either endpoint.
-        ((1, 100), (2, 200), "start"),
-        ((1, 0), (2, 200), "end"),
-        // Millisecond precision must be exact before the epoch too.
-        ((-1, 999_999_999), (0, 0), "start"),
-    ] {
-        let start = DateTime::from_timestamp(start.0, start.1).unwrap();
-        let end = DateTime::from_timestamp(end.0, end.1).unwrap();
-        assert!(start < end);
-        let expected = MarketError::InvalidPeriodTimestamp {
-            field,
-            timestamp: if field == "start" { start } else { end },
+fn time_spec_preserves_one_nanosecond_periods_without_quantizing() {
+    for (start, end) in [(1, 2), (-2, -1), (123_456_789, 123_456_790)] {
+        let start = chrono::DateTime::from_timestamp_nanos(start);
+        let end = chrono::DateTime::from_timestamp_nanos(end);
+        assert_eq!(start.timestamp_millis(), end.timestamp_millis());
+        let period = TimeSpec::period(start, end).unwrap();
+        let wire = serde_json::to_value(&period).unwrap();
+        assert_eq!(serde_json::from_value::<TimeSpec>(wire).unwrap(), period);
+        let invalid = TimeSpec::Period {
+            start: end,
+            end: start,
         };
-        assert_eq!(TimeSpec::period(start, end), Err(expected.clone()));
-        let direct = TimeSpec::Period { start, end };
-        assert_eq!(direct.validate(), Err(expected.clone()));
-        let error = serde_json::to_string(&direct).unwrap_err();
-        assert_eq!(error.to_string(), expected.to_string());
+        assert_eq!(
+            invalid.validate(),
+            Err(MarketError::InvalidPeriod {
+                start: end,
+                end: start
+            })
+        );
     }
 }
 
 #[test]
-fn time_spec_rejects_leap_seconds_that_milliseconds_cannot_preserve() {
+fn time_spec_rejects_leap_seconds() {
     use chrono::DateTime;
 
     let leap = DateTime::from_timestamp(59, 1_000_000_000).unwrap();
@@ -279,6 +268,7 @@ fn time_spec_rejects_leap_seconds_that_milliseconds_cannot_preserve() {
         let expected = MarketError::InvalidPeriodTimestamp {
             field,
             timestamp: leap,
+            reason: paft_core::serde_helpers::TimestampErrorKind::LeapSecond,
         };
         assert_eq!(TimeSpec::period(start, end), Err(expected.clone()));
         let direct = TimeSpec::Period { start, end };
@@ -305,7 +295,7 @@ fn time_spec_millisecond_bounds_round_trip_at_epoch_and_chrono_limits() {
         assert_eq!(
             wire,
             serde_json::json!({
-                "kind": "period", "start": start_millis, "end": end_millis,
+                "kind": "period", "start": start.to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true), "end": end.to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true),
             })
         );
         assert_eq!(serde_json::from_value::<TimeSpec>(wire).unwrap(), period);
@@ -323,8 +313,8 @@ fn time_spec_millisecond_bounds_round_trip_at_epoch_and_chrono_limits() {
 fn time_spec_deserialization_rejects_invalid_period() {
     let value = serde_json::json!({
         "kind": "period",
-        "start": 2_000_000,
-        "end": 1_000_000
+        "start": "1970-01-01T00:33:20Z",
+        "end": "1970-01-01T00:16:40Z"
     });
 
     assert!(serde_json::from_value::<TimeSpec>(value).is_err());

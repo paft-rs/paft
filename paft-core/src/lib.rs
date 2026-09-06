@@ -24,7 +24,7 @@
 //! ```
 //!
 //! # Serde helpers
-//! See [`serde_helpers`] for helpers like `ts_milliseconds_vec`.
+//! See [`serde_helpers`] for canonical timestamp parsing and serde adapters, plus explicit millisecond adapters.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 

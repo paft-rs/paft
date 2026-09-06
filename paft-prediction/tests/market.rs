@@ -31,6 +31,66 @@ fn binary_market(market_id: &str) -> BinaryMarket {
     .unwrap()
 }
 
+fn timestamp_fields<T: serde::Serialize + serde::de::DeserializeOwned>(row: &T) {
+    let base = serde_json::to_value(row).unwrap();
+    for field in ["open_time", "close_time", "settlement_time"] {
+        for input in [
+            "1969-12-31T23:59:59.999999999Z",
+            "+12020-01-01T00:00:00.123456789Z",
+        ] {
+            let mut wire = base.clone();
+            wire[field] = serde_json::json!(input);
+            let row: T = serde_json::from_value(wire).unwrap();
+            assert_eq!(
+                serde_json::to_value(row).unwrap()[field],
+                input,
+                "{}.{field}",
+                std::any::type_name::<T>()
+            );
+        }
+        for input in [
+            serde_json::json!(0),
+            serde_json::json!(1.5),
+            serde_json::json!("2016-12-31T23:59:60Z"),
+        ] {
+            let mut wire = base.clone();
+            wire[field] = input;
+            assert!(serde_json::from_value::<T>(wire).is_err());
+        }
+    }
+}
+
+#[test]
+fn prediction_metadata_and_shadows_use_the_canonical_instant_contract() {
+    timestamp_fields(&binary_market("TEST"));
+    timestamp_fields(
+        &MultiOutcomeMarket::new(
+            PredictionMarketKey::new("MANIFOLD", "contract-1").unwrap(),
+            "Which team wins?".into(),
+            vec![
+                outcome("contract-1", "A", "Team A"),
+                outcome("contract-1", "B", "Team B"),
+            ],
+            PredictionMarketStatus::Open,
+            Currency::Iso(IsoCurrency::USD),
+            OutcomePayout::ONE,
+        )
+        .unwrap(),
+    );
+    timestamp_fields(&paft_prediction::ScalarMarket {
+        key: PredictionMarketKey::new("MANIFOLD", "scalar-1").unwrap(),
+        event_key: None,
+        title: "Test scalar market".into(),
+        unit: None,
+        status: PredictionMarketStatus::Open,
+        open_time: None,
+        close_time: None,
+        settlement_time: None,
+        resolution_value: None,
+        provider: (),
+    });
+}
+
 #[test]
 fn binary_market_carries_required_polymarket_outcome_instruments() {
     let key = BinaryMarketKey::new(

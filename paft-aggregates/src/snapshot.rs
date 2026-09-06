@@ -31,7 +31,7 @@ pub struct GenericSnapshot<M = ()> {
     /// Current market session state (for example: Pre, Regular, Post).
     pub market_state: Option<MarketState>,
     /// Timestamp (UTC) when this snapshot was taken.
-    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_iso8601_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Currency shared by every price amount in this snapshot.
     pub currency: Currency,
@@ -59,6 +59,7 @@ paft_utils::impl_checked_dataframe! {
         name: [Option<String>],
         #[df_derive(as_str)]
         market_state: [Option<MarketState>],
+        #[df_derive(time_unit = "ns")]
         as_of: [Option<DateTime<Utc>>],
         #[df_derive(as_str)]
         currency: [Currency],
@@ -70,7 +71,7 @@ paft_utils::impl_checked_dataframe! {
         volume: [Option<QuantityAmount>],
         provider: [M],
     }
-    validate |row| row.as_of.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
+    validate |row| row.as_of.iter().try_for_each(|ts| paft_core::serde_helpers::validate_timestamp_nanos("as_of", ts))
 }
 
 impl<M: Default> GenericSnapshot<M> {

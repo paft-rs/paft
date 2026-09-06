@@ -322,7 +322,7 @@ pub struct RecommendationSummary {
 /// Broker action history for an instrument.
 pub struct UpgradeDowngradeRow {
     /// Event timestamp.
-    #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
+    #[serde(with = "paft_core::serde_helpers::ts_iso8601")]
     pub ts: DateTime<Utc>,
     /// Research firm name.
     pub firm: Option<String>,
@@ -337,6 +337,7 @@ pub struct UpgradeDowngradeRow {
 #[cfg(feature = "dataframe")]
 paft_utils::impl_checked_dataframe! {
     UpgradeDowngradeRow {
+        #[df_derive(time_unit = "ns")]
         ts: [DateTime<Utc>],
         firm: [Option<String>],
         #[df_derive(as_str)]
@@ -346,7 +347,7 @@ paft_utils::impl_checked_dataframe! {
         #[df_derive(as_str)]
         action: [Option<RecommendationAction>],
     }
-    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.ts).is_some()
+    validate |row| paft_core::serde_helpers::validate_timestamp_nanos("ts", &row.ts)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]

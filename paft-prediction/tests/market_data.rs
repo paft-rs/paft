@@ -117,7 +117,7 @@ fn prediction_trade_deserialization_rejects_zero_quantity() {
         "quantity": 0,
         "action": null,
         "trade_id": null,
-        "ts": 0
+        "ts": "1970-01-01T00:00:00Z"
     }"#;
 
     assert!(serde_json::from_str::<PredictionTrade>(json).is_err());

@@ -109,6 +109,51 @@ assert_eq!("dark pool".parse::<Venue>().unwrap().to_string(), "DARK_POOL");
 assert!(OtherVenue::new("NASDAQ").is_err());
 ```
 
+UTC instants
+------------
+
+`paft::core::serde_helpers` (or `paft_core::serde_helpers` for direct dependents)
+exposes `parse_timestamp`, `TimestampError`, `TimestampErrorKind`,
+`ts_iso8601`, `ts_iso8601_option`, and `ts_iso8601_vec`. Use the serde modules
+with `#[serde(with = "paft::core::serde_helpers::ts_iso8601")]`, adding `default`
+for optional fields that allow omission.
+
+The canonical format is UTC ISO-8601-style text. Years `0000` through `9999`
+follow RFC 3339 syntax; other years use Chrono-compatible signed expanded years:
+`+` and five or six digits for positive years, `-` and four to six digits for
+negative years. Negative years may have four-digit padding (`-0001`), but
+expanded forms cannot have redundant leading zeros (`+010000`, `-00001`), and
+negative zero is rejected. Chrono determines the supported calendar range.
+
+Input requires padded date/time components, `T`/`t`, an optional fraction of
+one to nine digits, and `Z`/`z` or `±HH:MM`. Whitespace, unpadded components,
+`UTC`, colonless offsets, and excess fractional digits including trailing zeros
+are rejected before Chrono validates calendar, clock, and offset arithmetic.
+Leap seconds are explicitly rejected. Offset-induced UTC overflow is an error.
+
+Output uses UTC `Z` and Chrono's `SecondsFormat::AutoSi`: the shortest exact
+width among zero, three, six, and nine digits (`.1` → `.100`, `.1234` →
+`.123400`, `.123400001` → `.123400001`). Canonicalization preserves the instant,
+not its original offset, spelling, or declared source precision.
+
+In memory and JSON, non-leap-second timestamps retain Chrono's supported range.
+`timestamp_nanos_exact` independently checks export as signed i64 Unix
+nanoseconds, from `1677-09-21T00:12:43.145224192Z` through
+`2262-04-11T23:47:16.854775807Z`. PAFT's DataFrame columns use exactly
+`Datetime(Nanoseconds, None)`, with physical counts denoting UTC and no timezone
+annotation. Empty/all-null batches retain this schema. A supplied out-of-range
+value errors rather than becoming null. Core's shared errors distinguish leap
+seconds from export range failures and require no Polars dependency.
+
+**v0.10 migration:** PAFT model JSON changes from integer milliseconds to strings
+across all UTC-instant fields, including optional/list fields and history bounds.
+Canonical deserializers reject integer and floating-point JSON and never infer
+an epoch unit. Given a known legacy schema, read the signed integer exactly,
+use `DateTime::from_timestamp_millis`, and serialize with the new adapter. Keep
+calendar dates as dates. For application-owned legacy formats, the explicit
+`ts_milliseconds`, `ts_milliseconds_option`, and `ts_milliseconds_vec` adapters
+remain available and retain their exact-or-error millisecond policy.
+
 Links
 -----
 

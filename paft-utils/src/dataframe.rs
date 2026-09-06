@@ -45,6 +45,9 @@ where
 /// adding a model field without updating its projection a compile error.
 /// Field types use brackets to pass raw tokens through to the upstream derive;
 /// opaque `ty` macro fragments would hide their structure from its type parser.
+/// The validation expression returns a fallible result; its error need only
+/// implement Display. Conversion happens in the consuming crate, without adding
+/// a dependency on that crate's error types here. Batch indices are retained.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! impl_checked_dataframe {
@@ -66,14 +69,11 @@ macro_rules! impl_checked_dataframe {
             }
 
             impl<'a $(, $($generic),+)?> Projection<'a $(, $($generic),+)?> {
-                fn checked($row: &'a $name $(<$($generic),+>)?) -> PolarsResult<Self> {
-                    if !$valid {
-                        return Err(PolarsError::ComputeError(format!(
-                            "{} timestamp cannot be preserved as Unix milliseconds \
-                             (sub-millisecond precision or leap second)",
-                            stringify!($name),
-                        ).into()));
-                    }
+                fn checked(index: usize, $row: &'a $name $(<$($generic),+>)?) -> PolarsResult<Self> {
+                    let validate = || $valid;
+                    validate().map_err(|error| PolarsError::ComputeError(format!(
+                        "{}[{index}].{error}", stringify!($name),
+                    ).into()))?;
                     let $name { $($field),* } = $row;
                     Ok(Self { $($field),* })
                 }
@@ -99,13 +99,13 @@ macro_rules! impl_checked_dataframe {
                 Columnar for $name $(<$($generic),+>)?
             {
                 fn columnar_to_dataframe(items: &[Self]) -> PolarsResult<DataFrame> {
-                    let rows = items.iter().map(Projection::checked)
+                    let rows = items.iter().enumerate().map(|(i, row)| Projection::checked(i, row))
                         .collect::<PolarsResult<Vec<_>>>()?;
                     Projection::columnar_to_dataframe(&rows)
                 }
 
                 fn columnar_from_refs(items: &[&Self]) -> PolarsResult<DataFrame> {
-                    let rows = items.iter().copied().map(Projection::checked)
+                    let rows = items.iter().copied().enumerate().map(|(i, row)| Projection::checked(i, row))
                         .collect::<PolarsResult<Vec<_>>>()?;
                     Projection::columnar_to_dataframe(&rows)
                 }
