@@ -62,6 +62,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Fundamentals: `RevenueEstimate::{avg, low, high, year_ago_revenue}`
+  and `InstitutionalHolder::value` now use `MonetaryAmount` to preserve analytical
+  and valuation precision without settlement rounding. The prior-year field is
+  the comparable baseline for the consensus series, including normalized values.
+  JSON and DataFrames retain amount/currency and remove `minor_units` for these
+  fields. Actual insider transaction totals retain `Money`.
+
 - **Breaking** Market: removed `HistoryFlags::KEEP_MISSING`,
   `HistoryRequestBuilder::keep_missing`, and `HistoryRequest::keep_missing`.
   History contains observed candles with actual prices; missing intervals are

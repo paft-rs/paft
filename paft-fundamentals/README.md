@@ -111,6 +111,22 @@ if let Profile::Company(c) = profile { assert_eq!(c.name, "Example Corp"); }
 `Profile` serializes as a flat tagged shape with `kind`; fund profiles use
 `fund_kind` for the fund type so it cannot collide with the discriminator.
 
+Consensus and valuation amounts
+-------------------------------
+
+`RevenueEstimate::{avg, low, high, year_ago_revenue}` and
+`InstitutionalHolder::value` use `MonetaryAmount`. Consensus statistics,
+comparable prior-year baselines (including normalized or converted figures),
+and market valuations do not require settlement precision. For example,
+`1000000.005 USD` is a valid consensus mean and `12.34567 USD` is a valid
+holding valuation; storing either preserves the supplied amount.
+
+JSON contains `amount` and `currency`, without `minor_units`. DataFrame export
+likewise uses amount/currency columns. `InsiderTransaction::value` continues to
+use `Money` for the actual transaction total at its settlement scale. Choose
+settlement money because of the concept's scale requirement, rather than just
+because a value has a currency.
+
 Statement measurement windows
 -----------------------------
 

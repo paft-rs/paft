@@ -8,7 +8,7 @@ use chrono::NaiveDate;
 use df_derive_macros::ToDataFrame;
 use paft_decimal::{Decimal, Ratio};
 use paft_domain::ReportingPeriod;
-use paft_money::Money;
+use paft_money::{MonetaryAmount, Money};
 
 use crate::FundamentalsError;
 
@@ -235,8 +235,9 @@ pub struct InstitutionalHolder {
     /// The percentage of the company's outstanding shares held by this entity.
     #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
     pub pct_held: Option<Ratio>,
-    /// The market value of the shares held.
-    pub value: Option<Money>,
+    /// The market valuation of the shares held, retaining full decimal precision.
+    /// Storing this analytical value does not imply settlement or currency-scale rounding.
+    pub value: Option<MonetaryAmount>,
 }
 
 /// Represents a single insider transaction.
@@ -253,7 +254,7 @@ pub struct InsiderTransaction {
     pub transaction_type: TransactionType,
     /// The number of shares involved in the transaction.
     pub shares: Option<u64>,
-    /// The total value of the transaction.
+    /// The total transaction value at its settlement scale.
     pub value: Option<Money>,
     /// The transaction calendar date.
     pub transaction_date: NaiveDate,

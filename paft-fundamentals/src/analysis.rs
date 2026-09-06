@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use df_derive_macros::ToDataFrame;
 use paft_decimal::Decimal;
 use paft_domain::{DomainError, Horizon, PeriodYear, ReportingPeriod};
-use paft_money::{Money, Price};
+use paft_money::{MonetaryAmount, Money, Price};
 
 use crate::FundamentalsError;
 
@@ -390,15 +390,20 @@ pub struct EarningsEstimate {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Revenue estimate data with analyst consensus.
+///
+/// Consensus estimates and their comparable prior-year baseline are analytical
+/// amounts, not settled payments. They retain sub-minor-unit precision; storing
+/// them does not round to a currency settlement scale.
 pub struct RevenueEstimate {
     /// Average revenue estimate.
-    pub avg: Option<Money>,
+    pub avg: Option<MonetaryAmount>,
     /// Low revenue estimate.
-    pub low: Option<Money>,
+    pub low: Option<MonetaryAmount>,
     /// High revenue estimate.
-    pub high: Option<Money>,
-    /// Revenue from a year ago.
-    pub year_ago_revenue: Option<Money>,
+    pub high: Option<MonetaryAmount>,
+    /// Comparable revenue baseline from a year ago, potentially normalized or
+    /// currency-converted for this consensus series; no settlement scale is required.
+    pub year_ago_revenue: Option<MonetaryAmount>,
     /// Number of analysts providing revenue estimates.
     pub num_analysts: Option<u32>,
     /// Estimated revenue growth.

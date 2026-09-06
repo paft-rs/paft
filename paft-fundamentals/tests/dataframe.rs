@@ -23,6 +23,13 @@ fn usd(amount: i64) -> Money {
     .unwrap()
 }
 
+fn usd_amount(amount: i64) -> MonetaryAmount {
+    MonetaryAmount::new(
+        Decimal::from(amount),
+        paft_money::Currency::Iso(IsoCurrency::USD),
+    )
+}
+
 fn usd_price(amount: i64) -> Price {
     Price::new(
         Decimal::from(amount),
@@ -199,10 +206,10 @@ fn earnings_estimate_to_dataframe() {
 #[test]
 fn revenue_estimate_to_dataframe() {
     let estimate = RevenueEstimate {
-        avg: Some(usd(1_000)),
-        low: Some(usd(900)),
-        high: Some(usd(1_100)),
-        year_ago_revenue: Some(usd(800)),
+        avg: Some(usd_amount(1_000)),
+        low: Some(usd_amount(900)),
+        high: Some(usd_amount(1_100)),
+        year_ago_revenue: Some(usd_amount(800)),
         num_analysts: Some(12),
         growth: Some(dec("0.2")),
     };
@@ -259,10 +266,10 @@ fn earnings_trend_row_to_dataframe() {
         growth: Some(dec("0.15")),
     };
     let revenue_estimate = RevenueEstimate {
-        avg: Some(usd(1_000)),
-        low: Some(usd(900)),
-        high: Some(usd(1_100)),
-        year_ago_revenue: Some(usd(800)),
+        avg: Some(usd_amount(1_000)),
+        low: Some(usd_amount(900)),
+        high: Some(usd_amount(1_100)),
+        year_ago_revenue: Some(usd_amount(800)),
         num_analysts: Some(12),
         growth: Some(dec("0.2")),
     };
@@ -448,7 +455,7 @@ fn institutional_holder_to_dataframe() {
         shares: Some(10_000),
         date_reported: date(2020, 9, 13),
         pct_held: Some(ratio("0.12")),
-        value: Some(usd(1_200)),
+        value: Some(usd_amount(1_200)),
     };
 
     let df = holder.to_dataframe().unwrap();
