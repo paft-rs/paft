@@ -644,7 +644,7 @@ impl Money {
         currency.decimal_places()
     }
 
-    fn scale_for_currency(currency: &Currency) -> Result<(u8, u32), MoneyError> {
+    pub(crate) fn scale_for_currency(currency: &Currency) -> Result<(u8, u32), MoneyError> {
         let minor_units = Self::decimals_for_currency(currency)?;
         let scale = Self::ensure_scale_within_limits(minor_units)?;
         Ok((minor_units, scale))
@@ -672,6 +672,20 @@ impl Money {
             });
         }
         Ok(canonical)
+    }
+
+    /// Stores an amount already quantized to a validated, captured settlement scale.
+    /// Callers must resolve and validate the scale before quantizing the amount.
+    pub(crate) const fn from_quantized_parts(
+        amount: Decimal,
+        currency: Currency,
+        minor_units: u8,
+    ) -> Self {
+        Self {
+            amount,
+            currency,
+            minor_units,
+        }
     }
 
     fn from_rounded_parts(amount: &Decimal, currency: Currency, minor_units: u8) -> Self {

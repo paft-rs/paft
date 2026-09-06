@@ -409,7 +409,7 @@ pub fn clear_currency_metadata(code: &str) -> Option<CurrencyMetadata> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use std::panic::{AssertUnwindSafe, catch_unwind};
     use std::sync::Mutex;
@@ -418,7 +418,7 @@ mod tests {
     // against the CUSTOM_METADATA lock. We use a per-process mutex to
     // serialize against any other tests in the same binary that touch
     // the registry.
-    static SERIALIZE: Mutex<()> = Mutex::new(());
+    pub static SERIALIZE: Mutex<()> = Mutex::new(());
 
     #[test]
     fn every_builtin_non_iso_denomination_matches_its_native_unit() {

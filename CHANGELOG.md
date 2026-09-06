@@ -143,6 +143,10 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- Money: settlement conversions capture currency metadata once, preserving the
+  requested rounding strategy and captured scale across concurrent overrides.
+  A synchronized regression test exercises the override between resolution and
+  result construction for default and explicit precision.
 - Money: localized parsing recognizes the expected currency symbol and code
   before locating the amount, so digit-bearing symbols such as `TOK2`
   round-trip in prefix and suffix positions, including negative amounts and
