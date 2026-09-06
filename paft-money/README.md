@@ -133,8 +133,13 @@ price-times-quantity totals. `1 / 3`, nonzero underflow, and other unrepresentab
 results return `MoneyError::NotRepresentable`. A quoted USD price of `1.234567`
 retains all six fractional digits; exact `Money` ingestion rejects that scale.
 
-`Money` arithmetic first uses upstream checked decimal operations, which can
-round to fit decimal precision, then rounds settlement amounts with
+`Money::try_add` and `try_sub` preserve the exact sum or difference and captured
+settlement scale, returning `MoneyError::NotRepresentable` when significant
+digits would be lost. Opt-in `+` and `-` operators follow the same rule and panic
+on error. Equal settlement scales alone do not guarantee representability.
+
+Money multiplication and division use upstream checked decimal operations,
+which can round to fit decimal precision, then round settlement amounts with
 `MidpointAwayFromZero`. FX conversion uses the selected strategy for its final
 rounding; the intermediate product may already have been rounded. Ratios and
 exchange-rate inverses use upstream division precision without settlement

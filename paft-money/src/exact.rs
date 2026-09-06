@@ -19,12 +19,12 @@ pub fn decimal_scale(value: &Decimal) -> i64 {
     decimal::fractional_digit_count(value)
 }
 
-pub fn checked_add_decimal(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {
-    decimal::checked_add(lhs, rhs).ok_or(MoneyError::ConversionError)
+pub fn checked_add_decimal_exact(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {
+    decimal::checked_add_exact(lhs, rhs).ok_or(MoneyError::NotRepresentable)
 }
 
-pub fn checked_sub_decimal(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {
-    decimal::checked_sub(lhs, rhs).ok_or(MoneyError::ConversionError)
+pub fn checked_sub_decimal_exact(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {
+    decimal::checked_sub_exact(lhs, rhs).ok_or(MoneyError::NotRepresentable)
 }
 
 pub fn checked_mul_decimal(lhs: &Decimal, rhs: &Decimal) -> Result<Decimal, MoneyError> {

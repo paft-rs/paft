@@ -21,8 +21,8 @@ use crate::currency::Currency;
 use crate::currency_utils::MAX_DECIMAL_PRECISION;
 use crate::currency_utils::MAX_MINOR_UNIT_DECIMALS;
 use crate::exact::{
-    CurrencyAmount, canonical_amount_format, checked_add_decimal, checked_div_decimal,
-    checked_mul_decimal, checked_sub_decimal, copy_decimal, decimal_from_scaled_units,
+    CurrencyAmount, canonical_amount_format, checked_add_decimal_exact, checked_div_decimal,
+    checked_mul_decimal, checked_sub_decimal_exact, copy_decimal, decimal_from_scaled_units,
     decimal_scale, parse_canonical_decimal,
 };
 #[cfg(feature = "money-formatting")]
@@ -444,27 +444,26 @@ impl Money {
 
     /// Addition that returns an error for currency mismatch.
     ///
-    /// Uses upstream checked decimal arithmetic, which may round to fit decimal
-    /// precision, then rounds to the captured settlement scale with
-    /// [`RoundingStrategy::MidpointAwayFromZero`]. The intermediate is not
-    /// guaranteed exact.
+    /// Preserves the exact numeric result and captured settlement scale. No
+    /// precision or settlement rounding is performed; representable trailing
+    /// zeros may be removed from the decimal coefficient.
     ///
     /// # Errors
     /// - Returns `MoneyError::CurrencyMismatch` when the operands use
     ///   different currencies.
     /// - Returns `MoneyError::MinorUnitMismatch` when the operands use the
     ///   same currency code but carry different captured minor-unit scales.
-    /// - Returns `MoneyError::ConversionError` when the sum overflows the
-    ///   `rust_decimal` representation.
+    /// - Returns `MoneyError::NotRepresentable` when the exact sum cannot
+    ///   fit the decimal representation without losing significant digits.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_add(&self, rhs: &Self) -> Result<Self, MoneyError> {
         self.ensure_compatible_money(rhs)?;
-        let sum = checked_add_decimal(&self.amount, &rhs.amount)?;
-        Ok(Self::from_rounded_parts(
-            &sum,
+        let sum = checked_add_decimal_exact(&self.amount, &rhs.amount)?;
+        Ok(Self::from_quantized_parts(
+            sum,
             self.currency.clone(),
             self.minor_units,
         ))
@@ -472,27 +471,26 @@ impl Money {
 
     /// Subtraction that returns an error for currency mismatch.
     ///
-    /// Uses upstream checked decimal arithmetic, which may round to fit decimal
-    /// precision, then rounds to the captured settlement scale with
-    /// [`RoundingStrategy::MidpointAwayFromZero`]. The intermediate is not
-    /// guaranteed exact.
+    /// Preserves the exact numeric result and captured settlement scale. No
+    /// precision or settlement rounding is performed; representable trailing
+    /// zeros may be removed from the decimal coefficient.
     ///
     /// # Errors
     /// - Returns `MoneyError::CurrencyMismatch` when the operands use
     ///   different currencies.
     /// - Returns `MoneyError::MinorUnitMismatch` when the operands use the
     ///   same currency code but carry different captured minor-unit scales.
-    /// - Returns `MoneyError::ConversionError` when the difference overflows
-    ///   the `rust_decimal` representation.
+    /// - Returns `MoneyError::NotRepresentable` when the exact difference cannot
+    ///   fit the decimal representation without losing significant digits.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(level = "debug", skip(self, rhs), err)
     )]
     pub fn try_sub(&self, rhs: &Self) -> Result<Self, MoneyError> {
         self.ensure_compatible_money(rhs)?;
-        let diff = checked_sub_decimal(&self.amount, &rhs.amount)?;
-        Ok(Self::from_rounded_parts(
-            &diff,
+        let diff = checked_sub_decimal_exact(&self.amount, &rhs.amount)?;
+        Ok(Self::from_quantized_parts(
+            diff,
             self.currency.clone(),
             self.minor_units,
         ))
@@ -978,8 +976,9 @@ impl Add for Money {
 
     fn add(self, rhs: Self) -> Self::Output {
         self.assert_compatible_money(&rhs);
-        let sum = checked_add_decimal(&self.amount, &rhs.amount).expect("money addition overflow");
-        Self::from_rounded_parts(&sum, self.currency, self.minor_units)
+        let sum = checked_add_decimal_exact(&self.amount, &rhs.amount)
+            .expect("exact money addition is not representable");
+        Self::from_quantized_parts(sum, self.currency, self.minor_units)
     }
 }
 
@@ -989,8 +988,9 @@ impl<'b> Add<&'b Money> for &Money {
 
     fn add(self, rhs: &'b Money) -> Self::Output {
         self.assert_compatible_money(rhs);
-        let sum = checked_add_decimal(&self.amount, &rhs.amount).expect("money addition overflow");
-        Money::from_rounded_parts(&sum, self.currency.clone(), self.minor_units)
+        let sum = checked_add_decimal_exact(&self.amount, &rhs.amount)
+            .expect("exact money addition is not representable");
+        Money::from_quantized_parts(sum, self.currency.clone(), self.minor_units)
     }
 }
 
@@ -1000,9 +1000,9 @@ impl Sub for Money {
 
     fn sub(self, rhs: Self) -> Self::Output {
         self.assert_compatible_money(&rhs);
-        let diff =
-            checked_sub_decimal(&self.amount, &rhs.amount).expect("money subtraction overflow");
-        Self::from_rounded_parts(&diff, self.currency, self.minor_units)
+        let diff = checked_sub_decimal_exact(&self.amount, &rhs.amount)
+            .expect("exact money subtraction is not representable");
+        Self::from_quantized_parts(diff, self.currency, self.minor_units)
     }
 }
 
@@ -1012,9 +1012,9 @@ impl<'b> Sub<&'b Money> for &Money {
 
     fn sub(self, rhs: &'b Money) -> Self::Output {
         self.assert_compatible_money(rhs);
-        let diff =
-            checked_sub_decimal(&self.amount, &rhs.amount).expect("money subtraction overflow");
-        Money::from_rounded_parts(&diff, self.currency.clone(), self.minor_units)
+        let diff = checked_sub_decimal_exact(&self.amount, &rhs.amount)
+            .expect("exact money subtraction is not representable");
+        Money::from_quantized_parts(diff, self.currency.clone(), self.minor_units)
     }
 }
 

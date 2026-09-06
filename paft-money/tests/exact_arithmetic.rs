@@ -118,3 +118,91 @@ fn currency_validation_precedes_exact_arithmetic() {
         Err(MoneyError::CurrencyMismatch { .. })
     ));
 }
+
+fn money(value: &str) -> Money {
+    Money::from_canonical_str(value, usd()).unwrap()
+}
+
+#[test]
+fn money_addition_and_subtraction_reject_precision_loss_at_the_coefficient_limit() {
+    let maximum = money("792281625142643375935439503.35");
+    let minimum = money("-792281625142643375935439503.35");
+    let cent = money("0.01");
+    let negative_cent = money("-0.01");
+    for result in [
+        maximum.try_add(&cent),
+        maximum.try_sub(&negative_cent),
+        minimum.try_add(&negative_cent),
+        minimum.try_sub(&cent),
+    ] {
+        assert_eq!(result, Err(MoneyError::NotRepresentable));
+    }
+}
+
+#[test]
+fn money_exact_successes_include_cancellation_and_reducible_coefficients() {
+    let maximum = money("792281625142643375935439503.35");
+    let opposite = money("-792281625142643375935439503.35");
+    for (result, expected) in [
+        (
+            maximum.try_add(&money("0.05")),
+            "792281625142643375935439503.4",
+        ),
+        (
+            maximum.try_sub(&money("-0.05")),
+            "792281625142643375935439503.4",
+        ),
+        (
+            maximum.try_sub(&money("0.01")),
+            "792281625142643375935439503.34",
+        ),
+        (maximum.try_add(&opposite), "0"),
+        (maximum.try_sub(&maximum), "0"),
+        (money("1.23").try_add(&money("-0.03")), "1.2"),
+        (money("-1.23").try_sub(&money("0.02")), "-1.25"),
+    ] {
+        let value = result.unwrap();
+        assert_eq!(value.amount(), parse_decimal(expected).unwrap());
+        assert_eq!(value.minor_units(), 2);
+        assert_eq!(value.currency(), &usd());
+    }
+}
+
+#[test]
+fn money_compatibility_errors_precede_exactness_checks() {
+    let maximum = money("792281625142643375935439503.35");
+    let euro_cent = Money::from_canonical_str("0.01", Currency::Iso(IsoCurrency::EUR)).unwrap();
+    for result in [maximum.try_add(&euro_cent), maximum.try_sub(&euro_cent)] {
+        assert!(matches!(result, Err(MoneyError::CurrencyMismatch { .. })));
+    }
+    let values: Vec<Money> = serde_json::from_str(
+        r#"[
+        {"amount":"1","currency":"EXACT_SCALE_COMPAT_TEST","minor_units":2},
+        {"amount":"1","currency":"EXACT_SCALE_COMPAT_TEST","minor_units":3}
+    ]"#,
+    )
+    .unwrap();
+    for result in [values[0].try_add(&values[1]), values[0].try_sub(&values[1])] {
+        assert!(matches!(result, Err(MoneyError::MinorUnitMismatch { .. })));
+    }
+}
+
+#[cfg(feature = "panicking-money-ops")]
+#[test]
+fn money_operators_have_the_same_exact_contract() {
+    let maximum = money("792281625142643375935439503.35");
+    let cent = money("0.01");
+    let negative_cent = money("-0.01");
+    assert!(std::panic::catch_unwind(|| &maximum + &cent).is_err());
+    assert!(std::panic::catch_unwind(|| maximum.clone() + cent.clone()).is_err());
+    assert!(std::panic::catch_unwind(|| &maximum - &negative_cent).is_err());
+    assert!(std::panic::catch_unwind(|| maximum.clone() - negative_cent.clone()).is_err());
+    assert_eq!(
+        &maximum + &money("0.05"),
+        maximum.try_add(&money("0.05")).unwrap()
+    );
+    assert_eq!(
+        maximum.clone() - cent.clone(),
+        maximum.try_sub(&cent).unwrap()
+    );
+}

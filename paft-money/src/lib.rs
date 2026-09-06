@@ -60,8 +60,9 @@
 //! precision loss. Caller-defined provider metadata controls its own serde.
 //!
 //! [`Price`] and [`MonetaryAmount`] arithmetic is exact-or-error. [`Money`]
-//! arithmetic uses upstream precision rounding, followed by settlement rounding
-//! where applicable. Ratios and exchange-rate inverses can round at decimal
+//! addition and subtraction are also exact-or-error. Its multiplication,
+//! division, and FX conversion can round at decimal precision before settlement
+//! rounding. Ratios and exchange-rate inverses can round at decimal
 //! precision. `DataFrame` scale reduction uses half-even rounding.
 //!
 //! Currency minor-unit scales remain capped at 18 decimal places

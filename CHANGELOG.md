@@ -62,6 +62,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Money: addition and subtraction now use exact decimal helpers,
+  preserving captured settlement scale without rounding. Unrepresentable exact
+  results return `NotRepresentable`, including coefficient overflow that upstream
+  checked arithmetic could round. Currency/scale checks retain priority. Opt-in
+  `+`/`-` operators follow the same contract and panic on failure. Multiplication,
+  division, and FX retain their documented approximation and rounding behavior.
 - **Breaking** Fundamentals: flow rows now require `window: StatementDuration`
   with inclusive reporting-calendar `start`/`end` dates. Balance sheets require
   `as_of: StatementInstant`, the closing balance date. Fiscal `period` labels
@@ -162,7 +168,7 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   retain their distinct errors. Explicit conversion to settlement `Money`
   continues to apply the selected rounding strategy.
 - Money: documented existing upstream precision rounding in `Money`
-  arithmetic, FX conversion, money ratios, and exchange-rate inversion.
+  multiplication/division, FX conversion, money ratios, and exchange-rate inversion.
   Settlement rounding remains a separate step where applicable; DataFrame
   decimal scale reduction retains half-even rounding.
 
