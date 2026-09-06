@@ -1,7 +1,7 @@
 #![cfg(feature = "dataframe")]
 
 use paft_fundamentals::KeyStatistics;
-use paft_money::QuantityAmount;
+use paft_money::{Currency, IsoCurrency, MonetaryAmount, QuantityAmount};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 use polars::prelude::{AnyValue, DataType};
 
@@ -49,5 +49,84 @@ fn average_volume_preserves_fractional_zero_and_missing_values_in_dataframes() {
         .unwrap();
     for (index, expected) in expected.iter().enumerate() {
         assert_eq!(values.get(index).unwrap(), *expected);
+    }
+}
+
+#[test]
+fn market_cap_exports_subcent_values_without_settlement_columns() {
+    let rows = [Some("1.001"), Some("0"), None].map(|amount| KeyStatistics {
+        market_cap: amount.map(|value| {
+            MonetaryAmount::from_canonical_str(value, Currency::Iso(IsoCurrency::USD)).unwrap()
+        }),
+        ..KeyStatistics::default()
+    });
+    let amounts = [
+        AnyValue::Decimal(10_010_000_000, 38, 10),
+        AnyValue::Decimal(0, 38, 10),
+        AnyValue::Null,
+    ];
+    let currencies = [Some("USD"), Some("USD"), None];
+    let batch = rows.to_dataframe().unwrap();
+    assert_eq!(
+        batch.schema(),
+        KeyStatistics::empty_dataframe().unwrap().schema()
+    );
+    assert!(batch.column("market_cap.minor_units").is_err());
+    assert_eq!(
+        batch.column("market_cap.amount").unwrap().dtype(),
+        &DataType::Decimal(38, 10)
+    );
+    for (index, row) in rows.iter().enumerate() {
+        assert_eq!(
+            batch
+                .column("market_cap.amount")
+                .unwrap()
+                .get(index)
+                .unwrap(),
+            amounts[index]
+        );
+        assert_eq!(
+            batch
+                .column("market_cap.currency")
+                .unwrap()
+                .str()
+                .unwrap()
+                .get(index),
+            currencies[index]
+        );
+        let single = row.to_dataframe().unwrap();
+        assert_eq!(
+            single.column("market_cap.amount").unwrap().get(0).unwrap(),
+            amounts[index]
+        );
+        assert_eq!(
+            single
+                .column("market_cap.currency")
+                .unwrap()
+                .str()
+                .unwrap()
+                .get(0),
+            currencies[index]
+        );
+    }
+    let nested = rows.map(|statistics| StatisticsContext { statistics });
+    let df = nested.to_dataframe().unwrap();
+    assert!(df.column("statistics.market_cap.minor_units").is_err());
+    for (index, expected) in amounts.iter().enumerate() {
+        assert_eq!(
+            df.column("statistics.market_cap.amount")
+                .unwrap()
+                .get(index)
+                .unwrap(),
+            *expected
+        );
+        assert_eq!(
+            df.column("statistics.market_cap.currency")
+                .unwrap()
+                .str()
+                .unwrap()
+                .get(index),
+            currencies[index]
+        );
     }
 }

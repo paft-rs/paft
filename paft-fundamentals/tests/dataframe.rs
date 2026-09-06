@@ -11,7 +11,7 @@ use paft_fundamentals::{
     Profile, RecommendationAction, RecommendationGrade, RecommendationRow, RecommendationSummary,
     RevenueEstimate, RevisionPoint, ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
 };
-use paft_money::{IsoCurrency, Money, Price};
+use paft_money::{IsoCurrency, MonetaryAmount, Money, Price};
 use paft_utils::dataframe::{ToDataFrame, ToDataFrameVec};
 use std::str::FromStr;
 
@@ -403,7 +403,10 @@ fn calendar_to_dataframe() {
 fn key_statistics_to_dataframe() {
     let stats = KeyStatistics {
         as_of: Some(sample_ts(1_700_000_000)),
-        market_cap: Some(usd(2_500_000_000_000)),
+        market_cap: Some(MonetaryAmount::new(
+            Decimal::from(2_500_000_000_000_i64),
+            paft_money::Currency::Iso(IsoCurrency::USD),
+        )),
         shares_outstanding: Some(15_500_000_000),
         eps_trailing_twelve_months: Some(usd_price(6)),
         pe_trailing_twelve_months: Some(dec("28.4")),

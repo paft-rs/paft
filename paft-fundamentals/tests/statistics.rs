@@ -1,12 +1,12 @@
 use chrono::{NaiveDate, TimeZone, Utc};
 use paft_decimal::Decimal;
 use paft_fundamentals::statistics::KeyStatistics;
-use paft_money::{Currency, IsoCurrency, Money, Price, QuantityAmount};
+use paft_money::{Currency, IsoCurrency, MonetaryAmount, Price, QuantityAmount};
 use serde_json::{from_str, json, to_string};
 use std::str::FromStr;
 
-fn usd(amount: i64) -> Money {
-    Money::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD)).unwrap()
+fn usd(amount: i64) -> MonetaryAmount {
+    MonetaryAmount::new(Decimal::from(amount), Currency::Iso(IsoCurrency::USD))
 }
 
 fn usd_price(amount: i64) -> Price {
@@ -101,4 +101,36 @@ fn fractional_average_daily_volume_preserves_quantity_semantics() {
             .is_err()
         );
     }
+}
+
+#[test]
+fn market_cap_retains_the_exact_price_times_shares_valuation() {
+    let price = Price::from_canonical_str("0.001", Currency::Iso(IsoCurrency::USD)).unwrap();
+    let shares = QuantityAmount::from_decimal(1001.into()).unwrap();
+    let valuation = price.try_total(&shares).unwrap();
+    assert_eq!(valuation.amount(), dec("1.001"));
+    let row = KeyStatistics {
+        market_cap: Some(valuation),
+        shares_outstanding: Some(1001),
+        ..KeyStatistics::default()
+    };
+    let json = serde_json::to_value(&row).unwrap();
+    assert_eq!(
+        json["market_cap"],
+        json!({"amount": "1.001", "currency": "USD"})
+    );
+    assert_eq!(serde_json::from_value::<KeyStatistics>(json).unwrap(), row);
+}
+
+#[test]
+fn market_cap_does_not_require_settlement_metadata() {
+    let currency = Currency::other("VALUATION_WITHOUT_METADATA").unwrap();
+    assert!(currency.decimal_places().is_err());
+    let valuation = MonetaryAmount::from_canonical_str("123.00001", currency).unwrap();
+    let row = KeyStatistics {
+        market_cap: Some(valuation),
+        ..KeyStatistics::default()
+    };
+    let json = to_string(&row).unwrap();
+    assert_eq!(from_str::<KeyStatistics>(&json).unwrap(), row);
 }

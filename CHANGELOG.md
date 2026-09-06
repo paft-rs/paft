@@ -62,6 +62,11 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Fundamentals: `KeyStatistics::market_cap` now uses
+  `Option<MonetaryAmount>` for valuations beyond settlement precision, including
+  currencies without registered settlement metadata. JSON exports only `amount`
+  and `currency`; DataFrames remove `market_cap.minor_units`. Adapters should
+  supply the valuation directly without settlement rounding.
 - **Breaking** Fundamentals: `KeyStatistics::average_daily_volume_3m` now uses
   `Option<QuantityAmount>` to retain non-negative fractional averages, with
   documented trading-session and quantity-unit semantics. JSON uses canonical

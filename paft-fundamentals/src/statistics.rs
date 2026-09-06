@@ -11,7 +11,7 @@
 
 use chrono::{DateTime, NaiveDate, Utc};
 use paft_decimal::Decimal;
-use paft_money::{Money, Price, QuantityAmount};
+use paft_money::{MonetaryAmount, Price, QuantityAmount};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -28,8 +28,10 @@ pub struct KeyStatistics {
     pub as_of: Option<DateTime<Utc>>,
 
     // ---- Valuation ----
-    /// Market capitalisation (price × shares outstanding).
-    pub market_cap: Option<Money>,
+    /// Market capitalisation (price × shares outstanding), a currency-denominated
+    /// valuation retaining precision beyond the currency's settlement scale.
+    /// No settlement rounding or registered minor-unit metadata is required.
+    pub market_cap: Option<MonetaryAmount>,
     /// Shares outstanding.
     pub shares_outstanding: Option<u64>,
 
@@ -83,7 +85,7 @@ pub struct KeyStatistics {
 paft_utils::impl_checked_dataframe! {
     KeyStatistics {
         as_of: [Option<DateTime<Utc>>],
-        market_cap: [Option<Money>],
+        market_cap: [Option<MonetaryAmount>],
         shares_outstanding: [Option<u64>],
         eps_trailing_twelve_months: [Option<Price>],
         pe_trailing_twelve_months: [Option<Decimal>],
