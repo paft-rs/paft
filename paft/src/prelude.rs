@@ -62,15 +62,15 @@ pub use crate::fundamentals::statistics::KeyStatistics;
 pub use crate::market::{
     Action, AdjustmentAnchor, AdjustmentMethod, BookLevel, Candle, CandleUpdate,
     CorporateActionAdjustmentCause, CorporateActionAdjustmentCauses, DownloadEntry,
-    DownloadResponse, GenericBookLevel, GenericCandle, GenericCandleUpdate, GenericDownloadEntry,
-    GenericDownloadResponse, GenericHistoryResponse, GenericNewsArticle, GenericOptionChain,
-    GenericOptionContract, GenericOptionUpdate, GenericOrderBook, GenericQuote, GenericQuoteUpdate,
-    GenericSearchResponse, GenericSearchResult, HistoryFlags, HistoryMeta, HistoryRequest,
-    HistoryRequestBuilder, HistoryResponse, HistoryValidationError, Interval, NewsArticle,
-    NewsRequest, NewsTab, Ohlc, OhlcPriceBasis, OptionChain, OptionChainRequest, OptionContract,
-    OptionContractKey, OptionExpirationsRequest, OptionExpirationsResponse, OptionGreeks,
-    OptionSide, OptionUpdate, OrderBook, PriceBasis, Quote, QuoteUpdate, Range, SearchRequest,
-    SearchRequestBuilder, SearchResponse, SearchResult, TimeSpec,
+    DownloadResponse, FieldUpdate, GenericBookLevel, GenericCandle, GenericCandleUpdate,
+    GenericDownloadEntry, GenericDownloadResponse, GenericHistoryResponse, GenericNewsArticle,
+    GenericOptionChain, GenericOptionContract, GenericOptionUpdate, GenericOrderBook, GenericQuote,
+    GenericQuoteUpdate, GenericSearchResponse, GenericSearchResult, HistoryFlags, HistoryMeta,
+    HistoryRequest, HistoryRequestBuilder, HistoryResponse, HistoryValidationError, Interval,
+    NewsArticle, NewsRequest, NewsTab, Ohlc, OhlcPriceBasis, OptionChain, OptionChainRequest,
+    OptionContract, OptionContractKey, OptionExpirationsRequest, OptionExpirationsResponse,
+    OptionGreeks, OptionSide, OptionUpdate, OrderBook, PriceBasis, Quote, QuoteUpdate, Range,
+    SearchRequest, SearchRequestBuilder, SearchResponse, SearchResult, TimeSpec,
 };
 
 // Re-export aggregates snapshot types

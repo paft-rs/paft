@@ -1,10 +1,10 @@
 use chrono::{DateTime, NaiveDate};
-use paft_decimal::Decimal;
+use paft_decimal::{Decimal, NonNegativeDecimal};
 use paft_domain::{AssetKind, Instrument};
 use paft_market::market::OptionUpdate as MarketOptionUpdate;
 use paft_market::{
-    MarketError, OptionChainRequest, OptionContract, OptionContractKey, OptionExpirationsRequest,
-    OptionExpirationsResponse, OptionGreeks, OptionSide, OptionUpdate,
+    FieldUpdate, MarketError, OptionChainRequest, OptionContract, OptionContractKey,
+    OptionExpirationsRequest, OptionExpirationsResponse, OptionGreeks, OptionSide, OptionUpdate,
 };
 use paft_money::{Currency, IsoCurrency, Price, PriceAmount};
 use std::str::FromStr;
@@ -273,4 +273,129 @@ fn option_update_ts_serde_uses_unix_milliseconds() {
 
     let deserialized: OptionUpdate = serde_json::from_value(value).unwrap();
     assert_eq!(update, deserialized);
+}
+
+fn incremental_sequence() -> Vec<OptionUpdate> {
+    let base = serde_json::to_value(OptionUpdate::new(
+        option_key(),
+        usd_currency(),
+        DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
+    ))
+    .unwrap();
+    // Adversarial sequence modeled on Deribit's incremental ticker contract:
+    // https://docs.deribit.com/subscriptions/market-data/incremental_tickerinstrument_name
+    [
+        serde_json::json!({"bid": "12.50"}),
+        serde_json::json!({"ask": "13", "last_price": "12.75", "implied_volatility": "0.25"}),
+        serde_json::json!({"bid": null}),
+    ]
+    .into_iter()
+    .map(|fields| {
+        let mut wire = base.clone();
+        wire.as_object_mut()
+            .unwrap()
+            .extend(fields.as_object().unwrap().clone());
+        serde_json::from_value(wire).unwrap()
+    })
+    .collect()
+}
+
+#[test]
+fn incremental_option_updates_preserve_state_through_json() {
+    let sequence = incremental_sequence();
+    let mut bid = None;
+    for (update, expected) in sequence.iter().zip([
+        Some(PriceAmount::new(dec("12.5"))),
+        Some(PriceAmount::new(dec("12.5"))),
+        None,
+    ]) {
+        let wire = serde_json::to_value(update).unwrap();
+        let decoded: OptionUpdate = serde_json::from_value(wire).unwrap();
+        assert_eq!(&decoded, update);
+        decoded.bid.apply_to(&mut bid);
+        assert_eq!(bid, expected);
+    }
+    assert_eq!(serde_json::to_value(&sequence[0]).unwrap()["bid"], "12.5");
+    assert!(
+        serde_json::to_value(&sequence[1])
+            .unwrap()
+            .get("bid")
+            .is_none()
+    );
+    assert_eq!(
+        serde_json::to_value(&sequence[2]).unwrap().get("bid"),
+        Some(&serde_json::Value::Null)
+    );
+
+    let mut wire = serde_json::to_value(&sequence[1]).unwrap();
+    for field in ["bid", "ask", "last_price", "implied_volatility"] {
+        wire[field] = serde_json::Value::Null;
+    }
+    let cleared: OptionUpdate = serde_json::from_value(wire.clone()).unwrap();
+    assert_eq!(cleared.bid, FieldUpdate::Clear);
+    assert_eq!(cleared.ask, FieldUpdate::Clear);
+    assert_eq!(cleared.last_price, FieldUpdate::Clear);
+    assert_eq!(cleared.implied_volatility, FieldUpdate::Clear);
+    wire["implied_volatility"] = serde_json::json!("-0.1");
+    assert!(serde_json::from_value::<OptionUpdate>(wire).is_err());
+    assert_eq!(
+        sequence[1].implied_volatility,
+        FieldUpdate::Set(NonNegativeDecimal::new(dec("0.25")).unwrap())
+    );
+    assert!(serde_json::to_string(&FieldUpdate::<PriceAmount>::Unchanged).is_err());
+}
+
+#[cfg(feature = "dataframe")]
+#[test]
+fn incremental_option_dataframe_retains_operations_and_values() {
+    use paft_utils::dataframe::{Columnar, ToDataFrame};
+
+    let sequence = incremental_sequence();
+    let frame = OptionUpdate::columnar_to_dataframe(&sequence).unwrap();
+    assert_eq!(
+        frame.schema(),
+        OptionUpdate::empty_dataframe().unwrap().schema()
+    );
+    for field in ["bid", "ask", "last_price", "implied_volatility"] {
+        let operations = frame
+            .column(&format!("{field}.operation"))
+            .unwrap()
+            .str()
+            .unwrap();
+        let values = frame
+            .column(&format!("{field}.value"))
+            .unwrap()
+            .decimal()
+            .unwrap();
+        let expected = if field == "bid" {
+            ["SET", "UNCHANGED", "CLEAR"]
+        } else {
+            ["UNCHANGED", "SET", "UNCHANGED"]
+        };
+        for (row, operation) in expected.into_iter().enumerate() {
+            assert_eq!(operations.get(row), Some(operation));
+            assert_eq!(values.physical().get(row).is_some(), operation == "SET");
+            let single = sequence[row].to_dataframe().unwrap();
+            assert!(
+                frame
+                    .slice(i64::try_from(row).unwrap(), 1)
+                    .equals_missing(&single)
+            );
+        }
+    }
+    let operations = frame.column("bid.operation").unwrap().str().unwrap();
+    let values = frame.column("bid.value").unwrap().decimal().unwrap();
+    let mut bid = None;
+    for (row, expected) in [Some(125_000_000_000_i128), Some(125_000_000_000), None]
+        .into_iter()
+        .enumerate()
+    {
+        match operations.get(row).unwrap() {
+            "SET" => bid = values.physical().get(row),
+            "CLEAR" => bid = None,
+            "UNCHANGED" => {}
+            other => panic!("unknown operation: {other}"),
+        }
+        assert_eq!(bid, expected);
+    }
 }

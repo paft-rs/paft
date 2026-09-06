@@ -55,6 +55,7 @@ pub use error::MarketError;
 
 pub use market::{
     action::Action,
+    field_update::FieldUpdate,
     news::{GenericNewsArticle, NewsArticle},
     options::{
         GenericOptionChain, GenericOptionContract, GenericOptionUpdate, OptionChain,

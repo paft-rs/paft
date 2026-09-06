@@ -76,7 +76,7 @@ pub mod market {
     pub use paft_market::{
         Action, AdjustmentAnchor, AdjustmentMethod, BookLevel, Candle, CandleUpdate,
         CorporateActionAdjustmentCause, CorporateActionAdjustmentCauses, DownloadEntry,
-        DownloadResponse, GenericBookLevel, GenericCandle, GenericCandleUpdate,
+        DownloadResponse, FieldUpdate, GenericBookLevel, GenericCandle, GenericCandleUpdate,
         GenericDownloadEntry, GenericDownloadResponse, GenericHistoryResponse, GenericNewsArticle,
         GenericOptionChain, GenericOptionContract, GenericOptionUpdate, GenericOrderBook,
         GenericQuote, GenericQuoteUpdate, GenericSearchResponse, GenericSearchResult, HistoryFlags,

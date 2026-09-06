@@ -11,6 +11,7 @@ use paft_money::{Currency, Price, PriceAmount};
 use std::fmt;
 use std::str::FromStr;
 
+use super::field_update::FieldUpdate;
 use crate::error::MarketError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -284,7 +285,10 @@ pub type OptionChain = GenericOptionChain<(), ()>;
 ///
 /// This represents incremental changes to market data commonly used for options,
 /// such as bid/ask, last price, and implied volatility, keyed by the option
-/// contract key.
+/// contract key. Omitted fields leave state unchanged, values replace state,
+/// and explicit `null` clears state. Snapshots retain ordinary optional fields.
+/// `DataFrames` export `<field>.operation` and `<field>.value`; operations are
+/// `UNCHANGED`, `SET`, and `CLEAR`, with a non-null value only for `SET`.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`OptionUpdate`] alias for the
@@ -304,13 +308,17 @@ pub struct GenericOptionUpdate<M = ()> {
     /// Premium currency for `bid`, `ask`, and `last_price`.
     pub currency: Currency,
     /// Best bid amount for the contract, denominated in `currency`.
-    pub bid: Option<PriceAmount>,
+    #[serde(default, skip_serializing_if = "FieldUpdate::is_unchanged")]
+    pub bid: FieldUpdate<PriceAmount>,
     /// Best ask amount for the contract, denominated in `currency`.
-    pub ask: Option<PriceAmount>,
+    #[serde(default, skip_serializing_if = "FieldUpdate::is_unchanged")]
+    pub ask: FieldUpdate<PriceAmount>,
     /// Last traded price amount, denominated in `currency`.
-    pub last_price: Option<PriceAmount>,
-    /// Implied volatility estimate, if available.
-    pub implied_volatility: Option<NonNegativeDecimal>,
+    #[serde(default, skip_serializing_if = "FieldUpdate::is_unchanged")]
+    pub last_price: FieldUpdate<PriceAmount>,
+    /// Implied volatility change as a non-negative fraction (0.25 means 25%).
+    #[serde(default, skip_serializing_if = "FieldUpdate::is_unchanged")]
+    pub implied_volatility: FieldUpdate<NonNegativeDecimal>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
@@ -324,11 +332,10 @@ paft_utils::impl_checked_dataframe! {
         ts: [DateTime<Utc>],
         #[df_derive(as_str)]
         currency: [Currency],
-        bid: [Option<PriceAmount>],
-        ask: [Option<PriceAmount>],
-        last_price: [Option<PriceAmount>],
-        #[df_derive(decimal(precision = 38, scale = 10))]
-        implied_volatility: [Option<NonNegativeDecimal>],
+        bid: [FieldUpdate<PriceAmount>],
+        ask: [FieldUpdate<PriceAmount>],
+        last_price: [FieldUpdate<PriceAmount>],
+        implied_volatility: [FieldUpdate<NonNegativeDecimal>],
         provider: [M],
     }
     validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.ts).is_some()
@@ -336,18 +343,18 @@ paft_utils::impl_checked_dataframe! {
 
 impl<M: Default> GenericOptionUpdate<M> {
     /// Build an option update from its contract identity and timestamp; all
-    /// quoting fields default to `None` and `provider` is initialised via
-    /// `M::default()`.
+    /// quoting fields default to `FieldUpdate::Unchanged` and `provider` is
+    /// initialised via `M::default()`.
     #[must_use]
     pub fn new(key: OptionContractKey, currency: Currency, ts: DateTime<Utc>) -> Self {
         Self {
             key,
             ts,
             currency,
-            bid: None,
-            ask: None,
-            last_price: None,
-            implied_volatility: None,
+            bid: FieldUpdate::Unchanged,
+            ask: FieldUpdate::Unchanged,
+            last_price: FieldUpdate::Unchanged,
+            implied_volatility: FieldUpdate::Unchanged,
             provider: M::default(),
         }
     }

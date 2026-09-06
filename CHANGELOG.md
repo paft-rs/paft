@@ -62,6 +62,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Market: incremental option `bid`, `ask`, `last_price`, and
+  `implied_volatility` now use `FieldUpdate::{Unchanged, Set, Clear}`. JSON
+  omission leaves state unchanged, a value replaces it, and `null` clears it.
+  Constructors default to `Unchanged`; snapshots still use `Option<T>`.
+  DataFrames preserve intent in `<field>.operation` and `<field>.value` columns.
+  `FieldUpdate` is also available through the market facade and prelude.
+
 - **Breaking** Fundamentals: `KeyStatistics::market_cap` now uses
   `Option<MonetaryAmount>` for valuations beyond settlement precision, including
   currencies without registered settlement metadata. JSON exports only `amount`
