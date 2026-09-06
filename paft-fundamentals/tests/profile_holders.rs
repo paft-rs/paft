@@ -132,7 +132,7 @@ fn insider_transaction_serde_with_enums_and_calendar_date() {
         insider: "John Doe".to_string(),
         position: paft_fundamentals::holders::InsiderPosition::Officer,
         transaction_type: paft_fundamentals::holders::TransactionType::Buy,
-        shares: Some(1000),
+        shares: Some(paft_money::QuantityAmount::from_decimal(Decimal::from(1000)).unwrap()),
         value: Some(
             Money::new(
                 Decimal::from_str("123.45").unwrap(),
@@ -157,7 +157,7 @@ fn insider_transaction_url_can_be_missing() {
         "insider": "John Doe",
         "position": "Officer",
         "transaction_type": "Buy",
-        "shares": 1000,
+        "shares": "1000",
         "value": null,
         "transaction_date": "2022-01-01"
     }"#;

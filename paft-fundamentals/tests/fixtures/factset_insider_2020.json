@@ -1,0 +1,14 @@
+{
+  "source": "https://investor.factset.com/static-files/24302357-06ef-4d53-b148-6b4c237cd3b3",
+  "filing_date": "2020-03-03",
+  "filing_date_index": "https://fintel.io/sn/us/fds",
+  "transaction_date": "2020-02-28",
+  "reporting_person": "Viens Daniel",
+  "position": "SVP, CHRO",
+  "transaction_code": "J",
+  "acquired_or_disposed": "A",
+  "shares_acquired": "38.8938",
+  "shares_owned_afterward": "2,048.8938",
+  "ownership_form": "D",
+  "mapping_note": "Reduced Form 4 transcription. The footnote identifies an employee stock purchase plan acquisition allowing fractional shares. Filing date is independently listed in the filing index; it differs from the transaction date."
+}

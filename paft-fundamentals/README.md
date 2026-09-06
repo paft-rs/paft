@@ -127,6 +127,25 @@ use `Money` for the actual transaction total at its settlement scale. Choose
 settlement money because of the concept's scale requirement, rather than just
 because a value has a currency.
 
+Insider share quantities (v0.10 migration)
+-----------------------------------------
+
+Insider transaction and directly owned quantities, plus activity `buy_shares`,
+`sell_shares`, and `total_insider_shares`, use nonnegative `QuantityAmount` in
+units of shares. Fractional shares are retained. `net_shares` uses signed
+`Decimal` with canonical serde: positive means reported net acquisitions and
+negative means reported net dispositions over the period. It is not an ownership
+balance reconciliation and is not recomputed from sibling fields.
+
+These JSON fields change from integer numbers to canonical decimal strings.
+For known legacy payloads, read unsigned share values as `u64` and signed net
+values as `i64`, then use `Decimal::from(integer)` directly; construct nonnegative
+quantities with `QuantityAmount::from_decimal`. Never pass legacy integers
+through `f64`. Transaction counts remain JSON integers. DataFrame quantities use
+`<field>.amount` decimal columns; signed `net_shares` is a decimal column directly.
+Zero remains distinct from missing. Institutional share fields are outside this
+migration; this is not a claim that institutional ownership is always integral.
+
 Statement measurement windows
 -----------------------------
 

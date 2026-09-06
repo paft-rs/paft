@@ -67,6 +67,16 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Fundamentals: insider transaction/direct ownership shares and
+  activity buy/sell/total insider shares now use fractional `QuantityAmount` in
+  shares. Reported signed `net_shares` uses canonical-serde `Decimal`, without
+  reconciling activity or ownership balances. These JSON fields change from
+  integer numbers to canonical decimal strings; migrate known legacy `u64`/`i64`
+  values directly with `Decimal::from`, never through floating point. DataFrame
+  quantity columns become `<field>.amount`; `net_shares` is a signed decimal
+  column. Transaction counts and institutional share fields retain their types.
+  An attributed Form 4 fixture preserves fractional acquisitions and ownership.
+
 - Market time contract: candle `ts` identifies the inclusive start of the actual
   aggregation window, including forming bars. Calendar/session alignment must
   preserve source windows. Action dates are ex-dividend/ex-distribution dates or

@@ -468,7 +468,7 @@ fn insider_transaction_to_dataframe() {
         insider: "Jane Doe".to_string(),
         position: InsiderPosition::Director,
         transaction_type: TransactionType::Buy,
-        shares: Some(1_500),
+        shares: Some(shares("1500")),
         value: Some(usd(200)),
         transaction_date: date(2022, 4, 15),
         url: Some("https://example.com/filing".to_string()),
@@ -485,7 +485,7 @@ fn insider_roster_holder_to_dataframe() {
         position: InsiderPosition::Officer,
         most_recent_transaction: TransactionType::Sell,
         latest_transaction_date: date(2022, 8, 8),
-        shares_owned_directly: Some(5_000),
+        shares_owned_directly: Some(shares("5000")),
         position_direct_date: date(2022, 7, 27),
     };
 
@@ -497,13 +497,13 @@ fn insider_roster_holder_to_dataframe() {
 fn net_share_purchase_activity_to_dataframe() {
     let activity = NetSharePurchaseActivity {
         period: ReportingPeriod::quarterly(2023, 4).unwrap(),
-        buy_shares: Some(2_000),
+        buy_shares: Some(shares("2000")),
         buy_count: Some(10),
-        sell_shares: Some(1_500),
+        sell_shares: Some(shares("1500")),
         sell_count: Some(8),
-        net_shares: Some(500),
+        net_shares: Some(dec("500")),
         net_count: Some(2),
-        total_insider_shares: Some(20_000),
+        total_insider_shares: Some(shares("20000")),
         net_percent_insider_shares: Some(dec("0.025")),
     };
 

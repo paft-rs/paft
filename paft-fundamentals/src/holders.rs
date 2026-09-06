@@ -8,7 +8,7 @@ use chrono::NaiveDate;
 use df_derive_macros::ToDataFrame;
 use paft_decimal::{Decimal, Ratio};
 use paft_domain::ReportingPeriod;
-use paft_money::{MonetaryAmount, Money};
+use paft_money::{MonetaryAmount, Money, QuantityAmount};
 
 use crate::FundamentalsError;
 
@@ -252,8 +252,8 @@ pub struct InsiderTransaction {
     /// The type of transaction with canonical variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub transaction_type: TransactionType,
-    /// The number of shares involved in the transaction.
-    pub shares: Option<u64>,
+    /// Reported nonnegative transaction quantity, measured in shares (including fractions).
+    pub shares: Option<QuantityAmount>,
     /// The total transaction value at its settlement scale.
     pub value: Option<Money>,
     /// The transaction calendar date.
@@ -276,8 +276,8 @@ pub struct InsiderRosterHolder {
     pub most_recent_transaction: TransactionType,
     /// The calendar date of the latest transaction.
     pub latest_transaction_date: NaiveDate,
-    /// The number of shares owned directly by the insider.
-    pub shares_owned_directly: Option<u64>,
+    /// Reported direct ownership quantity, measured in shares (including fractions).
+    pub shares_owned_directly: Option<QuantityAmount>,
     /// The calendar date of the direct ownership filing.
     pub position_direct_date: NaiveDate,
 }
@@ -289,20 +289,25 @@ pub struct NetSharePurchaseActivity {
     /// The period the summary covers (e.g., `ReportingPeriod::quarterly(2023, 4)?`).
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub period: ReportingPeriod,
-    /// The total number of shares purchased by insiders.
-    pub buy_shares: Option<u64>,
+    /// Reported nonnegative acquisition quantity over the period, measured in shares.
+    pub buy_shares: Option<QuantityAmount>,
     /// The number of separate buy transactions.
     pub buy_count: Option<u64>,
-    /// The total number of shares sold by insiders.
-    pub sell_shares: Option<u64>,
+    /// Reported nonnegative disposition quantity over the period, measured in shares.
+    pub sell_shares: Option<QuantityAmount>,
     /// The number of separate sell transactions.
     pub sell_count: Option<u64>,
-    /// The net number of shares purchased or sold.
-    pub net_shares: Option<i64>,
+    /// Reported net acquisition/disposition quantity over the period, measured in shares.
+    /// Positive values represent net acquisitions; negative values represent net dispositions.
+    /// This is not necessarily the change between opening and closing ownership balances.
+    /// The reported value is retained without reconciliation against sibling fields.
+    #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
+    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
+    pub net_shares: Option<Decimal>,
     /// The net number of transactions.
     pub net_count: Option<i64>,
-    /// The total number of shares held by all insiders.
-    pub total_insider_shares: Option<u64>,
+    /// Reported total insider ownership quantity, measured in shares (including fractions).
+    pub total_insider_shares: Option<QuantityAmount>,
     /// The net shares purchased/sold as a percentage of total insider shares.
     #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub net_percent_insider_shares: Option<Decimal>,
