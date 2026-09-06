@@ -75,6 +75,41 @@ fn test_currency_full_name() {
 }
 
 #[test]
+fn sign_like_symbols_are_rejected_without_changing_metadata() {
+    let code = "REVIEWNEG";
+    for symbol in [
+        "-", "+", "--", "++", "-TOK", "+TOK", " -", "\t+2", "\u{a0}-",
+    ] {
+        for symbol_first in [true, false] {
+            assert_eq!(
+                set_currency_metadata(code, code, 2, symbol, symbol_first, Locale::EnUs),
+                Err(MinorUnitError::InvalidCurrencySymbol {
+                    symbol: symbol.to_owned()
+                })
+            );
+            assert!(currency_metadata(code).is_none());
+            call_set_metadata(code, "Original", 2).unwrap();
+            let original = currency_metadata(code);
+            assert_eq!(
+                override_currency_metadata(
+                    code,
+                    "Replacement",
+                    0,
+                    symbol,
+                    symbol_first,
+                    Locale::EnUs
+                ),
+                Err(MinorUnitError::InvalidCurrencySymbol {
+                    symbol: symbol.to_owned()
+                })
+            );
+            assert_eq!(currency_metadata(code), original);
+            clear_currency_metadata(code);
+        }
+    }
+}
+
+#[test]
 fn test_builtin_currency_metadata() {
     let link = Currency::try_from_str("link").unwrap();
     assert_eq!(link.decimal_places().unwrap(), 18);

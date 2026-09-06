@@ -42,7 +42,10 @@ pub struct CurrencyMetadata {
     /// integer unit conversion. This is not a preferred display precision or
     /// a venue's quantity increment.
     pub minor_units: u8,
-    /// Symbol used when rendering the currency.
+    /// Symbol used when rendering the currency. Registration rejects symbols
+    /// beginning with `+` or `-` after whitespace, which would be parsed as the
+    /// amount's sign. This applies to both prefix and suffix placement because
+    /// callers can override placement when formatting.
     pub symbol: Cow<'static, str>,
     /// Whether the symbol is rendered before (`true`) or after (`false`) the amount.
     pub symbol_first: bool,
@@ -50,7 +53,7 @@ pub struct CurrencyMetadata {
     pub default_locale: crate::locale::Locale,
 }
 
-/// Errors that can occur when configuring minor-unit overrides.
+/// Errors that can occur when configuring currency metadata.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum MinorUnitError {
@@ -58,6 +61,11 @@ pub enum MinorUnitError {
     InvalidCurrencyCode {
         /// The offending input value.
         code: String,
+    },
+    /// The symbol conflicts with the localized amount's leading sign grammar.
+    InvalidCurrencySymbol {
+        /// The offending symbol, before trimming whitespace.
+        symbol: String,
     },
     /// The requested precision exceeds PAFT's supported decimal scale.
     ExceedsDecimalPrecision {
@@ -85,6 +93,12 @@ impl fmt::Display for MinorUnitError {
         match self {
             Self::InvalidCurrencyCode { code } => {
                 write!(f, "invalid currency code: '{code}'")
+            }
+            Self::InvalidCurrencySymbol { symbol } => {
+                write!(
+                    f,
+                    "currency symbol must not begin with '+' or '-': '{symbol}'"
+                )
             }
             Self::ExceedsDecimalPrecision { decimals } => write!(
                 f,
@@ -278,6 +292,10 @@ fn insert_currency_metadata(
         })?;
     validate_minor_units(minor_units)?;
 
+    let symbol = symbol.into();
+    if symbol.trim_start().starts_with(['+', '-']) {
+        return Err(MinorUnitError::InvalidCurrencySymbol { symbol });
+    }
     let metadata = make_metadata(full_name, minor_units, symbol, symbol_first, default_locale);
     let mut custom = write_custom_metadata();
 
@@ -320,8 +338,8 @@ fn insert_currency_metadata(
 /// # Errors
 /// Returns a `MinorUnitError` when the currency code cannot be parsed as a
 /// currency token with valid boundaries, when the requested precision exceeds
-/// supported limits, or when `minor_units` attempts to change a registered
-/// scale.
+/// supported limits, when the symbol begins with `+` or `-` after whitespace,
+/// or when `minor_units` attempts to change a registered scale.
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(full_name, symbol), err)
@@ -358,7 +376,8 @@ pub fn set_currency_metadata(
 /// # Errors
 /// Returns a `MinorUnitError` when the currency code cannot be parsed as a
 /// currency token with valid boundaries, when the requested precision exceeds
-/// supported limits, or when `minor_units` conflicts with an ISO-defined scale.
+/// supported limits, when the symbol begins with `+` or `-` after whitespace,
+/// or when `minor_units` conflicts with an ISO-defined scale.
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(full_name, symbol), err)

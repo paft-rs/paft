@@ -10,11 +10,21 @@ fn register(code: &str, symbol: &str, locale: Locale, symbol_first: bool) -> Cur
 }
 
 #[test]
-fn digit_bearing_symbols_round_trip_before_and_after_the_amount() {
-    for (symbol_index, symbol) in ["TOK2", "2TOK", "TO2K", "🪙2", "2", "1.23"]
-        .into_iter()
-        .enumerate()
-    {
+fn accepted_symbols_round_trip_before_and_after_the_amount() {
+    let mut symbols: Vec<String> = ["TOK2", "2TOK", "TO2K", "🪙2", "2", "1.23"]
+        .map(str::to_owned)
+        .into();
+    // Exercise the relationship across numeric, Unicode, whitespace, separator,
+    // and embedded-sign affixes. Only a leading ASCII sign is unsupported.
+    for prefix in ["", "$", "A", "2", "−", ".", ",", " "] {
+        for suffix in ["", "Z", "2", "🪙", "-", "+", ".", ",", " ", "\u{a0}"] {
+            let symbol = format!("{prefix}{suffix}");
+            if !symbol.trim_start().starts_with(['+', '-']) {
+                symbols.push(symbol);
+            }
+        }
+    }
+    for (symbol_index, symbol) in symbols.iter().enumerate() {
         for (locale_index, locale) in [Locale::EnUs, Locale::EnEu, Locale::EnIn, Locale::EnBy]
             .into_iter()
             .enumerate()
@@ -22,7 +32,9 @@ fn digit_bearing_symbols_round_trip_before_and_after_the_amount() {
             for symbol_first in [true, false] {
                 let code = format!("AFFIX_ROUNDTRIP_{symbol_index}_{locale_index}_{symbol_first}");
                 let currency = register(&code, symbol, locale, symbol_first);
-                for amount in ["0", "1.23", "123", "1234.56", "-1.23", "-1234.56"] {
+                for amount in [
+                    "0", "0.01", "1.23", "123", "1234.56", "-0.01", "-1.23", "-1234.56",
+                ] {
                     let money = Money::from_canonical_str(amount, currency.clone()).unwrap();
                     for rendered in [
                         money.to_localized_string().unwrap(),

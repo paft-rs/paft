@@ -62,6 +62,11 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Money: currency metadata registration and explicit overrides
+  reject symbols beginning with ASCII `+` or `-` after whitespace, in either
+  placement. `MinorUnitError::InvalidCurrencySymbol` prevents formatted positive
+  amounts being parsed as negative. Generated round-trip coverage includes
+  accepted numeric, Unicode, whitespace, and embedded-sign symbols in all locales.
 - CI: independently published crates now run their three configurations and
   doctests on separate runners, discovered from Cargo metadata. Separate cache
   keys and disabled CI debug/incremental artifacts bound the per-runner build
