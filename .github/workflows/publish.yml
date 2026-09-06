@@ -37,14 +37,20 @@ jobs:
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
 
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+
       - name: Install just
         uses: taiki-e/install-action@just
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run tests
+      - name: Run tests and doctests
         run: just test
+
+      - name: Test independently published crate configurations
+        run: just test-crate-configs
 
       - name: Run lints
         run: just lint

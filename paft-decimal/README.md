@@ -131,3 +131,17 @@ Links
 - API docs: https://docs.rs/paft-decimal
 - Workspace overview: https://github.com/paft-rs/paft/blob/main/README.md
 - License: [LICENSE](../LICENSE)
+
+Exact arithmetic verification
+-----------------------------
+
+`cargo test -p paft-decimal --test rational_oracle` exercises the Rust addition,
+subtraction, multiplication, and division helpers against 1,635 cases generated
+independently with Python's arbitrary-precision `fractions.Fraction`. Every
+operation includes both exact successes and representability failures, covering
+signed boundaries, cancellation, coefficient reduction, underflow, and division.
+No oracle arithmetic or arbitrary-precision dependency enters the library.
+
+The committed fixture keeps Cargo tests self-contained. Regenerate it with
+`python3 paft-decimal/tests/oracle/generate.py` from the workspace root, or use
+`--check` to verify it without writing. Normal Cargo tests require no Python.

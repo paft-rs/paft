@@ -174,6 +174,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- Verification: `just test` and exhaustive tests now run doctests separately
+  from nextest, including CI and publication gates. CI/publication also test
+  each published crate independently with no-default, default, and all features.
+  Targeted test/lint powersets select `-p <crate>` directly, eliminating stale
+  workspace exclusions. A Rust harness checks all four exact decimal operations
+  against committed Python `Fraction` oracle cases, with both representable
+  successes and rejections; Python is only needed to regenerate fixtures.
 - Money: settlement conversions capture currency metadata once, preserving the
   requested rounding strategy and captured scale across concurrent overrides.
   A synchronized regression test exercises the override between resolution and

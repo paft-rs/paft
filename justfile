@@ -1,4 +1,3 @@
-crates := 'paft paft-core paft-utils paft-domain paft-aggregates paft-market paft-fundamentals paft-money'
 test_default_excludes := 'paft paft-core'
 lint_default_excludes := 'paft'
 clippy_flags := '-W clippy::all -W clippy::cargo -W clippy::pedantic -W clippy::nursery -A clippy::multiple-crate-versions -D warnings'
@@ -7,6 +6,7 @@ clippy_flags := '-W clippy::all -W clippy::cargo -W clippy::pedantic -W clippy::
 test crate='':
   @echo "Running fast test suite..."
   cargo nextest run --locked {{ if crate != "" { "-p " + crate } else { "--workspace" } }} --all-features --all-targets
+  cargo test --locked {{ if crate != "" { "-p " + crate } else { "--workspace" } }} --all-features --doc
 
 # Fast lint - mirrors the fast test strategy
 lint:
@@ -20,6 +20,13 @@ check-decimal-contract:
   cargo test --locked -p paft --test decimal_contract
   cargo test --locked -p paft --test decimal_contract --all-features
 
+# Test each independently published crate without workspace feature unification.
+# Cargo test also runs that package's doctests in each supported configuration.
+test-crate-configs crate='':
+  cargo hack test --locked {{ if crate != "" { "-p " + crate } else { "--workspace --ignore-private" } }} --no-default-features
+  cargo hack test --locked {{ if crate != "" { "-p " + crate } else { "--workspace --ignore-private" } }}
+  cargo hack test --locked {{ if crate != "" { "-p " + crate } else { "--workspace --ignore-private" } }} --all-features
+
 # Exhaustive testing strategy
 test-full:
   @echo "Running exhaustive test suite..."
@@ -27,6 +34,7 @@ test-full:
   @just test-paft-critical
   @echo "Step 2/2: Testing all workspace crates..."
   @just test-powerset
+  cargo test --locked --workspace --all-features --doc
 
 # Exhaustive linting strategy  
 lint-full:
@@ -38,53 +46,53 @@ lint-full:
 
 # === Internal recipes ===
 
-# Test all workspace crates except paft with feature powerset (84 permutations)
+# Test workspace crates with feature powerset, or exactly one selected package
 test-powerset crate='':
   #!/usr/bin/env bash
-  EXCLUDES=''
+  set -euo pipefail
+  PACKAGE_FLAGS=()
   if [[ -n '{{crate}}' ]]; then
-    for c in {{crates}}; do
-      if [[ "$c" != '{{crate}}' ]]; then EXCLUDES="$EXCLUDES $c"; fi
-    done
+    PACKAGE_FLAGS=(-p '{{crate}}')
   else
-    EXCLUDES='{{test_default_excludes}}'
+    PACKAGE_FLAGS=(--workspace)
+    for excluded in {{test_default_excludes}}; do
+      PACKAGE_FLAGS+=(--exclude "$excluded")
+    done
   fi
-  EXCLUDE_FLAGS=()
-  for e in $EXCLUDES; do EXCLUDE_FLAGS+=("--exclude" "$e"); done
-  cargo hack nextest run --workspace "${EXCLUDE_FLAGS[@]}" \
+  cargo hack nextest run --locked "${PACKAGE_FLAGS[@]}" \
     --all-targets \
     --feature-powerset \
     --no-tests pass
 
 # Test paft facade with critical feature combinations
 test-paft-critical:
-  cargo nextest run -p paft --all-targets --no-default-features --no-tests pass
-  cargo nextest run -p paft --all-targets
-  cargo nextest run -p paft --all-targets --all-features
+  cargo nextest run --locked -p paft --all-targets --no-default-features --no-tests pass
+  cargo nextest run --locked -p paft --all-targets
+  cargo nextest run --locked -p paft --all-targets --all-features
 
 # Lint all workspace crates except paft with feature powerset
 lint-powerset crate='':
   #!/usr/bin/env bash
-  EXCLUDES=''
+  set -euo pipefail
+  PACKAGE_FLAGS=()
   if [[ -n '{{crate}}' ]]; then
-    for c in {{crates}}; do
-      if [[ "$c" != '{{crate}}' ]]; then EXCLUDES="$EXCLUDES $c"; fi
-    done
+    PACKAGE_FLAGS=(-p '{{crate}}')
   else
-    EXCLUDES='{{lint_default_excludes}}'
+    PACKAGE_FLAGS=(--workspace)
+    for excluded in {{lint_default_excludes}}; do
+      PACKAGE_FLAGS+=(--exclude "$excluded")
+    done
   fi
-  EXCLUDE_FLAGS=()
-  for e in $EXCLUDES; do EXCLUDE_FLAGS+=("--exclude" "$e"); done
-  cargo hack clippy --workspace "${EXCLUDE_FLAGS[@]}" \
+  cargo hack clippy --locked "${PACKAGE_FLAGS[@]}" \
     --all-targets \
     --feature-powerset \
     -- {{ clippy_flags }}
 
 # Lint paft facade with critical feature combinations
 lint-paft-critical:
-  cargo clippy -p paft --all-targets --no-default-features -- {{ clippy_flags }}
-  cargo clippy -p paft --all-targets --all-features -- {{ clippy_flags }}
-  cargo clippy -p paft --all-targets -- {{ clippy_flags }}
+  cargo clippy --locked -p paft --all-targets --no-default-features -- {{ clippy_flags }}
+  cargo clippy --locked -p paft --all-targets --all-features -- {{ clippy_flags }}
+  cargo clippy --locked -p paft --all-targets -- {{ clippy_flags }}
   
 # Run benchmarks
 bench crate='':

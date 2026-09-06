@@ -247,3 +247,15 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md) and
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
+
+## Verification
+
+`just test` runs all workspace targets with all features through nextest, then
+runs doctests separately. `just test-crate-configs` uses cargo-hack to test each
+published crate independently with no-default, default, and all features,
+including doctests in each configuration. Both run in CI and the publication
+gate. `just lint` checks all workspace targets with all features.
+
+`just test-powerset <crate>` and `just lint-powerset <crate>` select exactly that
+package. Omit the argument to use the documented workspace exclusions. Install
+`cargo-nextest`, `cargo-hack`, and `just` to run these recipes locally.
