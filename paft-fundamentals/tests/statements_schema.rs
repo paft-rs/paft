@@ -45,6 +45,8 @@ fn assert_schema(df: &DataFrame, expected: &[(&str, DataType)]) {
 
 const INCOME_STATEMENT_SCHEMA: &[(&str, DataType)] = &[
     ("period", DataType::String),
+    ("window.start", DataType::Date),
+    ("window.end", DataType::Date),
     ("total_revenue.amount", DataType::Decimal(38, 10)),
     ("total_revenue.currency", DataType::String),
     ("total_revenue.minor_units", DataType::UInt8),
@@ -133,6 +135,7 @@ const INCOME_STATEMENT_SCHEMA: &[(&str, DataType)] = &[
 
 const BALANCE_SHEET_SCHEMA: &[(&str, DataType)] = &[
     ("period", DataType::String),
+    ("as_of.date", DataType::Date),
     ("total_assets.amount", DataType::Decimal(38, 10)),
     ("total_assets.currency", DataType::String),
     ("total_assets.minor_units", DataType::UInt8),
@@ -222,6 +225,8 @@ const BALANCE_SHEET_SCHEMA: &[(&str, DataType)] = &[
 
 const CASHFLOW_SCHEMA: &[(&str, DataType)] = &[
     ("period", DataType::String),
+    ("window.start", DataType::Date),
+    ("window.end", DataType::Date),
     ("operating_cashflow.amount", DataType::Decimal(38, 10)),
     ("operating_cashflow.currency", DataType::String),
     ("operating_cashflow.minor_units", DataType::UInt8),
@@ -279,6 +284,11 @@ const CASHFLOW_SCHEMA: &[(&str, DataType)] = &[
 fn income_statement_row_dataframe_schema_is_exact() {
     let row = IncomeStatementRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        window: paft_fundamentals::StatementDuration::new(
+            "2024-01-01".parse().unwrap(),
+            "2024-12-31".parse().unwrap(),
+        )
+        .unwrap(),
         total_revenue: Some(usd(10_000)),
         cost_of_revenue: Some(usd(4_000)),
         gross_profit: Some(usd(6_000)),
@@ -313,6 +323,7 @@ fn income_statement_row_dataframe_schema_is_exact() {
 fn balance_sheet_row_dataframe_schema_is_exact() {
     let row = BalanceSheetRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        as_of: paft_fundamentals::StatementInstant::new("2024-12-31".parse().unwrap()),
         total_assets: Some(usd(5_000)),
         total_liabilities: Some(usd(2_000)),
         total_equity: Some(usd(3_000)),
@@ -349,6 +360,11 @@ fn balance_sheet_row_dataframe_schema_is_exact() {
 fn cashflow_row_dataframe_schema_is_exact() {
     let row = CashflowRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        window: paft_fundamentals::StatementDuration::new(
+            "2024-01-01".parse().unwrap(),
+            "2024-12-31".parse().unwrap(),
+        )
+        .unwrap(),
         operating_cashflow: Some(usd(1_200)),
         capital_expenditures: Some(usd(-300)),
         free_cash_flow: Some(usd(900)),
@@ -376,6 +392,11 @@ fn cashflow_row_dataframe_schema_is_exact() {
 fn all_none_rows_produce_the_same_schema() {
     let income = IncomeStatementRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        window: paft_fundamentals::StatementDuration::new(
+            "2024-01-01".parse().unwrap(),
+            "2024-12-31".parse().unwrap(),
+        )
+        .unwrap(),
         total_revenue: None,
         cost_of_revenue: None,
         gross_profit: None,
@@ -402,6 +423,7 @@ fn all_none_rows_produce_the_same_schema() {
 
     let balance = BalanceSheetRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        as_of: paft_fundamentals::StatementInstant::new("2024-12-31".parse().unwrap()),
         total_assets: None,
         total_liabilities: None,
         total_equity: None,
@@ -432,6 +454,11 @@ fn all_none_rows_produce_the_same_schema() {
 
     let cashflow = CashflowRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        window: paft_fundamentals::StatementDuration::new(
+            "2024-01-01".parse().unwrap(),
+            "2024-12-31".parse().unwrap(),
+        )
+        .unwrap(),
         operating_cashflow: None,
         capital_expenditures: None,
         free_cash_flow: None,
@@ -482,7 +509,10 @@ fn income_tax_provisions_and_expense_reversals_preserve_dataframe_values() {
         // Export the reported subtotal even when it does not reconcile.
         (Some(-20), 117),
     ] {
-        let mut income: IncomeStatementRow = serde_json::from_str(r#"{"period":"2024"}"#).unwrap();
+        let mut income: IncomeStatementRow = serde_json::from_str(
+            r#"{"period":"2024","window":{"start":"2024-01-01","end":"2024-12-31"}}"#,
+        )
+        .unwrap();
         income.pretax_income = Some(usd(100));
         income.income_tax_expense = tax.map(usd);
         income.operating_expenses = Some(usd(-5));
@@ -533,11 +563,15 @@ fn continuing_income_and_current_debt_preserve_values_and_nulls() {
     ] {
         let money =
             |amount| Money::from_canonical_str(amount, Currency::Iso(IsoCurrency::USD)).unwrap();
-        let mut income: IncomeStatementRow = serde_json::from_str(r#"{"period":"2024"}"#).unwrap();
+        let mut income: IncomeStatementRow = serde_json::from_str(
+            r#"{"period":"2024","window":{"start":"2024-01-01","end":"2024-12-31"}}"#,
+        )
+        .unwrap();
         income.net_income_from_continuing_operations = continuing_income.map(money);
         income_rows.push(income);
 
-        let mut balance: BalanceSheetRow = serde_json::from_str(r#"{"period":"2025"}"#).unwrap();
+        let mut balance: BalanceSheetRow =
+            serde_json::from_str(r#"{"period":"2025","as_of":{"date":"2025-12-31"}}"#).unwrap();
         balance.current_debt = current_debt.map(money);
         balance_rows.push(balance);
     }

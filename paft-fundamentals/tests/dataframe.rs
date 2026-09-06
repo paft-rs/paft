@@ -291,6 +291,11 @@ fn earnings_trend_row_to_dataframe() {
 fn statements_row_to_dataframe() {
     let row = IncomeStatementRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        window: paft_fundamentals::StatementDuration::new(
+            "2024-01-01".parse().unwrap(),
+            "2024-12-31".parse().unwrap(),
+        )
+        .unwrap(),
         total_revenue: None,
         cost_of_revenue: None,
         gross_profit: None,
@@ -321,6 +326,7 @@ fn statements_row_to_dataframe() {
 fn balance_sheet_row_to_dataframe() {
     let row = BalanceSheetRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        as_of: paft_fundamentals::StatementInstant::new("2024-12-31".parse().unwrap()),
         total_assets: Some(usd(5_000)),
         total_liabilities: Some(usd(3_000)),
         total_equity: Some(usd(2_000)),
@@ -356,6 +362,11 @@ fn balance_sheet_row_to_dataframe() {
 fn cashflow_row_to_dataframe() {
     let row = CashflowRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        window: paft_fundamentals::StatementDuration::new(
+            "2024-01-01".parse().unwrap(),
+            "2024-12-31".parse().unwrap(),
+        )
+        .unwrap(),
         operating_cashflow: Some(usd(1_200)),
         capital_expenditures: Some(usd(-300)),
         free_cash_flow: Some(usd(900)),

@@ -47,6 +47,7 @@ pub mod error;
 pub mod esg;
 pub mod holders;
 pub mod profile;
+mod statement_context;
 pub mod statements;
 pub mod statistics;
 
@@ -66,5 +67,7 @@ pub use holders::{
 pub use profile::{
     Address, CompanyProfile, FundKind, FundProfile, OtherFundKind, Profile, ShareCount,
 };
-pub use statements::{BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow};
+pub use statements::{
+    BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow, StatementDuration, StatementInstant,
+};
 pub use statistics::KeyStatistics;

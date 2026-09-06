@@ -34,6 +34,11 @@ fn shares(amount: &str) -> QuantityAmount {
 fn income_row() -> IncomeStatementRow {
     IncomeStatementRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        window: paft_fundamentals::StatementDuration::new(
+            "2024-01-01".parse().unwrap(),
+            "2024-12-31".parse().unwrap(),
+        )
+        .unwrap(),
         total_revenue: Some(usd("10000")),
         cost_of_revenue: Some(usd("4000")),
         gross_profit: Some(usd("6000")),
@@ -63,6 +68,11 @@ fn income_row() -> IncomeStatementRow {
 fn cashflow_row() -> CashflowRow {
     CashflowRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        window: paft_fundamentals::StatementDuration::new(
+            "2024-01-01".parse().unwrap(),
+            "2024-12-31".parse().unwrap(),
+        )
+        .unwrap(),
         operating_cashflow: Some(usd("1200")),
         capital_expenditures: Some(usd("-300")),
         free_cash_flow: Some(usd("900")),
@@ -83,6 +93,7 @@ fn cashflow_row() -> CashflowRow {
 fn balance_sheet_row() -> BalanceSheetRow {
     BalanceSheetRow {
         period: ReportingPeriod::annual(2024).unwrap(),
+        as_of: paft_fundamentals::StatementInstant::new("2024-12-31".parse().unwrap()),
         total_assets: Some(usd("5000")),
         total_liabilities: Some(usd("2000")),
         total_equity: Some(usd("3000")),
@@ -115,10 +126,11 @@ fn balance_sheet_row() -> BalanceSheetRow {
 /// under the exact name declared on the struct, and no others. JSON object key
 /// order is not significant, so the key sets are compared sorted.
 #[test]
-fn statement_rows_serialize_every_field_under_its_declared_name() {
+fn income_statement_serializes_every_declared_field() {
     let income: Value = from_str(&to_string(&income_row()).unwrap()).unwrap();
     let mut expected_income = vec![
         "period",
+        "window",
         "total_revenue",
         "cost_of_revenue",
         "gross_profit",
@@ -150,10 +162,14 @@ fn statement_rows_serialize_every_field_under_its_declared_name() {
     actual.sort_unstable();
     expected_income.sort_unstable();
     assert_eq!(actual, expected_income);
+}
 
+#[test]
+fn balance_sheet_serializes_every_declared_field() {
     let balance: Value = from_str(&to_string(&balance_sheet_row()).unwrap()).unwrap();
     let mut expected_balance = vec![
         "period",
+        "as_of",
         "total_assets",
         "total_liabilities",
         "total_equity",
@@ -189,10 +205,14 @@ fn statement_rows_serialize_every_field_under_its_declared_name() {
     actual.sort_unstable();
     expected_balance.sort_unstable();
     assert_eq!(actual, expected_balance);
+}
 
+#[test]
+fn cashflow_serializes_every_declared_field() {
     let cashflow: Value = from_str(&to_string(&cashflow_row()).unwrap()).unwrap();
     let mut expected_cashflow = vec![
         "period",
+        "window",
         "operating_cashflow",
         "capital_expenditures",
         "free_cash_flow",
@@ -266,7 +286,9 @@ fn income_tax_provisions_and_expense_reversals_survive_json() {
         // Reported subtotals need not reconcile with these component fields.
         (Some("-20"), "117"),
     ] {
-        let mut income: IncomeStatementRow = from_str(r#"{"period":"2024"}"#).unwrap();
+        let mut income: IncomeStatementRow =
+            from_str(r#"{"period":"2024","window":{"start":"2024-01-01","end":"2024-12-31"}}"#)
+                .unwrap();
         income.pretax_income = Some(usd("100"));
         income.income_tax_expense = tax.map(usd);
         income.operating_expenses = Some(usd("-5"));
@@ -372,12 +394,11 @@ fn statement_concepts_preserve_missing_zero_and_reported_money() {
     }
 }
 
-/// Legacy values for other concepts must not become fallbacks for the new
-/// fields, even when present in a payload that predates them.
+/// Values for other concepts must not become fallbacks for omitted fields.
 #[test]
-fn legacy_statement_payloads_keep_distinct_concepts_independent() {
+fn sparse_statement_payloads_keep_distinct_concepts_independent() {
     let income: IncomeStatementRow = from_str(
-        r#"{"period":"2024","net_income":
+        r#"{"period":"2024","window":{"start":"2024-01-01","end":"2024-12-31"},"net_income":
         {"amount":"4188000000","currency":"USD","minor_units":2}}"#,
     )
     .unwrap();
@@ -385,7 +406,7 @@ fn legacy_statement_payloads_keep_distinct_concepts_independent() {
     assert_eq!(income.net_income, Some(usd("4188000000")));
 
     let balance: BalanceSheetRow = from_str(
-        r#"{"period":"2025","current_liabilities":
+        r#"{"period":"2025","as_of":{"date":"2025-12-31"},"current_liabilities":
         {"amount":"165631000000","currency":"USD","minor_units":2}}"#,
     )
     .unwrap();
@@ -394,23 +415,27 @@ fn legacy_statement_payloads_keep_distinct_concepts_independent() {
 }
 
 /// Statement rows are forward-compatible payloads: omitting any optional field
-/// deserializes to `None` rather than failing, so payloads written before these
-/// fields existed still load.
+/// deserializes to `None`. The fiscal label and actual window remain required.
 #[test]
 fn omitted_optional_fields_deserialize_to_none() {
-    let income: IncomeStatementRow = from_str(r#"{"period":"2024"}"#).unwrap();
+    let income: IncomeStatementRow =
+        from_str(r#"{"period":"2024","window":{"start":"2024-01-01","end":"2024-12-31"}}"#)
+            .unwrap();
     assert_eq!(income.period, ReportingPeriod::annual(2024).unwrap());
     assert!(income.total_revenue.is_none());
     assert!(income.ebitda.is_none());
     assert!(income.basic_average_shares.is_none());
     assert!(income.net_income_from_continuing_operations.is_none());
 
-    let balance: BalanceSheetRow = from_str(r#"{"period":"2024"}"#).unwrap();
+    let balance: BalanceSheetRow =
+        from_str(r#"{"period":"2024","as_of":{"date":"2024-12-31"}}"#).unwrap();
     assert!(balance.shares_outstanding.is_none());
     assert!(balance.tangible_book_value.is_none());
     assert!(balance.current_debt.is_none());
 
-    let cashflow: CashflowRow = from_str(r#"{"period":"2024"}"#).unwrap();
+    let cashflow: CashflowRow =
+        from_str(r#"{"period":"2024","window":{"start":"2024-01-01","end":"2024-12-31"}}"#)
+            .unwrap();
     assert!(cashflow.stock_based_compensation.is_none());
     assert!(cashflow.end_cash_position.is_none());
 }
@@ -419,6 +444,6 @@ fn omitted_optional_fields_deserialize_to_none() {
 /// value is rejected at deserialization rather than silently accepted.
 #[test]
 fn negative_weighted_average_shares_are_rejected() {
-    let json = r#"{"period":"2024","basic_average_shares":"-1000"}"#;
+    let json = r#"{"period":"2024","window":{"start":"2024-01-01","end":"2024-12-31"},"basic_average_shares":"-1000"}"#;
     assert!(from_str::<IncomeStatementRow>(json).is_err());
 }

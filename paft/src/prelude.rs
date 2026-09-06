@@ -52,7 +52,7 @@ pub use crate::fundamentals::profile::{
 };
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::statements::{
-    BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow,
+    BalanceSheetRow, Calendar, CashflowRow, IncomeStatementRow, StatementDuration, StatementInstant,
 };
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::statistics::KeyStatistics;

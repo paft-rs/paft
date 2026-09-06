@@ -340,6 +340,9 @@ fn analysis_helpers_are_available_from_facade_and_prelude() {
         TrendPoint as PreludeTrendPoint,
     };
 
+    let _: Option<paft::fundamentals::StatementDuration> = None::<paft::prelude::StatementDuration>;
+    let _: Option<paft::fundamentals::StatementInstant> = None::<paft::prelude::StatementInstant>;
+
     let earnings_estimate: FacadeEarningsEstimate = PreludeEarningsEstimate::default();
     let _: PreludeEarningsEstimate = earnings_estimate;
 

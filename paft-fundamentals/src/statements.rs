@@ -8,9 +8,16 @@ use df_derive_macros::ToDataFrame;
 use paft_domain::ReportingPeriod;
 use paft_money::{Money, Price, QuantityAmount};
 
+pub use crate::statement_context::{StatementDuration, StatementInstant};
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Income statement row.
+///
+/// Every amount, EPS value, and weighted-average share count covers [`Self::window`].
+/// Standalone and cumulative figures are both supported with explicit dates;
+/// adapters must not mix their windows in one row. [`Self::period`] is a fiscal
+/// label, not a source of inferred boundaries.
 ///
 /// # Sign convention
 ///
@@ -83,6 +90,8 @@ pub struct IncomeStatementRow {
     /// Financial period with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub period: ReportingPeriod,
+    /// Actual inclusive measurement dates for every value in this row.
+    pub window: StatementDuration,
     /// Total revenue.
     pub total_revenue: Option<Money>,
     /// Cost of revenue (cost of goods sold).
@@ -214,6 +223,9 @@ pub struct BalanceSheetRow {
     /// Financial period with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub period: ReportingPeriod,
+    /// Closing reporting-date instant for every balance and share count.
+    /// The fiscal label does not determine this date.
+    pub as_of: StatementInstant,
     /// Total assets.
     pub total_assets: Option<Money>,
     /// Total liabilities.
@@ -359,6 +371,11 @@ pub struct CashflowRow {
     /// Financial period with structured variants and extensible fallback.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub period: ReportingPeriod,
+    /// Actual inclusive measurement dates for every flow and reconciliation
+    /// amount. Standalone or cumulative values are allowed with explicit dates;
+    /// adapters must not mix windows. `end_cash_position` is the closing balance
+    /// at this window's end, rather than a duration measure.
+    pub window: StatementDuration,
     /// Operating cashflow.
     pub operating_cashflow: Option<Money>,
     /// Capital expenditures.

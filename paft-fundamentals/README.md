@@ -111,6 +111,36 @@ if let Profile::Company(c) = profile { assert_eq!(c.name, "Example Corp"); }
 `Profile` serializes as a flat tagged shape with `kind`; fund profiles use
 `fund_kind` for the fund type so it cannot collide with the discriminator.
 
+Statement measurement windows
+-----------------------------
+
+Every standalone row requires actual measurement context as well as its fiscal
+`period` label. `IncomeStatementRow::window` and `CashflowRow::window` are
+validated `StatementDuration` values with inclusive `start` and `end` dates
+(`start <= end`). Values cover the start of the first day through the close of
+the last day in the reporting entity's calendar. Standalone-quarter, cumulative
+YTD, and trailing figures are all permitted, but all duration fields in a row,
+including EPS and weighted-average shares, must share that exact window.
+Adapters must split or normalize mixed windows before mapping.
+
+For example, a Q2 cash-flow row covering `2024-04-01` through `2024-06-30` is
+different from a Q2-labelled YTD row covering `2024-01-01` through `2024-06-30`.
+The JSON context is `"window":{"start":"2024-04-01","end":"2024-06-30"}`.
+`CashflowRow::end_cash_position` is the closing balance on the window's end date.
+
+`BalanceSheetRow::as_of` is a `StatementInstant`, encoded as
+`"as_of":{"date":"2024-06-30"}`. Every balance and share count is measured at
+the close of that date, immediately before the next reporting day begins.
+These are reporting-calendar boundaries; they imply neither UTC conversion nor
+publication or revision time. The distinction follows the motivation behind
+[instant and duration contexts in XBRL](https://www.xbrl.org/dates-in-xbrl/),
+without adopting its wire representation.
+
+Migration requires explicit context in Rust literals and JSON. Missing dates
+are rejected; a fiscal label alone cannot safely reconstruct them. Context
+objects reject unknown fields, while row payloads remain forward-compatible.
+DataFrames retain `window.start`, `window.end`, or `as_of.date` as date columns.
+
 Statement concepts
 ------------------
 
@@ -130,9 +160,11 @@ zero amount means a reported zero. Negative continuing income is valid.
 Provider adapters must map the accounting concept rather than infer it from a
 provider's field name.
 
-Older JSON payloads that omit these fields deserialize with `None`. Serialized
+JSON payloads with explicit context that omit these optional fields deserialize
+with `None`. Serialized
 amounts retain their currency and captured minor-unit scale. DataFrame export
-uses nullable `<field>.amount` decimal and `<field>.currency` string columns;
+uses nullable `<field>.amount` decimal, `<field>.currency` string, and
+`<field>.minor_units` unsigned-byte columns;
 the continuing-income columns are appended to the income statement schema.
 Code constructing a full `IncomeStatementRow` literal must supply the new
 field, using `None` when unavailable.

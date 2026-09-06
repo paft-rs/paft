@@ -41,7 +41,7 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   current portion of long-term debt, excluding separately classified lease
   liabilities. It is distinct from total current liabilities.
 - Fundamentals: exact ordered DataFrame schema and dtype tests, JSON
-  wire-format and round-trip tests, and legacy-payload coverage for all three
+  wire-format and round-trip tests, and sparse-payload coverage for all three
   statement rows. Continuing income and current debt additionally cover
   monetary values, negative income, and missing-versus-zero values through
   both single-row and columnar DataFrame conversion. Tax-benefit and expense
@@ -62,6 +62,15 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Fundamentals: flow rows now require `window: StatementDuration`
+  with inclusive reporting-calendar `start`/`end` dates. Balance sheets require
+  `as_of: StatementInstant`, the closing balance date. Fiscal `period` labels
+  remain ergonomic labels and never infer dates. Standalone, cumulative, or
+  trailing windows are accepted explicitly; adapters must not mix windows in
+  one row. Cash-flow `end_cash_position` is measured at the window's close.
+  Rust literals and old JSON must supply context; missing or reversed windows
+  are rejected. DataFrames preserve the dates in nested columns, and the new
+  context types are exported by the fundamentals crate and facade/prelude.
 - Domain: added conservative `Instrument::security_key` (kind + ISIN) and
   `listing_key` (kind + venue + venue FIGI or symbol). Missing ISIN or venue
   returns `None` respectively. `figi` now explicitly requires the venue level;
@@ -301,9 +310,11 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   Direct dependencies that share public types must use Polars `0.55`,
   df-derive `0.5`, and `iso_currency` `0.7`. Prefer PAFT's `IsoCurrency`
   re-export when constructing `Currency::Iso`.
-- Add the new optional fields to complete statement-row literals, using
-  `None` when unavailable. Older JSON payloads that omit the new fields still
-  deserialize successfully; a reported zero remains distinct from `None`.
+- Add the required statement context: `window` with inclusive `start`/`end`
+  dates on income/cash-flow rows, or `as_of.date` on balance-sheet rows. A fiscal
+  label alone is insufficient; older JSON must be migrated with actual dates.
+  Optional statement fields can still be omitted or use `None` when unavailable;
+  a reported zero remains distinct from `None`.
 - Update consumers that assume exact JSON key sets or DataFrame schemas and
   column order. Continuing-income export adds nullable
   `net_income_from_continuing_operations.amount`,

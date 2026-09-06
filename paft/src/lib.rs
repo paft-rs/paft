@@ -126,7 +126,8 @@ pub mod fundamentals {
         NetSharePurchaseActivity, OtherFundKind, OtherInsiderPosition, OtherRecommendationAction,
         OtherRecommendationGrade, OtherTransactionType, PriceTarget, Profile, RecommendationAction,
         RecommendationGrade, RecommendationRow, RecommendationSummary, RevenueEstimate,
-        RevisionPoint, ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
+        RevisionPoint, ShareCount, StatementDuration, StatementInstant, TransactionType,
+        TrendPoint, UpgradeDowngradeRow,
     };
     pub use paft_fundamentals::{analysis, esg, holders, profile, statements, statistics};
 }
