@@ -74,6 +74,40 @@ let news = NewsRequest {
 assert_eq!(news.count.get(), 25);
 ```
 
+History time and action dates
+-----------------------------
+
+`Candle::ts` is the inclusive start of the actual aggregation window. It is
+neither the first trade nor the bar's end or publication time. Fixed-duration
+bars cover `[ts, end)`. A streaming candle keeps this start while it forms.
+Daily/session and longer calendar bars use the actual calendar boundary or
+session open; a date label must be resolved using known calendar rules.
+
+[Databento OHLCV](https://databento.com/docs/schemas-and-data-formats/ohlcv)
+already supplies the inclusive start. A provider's end-labeled bar needs a
+verified window to recover its start. Boundary conversion must preserve the
+underlying window: a UTC-day aggregate and a regular-session aggregate remain
+different even when both are `Interval::D1`. Preserve the calendar/session rule
+and, where needed, explicit end boundaries in generic provider metadata.
+Neither an interval code nor an IANA timezone defines the trading schedule;
+calendar windows must not be reduced to an assumed 24 hours.
+
+`HistoryMeta::timezone` supplies authoritative IANA rules for local-calendar
+interpretation and display. `utc_offset_seconds` is seconds east of UTC at the
+earliest returned candle's start, regardless of row order; omit it if there
+are no candles or that offset is unknown. It must agree with the timezone at
+that instant. It is not a replacement for date-dependent timezone rules and
+must not be extrapolated across the series when the timezone is unavailable.
+Both fields describe UTC timestamps without shifting them.
+
+For actions, `Dividend::date` and `CapitalGain::date` are the applicable ex-date;
+`Split::date` is the first trading date on the new share basis. These are dates
+in the history listing's market calendar. Providers can supply several distinct
+dates, as illustrated by [Alpaca's announcement date definitions](https://docs.alpaca.markets/us/reference/getcorporateannouncements).
+Adapters must not substitute declaration, record, payable, processing, or legal
+effective dates unless the source establishes the required economic meaning.
+An unavailable applicable date means the action cannot map to this type.
+
 History period precision
 ------------------------
 

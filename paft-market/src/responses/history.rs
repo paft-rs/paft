@@ -64,7 +64,17 @@ impl Ohlc {
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericCandle<M = ()> {
-    /// Timestamp for the bar as Unix milliseconds.
+    /// Inclusive start of the bar's actual aggregation window, in UTC, encoded
+    /// as Unix milliseconds. This is not the first trade, end, publication time,
+    /// or an arbitrary session label. Fixed-duration windows are `[ts, end)`.
+    ///
+    /// For daily/session and longer calendar bars, use the start prescribed by
+    /// the source's aggregation calendar (for example UTC midnight or session
+    /// open). A session label alone is insufficient without its calendar rules.
+    /// Preserve window/session rules in provider metadata when needed; an
+    /// interval code or timezone alone does not establish equivalent windows.
+    /// Do not relabel a UTC-day aggregate as a session aggregate. Calendar ends
+    /// must follow the calendar, not an assumed 24-hour duration.
     #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Currency shared by every price amount in this candle.
@@ -123,6 +133,10 @@ pub type Candle = GenericCandle<()>;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Streaming candle update event.
+///
+/// Each payload is the current observed bar, with `candle.ts` fixed at that
+/// window's inclusive start even while the bar is forming. It is not the
+/// streaming event's receipt or publication timestamp.
 ///
 /// Generic over an update-level provider metadata payload `U`, which is
 /// flattened into the serialized representation, and a candle-level metadata
@@ -572,10 +586,19 @@ impl AdjustmentMethod {
 /// Serde rejects unknown fields for this semantic metadata shape: timezone and
 /// offset metadata affect timestamp interpretation.
 pub struct HistoryMeta {
-    /// IANA timezone identifier.
+    /// IANA timezone for interpreting the series' local calendar and display.
+    /// Its date-dependent rules take precedence over `utc_offset_seconds`.
+    /// This does not shift UTC candle timestamps or define trading sessions.
     #[cfg_attr(feature = "dataframe", df_derive(as_string))]
     pub timezone: Option<Tz>,
-    /// UTC offset in seconds.
+    /// Seconds east of UTC at the earliest returned candle's `ts` (minimum
+    /// timestamp, irrespective of vector order). Omit for an empty series or
+    /// when the offset at that instant is unknown.
+    ///
+    /// This is a reference-instant offset, not a fixed offset for the whole
+    /// series. When `timezone` is present it must agree at that instant; use
+    /// the IANA rules for every other instant. Without `timezone`, this field
+    /// supplies no offset rules for other dates and must not be extrapolated.
     pub utc_offset_seconds: Option<i64>,
 }
 
@@ -621,7 +644,9 @@ pub struct GenericHistoryResponse<R = (), C = ()> {
     /// consumers need to check ordering, and [`Self::into_chronological`] when
     /// caller-owned data should be canonicalized.
     pub candles: Vec<GenericCandle<C>>,
-    /// Corporate actions aligned to candles.
+    /// Corporate actions on their applicable ex-date or split effective trading
+    /// date in the history listing's market calendar; see [`crate::Action`].
+    /// An action need not have a candle on that date in this response.
     pub actions: Vec<crate::market::action::Action>,
     /// Price basis of the primary open, high, low, and close fields.
     pub price_basis: OhlcPriceBasis,

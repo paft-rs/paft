@@ -165,6 +165,11 @@ impl<'de> Deserialize<'de> for Range {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// Supported resolution intervals.
+///
+/// A resolution alone does not specify aggregation alignment or session rules.
+/// In particular, daily/calendar bars can follow UTC dates or a market session
+/// calendar. Adapters must preserve the actual window, with its inclusive start
+/// in [`crate::Candle::ts`], and retain necessary calendar rules in metadata.
 pub enum Interval {
     /// 1 second
     I1s,

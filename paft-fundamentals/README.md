@@ -152,6 +152,11 @@ publication or revision time. The distinction follows the motivation behind
 [instant and duration contexts in XBRL](https://www.xbrl.org/dates-in-xbrl/),
 without adopting its wire representation.
 
+Point-in-time analysis additionally requires publication/availability timestamps
+and revision provenance, typically in an application-owned observation wrapper.
+Statement measurement windows alone do not guarantee what was known at an
+earlier instant; PAFT does not infer that timeline from fiscal dates.
+
 Migration requires explicit context in Rust literals and JSON. Missing dates
 are rejected; a fiscal label alone cannot safely reconstruct them. Context
 objects reject unknown fields, while row payloads remain forward-compatible.

@@ -16,12 +16,19 @@ use paft_utils::dataframe::{Columnar, ToDataFrame, ToDataFrameVec};
 #[non_exhaustive]
 /// Corporate action attached to a history series.
 ///
+/// Dates use the applicable market calendar of the history listing, not a UTC
+/// conversion of midnight. Adapters must establish the variant's economic date
+/// from source semantics. Declaration, record, payment, and processing dates
+/// must not substitute for an unavailable ex-date or effective trading date;
+/// such an action cannot be mapped faithfully into this standard type.
+///
 /// This is a tagged data payload, not a strict semantic metadata shape:
 /// deserialization intentionally ignores unmodeled provider fields.
 pub enum Action {
     /// Cash dividend.
     Dividend {
-        /// Corporate-action calendar date.
+        /// Ex-dividend date: the first trading date on which a purchaser is
+        /// no longer entitled to this dividend, in the listing's market calendar.
         date: NaiveDate,
         /// Amount paid per share.
         amount: Price,
@@ -32,7 +39,9 @@ pub enum Action {
     /// `denominator = 1`. A 1-for-4 reverse split is represented as
     /// `numerator = 1`, `denominator = 4`.
     Split {
-        /// Corporate-action calendar date.
+        /// Effective trading date: the first date trading uses the new share
+        /// basis in the listing's market calendar (the applicable split ex-date).
+        /// A legal effective or processing date is usable only if it means this date.
         date: NaiveDate,
         /// Non-zero new-share count in the split ratio.
         numerator: NonZeroU32,
@@ -41,7 +50,8 @@ pub enum Action {
     },
     /// Capital gain distribution.
     CapitalGain {
-        /// Corporate-action calendar date.
+        /// Ex-distribution date: the first trading date on which a purchaser is
+        /// no longer entitled to this distribution, in the listing's market calendar.
         date: NaiveDate,
         /// Distribution amount.
         gain: Price,

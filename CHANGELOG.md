@@ -62,6 +62,14 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- Market time contract: candle `ts` identifies the inclusive start of the actual
+  aggregation window, including forming bars. Calendar/session alignment must
+  preserve source windows. Action dates are ex-dividend/ex-distribution dates or
+  the split's effective trading date. IANA timezone rules take precedence;
+  `utc_offset_seconds` describes only the earliest returned candle's start.
+  Adapters must not substitute unrelated dates or extrapolate a static offset.
+  Fundamentals docs also distinguish measurement time from availability/revisions.
+
 - **Breaking** Fundamentals: `RevenueEstimate::{avg, low, high, year_ago_revenue}`
   and `InstitutionalHolder::value` now use `MonetaryAmount` to preserve analytical
   and valuation precision without settlement rounding. The prior-year field is
