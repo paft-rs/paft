@@ -81,6 +81,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
 
+      - name: Test release-tag checker
+        run: python3 -m unittest discover -s scripts -p 'test_check_release_tag.py'
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 

@@ -12,6 +12,15 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Added
 
+- CI: an offline release-tag checker selects publishable workspace members from
+  Cargo metadata, requires a nonempty set with identical versions, and compares
+  the tag literally with `v<version>`, including prereleases. Failures list the
+  selected package names and versions. Tests run in ordinary branch/PR CI and
+  release preflight. Every expensive release job depends on preflight; all
+  release checkouts, including reusable configurations, use the triggering SHA.
+  Release tooling can run `scripts/check_release_tag.py --metadata FILE --tag TAG`
+  locally; it neither infers versions nor modifies manifests or tags.
+
 - Facade: `paft::decimal` exposes PAFT's parser, `DecimalParseError`, exact
   arithmetic helpers, and canonical serde adapters. The prelude also re-exports
   this namespace; existing top-level decimal types remain available. A private

@@ -22,6 +22,8 @@ jobs:
       crates: ${{ steps.packages.outputs.crates }}
     steps:
       - uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.sha }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Read workspace packages
         id: packages
@@ -42,6 +44,8 @@ jobs:
         crate: ${{ fromJSON(needs.packages.outputs.crates) }}
     steps:
       - uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.sha }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -63,6 +67,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.sha }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:

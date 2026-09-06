@@ -11,7 +11,30 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  preflight:
+    name: Release preflight
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Test release-tag checker
+        run: python3 -m unittest discover -s scripts -p 'test_check_release_tag.py'
+
+      - name: Validate release identity
+        env:
+          PAFT_RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          cargo metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/paft-release-metadata.json"
+          python3 scripts/check_release_tag.py --metadata "$RUNNER_TEMP/paft-release-metadata.json" --tag "$PAFT_RELEASE_TAG"
+
   test:
+    needs: preflight
     runs-on: ubuntu-latest
     steps:
       - name: Clean up runner image
@@ -25,6 +48,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.sha }}
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -46,21 +71,29 @@ jobs:
       - name: Run tests and doctests
         run: just test
 
+      - name: Test the isolated facade consumer
+        run: |
+          cargo test --locked -p paft-facade-consumer
+          cargo test --locked -p paft-facade-consumer --all-features
+
       - name: Run lints
         run: just lint
 
   configurations:
     name: Consumer configurations
+    needs: preflight
     uses: ./.github/workflows/configurations.yml
 
   publish:
-    needs: [test, configurations]
+    needs: [preflight, test, configurations]
     runs-on: ubuntu-latest
     environment:
       name: crates-io
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.sha }}
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -85,6 +118,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.sha }}
 
       - name: Create GitHub Releases based on changelog
         uses: taiki-e/create-gh-release-action@v1.11.0

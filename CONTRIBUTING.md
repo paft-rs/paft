@@ -32,6 +32,34 @@ just lint             # run clippy with strict warnings
 4. Update documentation, comments, and examples as needed.
 5. Open a pull request with a clear title and description of your changes.
 
+## Release identity checks
+
+For v0.10.0 onward, release tags must literally match `v<version>` for every
+publishable workspace member. The release preflight runs before tests,
+configuration matrices, or publishing; each release checkout uses the triggering
+commit SHA, including the reusable configuration workflow. Publishing therefore
+uses the same commit whose manifests and tag were checked.
+
+Validate a proposed tag locally without creating it or publishing anything:
+
+```bash
+cargo metadata --locked --no-deps --format-version 1 > /tmp/paft-release-metadata.json
+python3 scripts/check_release_tag.py --metadata /tmp/paft-release-metadata.json --tag v0.10.0
+just test-release-tag
+```
+
+The checker takes explicit inputs and uses only Python's standard library. It
+selects workspace members with unrestricted (`publish: null`) or registry-limited
+publication (a nonempty registry list), following the
+[Cargo metadata contract](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html).
+Private fixtures (`publish: []`) and external dependencies are excluded. An
+empty release set or differing versions fails with discovered names and versions.
+Prereleases match exactly: package version `0.10.0-rc.1` requires
+`v0.10.0-rc.1`; neither `v0.10.0` nor `v0.10.0-rc.2` is equivalent. To migrate
+release tooling, pass the actual intended tag and metadata instead of relying
+on a tag spelling that differs from the manifests. The checker never rewrites
+tags or versions. Its tests run in ordinary branch/PR CI as well as preflight.
+
 ## Commit and PR Guidelines
 
 - Keep commits focused and logically grouped.

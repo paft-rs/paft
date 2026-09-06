@@ -21,6 +21,10 @@ check-decimal-contract:
   cargo test --locked -p paft --test decimal_contract
   cargo test --locked -p paft --test decimal_contract --all-features
 
+# Offline release-identity tests, also run in the ordinary CI Tests job.
+test-release-tag:
+  python3 -m unittest discover -s scripts -p 'test_check_release_tag.py'
+
 # Test each independently published crate without workspace feature unification.
 # Cargo test also runs that package's doctests in each supported configuration.
 test-crate-configs crate='':
