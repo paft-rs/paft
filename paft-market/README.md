@@ -113,6 +113,12 @@ Market payload notes
   `contracts.contract_instrument.*`. An absent contract instrument produces
   nulls. In v0.10.0 these columns replace the former display-only `instrument`,
   `underlying`, and `contract_instrument` strings.
+- History responses contain observed candles only. Missing intervals are
+  omitted; zero prices and carried-forward prices must not be invented as gap
+  placeholders. Calendar-grid completion belongs to consumers, with missing
+  slots and synthetic values represented separately. v0.10.0 removes
+  `HistoryFlags::KEEP_MISSING` and both `keep_missing` helpers; the former bit
+  `0b1000` is now rejected on ingestion.
 - `HistoryResponse::validate` checks non-decreasing candle timestamps;
   `into_chronological` sorts caller-owned responses when provider data arrives
   out of order.

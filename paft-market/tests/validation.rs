@@ -275,12 +275,15 @@ fn history_flags_deserialization_unknown_bits_rejected() {
 }
 
 #[test]
-fn history_flags_keep_missing_preserves_existing_wire_bit() {
-    assert_eq!(HistoryFlags::KEEP_MISSING.bits(), 0b1000);
-    assert_eq!(
-        serde_json::to_value(HistoryFlags::KEEP_MISSING).unwrap(),
-        serde_json::json!(0b1000_u8)
-    );
+fn history_rejects_removed_missing_slot_flag() {
+    assert_eq!(HistoryFlags::all().bits(), 0b0111);
+    for bits in [0b1000_u8, 0b1111_u8] {
+        assert!(HistoryFlags::from_bits(bits).is_none());
+        assert!(serde_json::from_value::<HistoryFlags>(serde_json::json!(bits)).is_err());
+        let mut wire = serde_json::to_value(HistoryRequest::builder().build().unwrap()).unwrap();
+        wire["flags"] = serde_json::json!(bits);
+        assert!(serde_json::from_value::<HistoryRequest>(wire).is_err());
+    }
 }
 
 #[test]

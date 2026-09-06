@@ -469,8 +469,6 @@ bitflags! {
         const INCLUDE_ACTIONS = 0b0010;
         /// Prefer provider-adjusted prices when the provider supports them.
         const PREFER_ADJUSTED_PRICES = 0b0100;
-        /// Keep missing candle slots as placeholders depending on consumer.
-        const KEEP_MISSING = 0b1000;
     }
 }
 
@@ -637,7 +635,10 @@ impl Default for TimeSpec {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-/// Request parameters for fetching history.
+/// Request parameters for fetching observed candle history.
+///
+/// Missing intervals are omitted. Calendar-grid completion and synthetic bars
+/// belong to consumers, outside the standard candle response contract.
 ///
 /// Use `HistoryRequest::builder()` to create instances.
 pub struct HistoryRequest {
@@ -756,17 +757,6 @@ impl HistoryRequestBuilder {
         self
     }
 
-    /// Set whether to keep missing candle slots.
-    #[must_use]
-    pub fn keep_missing(mut self, keep: bool) -> Self {
-        if keep {
-            self.flags.insert(HistoryFlags::KEEP_MISSING);
-        } else {
-            self.flags.remove(HistoryFlags::KEEP_MISSING);
-        }
-        self
-    }
-
     /// Build the `HistoryRequest` with validation.
     ///
     /// # Errors
@@ -872,11 +862,5 @@ impl HistoryRequest {
     #[must_use]
     pub const fn prefer_adjusted_prices(&self) -> bool {
         self.flags.contains(HistoryFlags::PREFER_ADJUSTED_PRICES)
-    }
-
-    /// Get whether missing values are kept.
-    #[must_use]
-    pub const fn keep_missing(&self) -> bool {
-        self.flags.contains(HistoryFlags::KEEP_MISSING)
     }
 }

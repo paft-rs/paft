@@ -62,6 +62,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Market: removed `HistoryFlags::KEEP_MISSING`,
+  `HistoryRequestBuilder::keep_missing`, and `HistoryRequest::keep_missing`.
+  History contains observed candles with actual prices; missing intervals are
+  omitted. Consumers must perform calendar-grid completion outside this model.
+  The removed `0b1000` bit is rejected on ingestion; other flag bits are unchanged.
+
 - **Breaking** Market: option `volume` and `open_interest` now use fractional
   `QuantityAmount` in contract units. Adapters must normalize underlying-unit
   amounts with a known contract size using exact conversion. JSON uses canonical

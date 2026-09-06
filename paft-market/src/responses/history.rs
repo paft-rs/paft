@@ -47,7 +47,12 @@ impl Ohlc {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-/// A single OHLCV bar at timestamp `ts` (Unix milliseconds).
+/// A single observed OHLCV bar at timestamp `ts` (Unix milliseconds).
+///
+/// Every price is an observation in the declared price basis. Missing intervals
+/// have no candle; adapters must not fabricate zero-price or carried-forward
+/// bars to fill a gap. Consumers requiring a complete grid must represent gaps
+/// and any synthetic values separately.
 ///
 /// Volume may be `None` when unavailable.
 ///
@@ -606,7 +611,9 @@ pub enum HistoryValidationError {
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericHistoryResponse<R = (), C = ()> {
-    /// Candles as supplied by a provider.
+    /// Observed candles as supplied by a provider; missing intervals are omitted.
+    /// No contiguous calendar grid is promised. Zero prices are actual reported
+    /// values, never missing-slot markers.
     ///
     /// Providers are expected to order these by non-decreasing timestamp, but
     /// direct struct construction and deserialization do not enforce that. Use

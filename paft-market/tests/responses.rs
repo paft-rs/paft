@@ -82,6 +82,38 @@ fn candle_with_none_volume() {
 }
 
 #[test]
+fn sparse_history_preserves_observations_without_missing_slot_markers() {
+    let mut observed_zero = candle_at(34_200); // 09:30 UTC
+    observed_zero.ohlc = ohlc("0", "0", "0", "0");
+    let response = HistoryResponse {
+        candles: vec![observed_zero, candle_at(34_320)], // 09:32; no 09:31 observation
+        actions: vec![],
+        price_basis: OhlcPriceBasis::default(),
+        meta: None,
+        provider: (),
+    };
+    let wire = serde_json::to_value(&response).unwrap();
+    assert_eq!(wire["candles"].as_array().unwrap().len(), 2);
+    let decoded: HistoryResponse = serde_json::from_value(wire.clone()).unwrap();
+    assert_eq!(decoded, response);
+    assert!(decoded.candles.iter().all(|c| c.ts.timestamp() != 34_260));
+    assert_eq!(decoded.candles[0].ohlc.close, amount("0"));
+    // A null or absent OHLC group is not an ordinary candle.
+    for remove in [false, true] {
+        let mut missing = wire["candles"][0].clone();
+        missing["ts"] = serde_json::json!(34_260_000);
+        for field in ["open", "high", "low", "close"] {
+            if remove {
+                missing.as_object_mut().unwrap().remove(field);
+            } else {
+                missing[field] = serde_json::Value::Null;
+            }
+        }
+        assert!(serde_json::from_value::<Candle>(missing).is_err());
+    }
+}
+
+#[test]
 fn action_dividend_serialization() {
     let action = Action::Dividend {
         date: date(2022, 1, 1),
