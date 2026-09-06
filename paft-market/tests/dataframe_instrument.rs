@@ -25,12 +25,12 @@ fn ambiguous_instruments() -> [[Instrument; 2]; 4] {
         ],
         [
             Instrument::from_figi(
-                "BBG000B9XRY4",
+                "BBG000B9Y5X2",
                 Symbol::new("AAPL").unwrap(),
                 AssetKind::Equity,
             )
             .unwrap(),
-            Instrument::from_symbol("BBG000B9XRY4", AssetKind::Equity).unwrap(),
+            Instrument::from_symbol("BBG000B9Y5X2", AssetKind::Equity).unwrap(),
         ],
         [
             isin,
@@ -48,6 +48,20 @@ fn assert_instrument_columns(df: &DataFrame, prefix: &str, instruments: &[Option
     assert_eq!(df.height(), instruments.len());
     assert!(df.column(prefix).is_err());
     for (suffix, expected) in [
+        (
+            "security_key",
+            instruments
+                .iter()
+                .map(|i| i.and_then(Instrument::security_key))
+                .collect::<Vec<_>>(),
+        ),
+        (
+            "listing_key",
+            instruments
+                .iter()
+                .map(|i| i.and_then(Instrument::listing_key))
+                .collect::<Vec<_>>(),
+        ),
         (
             "key",
             instruments
@@ -132,14 +146,14 @@ fn option_keys() -> [OptionContractKey; 3] {
     });
     keys[0].contract_instrument = Some(
         Instrument::from_figi(
-            "BBG000B9XRY4",
+            "BBG000B9Y5X2",
             Symbol::new("OPTION").unwrap(),
             AssetKind::Option,
         )
         .unwrap(),
     );
     keys[1].contract_instrument =
-        Some(Instrument::from_symbol("BBG000B9XRY4", AssetKind::Option).unwrap());
+        Some(Instrument::from_symbol("BBG000B9Y5X2", AssetKind::Option).unwrap());
     keys
 }
 
@@ -184,7 +198,15 @@ fn option_instrument_exports_preserve_underlying_contract_and_missing_identities
         assert_instrument_columns(&df, "contract_instrument", &contracts);
         assert_eq!(df.schema(), empty.schema());
         for suffix in [
-            "symbol", "exchange", "figi", "isin", "kind", "key", "display",
+            "symbol",
+            "exchange",
+            "figi",
+            "isin",
+            "kind",
+            "key",
+            "security_key",
+            "listing_key",
+            "display",
         ] {
             assert!(
                 df.column(&format!("contract_instrument.{suffix}"))
@@ -232,22 +254,40 @@ fn option_chain_list_columns_preserve_instrument_identity_and_nulls() {
             ("underlying", underlyings),
             ("contract_instrument", contracts),
         ] {
-            for suffix in ["key", "display"] {
+            for suffix in ["key", "security_key", "listing_key", "display"] {
                 let column = df.column(&format!("contracts.{prefix}.{suffix}")).unwrap();
                 assert_eq!(column.dtype(), &DataType::List(Box::new(DataType::String)));
                 let values = column.list().unwrap().get_as_series(0).unwrap();
                 assert_eq!(values.len(), instruments.len());
                 for (row, instrument) in instruments.iter().enumerate() {
-                    let expected = instrument.map(|i| {
-                        if suffix == "key" {
-                            i.unique_key()
-                        } else {
-                            i.to_string()
-                        }
+                    let expected = instrument.and_then(|i| match suffix {
+                        "key" => Some(i.unique_key()),
+                        "security_key" => i.security_key(),
+                        "listing_key" => i.listing_key(),
+                        _ => Some(i.to_string()),
                     });
                     assert_eq!(values.str().unwrap().get(row), expected.as_deref());
                 }
             }
         }
     }
+}
+
+#[test]
+fn quotes_with_the_same_isin_retain_distinct_listing_keys() {
+    let mut first =
+        Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity).unwrap();
+    first.isin = Some(Isin::new("US0378331005").unwrap());
+    let mut second = first.clone();
+    second.exchange = Some(Exchange::other("VENUE2").unwrap());
+    let instruments = [first, second];
+    let quotes = instruments.each_ref().map(|i| Quote::new(i.clone(), usd()));
+    assert_market_rows(&quotes, &instruments);
+    let df = quotes.to_dataframe().unwrap();
+    let security = df.column("instrument.security_key").unwrap().str().unwrap();
+    let listing = df.column("instrument.listing_key").unwrap().str().unwrap();
+    assert!(security.get(0).is_some());
+    assert_eq!(security.get(0), security.get(1));
+    assert!(listing.get(0).is_some());
+    assert_ne!(listing.get(0), listing.get(1));
 }

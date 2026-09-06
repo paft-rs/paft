@@ -102,9 +102,11 @@ Market payload notes
 - Provider metadata is flattened into JSON payloads and must avoid field-name
   collisions with paft fields. DataFrame export namespaces provider metadata
   under `provider.*`.
-- DataFrame instrument fields expand to `instrument.key`, `instrument.display`,
+- DataFrame instrument fields expand to `instrument.security_key`,
+  `instrument.listing_key`, legacy `instrument.key`, `instrument.display`,
   and the structured `symbol`, `exchange`, `figi`, `isin`, and `kind` columns
-  under the same prefix. Use `.key` for identity joins and grouping; `.display`
+  under the same prefix. Choose `.security_key` for issue grouping or `.listing_key` for venue joins;
+  missing keys cannot establish identity. `.display`
   is a readable label that can be shared by distinct instruments. Option keys,
   contracts, and updates use `underlying.*` and `contract_instrument.*`; option
   chains use list columns under `contracts.underlying.*` and

@@ -62,6 +62,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- Domain: added conservative `Instrument::security_key` (kind + ISIN) and
+  `listing_key` (kind + venue + venue FIGI or symbol). Missing ISIN or venue
+  returns `None` respectively. `figi` now explicitly requires the venue level;
+  adapters must verify its level from source metadata. The legacy `unique_key`
+  remains available with its mixed identity scope documented and is no longer
+  recommended for joins. DataFrames add nullable `security_key` and `listing_key`
+  columns, including nested exports; legacy `key` retains its prior meaning.
 - **Breaking** Timestamp serde: all epoch-millisecond payload fields (required,
   optional, and vector) now reject sub-millisecond values and leap seconds on
   serialization instead of silently changing them. Integer JSON is unchanged.
@@ -172,12 +179,11 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   the stored decimal uses a lower scale. True `i128` overflow and unrepresentable
   numeric values still return errors.
 - **Breaking** DataFrame: market records and aggregate snapshots now export
-  instruments as structured columns with a stable `.key` and a separate
-  `.display` label. The key follows `Instrument::unique_key()`, preserving
-  asset-kind, identifier-source, and venue distinctions that compact labels
-  can share. Option underlying and optional contract instruments use the same
+  instruments as structured columns with explicit `.security_key` and
+  `.listing_key`, legacy `.key`, and a separate `.display` label. Choose the
+  security or listing key for the intended entity; missing context yields nulls. Option underlying and optional contract instruments use the same
   export, including option-chain list columns. Standalone `Instrument` export
-  retains its five identity columns and adds `key` and `display`.
+  retains its five identity columns and adds the three keys and `display`.
 - Prediction: binary and outcome order books now find the highest bid and
   lowest ask across all stored levels. Unsorted public vectors no longer hide
   better prices or corrupt derived binary NO prices, midpoint, spread, or
@@ -237,12 +243,13 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   precision from `Money::minor_units()`; the stored decimal scale can be lower.
   Currency metadata still supports at most 18 decimal places.
 - DataFrame consumers: replace display-only `instrument` selections with
-  `instrument.key` for identity joins/grouping or `instrument.display` for
-  labels. The same migration applies to `underlying` and `contract_instrument`
+  `instrument.security_key` for issue grouping, `instrument.listing_key` for
+  venue joins, or `instrument.display` for labels. Do not group null keys as
+  one identity. The same migration applies to `underlying` and `contract_instrument`
   in option keys, contracts, and updates; option-chain columns retain the
   `contracts.` prefix and list shape. Structured identity fields are also
   exported under each prefix. Missing optional instruments produce nulls in
-  all their columns. Update explicit schemas for these columns and the two
+  all their columns. Update explicit schemas for these columns and the four
   added standalone `Instrument` columns. Rust model fields, JSON, `Display`,
   and `unique_key()` semantics are unchanged.
 - History periods: explicitly choose millisecond-aligned UTC bounds before

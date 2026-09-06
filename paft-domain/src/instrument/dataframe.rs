@@ -13,6 +13,8 @@ struct InstrumentRow<'a> {
     isin: Option<&'a str>,
     kind: &'a str,
     key: String,
+    security_key: Option<String>,
+    listing_key: Option<String>,
     #[df_derive(as_str)]
     display: Cow<'a, str>,
 }
@@ -26,6 +28,8 @@ impl<'a> From<&'a Instrument> for InstrumentRow<'a> {
             isin: instrument.isin.as_ref().map(AsRef::as_ref),
             kind: instrument.kind.code(),
             key: instrument.unique_key(),
+            security_key: instrument.security_key(),
+            listing_key: instrument.listing_key(),
             display: instrument.display_key(),
         }
     }

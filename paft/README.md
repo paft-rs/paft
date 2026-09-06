@@ -107,13 +107,13 @@ use paft::prelude::*;
 let instrument = Instrument {
     symbol: Symbol::new("AAPL").unwrap(),
     exchange: Some(Exchange::NASDAQ),
-    figi: Some(Figi::new("BBG000B9XRY4").unwrap()),
+    figi: Some(Figi::new("BBG000B9Y5X2").unwrap()),
     isin: Some(Isin::new("US0378331005").unwrap()),
     kind: AssetKind::Equity,
 };
 
-assert_eq!(instrument.unique_key(), "EQUITY|FIGI|BBG000B9XRY4");
-assert_eq!(instrument.display_key(), "BBG000B9XRY4");
+assert_eq!(instrument.security_key().as_deref(), Some("SECURITY|6:EQUITY|ISIN|US0378331005"));
+assert_eq!(instrument.display_key(), "BBG000B9Y5X2");
 ```
 
 DataFrame support

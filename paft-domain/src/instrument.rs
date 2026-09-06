@@ -145,22 +145,28 @@ impl AssetKind {
     }
 }
 
-/// Logical instrument identity for a security.
+/// Security identifiers and optional trading-listing context.
 ///
 /// With the `dataframe` feature, exports include the structured identity fields
-/// plus `key` from [`Self::unique_key`] and `display` from [`Self::display_key`].
-/// Nested market records prefix these columns, for example `instrument.key`
-/// and `instrument.display`. Use the key for identity joins and grouping; the
-/// display label can be shared by distinct instruments.
+/// plus [`Self::security_key`], [`Self::listing_key`], the legacy `key` from
+/// [`Self::unique_key`], and `display` from [`Self::display_key`]. Nested records
+/// prefix these columns, for example `instrument.listing_key`. Choose the key
+/// matching the entity being joined; missing identity context produces nulls.
+/// These helpers do not resolve aliases, identifier changes, or ticker reuse.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Instrument {
     /// Canonical ticker symbol.
     pub symbol: Symbol,
     /// Optional trading venue context for disambiguation.
     pub exchange: Option<Exchange>,
-    /// Optional global identifier (preferred).
+    /// Optional venue-level FIGI identifying this tradable listing.
+    ///
+    /// Composite and share-class FIGIs are not accepted in this field. Adapters
+    /// must establish the level from source metadata; [`Figi`] validates syntax
+    /// and checksum only, because the identifier does not encode its level.
+    /// See the [OpenFIGI identifier hierarchy](https://www.openfigi.com/api/documentation).
     pub figi: Option<Figi>,
-    /// Optional global identifier (fallback).
+    /// Optional ISIN identifying the securities issue across venues.
     pub isin: Option<Isin>,
     /// Asset class and behavior.
     pub kind: AssetKind,
@@ -219,7 +225,8 @@ impl Instrument {
         })
     }
 
-    /// Construct a new `Instrument` for a security identified by a FIGI and symbol.
+    /// Construct an `Instrument` from a venue-level FIGI and symbol.
+    /// The caller must establish the FIGI level; see [`Self::figi`].
     ///
     /// # Errors
     /// Returns `DomainError::InvalidFigi` if FIGI validation fails.
@@ -234,7 +241,57 @@ impl Instrument {
         })
     }
 
-    /// Returns a stable, namespaced identity key for this instrument.
+    /// Returns a security-issue key when an ISIN is available.
+    ///
+    /// Includes asset kind and ISIN, deliberately independent of venue, symbol,
+    /// and venue-level FIGI. Returns `None` without an ISIN: neither a ticker nor
+    /// a venue FIGI establishes a cross-venue security identity. Do not group
+    /// missing keys together as if they identified one security.
+    #[must_use]
+    pub fn security_key(&self) -> Option<String> {
+        let isin = self.isin.as_ref()?;
+        let kind = self.kind.code();
+        Some(format!(
+            "SECURITY|{}:{kind}|ISIN|{}",
+            kind.len(),
+            isin.as_ref()
+        ))
+    }
+
+    /// Returns a venue/listing key when exchange context is available.
+    ///
+    /// Includes asset kind, exchange, and venue FIGI when supplied, otherwise
+    /// the symbol. ISIN cannot replace the listing symbol: one issue can have
+    /// several quotation lines even on one exchange. Missing exchange returns
+    /// `None`; callers must supply the actual venue before joining quotes or
+    /// histories. Exchange codes must use the same venue granularity across
+    /// inputs. Symbol fallback is scoped to the observation's context and does
+    /// not account for ticker reuse over time. Adding a FIGI changes the key.
+    #[must_use]
+    pub fn listing_key(&self) -> Option<String> {
+        let exchange = self.exchange.as_ref()?.code();
+        let kind = self.kind.code();
+        let (source, identifier) = self
+            .figi
+            .as_ref()
+            .map_or(("SYMBOL", self.symbol.as_str()), |figi| {
+                ("FIGI", figi.as_ref())
+            });
+        Some(format!(
+            "LISTING|{}:{kind}|{source}|{}:{identifier}|EXCHANGE|{}:{exchange}",
+            kind.len(),
+            identifier.len(),
+            exchange.len()
+        ))
+    }
+
+    /// Returns the legacy best-available identifier key.
+    ///
+    /// This mixes identity levels: FIGI identifies a listing, ISIN identifies
+    /// an issue, and the fallback is a symbol with optional exchange. Exchange
+    /// is ignored when FIGI or ISIN exists. **It is not a universal primary key
+    /// or suitable for venue-level joins.** Prefer [`Self::security_key`] or
+    /// [`Self::listing_key`] with their explicit, narrower contracts.
     ///
     /// The key includes the asset kind and identifier source so instruments that
     /// share a raw symbol (for example, an equity and a crypto asset both named
@@ -272,7 +329,8 @@ impl Instrument {
     /// Returns the best available compact identifier for display
     /// (FIGI > ISIN > SYMBOL@EXCHANGE > SYMBOL).
     ///
-    /// This label is not unique. Use [`Self::unique_key`] for identity comparisons.
+    /// This label is not unique. Choose [`Self::security_key`] or
+    /// [`Self::listing_key`] for the intended identity comparison.
     #[must_use]
     pub fn display_key(&self) -> Cow<'_, str> {
         if let Some(figi) = &self.figi {

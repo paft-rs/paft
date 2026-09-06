@@ -73,10 +73,12 @@ Snapshot notes
 - `instrument` and `currency` are required; all observed market fields are optional.
 - Provider metadata is serde-flattened into the snapshot JSON object. Avoid field
   names that collide with paft fields; prefix or nest provider fields when needed.
-- DataFrame export uses `instrument.key` for the stable identity and
+- DataFrame export includes `instrument.security_key`, `instrument.listing_key`,
+  legacy `instrument.key`, and
   `instrument.display` for the readable label, alongside the structured identity
   fields under `instrument.*`. These replace the display-only `instrument`
-  column in v0.10.0. Use the key for joins and grouping across sources.
+  column in v0.10.0. Choose the security key for issues and the listing key for
+  venue observations; missing keys cannot establish identity.
 
 Links
 -----

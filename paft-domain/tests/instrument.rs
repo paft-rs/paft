@@ -35,12 +35,12 @@ fn unique_key_does_not_collapse_symbol_with_embedded_exchange_separator() {
 #[test]
 fn unique_key_namespaces_global_identifiers() {
     let mut with_figi = Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap();
-    with_figi.figi = Some(Figi::new("BBG000B9XRY4").unwrap());
+    with_figi.figi = Some(Figi::new("BBG000B9Y5X2").unwrap());
 
     let mut with_isin = Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap();
     with_isin.isin = Some(Isin::new("US0378331005").unwrap());
 
-    assert_eq!(with_figi.unique_key(), "EQUITY|FIGI|BBG000B9XRY4");
+    assert_eq!(with_figi.unique_key(), "EQUITY|FIGI|BBG000B9Y5X2");
     assert_eq!(with_isin.unique_key(), "EQUITY|ISIN|US0378331005");
 }
 
@@ -51,4 +51,55 @@ fn display_key_keeps_compact_identifier_format() {
 
     assert_eq!(instrument.display_key().as_ref(), "AAPL@NASDAQ");
     assert_eq!(instrument.to_string(), "AAPL@NASDAQ");
+}
+
+#[test]
+fn security_and_listing_keys_separate_issues_from_venues() {
+    let mut nasdaq =
+        Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity).unwrap();
+    nasdaq.isin = Some(Isin::new("US0378331005").unwrap());
+    let mut other_venue = nasdaq.clone();
+    other_venue.exchange = Some(Exchange::other("VENUE2").unwrap());
+    assert_eq!(
+        nasdaq.security_key().as_deref(),
+        Some("SECURITY|6:EQUITY|ISIN|US0378331005")
+    );
+    assert_eq!(nasdaq.security_key(), other_venue.security_key());
+    assert_ne!(nasdaq.listing_key(), other_venue.listing_key());
+    assert_eq!(
+        nasdaq.listing_key().as_deref(),
+        Some("LISTING|6:EQUITY|SYMBOL|4:AAPL|EXCHANGE|6:NASDAQ")
+    );
+
+    // Even a duplicated FIGI cannot erase supplied venue context.
+    nasdaq.figi = Some(Figi::new("BBG000B9Y5X2").unwrap());
+    other_venue.figi = nasdaq.figi.clone();
+    assert_ne!(nasdaq.listing_key(), other_venue.listing_key());
+    assert_eq!(nasdaq.security_key(), other_venue.security_key());
+    other_venue.kind = AssetKind::Bond;
+    assert_ne!(nasdaq.security_key(), other_venue.security_key());
+}
+
+#[test]
+fn incomplete_context_does_not_claim_an_identity() {
+    let mut instrument = Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap();
+    assert_eq!(instrument.security_key(), None);
+    assert_eq!(instrument.listing_key(), None);
+    instrument.figi = Some(Figi::new("BBG000B9Y5X2").unwrap());
+    assert_eq!(instrument.security_key(), None);
+    assert_eq!(instrument.listing_key(), None);
+    instrument.exchange = Some(Exchange::NASDAQ);
+    assert!(instrument.listing_key().is_some());
+}
+
+#[test]
+fn same_issue_and_venue_can_have_distinct_symbol_listings() {
+    let mut first =
+        Instrument::from_symbol_and_exchange("LINE_A", Exchange::NASDAQ, AssetKind::Equity)
+            .unwrap();
+    first.isin = Some(Isin::new("US0378331005").unwrap());
+    let mut second = first.clone();
+    second.symbol = paft_domain::Symbol::new("LINE_B").unwrap();
+    assert_eq!(first.security_key(), second.security_key());
+    assert_ne!(first.listing_key(), second.listing_key());
 }

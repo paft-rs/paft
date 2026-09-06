@@ -25,9 +25,10 @@
 //!
 //! - `dataframe`: enable `polars`/`df-derive-macros` integration for dataframe export
 //!
-//! Instrument exports include a stable `instrument.key`, a compact
-//! `instrument.display` label, and structured identity columns. Use the key for
-//! joins and grouping because display labels need not be unique. Option data
+//! Instrument exports include nullable `instrument.security_key` and
+//! `instrument.listing_key`, a legacy `instrument.key`, a compact display
+//! label, and structured identifiers. Choose the security or listing key for
+//! the intended join; absent keys cannot establish identity. Option data
 //! uses `underlying.*` and `contract_instrument.*` (prefixed by `contracts.` in
 //! option-chain list columns). Absent optional instruments export nulls.
 //!

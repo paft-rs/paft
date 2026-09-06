@@ -48,7 +48,7 @@ fn instruments_columnar_round_trips_string_cell_values() {
         let mut i =
             Instrument::from_symbol_and_exchange("AAPL", Exchange::NASDAQ, AssetKind::Equity)
                 .unwrap();
-        i.figi = Some(Figi::new("BBG000B9XRY4").unwrap());
+        i.figi = Some(Figi::new("BBG000B9Y5X2").unwrap());
         i
     };
     let row1 = {
@@ -84,7 +84,7 @@ fn instruments_columnar_round_trips_string_cell_values() {
     assert_eq!(exchange.get(2), None);
 
     let figi = df.column("figi").unwrap().str().unwrap();
-    assert_eq!(figi.get(0), Some("BBG000B9XRY4"));
+    assert_eq!(figi.get(0), Some("BBG000B9Y5X2"));
     assert_eq!(figi.get(1), None);
     assert_eq!(figi.get(2), None);
 
@@ -108,7 +108,15 @@ fn instrument_identity_schema_matches_single_batch_and_empty_exports() {
         Instrument::from_symbol("BTC", AssetKind::Equity).unwrap(),
     ];
     let schema = [
-        "symbol", "exchange", "figi", "isin", "kind", "key", "display",
+        "symbol",
+        "exchange",
+        "figi",
+        "isin",
+        "kind",
+        "key",
+        "security_key",
+        "listing_key",
+        "display",
     ]
     .map(|name| (name.to_owned(), DataType::String));
     assert_eq!(Instrument::schema().unwrap(), schema);
