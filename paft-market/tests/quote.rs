@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use paft_decimal::Decimal;
 use paft_domain::{AssetKind, Exchange, Instrument, MarketState};
+use paft_market::FieldUpdate;
 use paft_market::market::orderbook::BookLevel;
 use paft_market::market::quote::{Quote, QuoteUpdate};
 use paft_money::{Currency, IsoCurrency, PriceAmount, QuantityAmount};
@@ -224,19 +225,19 @@ fn quote_update_construction() {
     let update = QuoteUpdate {
         instrument: aapl(),
         currency: usd(),
-        price: Some(amount(150)),
-        previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume: None,
+        price: FieldUpdate::Set(amount(150)),
+        previous_close: FieldUpdate::Set(amount(Decimal::from(1475) / Decimal::from(10))),
+        volume: FieldUpdate::Unchanged,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
 
     assert_eq!(update.instrument.unique_key(), "EQUITY|SYMBOL|4:AAPL");
     assert_eq!(update.currency, usd());
-    assert_eq!(update.price, Some(amount(150)));
+    assert_eq!(update.price, FieldUpdate::Set(amount(150)));
     assert_eq!(
         update.previous_close,
-        Some(amount(Decimal::from(1475) / Decimal::from(10)))
+        FieldUpdate::Set(amount(Decimal::from(1475) / Decimal::from(10)))
     );
     assert_eq!(update.ts.timestamp(), 1_640_995_200);
 }
@@ -246,16 +247,16 @@ fn quote_update_partial_fields() {
     let update = QuoteUpdate {
         instrument: aapl(),
         currency: usd(),
-        price: Some(amount(150)),
-        previous_close: None,
-        volume: None,
+        price: FieldUpdate::Set(amount(150)),
+        previous_close: FieldUpdate::Unchanged,
+        volume: FieldUpdate::Unchanged,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
 
     assert_eq!(update.instrument.unique_key(), "EQUITY|SYMBOL|4:AAPL");
-    assert_eq!(update.price, Some(amount(150)));
-    assert_eq!(update.previous_close, None);
+    assert_eq!(update.price, FieldUpdate::Set(amount(150)));
+    assert_eq!(update.previous_close, FieldUpdate::Unchanged);
     assert_eq!(update.ts.timestamp(), 1_640_995_200);
 }
 
@@ -264,9 +265,9 @@ fn quote_update_clone() {
     let original = QuoteUpdate {
         instrument: aapl(),
         currency: usd(),
-        price: Some(amount(150)),
-        previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume: None,
+        price: FieldUpdate::Set(amount(150)),
+        previous_close: FieldUpdate::Set(amount(Decimal::from(1475) / Decimal::from(10))),
+        volume: FieldUpdate::Unchanged,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -280,9 +281,9 @@ fn quote_update_debug_formatting() {
     let update = QuoteUpdate {
         instrument: aapl(),
         currency: usd(),
-        price: Some(amount(150)),
-        previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume: None,
+        price: FieldUpdate::Set(amount(150)),
+        previous_close: FieldUpdate::Set(amount(Decimal::from(1475) / Decimal::from(10))),
+        volume: FieldUpdate::Unchanged,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };
@@ -360,9 +361,9 @@ fn quote_update_serialization() {
     let update = QuoteUpdate {
         instrument: aapl_nasdaq(),
         currency: usd(),
-        price: Some(amount(150)),
-        previous_close: Some(amount(Decimal::from(1475) / Decimal::from(10))),
-        volume: Some(quantity(Decimal::from_str("12345.678").unwrap())),
+        price: FieldUpdate::Set(amount(150)),
+        previous_close: FieldUpdate::Set(amount(Decimal::from(1475) / Decimal::from(10))),
+        volume: FieldUpdate::Set(quantity(Decimal::from_str("12345.678").unwrap())),
         ts: DateTime::from_timestamp(1_640_995_200, 654_000_000).unwrap(),
         provider: (),
     };
@@ -378,13 +379,13 @@ fn quote_update_serialization() {
 }
 
 #[test]
-fn quote_update_with_none_fields() {
+fn quote_update_with_unchanged_fields() {
     let update = QuoteUpdate {
         instrument: aapl(),
         currency: usd(),
-        price: None,
-        previous_close: None,
-        volume: None,
+        price: FieldUpdate::Unchanged,
+        previous_close: FieldUpdate::Unchanged,
+        volume: FieldUpdate::Unchanged,
         ts: DateTime::from_timestamp(1_640_995_200, 0).unwrap(),
         provider: (),
     };

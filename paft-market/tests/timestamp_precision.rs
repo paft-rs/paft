@@ -14,10 +14,10 @@ fn documented_coinbase_ticker_preserves_its_event_instant() {
         Currency::Iso(IsoCurrency::USD),
         ts,
     );
-    update.price = Some(paft_money::PriceAmount::new(
+    update.price = paft_market::FieldUpdate::Set(paft_money::PriceAmount::new(
         paft_decimal::parse_decimal(raw["price"].as_str().unwrap()).unwrap(),
     ));
-    update.volume = Some(
+    update.volume = paft_market::FieldUpdate::Set(
         paft_money::QuantityAmount::from_decimal(
             paft_decimal::parse_decimal(raw["volume_24h"].as_str().unwrap()).unwrap(),
         )

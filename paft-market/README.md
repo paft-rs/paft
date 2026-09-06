@@ -125,6 +125,29 @@ point or epoch-unit inference. Calendar action dates remain dates. See the
 expanded years, retained millisecond adapters, and independently checked
 DataFrame nanosecond range.
 
+Quote patch migration (v0.10)
+-----------------------------
+
+`QuoteUpdate` is an incremental patch. Its `price`, `previous_close`, and
+`volume` use `FieldUpdate`: omitted JSON fields mean `Unchanged`, null means
+`Clear`, and a value means `Set`. Constructors start with all three unchanged.
+`Quote` snapshots retain `Option` fields. `Set` replaces the latest cumulative
+volume for the adapter's declared quantity unit/window; it is not an update
+delta. Replacing volume 100 with 5 produces 5, and zero is a present value.
+
+Consumers must establish matching instrument/currency context before applying
+patches and retain their source ordering or sequencing rules. `apply_to` only
+changes an individual optional field; it proves neither context nor ordering.
+DataFrames carry `<field>.operation` (`UNCHANGED`, `SET`, `CLEAR`) and
+`<field>.value` decimal columns. Retain both columns to preserve update intent.
+
+Historical quote-update payloads must not be replayed under this contract
+without a source-aware migration from an explicitly identified stored format.
+Legacy nulls do not independently establish clearing intent. Neither converting
+all nulls to `Clear` nor converting all to `Unchanged` is a universal migration.
+For new Rust producers, choose an explicit operation for each patch field;
+update DataFrame consumers from the old amount columns to operation/value pairs.
+
 Market payload notes
 --------------------
 

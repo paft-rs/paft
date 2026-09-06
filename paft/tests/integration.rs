@@ -115,9 +115,9 @@ fn end_to_end_workflow() {
     let quote_update = QuoteUpdate {
         instrument: instrument.clone(),
         currency: usd(),
-        price: Some(amount(106)),
-        previous_close: Some(amount(100)),
-        volume: None,
+        price: paft::market::FieldUpdate::Set(amount(106)),
+        previous_close: paft::market::FieldUpdate::Set(amount(100)),
+        volume: paft::market::FieldUpdate::Unchanged,
         ts: DateTime::from_timestamp(1_640_995_260, 0).unwrap(),
 
         provider: (),

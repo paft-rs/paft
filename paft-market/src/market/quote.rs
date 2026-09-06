@@ -6,7 +6,7 @@ use chrono::{DateTime, Utc};
 use paft_domain::{Instrument, MarketState};
 use paft_money::{Currency, PriceAmount, QuantityAmount};
 
-use crate::market::orderbook::GenericBookLevel;
+use super::{field_update::FieldUpdate, orderbook::GenericBookLevel};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// Snapshot quote data for an instrument at a single point in time.
@@ -94,7 +94,17 @@ impl<Q: Default, L> GenericQuote<Q, L> {
 pub type Quote = GenericQuote<(), ()>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-/// Streaming quote update payload for an instrument.
+/// Incremental quote patch for an instrument.
+///
+/// For `price`, `previous_close`, and `volume`, omission means `Unchanged`, null
+/// means `Clear`, and a value means `Set`. Apply patches only after establishing
+/// matching instrument and currency context. `FieldUpdate::apply_to` modifies
+/// an individual field; it does not validate that context. Consumers own source
+/// ordering and sequencing; patch semantics do not establish event order.
+///
+/// Historical payloads require a source-aware migration from an explicitly
+/// identified stored format. Legacy nulls did not establish clearing intent and
+/// must not be universally converted to either `Clear` or `Unchanged`.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
 /// serialized representation. Use the [`QuoteUpdate`] alias for the
@@ -108,18 +118,22 @@ pub struct GenericQuoteUpdate<M = ()> {
     pub instrument: Instrument,
     /// Currency shared by every price amount in this update.
     pub currency: Currency,
-    /// Last traded price, if present.
-    pub price: Option<PriceAmount>,
-    /// Previous close price.
-    pub previous_close: Option<PriceAmount>,
-    /// Latest known cumulative traded volume for this instrument in the
+    /// Instruction for the last traded price.
+    #[serde(default, skip_serializing_if = "FieldUpdate::is_unchanged")]
+    pub price: FieldUpdate<PriceAmount>,
+    /// Instruction for the previous close price.
+    #[serde(default, skip_serializing_if = "FieldUpdate::is_unchanged")]
+    pub previous_close: FieldUpdate<PriceAmount>,
+    /// Instruction for cumulative traded volume for this instrument in the
     /// provider's stated quantity unit.
     ///
     /// For equity feeds this is usually current session/day volume. For crypto
     /// and some derivatives feeds this may be a provider-defined rolling or
-    /// trading-day window. This field is a snapshot value, not a per-update
-    /// delta.
-    pub volume: Option<QuantityAmount>,
+    /// trading-day window, which the adapter must declare. `Set` replaces the
+    /// latest cumulative quantity; it is not an update delta. A replacement may
+    /// decrease or be zero.
+    #[serde(default, skip_serializing_if = "FieldUpdate::is_unchanged")]
+    pub volume: FieldUpdate<QuantityAmount>,
     /// Event UTC instant, encoded as canonical ISO-8601-style text.
     /// Serialization rejects leap seconds. `DataFrame` export uses exact nanoseconds
     /// and independently rejects instants outside the signed i64 nanosecond range.
@@ -136,9 +150,9 @@ paft_utils::impl_checked_dataframe! {
         instrument: [Instrument],
         #[df_derive(as_str)]
         currency: [Currency],
-        price: [Option<PriceAmount>],
-        previous_close: [Option<PriceAmount>],
-        volume: [Option<QuantityAmount>],
+        price: [FieldUpdate<PriceAmount>],
+        previous_close: [FieldUpdate<PriceAmount>],
+        volume: [FieldUpdate<QuantityAmount>],
         #[df_derive(time_unit = "ns")]
         ts: [DateTime<Utc>],
         provider: [M],
@@ -148,7 +162,7 @@ paft_utils::impl_checked_dataframe! {
 
 impl<M: Default> GenericQuoteUpdate<M> {
     /// Build a quote update with the given instrument and timestamp; all other
-    /// fields default to `None` and `provider` is initialised via `M::default()`.
+    /// fields are `Unchanged` and `provider` is initialised via `M::default()`.
     /// The timestamp is retained unchanged in memory; serialization requires
     /// a non-leap-second instant, including after public mutation.
     #[must_use]
@@ -156,9 +170,9 @@ impl<M: Default> GenericQuoteUpdate<M> {
         Self {
             instrument,
             currency,
-            price: None,
-            previous_close: None,
-            volume: None,
+            price: FieldUpdate::Unchanged,
+            previous_close: FieldUpdate::Unchanged,
+            volume: FieldUpdate::Unchanged,
             ts,
             provider: M::default(),
         }

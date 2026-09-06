@@ -220,9 +220,9 @@ fn quote_update_to_dataframe_smoke() {
     let update = QuoteUpdate {
         instrument: Instrument::from_symbol("AAPL", AssetKind::Equity).unwrap(),
         currency: usd(),
-        price: Some(usd_amount(150)),
-        previous_close: Some(usd_amount(147)),
-        volume: None,
+        price: paft_market::FieldUpdate::Set(usd_amount(150)),
+        previous_close: paft_market::FieldUpdate::Set(usd_amount(147)),
+        volume: paft_market::FieldUpdate::Unchanged,
         ts: chrono::DateTime::from_timestamp(0, 0).unwrap(),
 
         provider: (),

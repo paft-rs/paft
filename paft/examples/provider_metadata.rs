@@ -36,6 +36,7 @@
 //!    quotes, another for candles).
 
 use chrono::{DateTime, Utc};
+use paft::market::FieldUpdate;
 use paft::market::quote::{GenericQuote, GenericQuoteUpdate, Quote, QuoteUpdate};
 use paft::prelude::{
     AssetKind, Currency, Exchange, Instrument, IsoCurrency, MarketState, PriceAmount,
@@ -251,9 +252,9 @@ fn different_meta_per_stream() -> Result<()> {
     let broker_update: GenericQuoteUpdate<BrokerMeta> = GenericQuoteUpdate {
         instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
         currency: usd(),
-        price: Some(price(421)),
-        previous_close: Some(price(418)),
-        volume: Some(quantity(78_900_100)),
+        price: FieldUpdate::Set(price(421)),
+        previous_close: FieldUpdate::Set(price(418)),
+        volume: FieldUpdate::Set(quantity(78_900_100)),
         ts: ts(1_700_000_000),
         provider: BrokerMeta {
             account_id: "ACC-7".into(),
@@ -272,16 +273,16 @@ fn different_meta_per_stream() -> Result<()> {
     let plain: QuoteUpdate = QuoteUpdate {
         instrument: Instrument::from_symbol("MSFT", AssetKind::Equity)?,
         currency: usd(),
-        price: Some(price(421)),
-        previous_close: Some(price(418)),
-        volume: Some(quantity(78_900_100)),
+        price: FieldUpdate::Set(price(421)),
+        previous_close: FieldUpdate::Set(price(418)),
+        volume: FieldUpdate::Set(quantity(78_900_100)),
         ts: ts(1_700_000_000),
         provider: (),
     };
     println!(
-        "Plain update (no metadata): {} @ {}",
+        "Plain update (no metadata): {} @ {:?}",
         plain.instrument.symbol.as_str(),
-        plain.price.as_ref().unwrap(),
+        plain.price,
     );
     Ok(())
 }

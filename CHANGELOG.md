@@ -67,6 +67,16 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Market: quote-update price, previous close, and volume now use
+  `FieldUpdate`, matching option patches. Omission means unchanged, null clears,
+  and values replace; constructors start unchanged. Volume replaces the latest
+  cumulative quantity for the adapter's declared window, including decreases
+  and zero. DataFrames retain `UNCHANGED`/`SET`/`CLEAR` operation/value columns,
+  including quantity updates. Applying patches requires matching instrument and
+  currency context and consumer-owned ordering. Historical nulls require an
+  explicitly identified stored format and source-aware migration; no universal
+  null conversion can recover their original intent. Snapshot `Option`s remain.
+
 - **Breaking** Fundamentals: insider transaction/direct ownership shares and
   activity buy/sell/total insider shares now use fractional `QuantityAmount` in
   shares. Reported signed `net_shares` uses canonical-serde `Decimal`, without

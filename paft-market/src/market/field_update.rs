@@ -11,7 +11,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// fails because a standalone value cannot express omission. `T` must serialize
 /// to a non-null value; nullable payloads such as `Option<T>` are unsupported.
 ///
-/// With `dataframe`, price and non-negative decimal updates export `operation`
+/// With `dataframe`, price, quantity, and non-negative decimal updates export `operation`
 /// (`UNCHANGED`, `SET`, or `CLEAR`) and nullable decimal `value` columns. Only
 /// `SET` has a value; consumers must retain the operation to reconstruct state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -64,7 +64,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for FieldUpdate<T> {
 mod dataframe {
     use super::FieldUpdate;
     use paft_decimal::{Decimal, NonNegativeDecimal};
-    use paft_money::PriceAmount;
+    use paft_money::{PriceAmount, QuantityAmount};
     use paft_utils::dataframe::{Columnar, ToDataFrame};
     use polars::prelude::{DataFrame, DataType, PolarsResult};
 
@@ -117,5 +117,6 @@ mod dataframe {
     }
 
     impl_decimal_update_dataframe!(PriceAmount, PriceAmount::as_decimal);
+    impl_decimal_update_dataframe!(QuantityAmount, QuantityAmount::as_decimal);
     impl_decimal_update_dataframe!(NonNegativeDecimal, NonNegativeDecimal::as_decimal);
 }
