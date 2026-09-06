@@ -155,7 +155,7 @@ pub struct GenericBinaryQuote<M = ()> {
     /// Venue-namespaced binary market key.
     pub market: BinaryMarketKey,
     /// Timestamp (UTC) when this quote snapshot was observed.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Best YES bid, if known.
     pub yes_bid: Option<PredictionQuoteLevel>,
@@ -181,7 +181,7 @@ pub struct GenericBinaryOrderBook<M = ()> {
     /// Venue-namespaced binary market key.
     pub market: BinaryMarketKey,
     /// Timestamp (UTC) when this book snapshot was observed.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// YES bids in stored order; [`Self::sort_levels`] sorts prices descending.
     pub yes_bids: Vec<PredictionBookLevel>,
@@ -339,7 +339,7 @@ pub struct GenericOutcomeOrderBook<M = ()> {
     /// Venue-namespaced outcome instrument.
     pub instrument: OutcomeInstrument,
     /// Timestamp (UTC) when this book snapshot was observed.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Bids in stored order; [`Self::sort_levels`] sorts prices descending.
     pub bids: Vec<PredictionBookLevel>,
@@ -464,7 +464,7 @@ pub struct GenericPredictionTrade<M = ()> {
     /// Provider-native trade identifier, if available.
     pub trade_id: Option<String>,
     /// Event timestamp (UTC).
-    #[serde(with = "chrono::serde::ts_milliseconds")]
+    #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]

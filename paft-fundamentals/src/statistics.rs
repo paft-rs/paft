@@ -27,7 +27,7 @@ pub struct KeyStatistics {
     /// Timestamp at which these statistics were observed. Useful when
     /// snapshotting price-driven values like `market_cap` that move
     /// intraday.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
 
     // ---- Valuation ----

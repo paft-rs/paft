@@ -35,7 +35,7 @@ pub struct GenericSnapshot<M = ()> {
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
     /// Timestamp (UTC) when this snapshot was taken.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Currency shared by every price amount in this snapshot.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]

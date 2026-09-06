@@ -174,10 +174,10 @@ pub struct GenericOptionContract<M = ()> {
     /// `None` means the provider did not report this value.
     pub in_the_money: Option<bool>,
     /// Exact UTC expiration instant, if known.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub expiration_at: Option<DateTime<Utc>>,
     /// Exact UTC last trade instant, if known.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub last_trade_at: Option<DateTime<Utc>>,
     /// Optional first-order greeks for the contract.
     pub greeks: Option<OptionGreeks>,
@@ -281,7 +281,7 @@ pub struct GenericOptionUpdate<M = ()> {
     #[cfg_attr(feature = "dataframe", df_derive(flatten))]
     pub key: OptionContractKey,
     /// Timestamp of the update as Unix milliseconds.
-    #[serde(with = "chrono::serde::ts_milliseconds")]
+    #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Premium currency for `bid`, `ask`, and `last_price`.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]

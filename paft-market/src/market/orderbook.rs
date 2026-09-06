@@ -74,7 +74,7 @@ pub struct GenericOrderBook<B = (), L = ()> {
     pub instrument: Instrument,
 
     /// Timestamp (UTC) when this book snapshot was observed.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
 
     /// Currency shared by every price amount in this book.

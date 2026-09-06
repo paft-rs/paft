@@ -1520,6 +1520,7 @@ version = "0.10.0"
 dependencies = [
  "chrono",
  "df-derive-macros",
+ "paft-core",
  "paft-decimal",
  "paft-domain",
  "paft-money",
@@ -1594,6 +1595,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "df-derive-macros",
+ "paft-core",
  "paft-decimal",
  "paft-domain",
  "paft-money",
@@ -1626,6 +1628,7 @@ version = "0.10.0"
 dependencies = [
  "chrono",
  "df-derive-macros",
+ "paft-core",
  "paft-decimal",
  "paft-money",
  "paft-utils",

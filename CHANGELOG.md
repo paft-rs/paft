@@ -62,6 +62,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Timestamp serde: all epoch-millisecond payload fields (required,
+  optional, and vector) now reject sub-millisecond values and leap seconds on
+  serialization instead of silently changing them. Integer JSON is unchanged.
+  Payloads retain full precision in memory; callers requiring lossy normalization
+  must perform it explicitly. Shared exact adapters live in
+  `paft_core::serde_helpers` and also back `TimeSpec` validation.
 - **Breaking** Money/DataFrame: exports now include `minor_units` (`UInt8`),
   including nested and vector exports, so captured settlement specifications
   remain distinguishable when amount and currency are equal.

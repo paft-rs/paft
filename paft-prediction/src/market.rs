@@ -707,13 +707,13 @@ pub struct GenericBinaryMarket<M = ()> {
     /// Non-zero minimum accepted order quantity, if known.
     pub min_order_quantity: Option<NonZeroContractQuantity>,
     /// Time when the market opens to trading.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub open_time: Option<DateTime<Utc>>,
     /// Time when the market closes to trading.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub close_time: Option<DateTime<Utc>>,
     /// Time when the market settled/resolved.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub settlement_time: Option<DateTime<Utc>>,
     /// Binary settlement result, if known.
     pub settlement: Option<BinarySettlement>,
@@ -784,11 +784,11 @@ where
             winning_payout: NonZeroOutcomePayout,
             price_grid: Option<PriceGrid>,
             min_order_quantity: Option<NonZeroContractQuantity>,
-            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
             open_time: Option<DateTime<Utc>>,
-            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
             close_time: Option<DateTime<Utc>>,
-            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
             settlement_time: Option<DateTime<Utc>>,
             settlement: Option<BinarySettlement>,
             #[serde(flatten, default = "Default::default")]
@@ -894,13 +894,13 @@ pub struct GenericMultiOutcomeMarket<M = ()> {
     /// Non-zero minimum accepted order quantity, if known.
     pub min_order_quantity: Option<NonZeroContractQuantity>,
     /// Time when the market opens to trading.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub open_time: Option<DateTime<Utc>>,
     /// Time when the market closes to trading.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub close_time: Option<DateTime<Utc>>,
     /// Time when the market settled/resolved.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub settlement_time: Option<DateTime<Utc>>,
     /// Winning outcome id, if resolved to one outcome.
     resolution: Option<PredictionOutcomeId>,
@@ -999,11 +999,11 @@ where
             unit_payout: OutcomePayout,
             price_grid: Option<PriceGrid>,
             min_order_quantity: Option<NonZeroContractQuantity>,
-            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
             open_time: Option<DateTime<Utc>>,
-            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
             close_time: Option<DateTime<Utc>>,
-            #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+            #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
             settlement_time: Option<DateTime<Utc>>,
             resolution: Option<PredictionOutcomeId>,
             #[serde(flatten, default = "Default::default")]
@@ -1120,13 +1120,13 @@ pub struct GenericScalarMarket<M = ()> {
     /// Market lifecycle status.
     pub status: PredictionMarketStatus,
     /// Time when the market opens to trading.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub open_time: Option<DateTime<Utc>>,
     /// Time when the market closes to trading.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub close_time: Option<DateTime<Utc>>,
     /// Time when the market settled/resolved.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub settlement_time: Option<DateTime<Utc>>,
     /// Resolved scalar value, if known.
     #[serde(default, with = "paft_decimal::serde::option_canonical_str")]

@@ -563,10 +563,9 @@ impl TimeSpec {
     pub fn validate(&self) -> Result<(), MarketError> {
         if let Self::Period { start, end } = self {
             for (field, timestamp) in [("start", start), ("end", end)] {
-                // Match both directions of chrono::serde::ts_milliseconds.
+                // Match both directions of paft_core::serde_helpers::ts_milliseconds.
                 // A divisibility check alone would miss leap-second values.
-                if DateTime::from_timestamp_millis(timestamp.timestamp_millis()) != Some(*timestamp)
-                {
+                if paft_core::serde_helpers::timestamp_millis_exact(timestamp).is_none() {
                     return Err(MarketError::InvalidPeriodTimestamp {
                         field,
                         timestamp: *timestamp,
@@ -592,9 +591,9 @@ enum TimeSpecWire {
         range: Range,
     },
     Period {
-        #[serde(with = "chrono::serde::ts_milliseconds")]
+        #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
         start: DateTime<Utc>,
-        #[serde(with = "chrono::serde::ts_milliseconds")]
+        #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
         end: DateTime<Utc>,
     },
 }

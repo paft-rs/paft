@@ -61,7 +61,7 @@ impl Ohlc {
 /// names; prefer provider-specific prefixes when in doubt.
 pub struct GenericCandle<M = ()> {
     /// Timestamp for the bar as Unix milliseconds.
-    #[serde(with = "chrono::serde::ts_milliseconds")]
+    #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Currency shared by every price amount in this candle.
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]

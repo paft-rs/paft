@@ -15,6 +15,7 @@ categories = ["data-structures", "finance"]
 workspace = true
 
 [dependencies]
+paft-core = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 chrono = { workspace = true }

@@ -44,7 +44,8 @@ pub struct GenericQuote<Q = (), L = ()> {
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
     /// Timestamp (UTC) when this quote snapshot was observed.
-    #[serde(default, with = "chrono::serde::ts_milliseconds_option")]
+    /// Serialization rejects sub-millisecond precision and leap seconds.
+    #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
@@ -105,7 +106,8 @@ pub struct GenericQuoteUpdate<M = ()> {
     /// delta.
     pub volume: Option<QuantityAmount>,
     /// Event timestamp as Unix milliseconds.
-    #[serde(with = "chrono::serde::ts_milliseconds")]
+    /// Serialization rejects sub-millisecond precision and leap seconds.
+    #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
@@ -115,6 +117,8 @@ pub struct GenericQuoteUpdate<M = ()> {
 impl<M: Default> GenericQuoteUpdate<M> {
     /// Build a quote update with the given instrument and timestamp; all other
     /// fields default to `None` and `provider` is initialised via `M::default()`.
+    /// The timestamp is retained unchanged in memory; serialization requires
+    /// exact Unix-millisecond representability, including after public mutation.
     #[must_use]
     pub fn new(instrument: Instrument, currency: Currency, ts: DateTime<Utc>) -> Self {
         Self {
