@@ -37,9 +37,6 @@ jobs:
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
 
-      - name: Install cargo-hack
-        uses: taiki-e/install-action@cargo-hack
-
       - name: Install just
         uses: taiki-e/install-action@just
 
@@ -49,14 +46,15 @@ jobs:
       - name: Run tests and doctests
         run: just test
 
-      - name: Test independently published crate configurations
-        run: just test-crate-configs
-
       - name: Run lints
         run: just lint
 
+  configurations:
+    name: Consumer configurations
+    uses: ./.github/workflows/configurations.yml
+
   publish:
-    needs: test
+    needs: [test, configurations]
     runs-on: ubuntu-latest
     environment:
       name: crates-io

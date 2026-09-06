@@ -90,20 +90,15 @@ jobs:
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
 
-      - name: Install cargo-hack
-        uses: taiki-e/install-action@cargo-hack
-
       - name: Install just
         uses: taiki-e/install-action@just
 
       - name: Run tests and doctests
         run: just test
 
-      - name: Test independently published crate configurations
-        run: just test-crate-configs
-
-      - name: Check the decimal contract across features
-        run: just check-decimal-contract
+  configurations:
+    name: Consumer configurations
+    uses: ./.github/workflows/configurations.yml
 
   package:
     name: Package

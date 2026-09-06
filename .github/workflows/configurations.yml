@@ -1,0 +1,77 @@
+name: Consumer configurations
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  # Independently enabled Polars features produce large, distinct build artifacts.
+  # Tests and doctests need neither debug symbols nor incremental build caches.
+  CARGO_PROFILE_DEV_DEBUG: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  packages:
+    name: Discover published crates
+    runs-on: ubuntu-latest
+    outputs:
+      crates: ${{ steps.packages.outputs.crates }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Read workspace packages
+        id: packages
+        run: |
+          crates=$(cargo metadata --locked --no-deps --format-version 1 | jq -c '
+            .workspace_members as $members |
+            [.packages[] | select(.id as $id | $members | index($id)) |
+              select(.publish != []) | .name] | sort')
+          echo "crates=$crates" >> "$GITHUB_OUTPUT"
+
+  crates:
+    name: Crate configurations (${{ matrix.crate }})
+    needs: packages
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        crate: ${{ fromJSON(needs.packages.outputs.crates) }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: crate-configs-${{ matrix.crate }}
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: taiki-e/install-action@just
+      - name: Test independently published crate configurations and doctests
+        env:
+          PAFT_TEST_CRATE: ${{ matrix.crate }}
+        run: just test-crate-configs "$PAFT_TEST_CRATE"
+      - name: Report runner resources
+        if: always()
+        run: |
+          df -h
+          free -h
+
+  decimal:
+    name: Decimal contract across features
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: decimal-contract
+      - uses: taiki-e/install-action@just
+      - name: Check the decimal contract across features
+        run: just check-decimal-contract
+      - name: Report runner resources
+        if: always()
+        run: |
+          df -h
+          free -h

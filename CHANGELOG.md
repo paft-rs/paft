@@ -62,6 +62,12 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- CI: independently published crates now run their three configurations and
+  doctests on separate runners, discovered from Cargo metadata. Separate cache
+  keys and disabled CI debug/incremental artifacts bound the per-runner build
+  footprint after an isolated all-features doctest linker crash. Runner resource
+  diagnostics are retained on failures. The decimal-contract job runs
+  independently, and publication requires all configuration jobs to pass.
 - **Breaking** Money: addition and subtraction now use exact decimal helpers,
   preserving captured settlement scale without rounding. Unrepresentable exact
   results return `NotRepresentable`, including coefficient overflow that upstream
