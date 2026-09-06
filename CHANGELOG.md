@@ -62,6 +62,11 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Fundamentals: `KeyStatistics::average_daily_volume_3m` now uses
+  `Option<QuantityAmount>` to retain non-negative fractional averages, with
+  documented trading-session and quantity-unit semantics. JSON uses canonical
+  decimal strings; DataFrames use `average_daily_volume_3m.amount` with decimal
+  dtype. Zero and unavailable values remain distinct.
 - **Breaking** Domain: FIGI validation now rejects the seven prohibited prefixes
   (`BS`, `BM`, `GG`, `GB`, `GH`, `KY`, `VG`) after normalization, even when their
   checksums are valid. Documentation distinguishes local structural/checksum

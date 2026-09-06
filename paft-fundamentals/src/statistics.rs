@@ -11,7 +11,7 @@
 
 use chrono::{DateTime, NaiveDate, Utc};
 use paft_decimal::Decimal;
-use paft_money::{Money, Price};
+use paft_money::{Money, Price, QuantityAmount};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -61,8 +61,14 @@ pub struct KeyStatistics {
     pub fifty_two_week_low: Option<Price>,
 
     // ---- Volume statistic ----
-    /// Average daily traded volume over the last three months.
-    pub average_daily_volume_3m: Option<u64>,
+    /// Arithmetic mean of daily traded quantity over the trailing three months,
+    /// including zero-volume trading sessions. Fractional averages are retained.
+    ///
+    /// The unit is shares for equities. For other instruments, the surrounding
+    /// context or provider metadata must identify the quantity unit (for example,
+    /// contracts or base-asset units). `None` means unavailable; zero is a reported
+    /// average of zero.
+    pub average_daily_volume_3m: Option<QuantityAmount>,
 
     // ---- Risk ----
     /// Market beta. The calculation period and frequency are not
@@ -87,7 +93,7 @@ paft_utils::impl_checked_dataframe! {
         ex_dividend_date: [Option<NaiveDate>],
         fifty_two_week_high: [Option<Price>],
         fifty_two_week_low: [Option<Price>],
-        average_daily_volume_3m: [Option<u64>],
+        average_daily_volume_3m: [Option<QuantityAmount>],
         beta: [Option<Decimal>],
     }
     validate |row| row.as_of.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())

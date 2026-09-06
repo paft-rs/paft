@@ -1,7 +1,7 @@
 use chrono::{NaiveDate, TimeZone, Utc};
 use paft_decimal::Decimal;
 use paft_fundamentals::statistics::KeyStatistics;
-use paft_money::{Currency, IsoCurrency, Money, Price};
+use paft_money::{Currency, IsoCurrency, Money, Price, QuantityAmount};
 use serde_json::{from_str, json, to_string};
 use std::str::FromStr;
 
@@ -53,7 +53,7 @@ fn key_statistics_serde_roundtrip_populated() {
         ex_dividend_date: Some(date(2023, 11, 15)),
         fifty_two_week_high: Some(usd_price(200)),
         fifty_two_week_low: Some(usd_price(120)),
-        average_daily_volume_3m: Some(55_000_000),
+        average_daily_volume_3m: Some(QuantityAmount::from_decimal(55_000_000.into()).unwrap()),
         beta: Some(dec("1.23")),
     };
 
@@ -62,6 +62,7 @@ fn key_statistics_serde_roundtrip_populated() {
     assert_eq!(value["dividend_yield_trailing"], json!("0.005"));
     assert_eq!(value["dividend_yield_forward"], json!("0.0055"));
     assert_eq!(value["ex_dividend_date"], json!("2023-11-15"));
+    assert_eq!(value["average_daily_volume_3m"], json!("55000000"));
     let decoded: KeyStatistics = from_str(&encoded).unwrap();
     assert_eq!(s, decoded);
 }
@@ -72,4 +73,32 @@ fn key_statistics_serde_roundtrip_empty() {
     let encoded = to_string(&s).unwrap();
     let decoded: KeyStatistics = from_str(&encoded).unwrap();
     assert_eq!(s, decoded);
+}
+
+#[test]
+fn fractional_average_daily_volume_preserves_quantity_semantics() {
+    // 150 shares across 60 trading sessions average 2.5 shares per session.
+    for amount in ["2.5", "0", "0.0000000000000000000000000001"] {
+        let quantity = QuantityAmount::from_decimal(dec(amount)).unwrap();
+        let row = KeyStatistics {
+            average_daily_volume_3m: Some(quantity.clone()),
+            ..KeyStatistics::default()
+        };
+        let json = serde_json::to_value(&row).unwrap();
+        assert_eq!(json["average_daily_volume_3m"], amount);
+        let decoded: KeyStatistics = serde_json::from_value(json).unwrap();
+        assert_eq!(decoded.average_daily_volume_3m, Some(quantity));
+    }
+    for json in [json!({}), json!({"average_daily_volume_3m": null})] {
+        let row: KeyStatistics = serde_json::from_value(json).unwrap();
+        assert!(row.average_daily_volume_3m.is_none());
+    }
+    for value in [json!("-2.5"), json!(2.5), json!("1e-29")] {
+        assert!(
+            serde_json::from_value::<KeyStatistics>(json!({
+                "average_daily_volume_3m": value
+            }))
+            .is_err()
+        );
+    }
 }

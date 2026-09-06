@@ -413,7 +413,7 @@ fn key_statistics_to_dataframe() {
         ex_dividend_date: Some(date(2023, 11, 15)),
         fifty_two_week_high: Some(usd_price(200)),
         fifty_two_week_low: Some(usd_price(120)),
-        average_daily_volume_3m: Some(55_000_000),
+        average_daily_volume_3m: Some(shares("55000000")),
         beta: Some(dec("1.23")),
     };
     let df = stats.to_dataframe().unwrap();
