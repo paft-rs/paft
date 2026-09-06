@@ -62,6 +62,10 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Domain: FIGI validation now rejects the seven prohibited prefixes
+  (`BS`, `BM`, `GG`, `GB`, `GH`, `KY`, `VG`) after normalization, even when their
+  checksums are valid. Documentation distinguishes local structural/checksum
+  validation from registry assignment and FIGI level verification.
 - **Breaking** DataFrame: PAFT timestamp fields now use the same exact-millisecond
   validation as JSON before encoding, including required/optional/list fields
   and nested records. Unsupported precision or leap seconds return a Polars

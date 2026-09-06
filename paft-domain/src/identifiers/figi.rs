@@ -50,6 +50,8 @@ fn figi_structure_is_valid(value: &str) -> bool {
     let bytes = value.as_bytes();
     bytes.len() == 12
         && bytes[..2].iter().all(|b| is_figi_consonant(*b))
+        // FIGI 1.2 section 6.1.2 reserves these prefixes to reduce ISIN ambiguity.
+        && !matches!(&bytes[..2], b"BS" | b"BM" | b"GG" | b"GB" | b"GH" | b"KY" | b"VG")
         && bytes[2] == b'G'
         && bytes[3..11]
             .iter()
@@ -95,7 +97,12 @@ fn figi_char_value(byte: u8) -> Option<u32> {
     }
 }
 
-/// Opaque wrapper for validated FIGI values.
+/// Opaque wrapper for structurally valid FIGI values with valid checksums.
+///
+/// Enforces the syntax in [FIGI 1.2 section 6.1.2](https://www.omg.org/spec/FIGI/1.2/PDF),
+/// including the prohibited prefixes `BS`, `BM`, `GG`, `GB`, `GH`, `KY`, and `VG`.
+/// Validation is local: it does not establish that an identifier was assigned to
+/// an instrument, nor which FIGI level it identifies.
 ///
 /// Backed by [`SmolStr`], so standard 12-byte FIGI codes live inline without
 /// heap allocation and clones stay cheap.
@@ -103,11 +110,13 @@ fn figi_char_value(byte: u8) -> Option<u32> {
 pub struct Figi(SmolStr);
 
 impl Figi {
-    /// Construct a new validated FIGI.
+    /// Construct a FIGI after trimming whitespace and normalizing to uppercase.
+    /// Checks structure and checksum without querying an assignment registry.
     ///
     /// # Errors
-    /// Returns `DomainError::InvalidFigi` when `value` is empty, not exactly
-    /// 12 ASCII alphanumeric characters, or fails the checksum.
+    /// Returns `DomainError::InvalidFigi` when the trimmed value is not exactly
+    /// 12 ASCII characters, violates FIGI syntax (including prohibited prefixes),
+    /// or fails the checksum.
     #[cfg_attr(feature = "tracing", tracing::instrument(level = "debug", err))]
     pub fn new(value: &str) -> Result<Self, DomainError> {
         let normalized = normalize_figi(value)?;

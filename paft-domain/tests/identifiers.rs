@@ -100,6 +100,52 @@ fn figi_accepts_openfigi_reference_checksum() {
 }
 
 #[test]
+fn figi_rejects_prohibited_prefixes_even_with_valid_checksums() {
+    // Synthetic identifiers with independently calculated check digits.
+    for value in [
+        "BSG000000000",
+        "BMG000000003",
+        "GGG000000001",
+        "GBG000000002",
+        "GHG000000009",
+        "KYG000000007",
+        "VGG000000004",
+    ] {
+        for input in [
+            value.to_owned(),
+            format!(" {} ", value.to_ascii_lowercase()),
+        ] {
+            assert!(
+                matches!(Figi::new(&input), Err(DomainError::InvalidFigi { .. })),
+                "{input}"
+            );
+            assert!(input.parse::<Figi>().is_err(), "{input}");
+            assert!(Figi::try_from(input.clone()).is_err(), "{input}");
+            assert!(
+                from_str::<Figi>(&to_string(&input).unwrap()).is_err(),
+                "{input}"
+            );
+        }
+    }
+}
+
+#[test]
+fn figi_syntax_validation_does_not_require_registry_assignment() {
+    // Nearby allowed prefixes with valid checksums remain syntactically valid.
+    for value in [
+        "BTG000000008",
+        "BNG000000001",
+        "GFG000000003",
+        "GCG000000000",
+        "GJG000000005",
+        "KZG000000004",
+        "VHG000000002",
+    ] {
+        assert_eq!(Figi::new(value).unwrap().as_ref(), value);
+    }
+}
+
+#[test]
 fn figi_rejects_invalid_length() {
     let err = Figi::new("BBG000B9XRY").expect_err("length must be 12");
     assert!(matches!(err, DomainError::InvalidFigi { .. }));
