@@ -1,0 +1,23 @@
+{
+  "spglobal": {
+    "source": "https://www.spglobal.com/content/dam/spglobal/s1/en/documents/esg/Company%20Benchmarking%20Report_Sample%20Report%202025.pdf",
+    "source_page": 9,
+    "description": "Reduced transcription of S&P Global's own illustrative Sample Company report, not an actual issuer observation. The source defines governance as its Governance & Economic dimension.",
+    "benchmark_data_as_of": "2025-07-18",
+    "comparison_group": "Sample Industry",
+    "dimensions": {
+      "Environmental Dimension": "59",
+      "Social Dimension": "58",
+      "Governance & Economic Dimension": "60"
+    }
+  },
+  "sustainalytics": {
+    "source": "https://www.holcim.com/sites/holcim/files/docs/holcim_ltd-riskratingssummaryreport_08_07_2025.pdf",
+    "source_page": 1,
+    "company": "Holcim Ltd.",
+    "last_full_update": "2024-12-20",
+    "comparison_group": "Construction Materials",
+    "ESG Risk Rating": "18.3",
+    "description": "Reduced aggregate-risk example. An overall unmanaged-risk rating is not an environmental, social, or governance dimension score; this fixture deliberately rejects that conversion. Report/update dates are not manufactured into assessment dates."
+  }
+}

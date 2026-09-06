@@ -12,7 +12,7 @@ Fundamentals data models for the paft ecosystem: financial statements, analysis,
 - Analysis: earnings, recommendations, price targets, horizon-based trend/revision helper rows
 - Statistics: `KeyStatistics`
 - Holders: institutional, insiders
-- ESG: scores, involvement, summary
+- ESG: methodology context, scores, involvement, summary
 
 Install
 -------
@@ -145,6 +145,46 @@ through `f64`. Transaction counts remain JSON integers. DataFrame quantities use
 `<field>.amount` decimal columns; signed `net_shares` is a decimal column directly.
 Zero remains distinct from missing. Institutional share fields are outside this
 migration; this is not a claim that institutional ownership is always integral.
+
+ESG methodology context (v0.10 migration)
+---------------------------------------
+
+Every `EsgSummary` requires one `EsgContext` governing its scores and involvement
+categories. Construct it with `EsgSummary::new(EsgContext::new("vendor:methodology")?)`.
+`EsgSummary::default()` is removed; use `Option<EsgSummary>` for an absent report.
+Legacy Rust values and JSON need the actual methodology identity from their
+adapter or source. An empty or invented "unknown" scheme cannot recover missing
+provenance and must not be used as a migration fallback.
+
+Adapters assign consistent, case-sensitive `namespace:methodology` identifiers.
+The first colon separates nonempty portions, with no embedded whitespace; a
+provider name alone does not identify its multiple methodologies. Optional
+reference, version, assessment date, and comparison group mean "not supplied"
+when absent. A reference can be a URI, document identifier, or opaque text;
+PAFT neither resolves it nor interprets methodology rules. Checked constructors,
+setters, and deserialization trim surrounding whitespace and reject supplied
+blank strings. Failed setters leave the context unchanged. Context fields are
+private and unknown context JSON fields are rejected.
+
+One scheme may define different scales for its components. Matching identifiers
+alone do not establish comparability; version, date, comparison group, and metric
+definitions may also matter. Different schemes belong in separate summaries
+unless an explicitly identified composite methodology governs the combination.
+Validation checks syntax, not whether an adapter attributed measurements correctly.
+
+`EsgScores` and `EsgInvolvement` retain standalone Serde and DataFrame support as
+measurement components whose interpretation requires context for a complete
+report. Summary JSON stores context once under `context`; DataFrames add
+`context.scheme_id`, `context.methodology_reference`,
+`context.methodology_version`, `context.assessment_date` (a calendar date), and
+`context.comparison_group`. Component columns remain unchanged.
+Facade consumers can use `paft::fundamentals::{EsgContext, FundamentalsError}`
+or the prelude; errors also convert into the facade's `Error`.
+
+Attributed regression fixtures preserve S&P Global's illustrative dimension
+scores with their CSA identity and deliberately reject treating a Sustainalytics
+overall unmanaged-risk rating as one of those dimensions. Dates describing a
+benchmark dataset or report update are not inferred to be assessment dates.
 
 Statement measurement windows
 -----------------------------

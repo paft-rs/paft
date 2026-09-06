@@ -59,7 +59,7 @@ pub use analysis::{
     UpgradeDowngradeRow,
 };
 pub use error::FundamentalsError;
-pub use esg::{EsgInvolvement, EsgScores, EsgSummary};
+pub use esg::{EsgContext, EsgInvolvement, EsgScores, EsgSummary};
 pub use holders::{
     InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, MajorHolder,
     NetSharePurchaseActivity, OtherInsiderPosition, OtherTransactionType, TransactionType,

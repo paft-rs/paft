@@ -67,6 +67,19 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Fundamentals: `EsgSummary` requires one validated `EsgContext`
+  identifying the methodology governing all scores and involvement categories.
+  Case-sensitive namespaced scheme identifiers are required; reference, version,
+  assessment date, and comparison group are optional. Private fields, checked
+  setters, and strict deserialization trim strings and preserve invariants;
+  unsuccessful mutations leave the prior context unchanged. Use
+  `EsgSummary::new(context)` and `Option<EsgSummary>` for absence instead of
+  `Default`. Legacy summaries require their actual scheme, never an invented
+  fallback. Components retain standalone Serde/DataFrame support; summary exports
+  carry context once. Context and error paths are exposed through the facade and
+  prelude and checked by the isolated consumer fixture. Attributed provider
+  mappings preserve methodology meaning without normalizing unlike scores.
+
 - **Breaking** Market: quote-update price, previous close, and volume now use
   `FieldUpdate`, matching option patches. Omission means unchanged, null clears,
   and values replace; constructors start unchanged. Volume replaces the latest

@@ -5,8 +5,8 @@ use paft_domain::{Horizon, Isin, PeriodYear, ReportingPeriod};
 use paft_fundamentals::{
     Address, AnalysisSummary, BalanceSheetRow, Calendar, CashflowRow, CompanyProfile, Earnings,
     EarningsEstimate, EarningsQuarter, EarningsQuarterEps, EarningsTrendRow, EarningsYear,
-    EpsRevisions, EpsTrend, EsgInvolvement, EsgScores, EsgSummary, FundKind, FundProfile,
-    IncomeStatementRow, InsiderPosition, InsiderRosterHolder, InsiderTransaction,
+    EpsRevisions, EpsTrend, EsgContext, EsgInvolvement, EsgScores, EsgSummary, FundKind,
+    FundProfile, IncomeStatementRow, InsiderPosition, InsiderRosterHolder, InsiderTransaction,
     InstitutionalHolder, KeyStatistics, MajorHolder, NetSharePurchaseActivity, PriceTarget,
     Profile, RecommendationAction, RecommendationGrade, RecommendationRow, RecommendationSummary,
     RevenueEstimate, RevisionPoint, ShareCount, TransactionType, TrendPoint, UpgradeDowngradeRow,
@@ -598,6 +598,7 @@ fn esg_involvement_vec_to_dataframe() {
 #[test]
 fn esg_summary_to_dataframe() {
     let summary = EsgSummary {
+        context: EsgContext::new("test:EXPOSURE").unwrap(),
         scores: Some(EsgScores {
             environmental: Some(dec("55.0")),
             social: Some(dec("60.5")),

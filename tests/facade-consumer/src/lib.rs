@@ -55,3 +55,30 @@ mod tests {
         assert!(serde_json::from_str::<Payload>(r#"{"ts":-1,"list":[]}"#).is_err());
     }
 }
+
+#[cfg(all(test, feature = "fundamentals"))]
+mod fundamentals {
+    use paft::prelude::{Error, EsgContext, EsgSummary, FundamentalsError, Result};
+
+    fn context(input: &str) -> Result<EsgContext> {
+        Ok(EsgContext::new(input)?)
+    }
+
+    #[test]
+    fn context_and_its_error_are_reachable_through_the_facade_and_prelude() {
+        let report_context: paft::fundamentals::EsgContext = context("vendor:method").unwrap();
+        let report = EsgSummary::new(report_context);
+        assert_eq!(
+            serde_json::from_value::<EsgSummary>(serde_json::to_value(&report).unwrap()).unwrap(),
+            report
+        );
+        assert!(matches!(
+            context("provider only"),
+            Err(Error::Fundamentals(FundamentalsError::InvalidEsgContext {
+                field: "scheme_id",
+                ..
+            }))
+        ));
+        let _: paft::fundamentals::FundamentalsError = EsgContext::new(" ").unwrap_err();
+    }
+}

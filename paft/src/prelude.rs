@@ -40,7 +40,7 @@ pub use crate::fundamentals::analysis::{
     UpgradeDowngradeRow,
 };
 #[cfg(feature = "fundamentals")]
-pub use crate::fundamentals::esg::{EsgInvolvement, EsgScores, EsgSummary};
+pub use crate::fundamentals::esg::{EsgContext, EsgInvolvement, EsgScores, EsgSummary};
 #[cfg(feature = "fundamentals")]
 pub use crate::fundamentals::holders::{
     InsiderPosition, InsiderRosterHolder, InsiderTransaction, InstitutionalHolder, MajorHolder,
