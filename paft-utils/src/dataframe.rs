@@ -38,3 +38,78 @@ where
         paft_decimal::Decimal128Mantissa::try_to_i128_mantissa(self, target_scale)
     }
 }
+
+/// Internal glue for PAFT rows that must validate before `df-derive` encodes
+/// them. A borrowed projection keeps the upstream trait identity and column
+/// encoding, including nested provider metadata. Exhaustive destructuring makes
+/// adding a model field without updating its projection a compile error.
+/// Field types use brackets to pass raw tokens through to the upstream derive;
+/// opaque `ty` macro fragments would hide their structure from its type parser.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_checked_dataframe {
+    (
+        $name:ident $(<$($generic:ident),+>)? {
+            $($(#[$attr:meta])* $field:ident: [$($ty:tt)*]),* $(,)?
+        }
+        validate |$row:ident| $valid:expr
+    ) => {
+        const _: () = {
+            use $crate::dataframe::{Columnar, ToDataFrame};
+            use $crate::dataframe::__private::polars::prelude::{
+                DataFrame, DataType, PolarsError, PolarsResult,
+            };
+
+            #[derive(df_derive_macros::ToDataFrame)]
+            struct Projection<'a $(, $($generic),+)?> {
+                $($(#[$attr])* $field: &'a $($ty)*),*
+            }
+
+            impl<'a $(, $($generic),+)?> Projection<'a $(, $($generic),+)?> {
+                fn checked($row: &'a $name $(<$($generic),+>)?) -> PolarsResult<Self> {
+                    if !$valid {
+                        return Err(PolarsError::ComputeError(format!(
+                            "{} timestamp cannot be preserved as Unix milliseconds \
+                             (sub-millisecond precision or leap second)",
+                            stringify!($name),
+                        ).into()));
+                    }
+                    let $name { $($field),* } = $row;
+                    Ok(Self { $($field),* })
+                }
+            }
+
+            impl $(<$($generic: ToDataFrame + Columnar),+>)?
+                ToDataFrame for $name $(<$($generic),+>)?
+            {
+                fn to_dataframe(&self) -> PolarsResult<DataFrame> {
+                    <Self as Columnar>::columnar_from_refs(&[self])
+                }
+
+                fn empty_dataframe() -> PolarsResult<DataFrame> {
+                    Projection::<$($($generic),+)?>::empty_dataframe()
+                }
+
+                fn schema() -> PolarsResult<Vec<(String, DataType)>> {
+                    Projection::<$($($generic),+)?>::schema()
+                }
+            }
+
+            impl $(<$($generic: ToDataFrame + Columnar),+>)?
+                Columnar for $name $(<$($generic),+>)?
+            {
+                fn columnar_to_dataframe(items: &[Self]) -> PolarsResult<DataFrame> {
+                    let rows = items.iter().map(Projection::checked)
+                        .collect::<PolarsResult<Vec<_>>>()?;
+                    Projection::columnar_to_dataframe(&rows)
+                }
+
+                fn columnar_from_refs(items: &[&Self]) -> PolarsResult<DataFrame> {
+                    let rows = items.iter().copied().map(Projection::checked)
+                        .collect::<PolarsResult<Vec<_>>>()?;
+                    Projection::columnar_to_dataframe(&rows)
+                }
+            }
+        };
+    };
+}

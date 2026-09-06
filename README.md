@@ -55,6 +55,12 @@ wire format. This applies to required, optional, and vector timestamps across
 market, fundamentals, aggregate, and prediction payloads. Adapters are shared in
 `paft_core::serde_helpers`; ordinary millisecond JSON is unchanged.
 
+DataFrame export applies the same exact-or-error millisecond policy to PAFT
+timestamp fields, including nested records, optional timestamps, and timestamp
+lists. Unsupported precision returns a Polars compute error. Public Rust fields
+retain their original `DateTime<Utc>` types; caller-defined provider metadata
+controls its own export policy.
+
 ## Workspace Crates
 
 The workspace is on the v0.10.0 line. The `paft` facade enables domain, market,

@@ -15,6 +15,12 @@ fn public_quote_timestamps_are_checked_at_serialization() {
         update.ts = ts;
         assert!(serde_json::to_string(&quote).is_err());
         assert!(serde_json::to_string(&update).is_err());
+        #[cfg(feature = "dataframe")]
+        {
+            use paft_utils::dataframe::ToDataFrame;
+            assert!(quote.to_dataframe().is_err());
+            assert!(update.to_dataframe().is_err());
+        }
     }
     for millis in [-1, 0, 1] {
         let ts = DateTime::from_timestamp_millis(millis).unwrap();
@@ -24,5 +30,19 @@ fn public_quote_timestamps_are_checked_at_serialization() {
         assert_eq!(serde_json::from_str::<Quote>(&json).unwrap(), quote);
         let json = serde_json::to_string(&update).unwrap();
         assert_eq!(serde_json::from_str::<QuoteUpdate>(&json).unwrap(), update);
+        #[cfg(feature = "dataframe")]
+        {
+            use paft_utils::dataframe::ToDataFrame;
+            use polars::prelude::{AnyValue, TimeUnit};
+            for (df, column) in [
+                (quote.to_dataframe().unwrap(), "as_of"),
+                (update.to_dataframe().unwrap(), "ts"),
+            ] {
+                assert_eq!(
+                    df.column(column).unwrap().get(0).unwrap(),
+                    AnyValue::Datetime(millis, TimeUnit::Milliseconds, None)
+                );
+            }
+        }
     }
 }

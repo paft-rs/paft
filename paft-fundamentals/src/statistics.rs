@@ -10,14 +10,11 @@
 //! the other instrument-attached fundamentals types.
 
 use chrono::{DateTime, NaiveDate, Utc};
-#[cfg(feature = "dataframe")]
-use df_derive_macros::ToDataFrame;
 use paft_decimal::Decimal;
 use paft_money::{Money, Price};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Slow-moving valuation, dividend, and risk metrics for an instrument.
 ///
 /// All fields are optional because providers expose different subsets and
@@ -74,4 +71,24 @@ pub struct KeyStatistics {
     /// should account for this.
     #[serde(default, with = "paft_decimal::serde::option_canonical_str")]
     pub beta: Option<Decimal>,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    KeyStatistics {
+        as_of: [Option<DateTime<Utc>>],
+        market_cap: [Option<Money>],
+        shares_outstanding: [Option<u64>],
+        eps_trailing_twelve_months: [Option<Price>],
+        pe_trailing_twelve_months: [Option<Decimal>],
+        dividend_per_share_forward: [Option<Price>],
+        dividend_yield_trailing: [Option<Decimal>],
+        dividend_yield_forward: [Option<Decimal>],
+        ex_dividend_date: [Option<NaiveDate>],
+        fifty_two_week_high: [Option<Price>],
+        fifty_two_week_low: [Option<Price>],
+        average_daily_volume_3m: [Option<u64>],
+        beta: [Option<Decimal>],
+    }
+    validate |row| row.as_of.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
 }

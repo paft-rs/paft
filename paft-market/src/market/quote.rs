@@ -3,14 +3,11 @@
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
-#[cfg(feature = "dataframe")]
-use df_derive_macros::ToDataFrame;
 use paft_domain::{Instrument, MarketState};
 use paft_money::{Currency, PriceAmount, QuantityAmount};
 
 use crate::market::orderbook::GenericBookLevel;
 
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 /// Snapshot quote data for an instrument at a single point in time.
 ///
@@ -28,7 +25,6 @@ pub struct GenericQuote<Q = (), L = ()> {
     /// Display name.
     pub name: Option<String>,
     /// Currency shared by every price amount in this quote.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub currency: Currency,
     /// Market price (most recent trade).
     pub price: Option<PriceAmount>,
@@ -41,15 +37,34 @@ pub struct GenericQuote<Q = (), L = ()> {
     /// Day volume in the provider's stated quantity unit.
     pub day_volume: Option<QuantityAmount>,
     /// Market state.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
     /// Timestamp (UTC) when this quote snapshot was observed.
-    /// Serialization rejects sub-millisecond precision and leap seconds.
+    /// Serialization and `DataFrame` export reject sub-millisecond precision and leap seconds.
     #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: Q,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    GenericQuote<Q, L> {
+        instrument: [Instrument],
+        name: [Option<String>],
+        #[df_derive(as_str)]
+        currency: [Currency],
+        price: [Option<PriceAmount>],
+        bid: [Option<GenericBookLevel<L>>],
+        ask: [Option<GenericBookLevel<L>>],
+        previous_close: [Option<PriceAmount>],
+        day_volume: [Option<QuantityAmount>],
+        #[df_derive(as_str)]
+        market_state: [Option<MarketState>],
+        as_of: [Option<DateTime<Utc>>],
+        provider: [Q],
+    }
+    validate |row| row.as_of.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
 }
 
 impl<Q: Default, L> GenericQuote<Q, L> {
@@ -77,7 +92,6 @@ impl<Q: Default, L> GenericQuote<Q, L> {
 pub type Quote = GenericQuote<(), ()>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Streaming quote update payload for an instrument.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
@@ -91,7 +105,6 @@ pub struct GenericQuoteUpdate<M = ()> {
     /// Instrument identifier.
     pub instrument: Instrument,
     /// Currency shared by every price amount in this update.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub currency: Currency,
     /// Last traded price, if present.
     pub price: Option<PriceAmount>,
@@ -106,12 +119,27 @@ pub struct GenericQuoteUpdate<M = ()> {
     /// delta.
     pub volume: Option<QuantityAmount>,
     /// Event timestamp as Unix milliseconds.
-    /// Serialization rejects sub-millisecond precision and leap seconds.
+    /// Serialization and `DataFrame` export reject sub-millisecond precision and leap seconds.
     #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    GenericQuoteUpdate<M> {
+        instrument: [Instrument],
+        #[df_derive(as_str)]
+        currency: [Currency],
+        price: [Option<PriceAmount>],
+        previous_close: [Option<PriceAmount>],
+        volume: [Option<QuantityAmount>],
+        ts: [DateTime<Utc>],
+        provider: [M],
+    }
+    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.ts).is_some()
 }
 
 impl<M: Default> GenericQuoteUpdate<M> {

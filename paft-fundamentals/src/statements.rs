@@ -447,7 +447,6 @@ pub struct CashflowRow {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Corporate calendar entries (earnings/dividends).
 pub struct Calendar {
     /// Upcoming or historical earnings dates.
@@ -459,4 +458,14 @@ pub struct Calendar {
     /// Dividend payment calendar date.
     #[serde(default)]
     pub dividend_payment_date: Option<NaiveDate>,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    Calendar {
+        earnings_dates: [Vec<DateTime<Utc>>],
+        ex_dividend_date: [Option<NaiveDate>],
+        dividend_payment_date: [Option<NaiveDate>],
+    }
+    validate |row| row.earnings_dates.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
 }

@@ -3,11 +3,8 @@
 use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
-#[cfg(feature = "dataframe")]
-use df_derive_macros::ToDataFrame;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A news article associated with an instrument.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
@@ -32,6 +29,19 @@ pub struct GenericNewsArticle<M = ()> {
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    GenericNewsArticle<M> {
+        uuid: [String],
+        title: [String],
+        publisher: [Option<String>],
+        link: [Option<String>],
+        published_at: [DateTime<Utc>],
+        provider: [M],
+    }
+    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.published_at).is_some()
 }
 
 /// Standard `NewsArticle` with no extra provider metadata.

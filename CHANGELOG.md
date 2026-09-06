@@ -62,6 +62,11 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** DataFrame: PAFT timestamp fields now use the same exact-millisecond
+  validation as JSON before encoding, including required/optional/list fields
+  and nested records. Unsupported precision or leap seconds return a Polars
+  compute error. Borrowed projections retain existing schemas and public Rust
+  field types; exhaustive field matching detects projection drift at compile time.
 - **Breaking** Money: currency metadata registration and explicit overrides
   reject symbols beginning with ASCII `+` or `-` after whitespace, in either
   placement. `MinorUnitError::InvalidCurrencySymbol` prevents formatted positive

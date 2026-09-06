@@ -6,14 +6,11 @@
 //! and live in `paft-fundamentals`.
 
 use chrono::{DateTime, Utc};
-#[cfg(feature = "dataframe")]
-use df_derive_macros::ToDataFrame;
 use paft_domain::{Instrument, MarketState};
 use paft_money::{Currency, PriceAmount, QuantityAmount};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Strictly instant-in-time snapshot for an instrument.
 ///
 /// All fields except `instrument` and `currency` are optional to accommodate
@@ -32,13 +29,11 @@ pub struct GenericSnapshot<M = ()> {
     /// Human-friendly instrument name.
     pub name: Option<String>,
     /// Current market session state (for example: Pre, Regular, Post).
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub market_state: Option<MarketState>,
     /// Timestamp (UTC) when this snapshot was taken.
     #[serde(default, with = "paft_core::serde_helpers::ts_milliseconds_option")]
     pub as_of: Option<DateTime<Utc>>,
     /// Currency shared by every price amount in this snapshot.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub currency: Currency,
     /// Most recent traded/quoted price.
     pub last: Option<PriceAmount>,
@@ -55,6 +50,27 @@ pub struct GenericSnapshot<M = ()> {
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    GenericSnapshot<M> {
+        instrument: [Instrument],
+        name: [Option<String>],
+        #[df_derive(as_str)]
+        market_state: [Option<MarketState>],
+        as_of: [Option<DateTime<Utc>>],
+        #[df_derive(as_str)]
+        currency: [Currency],
+        last: [Option<PriceAmount>],
+        previous_close: [Option<PriceAmount>],
+        open: [Option<PriceAmount>],
+        day_high: [Option<PriceAmount>],
+        day_low: [Option<PriceAmount>],
+        volume: [Option<QuantityAmount>],
+        provider: [M],
+    }
+    validate |row| row.as_of.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
 }
 
 impl<M: Default> GenericSnapshot<M> {

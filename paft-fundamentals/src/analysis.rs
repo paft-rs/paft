@@ -319,7 +319,6 @@ pub struct RecommendationSummary {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// Broker action history for an instrument.
 pub struct UpgradeDowngradeRow {
     /// Event timestamp.
@@ -328,14 +327,26 @@ pub struct UpgradeDowngradeRow {
     /// Research firm name.
     pub firm: Option<String>,
     /// Previous rating with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub from_grade: Option<RecommendationGrade>,
     /// New rating with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub to_grade: Option<RecommendationGrade>,
     /// Action description with canonical variants and extensible fallback.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub action: Option<RecommendationAction>,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    UpgradeDowngradeRow {
+        ts: [DateTime<Utc>],
+        firm: [Option<String>],
+        #[df_derive(as_str)]
+        from_grade: [Option<RecommendationGrade>],
+        #[df_derive(as_str)]
+        to_grade: [Option<RecommendationGrade>],
+        #[df_derive(as_str)]
+        action: [Option<RecommendationAction>],
+    }
+    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.ts).is_some()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]

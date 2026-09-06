@@ -138,7 +138,6 @@ impl OptionContractKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single option contract (call or put) at a given strike and expiration.
 ///
 /// Generic over a provider metadata payload `M`, which is flattened into the
@@ -151,10 +150,8 @@ impl OptionContractKey {
 pub struct GenericOptionContract<M = ()> {
     /// Contract key fields.
     #[serde(flatten)]
-    #[cfg_attr(feature = "dataframe", df_derive(flatten))]
     pub key: OptionContractKey,
     /// Premium currency for `price`, `bid`, and `ask`.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub currency: Currency,
     /// Last traded price amount, denominated in `currency`.
     pub price: Option<PriceAmount>,
@@ -167,7 +164,6 @@ pub struct GenericOptionContract<M = ()> {
     /// Open interest at the time of fetch.
     pub open_interest: Option<u64>,
     /// Implied volatility as a non-negative fraction (e.g., 0.25 for 25%).
-    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
     pub implied_volatility: Option<NonNegativeDecimal>,
     /// Whether the provider reports the option as currently in the money.
     ///
@@ -184,6 +180,30 @@ pub struct GenericOptionContract<M = ()> {
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    GenericOptionContract<M> {
+        #[df_derive(flatten)]
+        key: [OptionContractKey],
+        #[df_derive(as_str)]
+        currency: [Currency],
+        price: [Option<PriceAmount>],
+        bid: [Option<PriceAmount>],
+        ask: [Option<PriceAmount>],
+        volume: [Option<u64>],
+        open_interest: [Option<u64>],
+        #[df_derive(decimal(precision = 38, scale = 10))]
+        implied_volatility: [Option<NonNegativeDecimal>],
+        in_the_money: [Option<bool>],
+        expiration_at: [Option<DateTime<Utc>>],
+        last_trade_at: [Option<DateTime<Utc>>],
+        greeks: [Option<OptionGreeks>],
+        provider: [M],
+    }
+    validate |row| row.expiration_at.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
+        && row.last_trade_at.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
 }
 
 impl<M: Default> GenericOptionContract<M> {
@@ -274,17 +294,14 @@ pub type OptionChain = GenericOptionChain<(), ()>;
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOptionUpdate<M = ()> {
     /// Contract key fields.
     #[serde(flatten)]
-    #[cfg_attr(feature = "dataframe", df_derive(flatten))]
     pub key: OptionContractKey,
     /// Timestamp of the update as Unix milliseconds.
     #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Premium currency for `bid`, `ask`, and `last_price`.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub currency: Currency,
     /// Best bid amount for the contract, denominated in `currency`.
     pub bid: Option<PriceAmount>,
@@ -293,11 +310,28 @@ pub struct GenericOptionUpdate<M = ()> {
     /// Last traded price amount, denominated in `currency`.
     pub last_price: Option<PriceAmount>,
     /// Implied volatility estimate, if available.
-    #[cfg_attr(feature = "dataframe", df_derive(decimal(precision = 38, scale = 10)))]
     pub implied_volatility: Option<NonNegativeDecimal>,
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    GenericOptionUpdate<M> {
+        #[df_derive(flatten)]
+        key: [OptionContractKey],
+        ts: [DateTime<Utc>],
+        #[df_derive(as_str)]
+        currency: [Currency],
+        bid: [Option<PriceAmount>],
+        ask: [Option<PriceAmount>],
+        last_price: [Option<PriceAmount>],
+        #[df_derive(decimal(precision = 38, scale = 10))]
+        implied_volatility: [Option<NonNegativeDecimal>],
+        provider: [M],
+    }
+    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.ts).is_some()
 }
 
 impl<M: Default> GenericOptionUpdate<M> {

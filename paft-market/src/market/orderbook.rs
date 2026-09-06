@@ -68,7 +68,6 @@ pub type BookLevel = GenericBookLevel<()>;
 /// as paft fields. Metadata field names must not collide with paft field
 /// names; prefer provider-specific prefixes when in doubt.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 pub struct GenericOrderBook<B = (), L = ()> {
     /// Instrument identifier.
     pub instrument: Instrument,
@@ -78,7 +77,6 @@ pub struct GenericOrderBook<B = (), L = ()> {
     pub as_of: Option<DateTime<Utc>>,
 
     /// Currency shared by every price amount in this book.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub currency: Currency,
 
     /// A vector of ask (sell) levels, typically sorted by price ascending.
@@ -96,6 +94,20 @@ pub struct GenericOrderBook<B = (), L = ()> {
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: B,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    GenericOrderBook<B, L> {
+        instrument: [Instrument],
+        as_of: [Option<DateTime<Utc>>],
+        #[df_derive(as_str)]
+        currency: [Currency],
+        asks: [Vec<GenericBookLevel<L>>],
+        bids: [Vec<GenericBookLevel<L>>],
+        provider: [B],
+    }
+    validate |row| row.as_of.iter().all(|ts| paft_core::serde_helpers::timestamp_millis_exact(ts).is_some())
 }
 
 impl<B: Default, L> GenericOrderBook<B, L> {

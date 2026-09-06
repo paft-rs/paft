@@ -47,7 +47,6 @@ impl Ohlc {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "dataframe", derive(ToDataFrame))]
 /// A single OHLCV bar at timestamp `ts` (Unix milliseconds).
 ///
 /// Volume may be `None` when unavailable.
@@ -64,11 +63,9 @@ pub struct GenericCandle<M = ()> {
     #[serde(with = "paft_core::serde_helpers::ts_milliseconds")]
     pub ts: DateTime<Utc>,
     /// Currency shared by every price amount in this candle.
-    #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     pub currency: Currency,
     /// Primary OHLC price amounts.
     #[serde(flatten)]
-    #[cfg_attr(feature = "dataframe", df_derive(flatten))]
     pub ohlc: Ohlc,
     /// Raw provider close price, if available.
     ///
@@ -81,6 +78,21 @@ pub struct GenericCandle<M = ()> {
     /// Provider-specific payload, flattened into the serialized form.
     #[serde(flatten, default = "Default::default")]
     pub provider: M,
+}
+
+#[cfg(feature = "dataframe")]
+paft_utils::impl_checked_dataframe! {
+    GenericCandle<M> {
+        ts: [DateTime<Utc>],
+        #[df_derive(as_str)]
+        currency: [Currency],
+        #[df_derive(flatten)]
+        ohlc: [Ohlc],
+        close_unadj: [Option<PriceAmount>],
+        volume: [Option<QuantityAmount>],
+        provider: [M],
+    }
+    validate |row| paft_core::serde_helpers::timestamp_millis_exact(&row.ts).is_some()
 }
 
 impl<M: Default> GenericCandle<M> {
