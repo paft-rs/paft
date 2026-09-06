@@ -195,7 +195,6 @@ pub struct Money {
     #[cfg_attr(feature = "dataframe", df_derive(as_str))]
     currency: Currency,
     /// Minor-unit scale resolved when the value was created.
-    #[cfg_attr(feature = "dataframe", df_derive(skip))]
     minor_units: u8,
 }
 

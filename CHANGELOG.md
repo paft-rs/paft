@@ -62,6 +62,9 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Changed
 
+- **Breaking** Money/DataFrame: exports now include `minor_units` (`UInt8`),
+  including nested and vector exports, so captured settlement specifications
+  remain distinguishable when amount and currency are equal.
 - **Breaking** Money: removed built-in metadata for `USDC`, `USDT`, `BNB`, and
   `AVAX`, whose native denominations depend on network or asset variant. Codes
   still parse, but settlement constructors require explicit metadata and return
@@ -77,7 +80,7 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 - **Breaking** Fundamentals: income statement fields follow statement order,
   moving `net_income` after `income_tax_expense` and
   `depreciation_and_amortization` in DataFrame output. The continuing-income
-  amount/currency columns are appended at the end of the schema. JSON remains
+  amount/currency/minor-unit columns are appended at the end of the schema. JSON remains
   keyed by field name.
 - Fundamentals: documented the canonical accounting conventions for statement
   rows. Income statement expenses, including depreciation and amortization,
@@ -290,8 +293,10 @@ Rust version. Breaking changes and downstream migration steps are listed below.
   deserialize successfully; a reported zero remains distinct from `None`.
 - Update consumers that assume exact JSON key sets or DataFrame schemas and
   column order. Continuing-income export adds nullable
-  `net_income_from_continuing_operations.amount` and
-  `net_income_from_continuing_operations.currency` columns.
+  `net_income_from_continuing_operations.amount`,
+  `net_income_from_continuing_operations.currency`, and
+  `net_income_from_continuing_operations.minor_units` columns. All nested Money
+  exports include their captured minor-unit scales.
 - Audit provider mappings against the accounting definitions: current debt
   excludes separately classified lease liabilities, continuing income includes
   noncontrolling interests, and EBIT/EBITDA exclude provider-specific
