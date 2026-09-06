@@ -238,6 +238,10 @@ Rust version. Breaking changes and downstream migration steps are listed below.
 
 ### Fixed
 
+- Market: standalone `HistoryFlags` serialization now rejects unknown bits,
+  matching strict deserialization even for `from_bits_retain` values. All 256
+  `u8` patterns are covered: known masks round-trip and unknown masks fail in
+  both directions, including the removed missing-slot bit.
 - Verification: `just test` and exhaustive tests now run doctests separately
   from nextest, including CI and publication gates. CI/publication also test
   each published crate independently with no-default, default, and all features.

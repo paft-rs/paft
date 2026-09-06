@@ -466,6 +466,9 @@ impl<'de> Deserialize<'de> for Interval {
 
 bitflags! {
     /// Flags to control additional behaviors in history requests.
+    ///
+    /// Both serde directions reject unknown bits, including values built with
+    /// [`HistoryFlags::from_bits_retain`].
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct HistoryFlags: u8 {
         /// Include pre/post market sessions if supported.
@@ -482,6 +485,12 @@ impl Serialize for HistoryFlags {
     where
         S: Serializer,
     {
+        let bits = self.bits();
+        if Self::from_bits(bits).is_none() {
+            return Err(serde::ser::Error::custom(format!(
+                "unknown HistoryFlags bits: 0b{bits:08b}"
+            )));
+        }
         serializer.serialize_u8(self.bits())
     }
 }

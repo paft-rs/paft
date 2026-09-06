@@ -275,6 +275,24 @@ fn history_flags_deserialization_unknown_bits_rejected() {
 }
 
 #[test]
+fn history_flags_serde_is_symmetric_for_every_u8_pattern() {
+    for bits in u8::MIN..=u8::MAX {
+        let flags = HistoryFlags::from_bits_retain(bits);
+        let encoded = serde_json::to_string(&flags);
+        let decoded = serde_json::from_str::<HistoryFlags>(&bits.to_string());
+        if bits & !0b0111 == 0 {
+            let wire = encoded.unwrap();
+            assert_eq!(wire, bits.to_string());
+            assert_eq!(decoded.unwrap(), flags);
+            assert_eq!(serde_json::from_str::<HistoryFlags>(&wire).unwrap(), flags);
+        } else {
+            assert!(encoded.is_err(), "serialized unknown bits {bits:#010b}");
+            assert!(decoded.is_err(), "deserialized unknown bits {bits:#010b}");
+        }
+    }
+}
+
+#[test]
 fn history_rejects_removed_missing_slot_flag() {
     assert_eq!(HistoryFlags::all().bits(), 0b0111);
     for bits in [0b1000_u8, 0b1111_u8] {
